@@ -228,3 +228,25 @@ Deep multi-dimensional (AI picks N choices) check.
 Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
 
 You have complete design autonomy.
+
+---
+
+Look through the existing markdown documents. 
+
+AI uses the documents to design and implement.
+
+Examine documentation protocols, conventions, structures, files, and all other relevant areas.
+
+What do you see for, against, and through our documentation practices?
+
+Look for areas of improvement.
+
+Look for novel approaches and practices.
+
+Would you add, edit, or remove anything for the improve documentation communication.
+
+What questions would I benefit from asking?
+
+What am I not asking?
+
+You have complete design autonomy.

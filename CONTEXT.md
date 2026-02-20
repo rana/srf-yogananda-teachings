@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 0 (Foundation).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (110 ADRs), ROADMAP.md (17 phases, 0–16). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (118 ADRs), ROADMAP.md (17 phases, 0–16). No code yet.
 
 **What's next:** Phase 0 — Foundation. Repo setup, Neon provisioning, Vercel/Sentry configuration, initial schema migration, stakeholder kickoff. Then Phase 1 — Prove the Search. See ROADMAP.md § Phase 0 and § Phase 1 for deliverables.
 
@@ -14,7 +14,9 @@
 
 ### Technical (resolve during Phase 1)
 
-- [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks)
+- [ ] Which edition of Autobiography of a Yogi is the canonical page-number reference? (1946 first edition, 1998 13th edition, or current printing?) All portal citations depend on this. (Relates to ADR-069)
+- [ ] Does SRF have recordings of their temple singing bowls and chimes for the Quiet Corner audio (Phase 2)? If not, what is the sourcing policy for sacred audio? (Relates to ADR-101)
+- [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). See ADR-115 for the formal chunking strategy specification.
 - [ ] Embedding model benchmarking (text-embedding-3-small vs. 3-large vs. Cohere)
 - [ ] Query expansion prompt engineering (test with diverse query types)
 - [ ] Cross-book search vs. per-book search: should the default search span all books, or should seekers select a book first? The announcement implies cross-library search.
@@ -39,6 +41,9 @@
 - [ ] Does the teaching portal get its own mobile app, or do portal features (search, daily passage, reader) integrate into the existing SRF/YSS app? The API-first architecture (ADR-024) supports either path.
 - [ ] Does SRF prefer the portal repo in GitLab from day one (per SRF IDP standards), or is GitHub acceptable for Phases 1–9 with a planned Phase 10 migration? The Terraform code and CI/CD pipelines are SCM-agnostic; only the workflow files change.
 - [ ] What Sentry and New Relic configurations does SRF use across their existing properties? Aligning observability tooling enables operational consistency.
+- [ ] What are the content licensing terms for portal-served content — read-online only, or also downloadable/redistributable? Does the permissive `robots.txt` extend to AI training crawlers ingesting full book text? (Relates to ADR-084)
+- [ ] Does the philanthropist's foundation want to publish "What Is Humanity Seeking?" as a standalone annual communications asset (report, subdomain, media syndication)? If so, communications planning should begin before the Phase 7 dashboard ships. (Relates to ADR-113)
+- [ ] Can SRF provide recordings of Yogananda's own voice for an IVR/audio pilot during the Hindi/Bengali launch (Phase 11), rather than deferring all voice access to Phase 16? (Relates to ADR-085)
 
 ### Resolved Questions
 

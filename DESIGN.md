@@ -109,6 +109,10 @@ One-time ingestion (offline script):
 
 The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it never speaks for him. All results shown to users are verbatim quotes from published works with precise citations.
 
+### Brand Identity (ADR-112)
+
+"The Librarian" is the portal's external brand identity for its AI search capability. In a world where every AI product synthesizes content, the portal's refusal to generate is a radical differentiator. The About page explains: *"This is not an AI that speaks for Yogananda. It is a librarian that finds his words for you. Every passage you see is exactly as he wrote it."* The `llms.txt` file includes this framing. Search results may include a subtle footer: *"Every passage shown is Yogananda's own words."*
+
 ### Search Flow
 
 ```
@@ -1246,6 +1250,8 @@ SENTRY_AUTH_TOKEN=         # Source map uploads
 | `/places/[slug]` | Individual place detail with book cross-references | Neon `places` + `chunk_places` (ISR) |
 | `/videos` | Video library — categorized by playlist | YouTube API (ISR) |
 | `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) |
+| `/study` | Study Workspace — passage collection, teaching arc assembly, export (Phase 8, ADR-111) | `localStorage` (no server) |
+| `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 5, ADR-116) | Neon (`seeker_feedback`) |
 
 ### Search Results Component
 
@@ -1463,6 +1469,8 @@ Framed through aspiration, not suffering. "Seeking" aligns with the search bar's
 - **Cultural adaptation (Phase 11):** The "Seeking..." entry points are deeply English-idiomatic ("The heart to forgive," "Peace in a restless mind"). These need cultural adaptation, not mechanical translation. Treat them as **editorial content per locale** — each language's reviewer may rephrase, reorder, or replace entry points to match cultural expression. Include these in the ADR-023 human review scope alongside UI strings.
 - Mobile: full-width, stacked list
 - This section is below the fold — a deliberate choice. The above-the-fold experience (Today's Wisdom + search bar) is for all visitors; this section is for the ones who scroll because they need more
+
+**Grief elevated to primary theme (ADR-114):** "Comfort after loss" is the entry point; grief/loss also becomes a dedicated theme page (`/themes/grief`) in Phase 5 with deep, curated content on the immortality of the soul, reunion after death, the purpose of suffering, and direct consolation. Grief is arguably the most common reason someone turns to spiritual literature — the portal should be the definitive resource for seekers Googling "what happens after death Yogananda."
 
 **DELTA alignment:** No behavioral profiling. The entry points are the same for every visitor. They are informed by aggregated search trends ("What is humanity seeking?"), not individual tracking.
 
@@ -4016,6 +4024,46 @@ This aligns with "Signpost, not destination" — the portal meets seekers where 
 
 ---
 
+## Chunking Strategy (ADR-115)
+
+The chunking algorithm is the single most important factor in search retrieval quality. Yogananda's prose style varies dramatically across books, requiring a nuanced strategy.
+
+### Default Chunking (Phases 1–6: narrative, collected talks, short works)
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| **Unit** | Paragraph (typographic paragraph breaks in source text) | Yogananda's paragraphs correspond to idea boundaries |
+| **Token range** | 100–500 tokens (target: 200–300) | Balances specificity with context |
+| **Minimum** | 100 tokens — paragraphs below this are merged with the following paragraph | Prevents orphaned fragments |
+| **Maximum** | 500 tokens — split at sentence boundaries, keeping both halves above 100 tokens | Prevents imprecise retrieval |
+| **Overlap** | None | Paragraph boundaries are natural semantic boundaries; overlap introduces duplicate search results |
+
+**Metadata preserved per chunk:** `book_id`, `chapter_id`, `paragraph_index` (position within chapter), `page_number` (from source), `language`.
+
+### Special Handling
+
+| Content Type | Strategy | Rationale |
+|-------------|----------|-----------|
+| **Epigraphs and poetry** | Single chunk regardless of length | Splitting a poem mid-stanza destroys meaning |
+| **Lists and enumerations** | Single chunk | Yogananda's numbered instructions are semantically atomic |
+| **Dialogue and quoted speech** | Single chunk for continuous exchanges; split at speaker changes if >500 tokens | Preserves conversational flow |
+| **Aphorisms (*Sayings*, *Scientific Healing Affirmations*)** | One chunk per standalone saying/affirmation regardless of length | These books are already atomically organized |
+| **Chapter titles and section headers** | Not chunked separately — prepended to first paragraph as metadata context | Headers are context, not content |
+
+### Verse-Aware Chunking (Phase 7: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*)
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| **Unit** | Verse-commentary pair | Maintains the interpretive relationship |
+| **Long commentaries** | Split at paragraph boundaries within commentary; each sub-chunk retains verse text as prefix | Verse context travels with every fragment |
+| **Cross-reference** | Verse reference stored as structured metadata (e.g., "Bhagavad Gita IV:7") | Enables side-by-side commentary view (ADR-074) |
+
+### Per-Language Validation (Phase 11)
+
+English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts; Devanagari and Bengali have different word-boundary characteristics. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary. See ROADMAP deliverable 11.10 for the formal validation requirement.
+
+---
+
 ## The Quiet Index — Browsable Contemplative Taxonomy (ADR-056)
 
 Phase 5 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification). The Quiet Index combines these two planned classifications into a browsable dimension: passages organized by their contemplative texture.
@@ -4150,6 +4198,45 @@ GET /api/v1/email/unsubscribe?token=xxx
 | Daily passage selection | Same logic as `/api/v1/daily-passage` but with a fixed daily seed | All subscribers receive the same passage on the same day |
 
 **Daily seed logic:** Use the current date as a deterministic seed to select the day's passage, ensuring all emails contain the same quote and the portal homepage can display "Today's email featured this passage" if desired.
+
+---
+
+## Seeker Feedback — DELTA-Compliant Signal Collection (ADR-116)
+
+The portal has no mechanism for seekers to communicate back without violating DELTA principles. Three feedback channels, none storing user identifiers:
+
+### Feedback Types
+
+| Channel | Location | What It Captures |
+|---------|----------|-----------------|
+| **"Report a citation error"** | Link on every passage (search, reader, share page) | Passage ID + freeform description |
+| **"I didn't find what I needed"** | Search results page (empty or sparse results) | Search query + anonymous counter |
+| **General feedback** | `/feedback` page (linked from footer) | Topic category + freeform text |
+
+### Data Model
+
+```sql
+CREATE TABLE seeker_feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    feedback_type TEXT NOT NULL CHECK (feedback_type IN (
+        'citation_error', 'search_miss', 'general', 'accessibility'
+    )),
+    content TEXT,                          -- freeform description (nullable for search_miss)
+    passage_id UUID REFERENCES book_chunks(id),  -- for citation errors
+    search_query TEXT,                     -- for search misses
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_feedback_type ON seeker_feedback(feedback_type, created_at DESC);
+```
+
+### API Route
+
+`POST /api/v1/feedback` — rate-limited at 5 submissions per IP per hour (IP is used for rate limiting but not stored in the database).
+
+### Editorial Integration
+
+Feedback appears in the editorial review portal (Phase 5) as a "Seeker Feedback" queue alongside theme tag review and ingestion QA. Citation error reports are highest priority — they directly affect the portal's fidelity guarantee.
 
 ---
 

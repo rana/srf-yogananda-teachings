@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–110, excluding removed ADR-010 and withdrawn ADR-053) with full rationale for every major choice
+3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–118, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
 4. **ROADMAP.md** — 17 phases (0–16) from foundation through community features, with deliverables, success criteria, and phase gates
 
 ## Ignore

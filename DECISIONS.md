@@ -44,6 +44,8 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-103: Content Integrity Verification
 - ADR-104: "What's New in the Library" Indicator
 - ADR-105: Magazine Integration — Self-Realization Magazine as First-Class Content
+- ADR-114: Grief and Loss as Primary Empathic Entry Point
+- ADR-118: "Teachings Through Time" — Temporal Dimension of the Corpus
 
 **Reader Experience**
 - ADR-036: Book Reader Typography
@@ -60,6 +62,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-063: Reading Session — Proactive Chapter Caching and Prefetch
 - ADR-073: Ephemeral Reading Highlights
 - ADR-074: Side-by-Side Commentary View
+- ADR-117: "Following the Thread" — Named Graph Traversal Experience
 - ADR-075: Study Guide View for Group Reading
 - ADR-076: Audio-Visual Ambiance Toggle
 - ADR-095: Contextual Quiet Corner — Practice Bridge in the Reader
@@ -100,6 +103,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-108: Phase 1 Bootstrap Ceremony
 - ADR-109: Single-Database Architecture — No DynamoDB
 - ADR-110: AWS Bedrock Claude with Model Tiering
+- ADR-115: Chunking Strategy Specification
 
 **Ethics & Internationalization**
 - ADR-014: Personalization with Restraint — DELTA Boundaries
@@ -123,12 +127,18 @@ Each decision is recorded with full context so future contributors understand no
 
 **Staff & Editorial Workflows**
 - ADR-064: Staff Experience Architecture — Five-Layer Editorial System
-- ADR-077: Talk Preparation Workspace
+- ADR-077: ~~Talk Preparation Workspace~~ → Superseded by ADR-111
 - ADR-099: Study Circle Sharing
+- ADR-111: Study Workspace — Universal Teaching Tools Without Authentication
+- ADR-116: DELTA-Compliant Seeker Feedback Mechanism
 
 **Image & Media Provenance**
 - ADR-106: Digital Watermarking Strategy for SRF Images
 - ADR-107: Multi-Size Image Serving and Download Options
+
+**Brand & Communications**
+- ADR-112: "The Librarian" — AI Search Brand Identity
+- ADR-113: "What Is Humanity Seeking?" as Strategic Communications Asset
 
 **Community & Future Readiness**
 - ADR-081: Lessons Integration Readiness
@@ -2373,6 +2383,7 @@ Add a **"Seeking..."** section to the homepage below the thematic doors. Each en
 - **Zero friction.** Clicking an entry point executes a search immediately. The visitor doesn't need to formulate a query. They don't need to know that Yogananda wrote about fear — they just need to recognize their own situation.
 - **Editorially curated.** Entry points can be refined over time based on anonymized search trends from the `search_queries` table ("What is humanity seeking?").
 - **DELTA-compliant.** Entry points are the same for every visitor. No behavioral profiling. No personalization.
+- **Grief elevated to full theme (ADR-114).** "Comfort after loss" is the entry point; ADR-114 ensures grief/loss also becomes a primary theme page (`/themes/grief`) with deep, dedicated content. Grief is arguably the most common reason someone turns to spiritual literature.
 
 ### Consequences
 
@@ -5347,10 +5358,12 @@ Add an optional ambient audio toggle to the reader settings popover and the Quie
 
 ## ADR-077: Talk Preparation Workspace
 
-**Status:** Accepted
+**Status:** Superseded by ADR-111
 **Date:** 2026-02-19
 **Deciders:** Architecture team
 **Context:** ADR-003 (AI as librarian), ADR-035 (Doors of Entry), ADR-046 (social assets), ADR-075 (Study Guide View)
+
+> **Note:** This ADR has been superseded by ADR-111 (Study Workspace). The core concept (passage collection, teaching arc assembly, export) is preserved, but the workspace is now public (no authentication required), uses localStorage for persistence, and serves all users — not just monastics and center leaders. See ADR-111 for the current design.
 
 ### Context
 
@@ -5818,7 +5831,7 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 **Status:** Accepted
 **Date:** 2026-02-19
 **Deciders:** Architecture team
-**Context:** ADR-059 (chapter PDF downloads), ADR-061 (Global South delivery), ADR-077 (talk preparation), ADR-078 (audio library)
+**Context:** ADR-059 (chapter PDF downloads), ADR-061 (Global South delivery), ADR-111 (Study Workspace, formerly ADR-077), ADR-078 (audio library)
 
 ### Context
 
@@ -5840,7 +5853,7 @@ GET /api/v1/videos/{id}/transcript/pdf          → Video transcript PDF
 
 # ── Dynamic PDFs (on-demand generation) ──
 
-GET  /api/v1/prepare/outlines/{id}/pdf          → Talk outline PDF (Auth0)
+GET  /api/v1/study/outlines/{id}/pdf            → Study outline PDF
 POST /api/v1/exports/pdf                        → Arbitrary content PDF
      Body: { "type": "passages", "ids": ["uuid", ...] }
      Body: { "type": "search", "query": "...", "language": "en" }
@@ -6057,7 +6070,6 @@ Sitemap: https://teachings.yogananda.org/sitemap-index.xml
 
 # Protected areas
 Disallow: /admin/
-Disallow: /prepare/
 Disallow: /api/v1/exports/
 
 # AI crawlers — welcome, with rate consideration
@@ -7400,11 +7412,11 @@ Phase 7 (after chunk relations are computed across the full multi-book corpus in
 ## ADR-099: Study Circle Sharing
 
 **Status:** Accepted | **Date:** 2026-02-20
-**Context:** ADR-075 (study guide view), ADR-077 (talk preparation), ADR-061 (Global South delivery)
+**Context:** ADR-075 (study guide view), ADR-111 (Study Workspace, formerly ADR-077), ADR-061 (Global South delivery)
 
 ### Context
 
-Study circles (satsanga groups) are a core SRF community practice — groups of devotees meeting weekly to study Yogananda's teachings together. The Talk Preparation Workspace (ADR-077, Phase 8) serves monastics and center leaders. But lay study groups get nothing until Phase 16. In India, Latin America, and many African communities, these groups communicate via WhatsApp and SMS.
+Study circles (satsanga groups) are a core SRF community practice — groups of devotees meeting weekly to study Yogananda's teachings together. The Study Workspace (ADR-111, Phase 8) serves all users. But lay study groups communicating via WhatsApp and SMS need a different sharing mechanism. In India, Latin America, and many African communities, these groups rely on messaging channels.
 
 ### Decision
 
@@ -8186,6 +8198,434 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 - Phase 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
+
+---
+
+## ADR-111: Study Workspace — Universal Teaching Tools Without Authentication
+
+**Status:** Accepted (supersedes ADR-077)
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-077 (Talk Preparation Workspace — now superseded), ADR-003 (AI as librarian), ADR-041 (Lotus Bookmarks — localStorage pattern), ADR-075 (Study Guide View)
+
+### Context
+
+ADR-077 designed the Talk Preparation Workspace as an Auth0-protected area for SRF monastics and meditation center leaders. But anyone who engages deeply with Yogananda's teachings benefits from the same capabilities: passage collection, teaching arc assembly, and export. Study circle leaders, yoga teachers, home meditators preparing personal devotional readings, parents selecting passages for their children, chaplains building comfort packages — these users need the same tools as monastics.
+
+Authentication was only required because ADR-077 assumed server-side persistence of saved outlines. But the portal already solved persistence without accounts: Phase 4 bookmarks (ADR-041) use localStorage. The same pattern works here.
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Auth-protected (ADR-077)** | Server-side persistence, cross-device sync | Excludes lay users, requires account creation for a composition tool, delays availability to Phase 15+ |
+| **localStorage-only, public** | Universal access, no account friction, ships with Phase 8 | No cross-device sync until Phase 15, data lost on browser clear |
+| **Hybrid: localStorage default, optional server sync** | Best of both — universal access now, enhanced persistence for logged-in users later | Slightly more complex migration path |
+
+### Decision
+
+Rename "Talk Preparation Workspace" to **"Study Workspace."** Make it public at `/study` — no authentication required. All state persisted in localStorage. Export (PDF, presentation mode, plain text) works without accounts.
+
+**Workflow** (unchanged from ADR-077 except for auth removal):
+
+1. **Theme Exploration.** The user enters a theme or question. The system uses the existing search API to surface relevant passages across all books.
+2. **Passage Collection.** Selected passages are added to a working collection stored in localStorage. Each item retains full citation (book, chapter, page). Notes can be attached per passage.
+3. **Teaching Arc Assembly.** Collected passages are arranged into a narrative sequence. The user drags passages into sections (e.g., "Opening," "Core Teaching," "Practice," "Closing"). Section headings and personal notes are freeform text, clearly distinguished from Yogananda's words.
+4. **Export.** The assembled outline exports as print PDF, presentation mode, or plain text.
+5. **Persistence.** localStorage by default. Phase 15 adds optional server sync for logged-in users (same migration pattern as bookmarks).
+
+### Data Model
+
+The server-side schema (for Phase 15 sync) renames the ADR-077 tables:
+
+```sql
+CREATE TABLE study_outlines (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT,                         -- nullable: null = localStorage-only, populated on Phase 15 sync
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'ready', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE study_outline_sections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    outline_id UUID NOT NULL REFERENCES study_outlines(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    speaker_notes TEXT,                   -- user's personal notes (NOT Yogananda's words)
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE study_outline_passages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    section_id UUID NOT NULL REFERENCES study_outline_sections(id) ON DELETE CASCADE,
+    chunk_id UUID NOT NULL REFERENCES book_chunks(id),
+    personal_note TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_study_outlines_user ON study_outlines(user_id)
+    WHERE user_id IS NOT NULL;
+```
+
+The localStorage schema mirrors this structure as JSON, enabling clean migration to server storage when accounts arrive.
+
+### Rationale
+
+- **Serves the broadest audience.** Monastics are a vital but small user group. Lay devotees preparing study circle readings, yoga teachers building class themes, chaplains selecting comfort passages — these are potentially thousands of weekly users. Gating the tool behind authentication excludes the majority.
+- **Consistent with portal philosophy.** "All content freely available" extends to tools, not just reading. No "sign up to access" gates (CLAUDE.md constraint #10).
+- **localStorage precedent.** Phase 4 bookmarks (ADR-041) established the pattern: localStorage for persistence, optional server sync in Phase 15. The Study Workspace follows the same lifecycle.
+- **No new content created.** The workspace assembles existing indexed passages. The user's own notes are clearly separated. This respects ADR-003.
+
+### Consequences
+
+- `/prepare` route → `/study` route throughout all documentation
+- `robots.txt` no longer blocks `/study/` (it's a public feature, not a staff tool)
+- ROADMAP deliverable 8.4 updated
+- Phase 15 server sync includes study outlines alongside bookmarks
+- ADR-077 status updated to "Superseded by ADR-111"
+
+---
+
+## ADR-112: "The Librarian" — AI Search Brand Identity
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-003 (Direct Quotes Only — No AI Synthesis), ADR-049 (Claude AI Usage Policy)
+
+### Context
+
+ADR-003 establishes "the AI is a librarian, not an oracle" as a fundamental constraint. This is primarily treated as a technical guardrail — the system must never generate, paraphrase, or synthesize Yogananda's words. But in a world where every AI product generates plausible content, the portal's refusal to generate is not just a constraint — it is a radical differentiator.
+
+When a seeker uses ChatGPT, Perplexity, or Google's AI Overview to ask about Yogananda's teachings, they get synthesized summaries that may misrepresent his words. The portal is the only place where the AI system says: "I will show you his actual words, and nothing else."
+
+### Decision
+
+Adopt **"The Librarian"** as the external brand identity for the portal's AI search capability.
+
+**Implementation:**
+- The About page (Phase 2) explains: "This is not an AI that speaks for Yogananda. It is a librarian that finds his words for you. Every passage you see is exactly as he wrote it."
+- The `llms.txt` file (Phase 2) includes: "This portal uses AI as a librarian, not a content generator. All results are verbatim passages from Yogananda's published works."
+- Stakeholder communications use "The Librarian" language when describing the AI search.
+- The search results page may include a subtle footer: "Every passage shown is Yogananda's own words."
+
+### Rationale
+
+- **Trust-building with the SRF community.** Many SRF devotees are legitimately suspicious of AI involvement with sacred texts. "The Librarian" framing immediately communicates that the AI serves the text, not the other way around.
+- **Differentiation.** No competitor offers this guarantee. Google synthesizes. ChatGPT paraphrases. This portal finds. The constraint becomes the value proposition.
+- **Theological alignment.** In the guru-disciple tradition, a librarian who faithfully preserves and retrieves the guru's words is a service role. It doesn't claim authority; it facilitates access.
+
+### Consequences
+
+- About page copy includes "The Librarian" explanation (Phase 2)
+- `llms.txt` includes librarian framing (Phase 2)
+- No architectural changes — this is branding over an existing technical constraint
+- Marketing materials and stakeholder presentations use this language
+
+---
+
+## ADR-113: "What Is Humanity Seeking?" as Strategic Communications Asset
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-068 (Anonymized Search Intelligence), ADR-094 (Public-Facing Dashboard), ROADMAP Phase 16 (16.8 Annual Report)
+
+### Context
+
+ADR-068 designs anonymized search theme aggregation. ADR-094 designs a public-facing dashboard. Phase 16 describes an annual curated narrative report. These are treated as features to build. But the concept — "What Is Humanity Seeking?" — has value beyond the portal itself. It could become the philanthropist's foundation's signature thought-leadership asset.
+
+Imagine: an annual report titled *"What Is Humanity Seeking?"* based on anonymized search data from seekers worldwide. Distributed to consciousness research institutions, cited by journalists covering spirituality trends, referenced by interfaith organizations. The data is unique — no other source aggregates spiritual seeking patterns across languages and geographies with this level of intentionality.
+
+### Decision
+
+Treat "What Is Humanity Seeking?" as a **foundation-level communications strategy**, not just a Phase 7 dashboard feature. The dashboard (Phase 7) and annual report (Phase 16) are technical implementations; the communications strategy should be socialized with the philanthropist's foundation earlier.
+
+**Strategic considerations:**
+- Standalone subdomain: `seeking.yogananda.org`
+- Beautifully designed annual PDF report (not just a web dashboard)
+- Partnership with consciousness research institutions
+- Media syndication to publications covering spirituality/wellness
+- Integration with Self-Realization Magazine editorial planning (ADR-105)
+- The philanthropist's foundation as named publisher of the annual report
+
+### Rationale
+
+- **Unique data asset.** No other organization captures spiritual seeking patterns with this intentionality and this privacy posture (DELTA-compliant, no individual tracking).
+- **Mission amplification.** The report answers the philanthropist's original question: "What is the state of human consciousness?" — not abstractly, but empirically.
+- **Portal awareness.** The annual report drives discovery of the portal itself. A journalist writing about the report links to the portal.
+
+### Consequences
+
+- Add stakeholder open question in CONTEXT.md
+- Communications planning is a non-technical workstream — no code changes required
+- Phase 7 dashboard implementation unchanged
+- Phase 16 annual report implementation unchanged
+
+---
+
+## ADR-114: Grief and Loss as Primary Empathic Entry Point
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-035 ("Seeking..." Empathic Entry Points), ADR-048 (Teaching Topics — Semi-Automated Tagging Pipeline), ADR-058 (Exploration Theme Categories)
+
+### Context
+
+ADR-035's "Seeking..." entry points include "Comfort after loss," and the six quality themes (Peace, Courage, Healing, Joy, Purpose, Love) are prominent. But grief — the experience of losing someone — is arguably the single most common reason a person turns to spiritual literature for the first time. Someone who has just lost a parent, a spouse, a child searches not for "peace" or "healing" in the abstract, but for answers to primal questions: Is the soul immortal? Will I see them again? Why do we suffer? How do I go on?
+
+Yogananda wrote extensively about death, the afterlife, the immortal soul, and consolation for the bereaved. This is among the richest veins in the corpus. A seeker Googling "what happens after death Yogananda" or "Yogananda on death of a loved one" should find the portal as the definitive resource.
+
+### Decision
+
+Elevate grief and loss to a **primary situation theme** with a dedicated theme page (`/themes/grief`). This is not a replacement for the "Comfort after loss" entry point in ADR-035 — that entry point remains as a zero-friction doorway from the homepage. The theme page provides the deeper, richer experience.
+
+**Theme page content:**
+- Passages on the immortality of the soul
+- Passages on reunion after death
+- Passages on the purpose of suffering
+- Passages offering direct consolation
+- Cross-references to the Quiet Corner (contemplative pause)
+- "Go Deeper" signpost to SRF meditation resources
+
+**SEO strategy:**
+- Target queries: "Yogananda on death," "what happens after death Yogananda," "spiritual comfort after losing someone," "soul immortality Yogananda"
+- JSON-LD structured data on the theme page
+- The theme page as a primary SEO entry point (same strategy as other themes, but with higher search volume potential)
+
+### Rationale
+
+- **Meets the highest-need seeker.** The person in deepest pain deserves the richest experience, not just a search results page.
+- **SEO high-impact.** Grief-related spiritual queries have significant search volume and low competition from authoritative sources. The portal can own this space.
+- **Corpus strength.** Yogananda's writing on death and the afterlife is among his most powerful and distinctive. This theme showcases the corpus at its best.
+- **Mission alignment.** "Signpost, not destination" — the grief theme page naturally points toward meditation, the Quiet Corner, and SRF's community resources as paths through grief.
+
+### Consequences
+
+- Phase 5 theme taxonomy adds "Grief & Loss" as a situation theme alongside Peace, Courage, etc.
+- Theme tagging pipeline (ADR-048) includes grief-related terms in the embedding similarity search
+- SEO strategy (Phase 2) targets grief-related spiritual queries
+- The "Comfort after loss" entry point in ADR-035 links to `/themes/grief` rather than a generic search query once the theme page exists
+
+---
+
+## ADR-115: Chunking Strategy Specification
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-001 (pgvector), ADR-006 (Hybrid Search), ADR-032 (Embedding Model Versioning), ADR-074 (Side-by-Side Commentary View)
+
+### Context
+
+DESIGN.md specifies chunk relations, storage, embedding, and search in detail. ROADMAP mentions "chunk by paragraphs" (Phase 1) and "verse-aware chunking" (Phase 7). But no document formally defines the chunking algorithm — the single most important factor in search retrieval quality. A bad chunking strategy produces orphaned fragments (too small) or imprecise retrieval (too large). Yogananda's prose style varies dramatically: terse aphorisms in *Sayings*, flowing narrative in *Autobiography*, verse-by-verse commentary in *The Second Coming of Christ*, guided affirmations in *Scientific Healing Affirmations*.
+
+### Decision
+
+Document the chunking strategy as a formal specification. The strategy has two tiers: default (narrative prose) and verse-aware (scriptural commentary).
+
+**Default Chunking (Phases 1–6: narrative, collected talks, short works):**
+- **Unit:** Paragraph (defined by typographic paragraph breaks in the source text)
+- **Token range:** 100–500 tokens (target: 200–300)
+- **Minimum:** Paragraphs below 100 tokens are merged with the following paragraph to avoid orphaned fragments
+- **Maximum:** Paragraphs exceeding 500 tokens are split at sentence boundaries, with the split point chosen to keep both halves above 100 tokens
+- **Overlap:** None. Paragraph boundaries are natural semantic boundaries in Yogananda's prose. Overlap introduces duplicate content in search results with no retrieval quality gain for this corpus.
+- **Metadata preserved per chunk:** book_id, chapter_id, paragraph_index (position within chapter), page_number (from source), language
+
+**Special handling:**
+- **Epigraphs and poetry:** Kept as single chunks regardless of length. Splitting a poem mid-stanza destroys meaning.
+- **Lists and enumerations:** Kept as single chunks. Yogananda's numbered instructions and lists of spiritual qualities are semantically atomic.
+- **Dialogue and quoted speech:** Kept as single chunks when the dialogue forms a continuous exchange. Long dialogues (>500 tokens) split at speaker changes, not mid-speech.
+- **Aphorisms (*Sayings*, *Scientific Healing Affirmations*):** Each standalone saying or affirmation is one chunk, regardless of length. These books are already atomically organized.
+- **Chapter titles and section headers:** Not chunked separately. Prepended to the first paragraph of their section as metadata context.
+
+**Verse-Aware Chunking (Phase 7: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*):**
+- **Unit:** Verse-commentary pair. Each scripture verse and its associated commentary form a single chunk, maintaining the interpretive relationship.
+- **Long commentaries:** If a verse's commentary exceeds 500 tokens, split at paragraph boundaries within the commentary. Each sub-chunk retains the verse text as a prefix (ensuring the verse context travels with every fragment of commentary).
+- **Cross-reference:** Each verse-commentary chunk stores the verse reference (e.g., "Bhagavad Gita IV:7") as structured metadata for the side-by-side commentary view (ADR-074).
+
+**Per-language validation (Phase 11):**
+- English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary.
+
+### Rationale
+
+- **Paragraph as natural unit.** Yogananda's prose is well-structured with clear paragraph breaks that correspond to idea boundaries. Unlike web content or academic papers, his paragraphs rarely span multiple topics.
+- **No overlap avoids duplicate noise.** In information retrieval, overlap helps when chunk boundaries are arbitrary (e.g., fixed-window chunking). With paragraph-based chunking, boundaries are meaningful — overlap would surface the same passage twice in search results.
+- **Special handling preserves meaning.** A poem split mid-stanza, a list split mid-enumeration, or a verse separated from its commentary would produce chunks that misrepresent the teaching.
+- **Token range is empirical.** The 200–300 target is based on retrieval research showing this range balances specificity (finding the right passage) with context (the passage makes sense in isolation). Phase 1 validates this against the Autobiography.
+
+### Consequences
+
+- New "Chunking Strategy" section in DESIGN.md
+- Phase 1 ingestion script (1.2) implements default chunking per this specification
+- Phase 7 verse-aware chunking (7.2) implements the verse-commentary pair strategy
+- Phase 11 per-language chunk size validation (11.10) uses this specification as the baseline
+- Search quality evaluation (1.11) implicitly validates the chunking strategy — poor results trigger chunking reassessment
+
+---
+
+## ADR-116: DELTA-Compliant Seeker Feedback Mechanism
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-014 (DELTA Boundaries), ADR-029 (Observability Strategy), ADR-064 (Staff Experience Architecture)
+
+### Context
+
+DELTA-compliant analytics intentionally avoid user identification and behavioral profiling. This is correct. But the current architecture has no mechanism for seekers to communicate *anything* back to the portal team. No feedback form, no citation error reporting, no "I couldn't find what I needed" signal.
+
+This creates a blind spot: the editorial team has no qualitative signal about the seeker experience. Anonymized search aggregates (ADR-068) show *what* people search for, but not *whether they found it useful.* A seeker who discovers a citation error has no way to report it. A seeker whose search returns nothing relevant has no way to signal that the search failed.
+
+### Decision
+
+Add three DELTA-compliant feedback mechanisms. None store user identifiers. All feed into the editorial review queue (ADR-064).
+
+**1. "Report a citation error"** — link on every passage display (search results, reader, passage share page). Clicking opens a minimal form: passage ID (auto-filled), freeform text describing the error. Stored with passage_id and content only — no user ID, no IP, no session.
+
+**2. "I didn't find what I needed"** — option on search results pages when results are empty or sparse. Clicking stores the search query and an anonymous counter increment. No user ID, no freeform text (to avoid PII collection). Aggregated weekly for search quality review.
+
+**3. `/feedback` page** — linked from the footer. Simple form: topic (dropdown: "Citation error," "Search suggestion," "General feedback," "Accessibility issue"), freeform text. No authentication, no user identifier stored.
+
+**Data model:**
+
+```sql
+CREATE TABLE seeker_feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    feedback_type TEXT NOT NULL CHECK (feedback_type IN (
+        'citation_error', 'search_miss', 'general', 'accessibility'
+    )),
+    content TEXT,                          -- freeform description (nullable for search_miss)
+    passage_id UUID REFERENCES book_chunks(id),  -- for citation errors
+    search_query TEXT,                     -- for search misses
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_feedback_type ON seeker_feedback(feedback_type, created_at DESC);
+```
+
+**API route:** `POST /api/v1/feedback` — rate-limited (5 submissions per IP per hour to prevent spam, but IP is not stored in the database).
+
+**Editorial integration:** Feedback appears in the editorial review portal (Phase 5) as a "Seeker Feedback" queue, alongside theme tag review and ingestion QA.
+
+### Rationale
+
+- **DELTA-compliant.** No user identification stored. No session tracking. No behavioral profiling. The feedback table stores content about the *portal*, not about the *seeker*.
+- **Closes a dangerous blind spot.** Without feedback, citation errors persist undetected. Bad search results go unreported. The editorial team operates without qualitative signal.
+- **Low implementation cost.** One table, one API route, one review queue panel. No new infrastructure.
+- **Respects seeker agency.** The seeker chooses to communicate. No prompts, no pop-ups, no "How was your experience?" interruptions. The link is quiet and available.
+
+### Consequences
+
+- New `seeker_feedback` table in Phase 5 migration
+- New API route `POST /api/v1/feedback`
+- Feedback review queue added to editorial portal (Phase 5, deliverable 5.10a)
+- Footer gains `/feedback` link (Phase 5)
+- Every passage display gains "Report a citation error" link (Phase 5)
+- Search results page gains "I didn't find what I needed" option when results are sparse (Phase 5)
+
+---
+
+## ADR-117: "Following the Thread" — Named Graph Traversal Experience
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-034 (Related Teachings — Pre-Computed Chunk Relations), ADR-062 (Reading Focus Detection), ADR-054 (Editorial Reading Threads)
+
+### Context
+
+Phase 6 enables the portal's most distinctive capability: graph traversal across the teaching corpus. A reader in one book sees related passages from other books in the side panel. Clicking one navigates to the new context, where the side panel updates again — revealing new connections. The reader follows a chain of meaning across the entire library, guided by semantic relationships that no physical book can surface.
+
+This experience is described technically in DESIGN.md and ROADMAP.md but has no user-facing name. In the UI, it appears as "Related Teachings" with clickable links. But the *experience* of following connections across books is the portal's killer feature — the answer to "why build this instead of just putting PDFs online?" It deserves a name that communicates its nature to seekers.
+
+### Decision
+
+Name the graph traversal experience **"Following the Thread."**
+
+**Usage:**
+- In the Related Teachings side panel: "Follow the Thread →" link on related passages
+- In the reader's keyboard shortcut help overlay: `r` = "Related / Follow the Thread"
+- In marketing materials and the About page: "Following the Thread — discover how Yogananda's teachings connect across books"
+- In editorial reading threads (ADR-054): the curated threads are explicitly named instances of this concept
+
+**Name rationale:** "Thread" echoes multiple contemplative traditions:
+- The Sufi concept of the "thread of connection" between teachings
+- Ariadne's thread — a guide through the labyrinth
+- The common English metaphor of "following a thread of thought"
+- The Sanskrit *sutra* (literally "thread") — the thread on which teachings are strung
+
+The name is evocative without being culturally exclusive.
+
+### Consequences
+
+- UI copy update in Phase 6 (Related Teachings side panel, keyboard help)
+- About page references "Following the Thread" (Phase 2 copy, updated in Phase 6)
+- Marketing materials use this language
+- No architectural changes — this is naming over an existing capability
+- Editorial reading threads (ADR-054) are positioned as curated instances of "Following the Thread"
+
+---
+
+## ADR-118: "Teachings Through Time" — Temporal Dimension of the Corpus
+
+**Status:** Accepted
+**Date:** 2026-02-20
+**Deciders:** Architecture team
+**Context:** ADR-069 (Edition-Aware Content Model), ADR-048 (Teaching Topics), ADR-034 (Related Teachings)
+
+### Context
+
+The portal organizes teachings across multiple dimensions: spatial (books, chapters, passages), thematic (teaching topics, "Seeking..." entry points), relational (chunk relations, reverse bibliography, people library), and contemplative (Quiet Corner, textures, reading threads). But it lacks a **temporal dimension**.
+
+Yogananda wrote over 30+ years — from his earliest American lectures in the 1920s through his final works in the early 1950s. His expression of key concepts evolved. Early writings on meditation emphasize technique and discipline; later writings emphasize surrender and grace. His understanding of Christ deepened over decades of writing *The Second Coming of Christ.* The collected talks span his entire American ministry.
+
+The edition tracking (ADR-069) handles publication metadata. But the intellectual evolution — how Yogananda's language and emphasis on a topic changed over time — is an untapped dimension that would be genuinely unique. No physical book, no competitor, and no existing resource offers a chronological view of how Yogananda's teaching on a specific topic developed across his lifetime.
+
+### Decision
+
+Add temporal metadata to chapters and expose a "Teachings Through Time" view on theme pages.
+
+**Schema additions** (nullable — populated where datable, left null where uncertain):
+
+```sql
+ALTER TABLE chapters ADD COLUMN composition_year INTEGER;
+ALTER TABLE chapters ADD COLUMN composition_era TEXT CHECK (composition_era IN (
+    'early_american_1920s',   -- 1920–1929: Early American lectures, establishing the mission
+    'established_1930s',      -- 1930–1939: SRF established, Encinitas, writing Autobiography
+    'mature_1940s',           -- 1940–1952: Peak writing, Second Coming, God Talks With Arjuna
+    'posthumous'              -- Compiled/edited after 1952 from earlier material
+));
+```
+
+**Dating sources:**
+- *Autobiography of a Yogi*: Written 1944–1946, revised through 1952
+- *Man's Eternal Quest* / *The Divine Romance* / *Journey to Self-Realization*: Individual talks dated (lecture dates in SRF archives)
+- *The Second Coming of Christ*: Written over 20+ years (1930s–1950s), compiled posthumously
+- *Sayings*, *Where There Is Light*: Compiled from dated and undated sources
+- *Scientific Healing Affirmations*: First edition 1924, revised through 1940s
+
+**Theme page UI:** On any theme page (`/themes/[slug]`), a "Through Time" toggle shows passages arranged chronologically by `composition_year` or `composition_era`. This reveals how Yogananda's expression of a concept evolved. Default view remains the standard relevance-ranked display; chronological is an opt-in exploration mode.
+
+**Phase:** Populate temporal metadata during ingestion (Phase 5 for collected talks where dates are known, Phase 7 for the full corpus). Expose "Teachings Through Time" UI in Phase 6 or 7, alongside the knowledge graph visualization (ADR-098).
+
+### Rationale
+
+- **Genuinely unique.** No other Yogananda resource offers a temporal view of his teaching evolution. The portal becomes irreplaceable for scholars, monastics preparing talks, and serious students tracing how a concept deepened over time.
+- **Low implementation cost.** Two nullable columns, populated opportunistically during ingestion. The theme page UI is a view toggle, not a new page.
+- **Enriches existing features.** Theme pages, the knowledge graph, and editorial reading threads all gain a temporal axis. "Following the Thread" (ADR-117) becomes richer when the reader can see not just *related* passages but *earlier* and *later* expressions of the same idea.
+- **Scholarly value.** Yogananda scholars would cite the portal's chronological view. Academic citation drives long-term discoverability and authority.
+
+### Consequences
+
+- Migration adds `composition_year` and `composition_era` columns to `chapters` table
+- Ingestion pipeline includes date metadata where available (collected talks have lecture dates; narrative books have composition periods)
+- Theme pages gain optional "Through Time" chronological view toggle
+- Knowledge graph (ADR-098) can use temporal data as an axis
+- Null-safe: theme pages work normally when temporal data is absent — the toggle only appears when sufficient dated content exists for that theme
 
 ---
 
