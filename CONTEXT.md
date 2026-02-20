@@ -42,7 +42,10 @@
 
 ### Resolved Questions
 
-*None yet — project has not started implementation.*
+1. **Embedding model for Phase 1:** OpenAI text-embedding-3-small (1536 dimensions, multilingual). Selected for cost ($0.02/1M tokens), multilingual support, and quality. ADR-032 provides the migration procedure if a better model emerges. *(Resolved by ADR-032; benchmarking remains a Phase 1 deliverable.)*
+2. **AI provider:** Claude via AWS Bedrock with model tiering — Haiku for real-time search (query expansion, intent classification, passage ranking), Opus for offline batch tasks (theme tagging, vocabulary extraction, relation classification). *(Resolved by ADR-110.)*
+3. **Single database vs. multi-database:** Single-database architecture (Neon only, no DynamoDB). Simplicity over ecosystem conformity. *(Resolved by ADR-109.)*
+4. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-091.)*
 
 ---
 
@@ -305,7 +308,7 @@ Documented in the SRF AE Tech Stack Brief. Key components relevant to this porta
 | DevOps | GitLab CI/CD + Serverless Framework + Terraform |
 | Monitoring | New Relic, Sentry, Amplitude |
 
-The teaching portal should use these technologies wherever possible, introducing new tools only when the established stack cannot meet a requirement (e.g., pgvector for vector search, Claude API for AI features).
+The teaching portal should use these technologies wherever possible, introducing new tools only when the established stack cannot meet a requirement (e.g., pgvector for vector search, Claude via AWS Bedrock for AI features — ADR-110).
 
 ---
 

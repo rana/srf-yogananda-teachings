@@ -52,6 +52,7 @@ Each phase delivers a working, demonstrable increment. Three monolithic phases h
 | 1.10 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-029) |
 | 1.11 | **Search quality evaluation** | Test suite of ~30 representative queries with expected passages. Claude serves as automated evaluation judge in CI — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Runs on every PR touching search pipeline. (ADR-049 E5) |
 | 1.12 | **Search API rate limiting** | Two-layer rate limiting: Cloudflare WAF rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-084). Rate-limited searches fall back to database-only (no Claude API call) — graceful degradation. Claude API monthly budget cap as cost protection. `/scripts/` directory with CI-agnostic deployment scripts. Permissive `robots.txt` (allow all, block `/admin/` and `/prepare/`). (ADR-067, ADR-070, ADR-084) |
+| 1.13 | **Custom SRF Corpus MCP server** | Development-time MCP server allowing Claude Code to search the book corpus during development (e.g., "find all passages about meditation in Autobiography"). Connects to Neon, exposes search and chunk-retrieval tools. Registered in `.claude/` config. (ADR-090) |
 
 ### Technology
 
@@ -113,6 +114,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 2.14 | **Quiet Corner audio cues** | Two discrete audio files: singing bowl strike at timer start (~15KB), gentle chime at timer end (~15KB). Web Audio API, fixed 15% volume. Static assets bundled in app shell. Not ambient loops — just two moments of sound marking the boundaries of contemplative pause. (ADR-101) |
 | 2.15 | **Content integrity hashes** | SHA-256 per chapter computed at ingestion time, stored in `chapters.content_hash`. `/integrity` page listing all books and chapter hashes with verification instructions. API endpoint: `GET /api/v1/books/{slug}/integrity`. (ADR-103) |
 | 2.16 | **EXIF/XMP metadata on served images** | All portal-served images carry Copyright ("© Self-Realization Fellowship"), Source ("teachings.yogananda.org"), and Description metadata. Applied server-side during image processing. Baseline provenance layer. (ADR-106 Tier 1) |
+| 2.17 | **Language-aware URL conventions** | Implement the hybrid language routing design: locale path prefix on frontend pages (`/{locale}/books/...`, default English omits prefix), `language` query parameter on API routes (`/api/v1/search?language=hi`). `next-intl` middleware detects locale from URL, `Accept-Language` header, or stored preference. Theme slugs remain in English for URL stability; display names localized via `topic_translations`. Each system uses the pattern natural to its consumers — SEO-friendly pages, clean API contract. (ADR-091) |
 
 ### Success Criteria
 
@@ -250,6 +252,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 6.9 | **Exploration theme categories** | Activate `person`, `principle`, and `scripture` theme categories. Seed themes: Christ, Krishna, Lahiri Mahasaya, Sri Yukteswar, Patanjali, Divine Mother (person); 10 Yama/Niyama principles (principle); Yoga Sutras, Bhagavad Gita, Bible, Rubaiyat (scripture). Same tagging pipeline as quality/situation themes. `/themes` page gains new sections. (ADR-058) |
 | 6.10 | **Reading session — proactive chapter caching** | Service Worker detects sequential chapter reading (2+ chapters from same book). Proactively caches next 2 chapters (HTML + relations data for batch tier). LRU eviction: current + 2 ahead + 2 behind. Offline chapter transitions serve from cache with offline banner. Uncached chapters show gentle redirect to nearest cached chapter. No reading history stored — ephemeral SW state only. (ADR-063) |
 | 6.11 | **Calendar reading journey schema** | Extend `editorial_threads` with journey columns: `journey_type` (evergreen/seasonal/annual), `journey_duration_days`, `journey_start_month`, `journey_start_day`. Foundation for time-bound reading experiences delivered via daily email in Phase 9. (ADR-100) |
+| 6.12 | **People Library — spiritual figures as entities** | `people` table with biographical metadata (name, slug, role, era, description, image). `chunk_people` junction table linking passages to persons mentioned or quoted. Person pages at `/people/[slug]` showing biography, all referencing passages, and cross-links to themes and external references. Seed entities: Sri Yukteswar, Lahiri Mahasaya, Krishna, Christ, Divine Mother, Babaji, Anandamayi Ma. Same three-state tagging pipeline as themes (auto → reviewed → manual). Linked from exploration theme categories (person type). (ADR-092) |
 
 ### Key Challenges
 
@@ -296,6 +299,15 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 8.4 | **Talk Preparation Workspace** | Auth0-protected `/prepare` route for monastics and center leaders. Theme-driven passage discovery (uses existing search API), passage collection with full citations, teaching arc assembly (drag passages into sections like "Opening," "Core Teaching," "Practice," "Closing"), speaker notes separated from Yogananda's words. Export: print PDF, presentation mode, plain text. Private per-user outlines. (ADR-077) |
 | 8.5 | **Study circle sharing** | "Share with your circle" button on Study Guide view. Generates a shareable URL (`/study/[book-slug]/[chapter]/share/[hash]`) with key passages, discussion prompts, and cross-book connections. < 30KB HTML, edge-cached, optimized for WhatsApp/SMS preview and OG cards. No authentication, no tracking. (ADR-099) |
 | 8.6 | **Magazine integration** | `magazine_issues`, `magazine_articles`, `magazine_chunks` tables. Magazine ingestion pipeline (PDF → chunk → embed → QA, mirroring book ingestion). Yogananda's articles enter full search/theme pipeline. Monastic articles searchable via `include_commentary` filter. `/magazine` landing, `/magazine/{year}/{season}` issue view, `/magazine/{year}/{season}/{slug}` article reader. "Magazine" added to primary navigation. API: `GET /api/v1/magazine/issues`, `/issues/{year}/{season}`, `/articles/{slug}`. Pre-rendered issue and article PDFs via `@react-pdf/renderer`. (ADR-105) |
+
+### Success Criteria
+
+- Chapter and book PDF downloads produce valid, accessible PDFs with correct typography and citations
+- Presentation mode fills viewport with readable text, no chrome visible, arrow-key navigation works
+- Study guide view renders key themes, notable passages, and cross-book connections for every chapter
+- Talk Preparation Workspace allows authenticated users to collect, sequence, and export passages
+- Magazine articles by Yogananda appear in search results alongside book passages
+
 ---
 
 ## Phase 9: Distribution & Outreach
@@ -315,6 +327,16 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 9.7 | **WhatsApp Business API integration** | WhatsApp bot for spiritual search: seeker sends a question, receives 1-2 relevant passages with full citations. Daily Wisdom opt-in (send "DAILY"). Audio clip delivery when search matches a recording. Language selection. Lambda + WhatsApp Cloud API. Meta business verification. Shared messaging Lambda with channel-specific formatters. (ADR-085) |
 | 9.8 | **Calendar reading journeys** | `/journeys` page listing available time-bound reading experiences. Initial journeys: "40 Days with Yogananda" (evergreen), seasonal journeys for Christmas and Navratri. Daily email service gains journey-aware delivery: subscribers receive one journey passage per day for the journey's duration. Uses `editorial_threads` journey columns (Phase 6 schema). (ADR-100) |
 | 9.9 | **Magazine ↔ "What Is Humanity Seeking?" symbiosis** | `/seeking` dashboard links to published magazine features. Magazine editorial workflow for curating search theme data into narrative features. Each amplifies the other: portal provides data, magazine provides storytelling. (ADR-094, ADR-105) |
+
+### Success Criteria
+
+- Daily email delivers to 100% of confirmed subscribers with correct passage and citation
+- Social media quote images render correctly in all three aspect ratios (1:1, 9:16, 16:9)
+- Events section links resolve to live SRF event pages
+- Sacred Places page displays at least 5 SRF/YSS properties with cross-referenced book passages
+- WhatsApp bot returns relevant passages for test queries within 5 seconds
+- RSS feeds validate against RSS 2.0 / Atom specification
+
 ---
 
 ## Phase 10: Contentful Integration
@@ -340,6 +362,13 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a large book like The Second Coming (~10,000+ paragraphs across 2 volumes) could approach this limit for a single book. Evaluation needed:
 - Can we use section-level granularity in Contentful (fewer entries) while maintaining paragraph-level chunks in Neon?
 - Is a paid Contentful space necessary?
+
+### Success Criteria
+
+- Contentful → Neon webhook sync produces identical search results to pre-migration PDF-ingested content
+- Reader pages render from Contentful SSG with no visible regressions from PDF-ingested versions
+- GitLab CI/CD pipeline deploys successfully to all four environments (dev/qa/stg/prod)
+- Terraform `plan` for full environment shows zero drift from deployed infrastructure
 
 ---
 
@@ -389,6 +418,15 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 - **Non-Latin presentation:** OG images, print stylesheets, email templates, and reader typography all need per-script adaptations. Drop capitals are Western; CJK line-height differs; email clients don't support web fonts for non-Latin scripts.
 - **YSS branding:** Hindi/Bengali content may need YSS branding rather than SRF branding. Organizational question with design implications. (Deferred for now.)
 
+### Success Criteria
+
+- At least one non-English language live with search returning relevant localized results
+- Per-language search quality evaluation passes (≥ 80% of 15–20 test queries return relevant passage in top 3)
+- English fallback passages clearly marked with `[EN]` tag; no unlabeled cross-language mixing
+- UI strings reviewed and approved by fluent human reviewer for each live language
+- Per-language homepage payload remains < 50KB (validated including non-Latin font subsetting)
+- `hreflang` tags render correctly for all live locales; per-locale sitemaps submitted
+
 ---
 
 ## Phase 12: Accessibility Audit & Calm Technology Polish
@@ -414,6 +452,15 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 12.11 | **Sacred Places — biographical sites and Street View** | Add biographical/historical sites (Gorakhpur, Serampore, Puri, Varanasi, Dakshineswar). "See This Place" Street View links on place cards (ADR-047). Reader ↔ Place cross-reference cards: margin cards in the reader linking to places, and place pages listing all referencing passages with deep links. (ADR-026, ADR-047) |
 | 12.12 | **Audio-visual ambiance toggle** | Optional ambient audio in reader and Quiet Corner. Off by default, always. Three options: Off / Temple (singing bowl + distant wind) / Nature (birdsong + gentle stream). Two ~200–400KB audio loops on S3. Fixed at ~15% volume. Fades in over 3s. Pauses on tab blur. Disabled in text-only mode. Stored in `localStorage`. Not meditation music — the sound of a quiet temple reading room. (ADR-076) |
 
+### Success Criteria
+
+- Third-party WCAG 2.1 AA audit passes with zero critical or serious violations remaining
+- PWA installs on mobile home screens (iOS Safari, Android Chrome) and serves cached chapters offline
+- Circadian color temperature shifts are visually correct at all four time bands; `prefers-color-scheme: dark` override works
+- `prefers-reduced-motion` disables all animations (opening moment, breath between chapters, cross-fades)
+- Keyboard-only navigation completes full reader flow without mouse
+- Lighthouse accessibility score ≥ 95 on all page types
+
 ---
 
 ## Phase 13: Video Intelligence & Content Hub
@@ -434,6 +481,14 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 13.6 | **Video player with book links** | When a monastic mentions a book, the video player sidebar links directly to those books in the reader. Related Teachings panel in the video player shows book passages related to the current video segment. |
 | 13.7 | **"Wisdom bites"** | Admin tool (Retool) to clip 2-5 minute segments from talks. Serve as daily inspiration on the homepage. |
 | 13.8 | **Unified content hub** | Migrate from per-media-type relation tables to the polymorphic `content_items` registry linking book_chunks, video_chunks, audio_segments, and images. `content_relations` replaces pairwise tables with a single cross-media relation store. `content_topics` and `content_places` provide unified theming and spatial connections across all media. Phases 1–7 use `chunk_relations` directly — this phase introduces the hub as a deliberate migration, not premature abstraction. (ADR-087) |
+
+### Success Criteria
+
+- Cross-media search returns interleaved book passages and video segments for test queries
+- Synchronized transcript scrolls in sync with video playback; click-to-jump works within 1-second accuracy
+- Video chunks appear in Related Teachings panel alongside book passages
+- Unified content hub migration preserves all existing `chunk_relations` data with zero loss
+
 ---
 
 ## Phase 14: Audio, Images & Branding
@@ -456,6 +511,16 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 14.8 | **Transcript PDFs** | Pre-rendered PDF transcripts for audio recordings and video talks. Generated when transcript reaches `approved` status. Resource-anchored routes: `GET /api/v1/audio/{slug}/transcript/pdf`, `GET /api/v1/videos/{id}/transcript/pdf`. Served from S3 via CloudFront. Same `@react-pdf/renderer` pipeline as book PDFs. (ADR-083) |
 | 14.9 | **Digital watermarking (Tiers 2 & 3)** | C2PA Content Credentials on all guru photographs and archival images (cryptographically signed provenance chain). Steganographic watermark on sacred images (`is_yogananda_subject = true`) — invisible bit pattern in DCT frequency domain encoding image ID and portal URL. Verification script: `/scripts/watermark-verify.py`. Both applied during image ingestion Lambda. (ADR-106) |
 | 14.10 | **Multi-size image downloads** | Five named size tiers (thumb 300px, small 640px, medium 1200px, large 2400px, original) generated at ingestion in WebP + JPEG dual format. Download endpoint: `GET /api/v1/images/{slug}/download?size=medium&format=webp`. Image detail page gains download section with size selector, dimensions, and file sizes. Attribution line (not a gate). Per-tier watermarking rules integrated with ADR-106. (ADR-107) |
+
+### Success Criteria
+
+- Audio player streams recordings with synchronized transcript highlighting
+- Audio search results interleave with book and video results in cross-media search
+- Yogananda's own voice recordings display sacred artifact treatment (visual provenance indicator)
+- Image gallery renders all five size tiers; WebP served to supporting browsers, JPEG fallback works
+- YSS branding activates correctly for Hindi/Bengali locales (logo, footer text, OG images)
+- C2PA Content Credentials verify successfully on watermarked guru photographs
+
 ---
 
 ## Phase 15: Optional User Accounts & Personalization
@@ -472,6 +537,13 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 15.4 | **Search history** | Personal search history (opt-in, private). |
 | 15.5 | **Personalized daily passage** | Personalized daily quote based on reading history and interests. (Note: the anonymous, non-personalized "Today's Wisdom" is delivered in Phase 1. This adds account-based personalization.) |
 | 15.6 | **Personalized daily email** | Logged-in subscribers choose preferred themes. Daily email selects from theme-tagged passages matching preferences. Extends the non-personalized daily email from Phase 9. (ADR-018) |
+
+### Success Criteria
+
+- Sign-in works via chosen mechanism (magic links, passkeys, or Auth0) without requiring registration for reading/search
+- Phase 4 localStorage bookmarks migrate to server sync on first login with zero data loss
+- Reading progress syncs across devices within 30 seconds
+- Personalized daily email selects passages matching subscriber's chosen themes
 
 ---
 
@@ -491,6 +563,13 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 16.6 | **Telegram bot** | Telegram bot for search, daily wisdom, and audio content. Free to operate (no per-message cost). Rich formatting (Markdown), inline keyboards, audio clip delivery. Same messaging Lambda, Telegram-specific formatter. (ADR-085) |
 | 16.7 | **USSD and IVR exploration** | Evaluate USSD menu-based access for Africa (telco partnership via Africa's Talking) and IVR voice access for non-literate seekers. IVR could play Yogananda's own voice recordings — a direct connection no text channel can provide. Requires telco partnerships and cost analysis. (ADR-085) |
 | 16.8 | **"What Is Humanity Seeking?" annual report** | *(Public dashboard moved to Phase 7 — ADR-094.)* First annual curated narrative report from `search_theme_aggregates` data. Published in Self-Realization Magazine (ADR-105) and/or by the philanthropist's foundation. Human-curated with data visualizations: rising/falling themes, geographic patterns, seasonal trends, correlation with world events. Not auto-generated — the portal provides the data, humans provide the interpretation. Complements the live `/seeking` dashboard with deeper editorial analysis. |
+
+### Success Criteria
+
+- Event calendar displays correctly across time zones for at least 3 global regions
+- SMS gateway delivers passages for keyword queries in at least 2 regions (India, US or Africa)
+- Telegram bot responds to search queries with formatted passages and citations
+- Local center discovery returns nearest SRF centers with correct location data
 
 ---
 

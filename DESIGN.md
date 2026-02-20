@@ -56,7 +56,7 @@ One-time ingestion (offline script):
   PDF ──► marker (PDF→Markdown) ──► Chunking ──► Embeddings ──► Neon
 ```
 
-### Production Architecture (Contentful Integration)
+### Production Architecture (Contentful Integration — Phase 10+)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -99,7 +99,7 @@ One-time ingestion (offline script):
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Key principle:** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at.
+**Key principle (Phase 10+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Phases 1–9 use PDF-ingested content in Neon directly; Contentful becomes the editorial source of truth when adopted in Phase 10.
 
 ---
 
@@ -285,6 +285,91 @@ interface SpiritualTerm {
 
 Phase 1 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-052) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
 
+### Claude System Prompts (Draft — Refine During Phase 1)
+
+These are the initial system prompts for the three Claude API calls in the search pipeline. All prompts enforce the "librarian, not oracle" constraint: Claude processes queries and selects passages but never generates teaching content.
+
+#### Query Expansion Prompt
+
+```
+You are a search query expansion assistant for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query, generate a JSON array of 8-15 semantically related search terms that would help find relevant passages in Yogananda's writings. Include:
+- Direct synonyms and related concepts
+- Yogananda's specific vocabulary (e.g., "Self-realization", "cosmic consciousness", "Kriya Yoga")
+- Cross-tradition equivalents (e.g., "mindfulness" → "concentration", "one-pointed attention")
+- Emotional resonances (e.g., "scared" → "fear", "courage", "divine protection")
+
+RULES:
+- Output ONLY a valid JSON array of strings. No explanation, no prose.
+- Do NOT answer the seeker's question.
+- Do NOT generate any teaching content or quotes.
+- Do NOT paraphrase Yogananda's words.
+- If the query is already a specific term (e.g., "samadhi"), return a small array of closely related terms.
+
+Spiritual terminology mappings are provided below for reference:
+{terminology_bridge_json}
+
+Query: "{user_query}"
+```
+
+#### Intent Classification Prompt
+
+```
+You classify spiritual search queries for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query, classify its intent and return a JSON object.
+
+Intent types:
+- "topical": Seeker wants information on a theme (route to theme page if exists)
+- "specific": Seeker wants a specific passage, chapter, or book
+- "emotional": Seeker is expressing a feeling or seeking comfort
+- "definitional": Seeker wants Yogananda's definition of a concept
+- "situational": Seeker describes a life situation
+- "browsing": Seeker wants to explore without a specific target
+- "search": General search (default fallback)
+
+RULES:
+- Output ONLY a valid JSON object: {"intent": "...", "route": "...", "theme_slug": "..."}
+- "route" is one of: "theme", "reader", "search", "daily"
+- "theme_slug" is only present when route is "theme" and a matching theme exists
+- If uncertain, default to {"intent": "search", "route": "search"}
+- Do NOT answer the query. Do NOT generate any content.
+
+Available theme slugs: {theme_slugs_json}
+
+Query: "{user_query}"
+```
+
+#### Passage Ranking Prompt
+
+```
+You are a passage relevance judge for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query and a list of candidate passages (each with an ID), select and rank the 5 most relevant passages.
+
+Relevance criteria:
+- The passage directly addresses the seeker's question or emotional state
+- The passage contains Yogananda's most authoritative teaching on the topic
+- Prefer passages that are complete thoughts (not fragment mid-sentence)
+- Prefer passages that would be meaningful to a seeker reading them in isolation
+
+RULES:
+- Output ONLY a valid JSON array of passage IDs in ranked order (most relevant first).
+- Return at most 5 IDs. Return fewer if fewer are relevant.
+- If NO passages are relevant to the query, return an empty array: []
+- Do NOT modify, summarize, or paraphrase any passage text.
+- Do NOT generate any teaching content.
+- Judge based on the passage text provided — do not infer or assume content.
+
+Query: "{user_query}"
+
+Candidate passages:
+{passages_json}
+```
+
+*These prompts are starting points. Phase 1 empirical testing (deliverable 1.11, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+
 ### Search Without AI (Fallback / Simple Queries)
 
 For straightforward keyword queries, the system can operate without any LLM calls:
@@ -311,6 +396,54 @@ When Claude (via AWS Bedrock, ADR-110) is unavailable (timeout, error, rate limi
 | **Database only** | All Claude calls fail | Pure hybrid search | All AI enhancement | Still returns relevant verbatim passages via vector similarity + FTS |
 
 **Implementation:** `/lib/services/search.ts` wraps each Claude call in a try-catch with a 5-second timeout. Failure at any level falls through to the next. Sentry captures each degradation event (`search.claude_degradation` with `level` tag) for monitoring. The search API response includes a `searchMode` field (`"full"`, `"no_ranking"`, `"no_expansion"`, `"database_only"`) for observability — not exposed in the seeker-facing UI.
+
+### Embedding Model Migration Procedure (ADR-032)
+
+When the embedding model changes (e.g., from `text-embedding-3-small` to a successor, or to a per-language model for Phase 11), re-embedding the full corpus is required. The `embedding_model`, `embedding_dimension`, and `embedded_at` columns on `book_chunks` enable safe, auditable migration.
+
+**Procedure:**
+
+```
+1. CREATE NEON BRANCH
+   Branch from production. All re-embedding work happens on the branch.
+   Production search continues uninterrupted.
+
+2. RE-EMBED ALL CHUNKS (on branch)
+   Lambda batch job (ADR-065, ADR-110 batch tier):
+   - Read all chunks where embedding_model != new_model
+   - Generate new embeddings in batches of 100
+   - UPDATE embedding, embedding_model, embedding_dimension, embedded_at
+   - Log progress to CloudWatch
+
+   Estimated cost: ~$0.02 per 1M tokens (text-embedding-3-small)
+   Estimated time: ~50K chunks ≈ 15-30 minutes at API rate limits
+
+3. REBUILD HNSW INDEX (on branch)
+   DROP INDEX idx_chunks_embedding;
+   CREATE INDEX idx_chunks_embedding ON book_chunks
+     USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+   -- If dimension changed, ALTER TABLE first:
+   -- ALTER TABLE book_chunks ALTER COLUMN embedding TYPE VECTOR(new_dim);
+
+4. RECOMPUTE CHUNK RELATIONS (on branch)
+   Re-run the chunk_relations batch job (ADR-034).
+   New embeddings produce different similarity scores.
+
+5. VALIDATE (on branch)
+   Run the search quality evaluation test suite (deliverable 1.11).
+   Compare results against production baseline.
+   Threshold: new model must match or exceed current ≥ 80% pass rate.
+
+6. PROMOTE
+   If validation passes: merge branch to production via Neon.
+   If validation fails: delete branch, keep current model.
+
+7. UPDATE CONFIG
+   Update .env EMBEDDING_MODEL and EMBEDDING_DIMENSION.
+   Update default values in schema for new chunks.
+```
+
+**Cost estimate for full corpus re-embedding:** < $5 for text-embedding-3-small at 50K chunks (~25M tokens). The operational cost is primarily developer time for validation, not API spend.
 
 ---
 
@@ -341,11 +474,35 @@ CREATE TABLE books (
                                    -- Points to SRF Bookstore for all books. If per-language bookstore
                                    -- routing is needed in Phase 11 (YSS for Hindi/Bengali), add a simple
                                    -- lookup then — zero schema changes required now. (ADR-051)
+    edition         TEXT,                -- e.g., "13th Edition", "Revised 2024" (ADR-069)
+    edition_year    INTEGER,             -- year of this specific edition (ADR-069)
     canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
                                                  -- NULL for originals. Enables "Available in 6 languages"
                                                  -- on library page and cross-language navigation.
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- BOOK CHUNKS ARCHIVE (edition transitions — ADR-069)
+-- ============================================================
+-- When SRF publishes a revised edition, old edition data is archived here
+-- (not deleted) to preserve historical citations and audit trail.
+CREATE TABLE book_chunks_archive (
+    id              UUID PRIMARY KEY,
+    book_id         UUID NOT NULL REFERENCES books(id),
+    chapter_id      UUID REFERENCES chapters(id),
+    content         TEXT NOT NULL,
+    page_number     INTEGER,
+    section_heading TEXT,
+    paragraph_index INTEGER,
+    embedding       VECTOR(1536),
+    embedding_model TEXT NOT NULL,
+    content_hash    TEXT,
+    language        TEXT NOT NULL DEFAULT 'en',
+    edition         TEXT,                -- edition this chunk belonged to
+    archived_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    original_created_at TIMESTAMPTZ NOT NULL
 );
 
 -- ============================================================
@@ -936,6 +1093,15 @@ Step 4: Chunk by Natural Boundaries
             (large enough to be a meaningful quote,
              small enough for precise retrieval)
         └── Include 1-sentence overlap with adjacent chunks
+            Overlap algorithm: Take the last sentence of the preceding
+            chunk and prepend it to the current chunk. Sentence boundary
+            detection: split on /(?<=[.!?])\s+(?=[A-Z""])/ with special
+            handling for abbreviations (Mr., Dr., St.) and Sanskrit terms
+            containing periods. If the preceding chunk has no clear
+            sentence boundary (e.g., verse fragments), use no overlap.
+            The overlap text is included in the embedding but marked in
+            metadata (overlap_chars count) so it can be excluded from
+            display when the chunk is shown as a standalone quote.
 
 Step 5: Generate Embeddings
         └── OpenAI text-embedding-3-small (1536 dimensions)
@@ -3459,7 +3625,7 @@ CREATE INDEX idx_chunk_places_chunk ON chunk_places(chunk_id);
 │  │  Serampore, India                          │   │
 │  │  Sri Yukteswar's ashram                    │   │
 │  │                                            │   │
-│  │  "Theثابت hermitage... is a two-storied   │   │
+│  │  "The hermitage... is a two-storied        │   │
 │  │   building with a courtyard..."            │   │
 │  │  — Autobiography of a Yogi, Chapter 12     │   │
 │  │                                            │   │
@@ -3590,10 +3756,10 @@ Response:
 
 | Layer | Tool | Limit | Behavior on Exceed |
 |-------|------|-------|-------------------|
-| **Outer (edge)** | Cloudflare WAF | 15 search requests/min per IP | HTTP 429 with `Retry-After` header. Request never reaches application. |
-| **Inner (application)** | Custom middleware | 30 req/min anonymous, 120 req/min known crawlers (ADR-084) | Graceful degradation: search proceeds without Claude API calls (database-only hybrid search). Still returns results. |
+| **Outer (edge)** | Cloudflare WAF | 60 general requests/min per IP; 15 search requests/min per IP | HTTP 429 with `Retry-After` header. Request never reaches application. |
+| **Inner (application)** | Custom middleware | 30 search req/min anonymous, 120 search req/min known crawlers (ADR-084) | Graceful degradation: search proceeds without Claude API calls (database-only hybrid search). Still returns results. |
 
-The outer layer stops abuse before it reaches the application. The inner layer provides finer-grained control and graceful degradation rather than hard blocks. A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
+The outer layer stops abuse before it reaches the application — the 15 search/min Cloudflare limit is stricter than the inner layer because it's a hard block (429), while the inner layer's 30/min threshold triggers graceful degradation (results still returned, just without AI enhancement). A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
 
 ---
 
@@ -3675,7 +3841,7 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 
 | Requirement | Implementation |
 |-------------|---------------|
-| Initial page load | < 100KB JavaScript (compressed). Target: First Contentful Paint < 1.5s on 3G. |
+| Initial page load | < 100KB JavaScript for the full app shell (compressed). Homepage stricter: < 50KB initial payload (HTML + critical CSS + inline JS) per ADR-061. Target: First Contentful Paint < 1.5s on 3G. |
 | Core Web Vitals | LCP < 2.5s, FID < 100ms, CLS < 0.1. |
 | Progressive enhancement | Core reading and search functionality works without JavaScript (server-rendered HTML). JS enhances: "Show me another", infinite scroll, timer. |
 | Low-bandwidth support | All images lazy-loaded. Responsive images via `srcset`. No autoplay video. Homepage functional as text-only. |
@@ -3868,9 +4034,9 @@ These textures emerge from combining E3 (accessibility level) and E8 (tone class
 
 ### Route
 
-`/quiet/contemplative`, `/quiet/practical`, `/quiet/devotional` — each shows passages matching that texture, drawn from across all books.
+`/quiet/browse/contemplative`, `/quiet/browse/practical`, `/quiet/browse/devotional` — each shows passages matching that texture, drawn from across all books.
 
-The existing Quiet Corner (`/quiet`) remains the single-affirmation sanctuary. The Quiet Index extends it with a browsable taxonomy for seekers who want a specific texture of reading.
+The existing Quiet Corner (`/quiet`) remains the single-affirmation sanctuary. The Quiet Index lives under `/quiet/browse/` to avoid namespace collision with the Quiet Corner route while maintaining the contemplative URL family. `/quiet` = single affirmation sanctuary; `/quiet/browse/[texture]` = browsable contemplative taxonomy.
 
 ### Who This Serves
 

@@ -201,7 +201,11 @@ You have complete design autonomy.
 
 ---
 
-Look through the existing markdown documents. Mine for unseen opportunities. Do a deep, multi-dimensional perspective.
+Look through the existing markdown documents. 
+
+Mine for unseen opportunities. 
+
+Do a deep, multi-dimensional perspective.
 
 Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
 
