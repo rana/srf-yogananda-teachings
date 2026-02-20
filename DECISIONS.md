@@ -140,6 +140,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-112: "The Librarian" — AI Search Brand Identity
 - ADR-113: "What Is Humanity Seeking?" as Strategic Communications Asset
 
+**Documentation & Process**
+- ADR-119: Documentation Architecture — Five-Document System with AI-First Navigation
+
 **Community & Future Readiness**
 - ADR-081: Lessons Integration Readiness
 
@@ -8626,6 +8629,64 @@ ALTER TABLE chapters ADD COLUMN composition_era TEXT CHECK (composition_era IN (
 - Theme pages gain optional "Through Time" chronological view toggle
 - Knowledge graph (ADR-098) can use temporal data as an axis
 - Null-safe: theme pages work normally when temporal data is absent — the toggle only appears when sufficient dated content exists for that theme
+
+---
+
+## ADR-119: Documentation Architecture — Five-Document System with AI-First Navigation
+
+- **Status:** Accepted
+- **Date:** 2026-02-20
+
+### Context
+
+The project's documentation system is itself an architectural decision. The pre-code design phase produced nearly 1MB of structured documentation across five files. As the project transitions to implementation, the documentation system must serve three audiences: AI collaborators (primary, token-constrained), human developers (current and future), and non-technical stakeholders (SRF, the philanthropist's foundation).
+
+Key tensions:
+- **Completeness vs. navigability.** Thorough documentation ensures correct decisions; large documents are expensive to load into AI context windows.
+- **Single source of truth vs. contextual relevance.** Centralizing information prevents drift; distributing it keeps related concerns together.
+- **Design-phase authority vs. code-phase authority.** Documentation is the sole authority before code exists; after implementation, code and documentation must coexist without contradiction.
+
+### Decision
+
+Maintain a five-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
+
+| Document | Role | Primary Audience |
+|----------|------|-----------------|
+| CLAUDE.md | AI routing, constraints, maintenance protocol | AI collaborators |
+| CONTEXT.md | Project background, open questions, stakeholder context | All audiences |
+| DESIGN.md | Technical architecture, data model, API, frontend design | Developers, AI |
+| DECISIONS.md | Architecture Decision Records (immutable history) | Developers, AI |
+| ROADMAP.md | Phased delivery plan with deliverables and success criteria | All audiences |
+
+**Conventions:**
+
+1. **CLAUDE.md as routing document.** The single most important file for AI collaboration. Establishes reading order, constraints, and maintenance protocol in ~90 lines — small enough to always fit in context.
+2. **CONTEXT.md as open question registry.** All open questions (technical and stakeholder) are tracked here. Other documents cross-reference but do not duplicate the full question.
+3. **DESIGN.md Table of Contents with phase-relevance markers.** Enables AI sessions to navigate to relevant sections without sequential scanning of 5,000+ lines.
+4. **ROADMAP.md Table of Contents.** Phase-level navigation for quick orientation.
+5. **DECISIONS.md Index by Concern.** ADRs grouped by domain (already established at ADR-001).
+6. **Implemented-section annotations.** When a DESIGN.md section is fully implemented, annotate: `**Status: Implemented** — see [code path]`. Code becomes the source of truth; DESIGN.md retains architectural rationale.
+7. **ADRs are immutable history.** Decisions are superseded (new ADR), withdrawn (with explanation), or removed (number retired) — never silently edited.
+8. **All documents carry a `Last updated` footer.** Updated on any modification.
+9. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
+10. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
+
+### Rationale
+
+- The routing document (CLAUDE.md) is the single most impactful file for AI collaboration cost. A well-structured 90-line file saves thousands of tokens per session by directing attention to the right document and section.
+- Phase-relevance markers in the DESIGN.md TOC allow AI sessions to skip irrelevant sections (e.g., Phase 11 multilingual details during Phase 1 work), reducing token consumption without losing information.
+- The documentation-to-code transition protocol prevents the "two sources of truth" problem that invariably emerges when design documents survive into an implemented codebase.
+- Centralizing open questions in CONTEXT.md prevents them from being forgotten in document interiors — a real risk at 967KB of total documentation.
+- Making the documentation system itself an ADR ensures future contributors understand why the system is structured this way, and can evolve it deliberately rather than through drift.
+
+### Consequences
+
+- DESIGN.md and ROADMAP.md now carry navigable Tables of Contents
+- DESIGN.md inline open questions are converted to cross-references to CONTEXT.md
+- CLAUDE.md maintenance table is expanded from 6 rows to 12 rows
+- CLAUDE.md gains a "Documentation–Code Transition" section
+- Future documentation changes should follow the conventions established here
+- This ADR should be superseded if the documentation system undergoes fundamental restructuring (e.g., splitting DESIGN.md into sub-documents as it grows beyond navigability)
 
 ---
 

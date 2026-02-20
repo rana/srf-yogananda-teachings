@@ -1,5 +1,34 @@
 # SRF Online Teachings Portal — Roadmap
 
+> **At a glance.** 17 phases (0–16) from foundation through community features, plus supporting sections.
+
+| Phase | Name | Focus |
+|-------|------|-------|
+| [0](#phase-0-foundation) | Foundation | Repo, Neon, Vercel, Sentry, schema, kickoff |
+| [1](#phase-1-prove-the-search-single-book) | Prove the Search | Single book, hybrid search, AI librarian |
+| [2](#phase-2-the-complete-portal) | The Complete Portal | All pages, accessibility, daily wisdom |
+| [3](#phase-3-engineering-infrastructure) | Engineering Infrastructure | CI/CD, testing, monitoring |
+| [4](#phase-4-reader-experience) | Reader Experience | Dwell, bookmarks, keyboard nav, typography |
+| [5](#phase-5-multi-book-expansion--themes) | Multi-Book Expansion & Themes | Wave 2 books, theme tagging, editorial tools |
+| [6](#phase-6-related-teachings--reader-intelligence) | Related Teachings | Side panel, chunk relations, graph traversal |
+| [7](#phase-7-completing-the-library--observability) | Library & Observability | Final books, magazine, glossary, dashboards |
+| [8](#phase-8-reader-export--staff-tools) | Reader Export & Staff Tools | Study Workspace, PDF export, staff portal |
+| [9](#phase-9-distribution--outreach) | Distribution & Outreach | Email, social, WhatsApp, SEO |
+| [10](#phase-10-contentful-integration) | Contentful Integration | CMS migration, webhook pipeline |
+| [11](#phase-11-multi-language-support) | Multi-Language Support | 9 languages, translation workflow |
+| [12](#phase-12-accessibility-audit--calm-technology-polish) | Accessibility & Polish | WCAG audit, dark mode, TTS, design system |
+| [13](#phase-13-video-intelligence--content-hub) | Video Intelligence | Transcripts, video search, cross-references |
+| [14](#phase-14-audio-images--branding) | Audio, Images & Branding | Yogananda recordings, sacred audio, gallery |
+| [15](#phase-15-optional-user-accounts--personalization) | User Accounts | Optional auth, sync, personalized email |
+| [16](#phase-16-community--events) | Community & Events | Live events, study circles, in-portal events |
+| — | [Future: SRF Lessons](#future-consideration-srf-lessons-integration) | Not scheduled |
+| — | [PWA-First Strategy](#pwa-first-strategy-no-native-app) | No native app rationale |
+| — | [Phase Gates](#phase-gates) | Go/no-go criteria between phases |
+| — | [Cost Trajectory](#cost-trajectory) | Infrastructure cost projections |
+| — | [Dependencies and Risks](#dependencies-and-risks) | Risk register and cross-phase dependencies |
+
+---
+
 ## Phasing Philosophy
 
 Each phase delivers a working, demonstrable increment. Three monolithic phases have been decomposed into focused pairs, yielding 17 phases total (0–16): Phase 0 provisions the development environment and resolves blocking questions. Phase 3 (engineering + reader features) splits into engineering infrastructure (3) and reader experience (4); Phase 7 (outreach + tools) splits into reader export & staff tools (8) and distribution & outreach (9); Phase 11 (all cross-media) splits into video intelligence & content hub (13) and audio, images & branding (14). Phase 0 bootstraps the project. The first four phases prove the search, build the complete portal, establish engineering foundations, and refine the contemplative reader. Phases 5–7 grow the library from one book to the complete corpus. Phases 8–9 extend reach through tools and distribution channels. Phases 10–12 add Contentful CMS, multi-language support, and accessibility polish. Phases 13–14 deliver cross-media intelligence across video, audio, and images. Phases 15–16 add optional user accounts and community features.

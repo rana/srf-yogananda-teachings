@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–118, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
+3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–119, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
 4. **ROADMAP.md** — 17 phases (0–16) from foundation through community features, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -62,15 +62,31 @@ Located in `docs/reference/`:
 
 ## Document Maintenance
 
-Six documents. Keep them accurate as you work — drift compounds across sessions.
+Six documents. Keep them accurate as you work — drift compounds across sessions. (ADR-119)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
 | New decision made | Add ADR to DECISIONS.md and update the domain index at top of file |
 | Open question resolved | Move from "Open Questions" to "Resolved Questions" in CONTEXT.md |
+| Open question added | Add to CONTEXT.md § Open Questions (Technical or Stakeholder). Cross-reference from relevant DESIGN.md section if applicable. |
 | Phase deliverable changed | Update ROADMAP.md deliverable table and success criteria |
 | Phase status changes | Update "Current State" section in CONTEXT.md |
 | New technology adopted | Update DESIGN.md tech stack table |
 | Code directory added | Update DESIGN.md code organization section |
+| Cross-cutting concern changed (multilingual, accessibility, DELTA) | Update CONTEXT.md principle statement, affected DESIGN.md sections, and relevant ADRs |
+| New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR |
+| Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
+| Reference document added or obsoleted | Update this file's § Reference Documents list |
 
 Always update the `Last updated` footer on any modified document.
+
+## Documentation–Code Transition
+
+Once implementation begins, DESIGN.md sections transition from "authoritative spec" to "architectural reference":
+
+1. **Before code exists:** DESIGN.md is the source of truth. Follow it precisely.
+2. **When a section is implemented:** Add `**Status: Implemented** — see [code path]` at the top. Code becomes the source of truth for implementation details; DESIGN.md remains the architectural rationale.
+3. **When implementation diverges from design:** Update DESIGN.md to reflect the actual decision. DESIGN.md is a living document, not a historical artifact.
+4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
+
+DECISIONS.md is the exception — ADRs are immutable history. Decisions are superseded (new ADR), withdrawn (with explanation), or removed (number retired). Never silently edited.

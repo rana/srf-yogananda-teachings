@@ -1,5 +1,48 @@
 # SRF Online Teachings Portal — Technical Design
 
+> **Navigation guide.** 36 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
+
+| Section | Phase |
+|---------|-------|
+| [Design Philosophy](#design-philosophy) | — |
+| [Architecture Overview](#architecture-overview) | 0–1, 10+ |
+| [The AI Librarian: Search Architecture](#the-ai-librarian-search-architecture) | 1–2 |
+| [Data Model](#data-model) | 1+ |
+| [Content Ingestion Pipeline](#content-ingestion-pipeline) | 1, 10+ |
+| [Phase 1 Bootstrap (ADR-108)](#phase-1-bootstrap-adr-108) | 0–1 |
+| [Frontend Design](#frontend-design) | 2–12 |
+| [Multi-Language Strategy](#multi-language-strategy) | 2 (infra), 11 (content) |
+| [Cultural Design Considerations](#cultural-design-considerations) | 11+ |
+| [API Design](#api-design-nextjs-api-routes) | 1+ |
+| [Platform Parity (Mobile Readiness)](#platform-parity-mobile-readiness) | 2+ |
+| [YouTube Video Section Architecture](#youtube-video-section-architecture) | 2+ |
+| [Events Section](#events-section) | 2+ |
+| [Sacred Places — Contemplative Geography](#sacred-places--contemplative-geography) | 5+ |
+| [Security Considerations](#security-considerations) | 1+ |
+| [Accessibility Requirements (Phase 2 Foundation)](#accessibility-requirements-phase-2-foundation) | 2+ |
+| [Editorial Reading Threads (ADR-054)](#editorial-reading-threads--teachings-in-conversation-adr-054) | 5+ |
+| [Reverse Bibliography (ADR-055)](#reverse-bibliography--what-yogananda-read-adr-055) | 5+ |
+| [Calendar-Aware Content Surfacing (ADR-056)](#calendar-aware-content-surfacing-adr-056) | 5+ |
+| [Chunking Strategy (ADR-115)](#chunking-strategy-adr-115) | 1+ |
+| [The Quiet Index (ADR-056)](#the-quiet-index--browsable-contemplative-taxonomy-adr-056) | 5+ |
+| [Daily Email: Verbatim Passage Delivery](#daily-email-verbatim-passage-delivery) | 9+ |
+| [Seeker Feedback (ADR-116)](#seeker-feedback--delta-compliant-signal-collection-adr-116) | 5+ |
+| [MCP Server Strategy](#mcp-server-strategy) | 1+ |
+| [Content Management Strategy](#content-management-strategy) | 10+ |
+| [Staff Experience Architecture (ADR-064)](#staff-experience-architecture-adr-064) | 5+ |
+| [Migration, Evolution, and Longevity](#migration-evolution-and-longevity) | — |
+| [Observability](#observability) | 1+ |
+| [Testing Strategy](#testing-strategy) | 1+ |
+| [Infrastructure and Deployment](#infrastructure-and-deployment) | 0–1 |
+| [Design Tooling](#design-tooling) | 3+ |
+| [Magazine Section Architecture](#magazine-section-architecture) | 7+ |
+| [Glossary Architecture](#glossary-architecture) | 5+ |
+| ["What Is Humanity Seeking?" Dashboard](#what-is-humanity-seeking-dashboard-architecture) | 7+ |
+| [Additional New UI Pages](#additional-new-ui-pages) | 7+ |
+| [Image Serving Architecture](#image-serving-architecture-adr-086-adr-106-adr-107) | 7+ |
+
+---
+
 ## Design Philosophy
 
 This portal is a **digital library with an AI librarian**, not a chatbot or content generator. The AI finds and surfaces Yogananda's actual words — it never speaks for him. Every architectural decision flows from this principle.
@@ -2645,10 +2688,12 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 ### Open Questions (Require SRF Input)
 
-1. **Does SRF/YSS have digital text of official translations?** If yes, the ingestion pipeline is straightforward. If only printed books exist, OCR/scanning per language is a massive effort requiring fluent reviewers. This is the single highest-impact question for Phase 11 planning.
-2. **Who reviews the AI-drafted UI translations?** Claude drafts locale JSON files (ADR-023), but human review is mandatory — someone fluent in the target language and familiar with SRF's devotional register. SRF may have multilingual monastics or volunteers who can serve as reviewers.
-3. **Portal branding for YSS languages (Hindi/Bengali):** Same domain (`teachings.yogananda.org/hi/`) or a YSS-branded domain? This is an SRF/YSS organizational question.
-4. **Do translated editions preserve paragraph structure?** If yes, `canonical_chunk_id` alignment during ingestion is straightforward (match by chapter_number + paragraph_index). If translations reorganize content, alignment requires semantic matching — still feasible but requires more QA effort.
+> **Central registry:** CONTEXT.md § Open Questions. The Phase 11 questions below are tracked there with the full stakeholder list.
+
+- Digital text availability of official translations (highest-impact Phase 11 question)
+- Translation reviewer staffing
+- YSS portal branding for Hindi/Bengali locales
+- Whether translated editions preserve paragraph structure (affects `canonical_chunk_id` alignment)
 
 ---
 
@@ -3493,7 +3538,7 @@ The portal connects seekers to SRF's gatherings without duplicating existing eve
 
 ### Page Design
 
-Located at `/events` or as a section on the About page (TBD based on content volume).
+Located at `/events` (dedicated page — consistent with the routes table in § Frontend Design § Pages and the nav structure).
 
 ```
 ┌─────────────────────────────────────────────┐
