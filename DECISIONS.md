@@ -14,6 +14,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-049: Claude AI Usage Policy — Permitted Roles and Prohibited Uses
 - ADR-052: Terminology Bridge Per-Book Evolution Lifecycle
 - ADR-068: "What Is Humanity Seeking?" — Anonymized Search Intelligence
+- ADR-094: "What Is Humanity Seeking?" — Public-Facing Dashboard
+- ADR-097: Passage Resonance Signals — Content Intelligence Without Surveillance
+- ADR-098: Knowledge Graph Visualization
 
 **Content Strategy**
 - ADR-002: Contentful as Editorial Source of Truth
@@ -35,6 +38,12 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-069: Edition-Aware Content Model
 - ADR-086: Image Content Type — Photographs as First-Class Content
 - ADR-092: People Library — Spiritual Figures as First-Class Entities
+- ADR-093: Living Glossary — Spiritual Terminology as User-Facing Feature
+- ADR-096: "Start Here" — Newcomer Path
+- ADR-100: Calendar Reading Journeys — Structured Multi-Day Experiences
+- ADR-103: Content Integrity Verification
+- ADR-104: "What's New in the Library" Indicator
+- ADR-105: Magazine Integration — Self-Realization Magazine as First-Class Content
 
 **Reader Experience**
 - ADR-036: Book Reader Typography
@@ -53,6 +62,8 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-074: Side-by-Side Commentary View
 - ADR-075: Study Guide View for Group Reading
 - ADR-076: Audio-Visual Ambiance Toggle
+- ADR-095: Contextual Quiet Corner — Practice Bridge in the Reader
+- ADR-101: Quiet Corner Audio from Phase 2
 
 **Visual Identity**
 - ADR-008: SRF-Derived Design System
@@ -97,6 +108,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-079: YSS Organizational Branding and Locale Strategy
 - ADR-084: Machine-Readable Content and AI Citation Strategy
 - ADR-085: Low-Tech and Messaging Channel Strategy
+- ADR-102: Practice Bridge After Search
 
 **Cross-Media**
 - ADR-057: Video Transcript Time-Synced Architecture
@@ -108,6 +120,11 @@ Each decision is recorded with full context so future contributors understand no
 **Staff & Editorial Workflows**
 - ADR-064: Staff Experience Architecture — Five-Layer Editorial System
 - ADR-077: Talk Preparation Workspace
+- ADR-099: Study Circle Sharing
+
+**Image & Media Provenance**
+- ADR-106: Digital Watermarking Strategy for SRF Images
+- ADR-107: Multi-Size Image Serving and Download Options
 
 **Community & Future Readiness**
 - ADR-081: Lessons Integration Readiness
@@ -6449,7 +6466,7 @@ CREATE TABLE image_places (
 - Image descriptions are the searchable proxy — the description text is embedded for vector search, since the image file itself is not textually searchable. One image, one embedding — no chunking needed.
 - Content authority: images are supplementary to Yogananda's verbatim words. In search results and Related Teachings, a photograph never displaces a passage in ranking.
 - Images cannot be machine-generated, AI-enhanced, or colorized. Photographic authenticity is paramount. The portal presents images as they are.
-- Responsive image serving: thumbnail (300px), display (1200px), full-resolution variants generated at upload time
+- Responsive image serving: five named tiers (thumb 300px, small 640px, medium 1200px, large 2400px, original) generated at upload time in WebP + JPEG dual format. User-facing download options on image detail pages. See ADR-107 for full size tier specification.
 
 ### Consequences
 
@@ -7051,6 +7068,943 @@ The theme page (`/themes/krishna`) continues to serve the question "What did Yog
 - Theme pages for person-category topics gain a "Learn about [person] →" link to the People Library
 - Reader inline references to named figures can link to People Library entries (Phase 6+)
 - **Extends ADR-013** (teaching topics), **ADR-026** (Sacred Places), **ADR-058** (exploration categories)
+
+---
+
+## ADR-093: Living Glossary — Spiritual Terminology as User-Facing Feature
+
+**Status:** Accepted | **Date:** 2026-02-20
+
+### Context
+
+The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-052) maps modern and cross-tradition terms to Yogananda's vocabulary for internal search expansion. It is invisible to seekers. Yet Yogananda's writings use hundreds of Sanskrit, yogic, and esoteric terms — *samadhi*, *chitta*, *prana*, *astral body*, *Christ Consciousness* — that newcomers cannot be expected to know. A seeker encountering "samadhi" for the first time has nowhere within the portal to learn what it means. They must leave the portal, which breaks the reading flow and undermines the library's self-contained nature.
+
+### Decision
+
+Surface the spiritual terminology bridge as a user-facing glossary with two delivery mechanisms:
+
+**1. Glossary page (`/glossary`):**
+- Browsable, searchable, organized by category (Sanskrit terms, yogic concepts, spiritual states, scriptural references)
+- Each entry contains: term, brief definition (1-2 sentences, editorially written), Yogananda's own explanation (verbatim quote from the corpus where he defines the term, with full citation), and links to theme pages and reader passages where the term appears
+- Search within the glossary uses trigram matching (`pg_trgm`) for partial/fuzzy lookups
+- Multilingual: glossary entries carry a `language` column; Phase 11 adds per-locale glossaries built during the human review cycle (already planned in Deliverable 11.12)
+
+**2. Inline term highlighting in the reader (opt-in):**
+- Toggle in reader settings: "Show glossary terms" (off by default)
+- When enabled, recognized glossary terms in the reader text receive a subtle dotted underline (`border-bottom: 1px dotted var(--srf-gold)` at 40% opacity)
+- Hovering (desktop) or tapping (mobile) reveals a tooltip: brief definition + "Read Yogananda's explanation →" linking to the relevant passage
+- No AI-generated definitions — every definition is editorially written, every "explanation" is a verbatim Yogananda quote
+- Terms are matched at ingestion time (stored in `chunk_glossary_terms` junction table), not at render time — zero client-side regex
+
+### Schema
+
+```sql
+CREATE TABLE glossary_terms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    term TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    brief_definition TEXT NOT NULL,  -- 1-2 sentences, editorially written
+    category TEXT NOT NULL CHECK (category IN (
+        'sanskrit', 'yogic_concept', 'spiritual_state',
+        'scriptural', 'cosmological', 'practice'
+    )),
+    explanation_chunk_id UUID REFERENCES book_chunks(id),  -- Yogananda's own definition
+    language TEXT NOT NULL DEFAULT 'en',
+    sort_order INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE chunk_glossary_terms (
+    chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+    term_id UUID NOT NULL REFERENCES glossary_terms(id) ON DELETE CASCADE,
+    PRIMARY KEY (chunk_id, term_id)
+);
+```
+
+### Phase
+
+- Data: Seed from `spiritual-terms.json` starting Phase 1. Enriched per-book via vocabulary extraction lifecycle (ADR-052).
+- Glossary page (`/glossary`): Phase 5 (when multi-book content provides sufficient explanation passages).
+- Inline reader highlighting: Phase 5 (reader settings already exist from Phase 4).
+
+### Consequences
+
+- Two new tables (`glossary_terms`, `chunk_glossary_terms`)
+- Glossary page added to navigation (linked from reader settings and footer, not in primary nav — it's a reference tool, not a destination)
+- Inline highlighting is opt-in and off by default — respects the clean reading experience
+- Editorial effort: brief definitions must be written for each term. Yogananda's own definitions are identified during ingestion QA.
+- **Extends ADR-052** (terminology bridge) from an internal search tool to a user-facing feature
+
+---
+
+## ADR-094: "What Is Humanity Seeking?" — Public-Facing Dashboard
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-068 (search intelligence), ADR-029 (observability), ADR-014 (DELTA boundaries)
+
+### Context
+
+ADR-068 established anonymized search theme aggregation in `search_theme_aggregates`, with a nightly Lambda job classifying queries by theme, geography, and time period. The "What Is Humanity Seeking?" annual report was deferred to Phase 16 (Deliverable 16.8) as a human-curated PDF. This dramatically undervalues the concept.
+
+The aggregated data — what the world is searching for spiritually, in real time, across 100+ countries — is one of the most profound data products conceivable. It makes the invisible visible: the collective spiritual yearning of humanity.
+
+### Decision
+
+Create a public-facing dashboard at `/seeking` that visualizes the portal's anonymized search intelligence. Move from Phase 16 annual report to Phase 7 live dashboard.
+
+**Dashboard sections:**
+
+1. **"Right now, the world is seeking..."** — The top 3-5 search themes this month, displayed as warm-toned text with gentle emphasis on the leading theme. Updated nightly from aggregates.
+
+2. **Geographic view** — A warm-toned world map with soft regional highlights showing where seekers are and what they're seeking. Country-level only. Regions with < 10 queries suppressed (existing ADR-068 threshold). Not a heatmap — a contemplative visualization.
+
+3. **Seasonal rhythm** — A year-view showing how themes ebb and flow across months. "In December, the world seeks peace. In spring, purpose rises." Requires 12 months of data to populate.
+
+4. **The questions** — The most common question-form queries, anonymized and lightly clustered: "How do I forgive?", "What happens after death?", "How to meditate?" Displayed as contemplative text, not a ranked list.
+
+**Magazine symbiosis:** The dashboard includes a "Read the full analysis in Self-Realization Magazine →" link when a curated magazine feature is available. The portal provides the data; the magazine provides the storytelling.
+
+### Design Constraints
+
+- **DELTA-compliant.** All data is aggregated, anonymized, and subject to ADR-068's minimum thresholds. No individual identification possible.
+- **Calm Technology.** The dashboard is contemplative, not analytical. Warm tones, generous whitespace, Merriweather typography. Not a SaaS analytics dashboard.
+- **Not real-time.** Updated nightly from the Lambda aggregation job. No live counters, no streaming updates.
+- **No vanity metrics.** No "total searches" counter, no "users served" number. The dashboard answers "What is humanity seeking?" not "How popular is the portal?"
+
+### Phase
+
+- Phase 7 (when the search analytics dashboard and theme aggregation ship). Deliverable 7.4 expanded to include the public-facing `/seeking` page alongside the admin Retool panel.
+- Magazine symbiosis: Phase 9+ (when distribution channels are active).
+
+### Consequences
+
+- `/seeking` added to the portal (not in primary nav — linked from footer and About page)
+- Nightly Lambda aggregation job (already planned in Phase 7) produces data consumed by both the admin panel and the public dashboard
+- The dashboard requires geographic aggregation and theme trend computation — extensions to the existing `search_theme_aggregates` table
+- Editorial involvement: the "questions" section may need curation to avoid surfacing sensitive queries
+- **Amends ADR-068** by adding a public consumption layer alongside the admin-only analytics
+- **Moves Deliverable 16.8** from Phase 16 to Phase 7 (live dashboard) + Phase 9 (magazine symbiosis)
+
+---
+
+## ADR-095: Contextual Quiet Corner — Practice Bridge in the Reader
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-038 (dwell mode), ADR-041 (lotus bookmarks), DELTA Embodiment principle
+
+### Context
+
+The Quiet Corner (`/quiet`) is a standalone page — a micro-sanctuary for crisis moments. Dwell mode (ADR-038) creates a contemplative reading state. But there is no bridge between these: when a reader dwells on a profound passage about healing or peace, the portal offers no way to transition from reading to practice within the same experience.
+
+### Decision
+
+Add a **"Pause with this"** interaction in dwell mode that transitions the current passage into a contextual Quiet Corner experience without leaving the reader.
+
+**Trigger:** In dwell mode, alongside the share and bookmark icons, a small timer icon appears (lotus with a circle, 16px, `--srf-gold` at 50% opacity). Clicking it enters the contextual Quiet Corner.
+
+**Effect:**
+1. All reader chrome fades (header, sidebar, navigation) over 600ms
+2. The passage remains centered and vivid — it becomes the affirmation
+3. Timer options appear below the passage: 1 min · 5 min · 15 min
+4. On timer start, timer options fade, leaving only the passage on warm cream
+5. Singing bowl audio cue at start, gentle chime at end (see ADR-101)
+6. When the timer completes (or the seeker taps anywhere), the reader chrome returns over 300ms
+7. The passage is offered for bookmarking if not already bookmarked
+
+**This is not a new page or route.** It's a CSS mode on the existing reader (`data-mode="quiet"`) — the same passage, the same component, the same accessibility. The URL does not change. Browser history is not affected.
+
+### Accessibility
+
+- `Escape` exits the contextual Quiet Corner (same as exiting dwell mode)
+- Screen reader: "Passage meditation mode. Timer options: 1 minute, 5 minutes, 15 minutes."
+- `prefers-reduced-motion`: transitions instant, dimming still occurs
+- Timer completion: visual flash equivalent for hearing-impaired seekers (same as standalone Quiet Corner)
+
+### Phase
+
+Phase 4 (alongside dwell mode in Deliverable 4.1). Requires the Quiet Corner audio (ADR-101) to be available from Phase 2.
+
+### Consequences
+
+- Dwell mode gains a third icon alongside share and bookmark
+- The reader component gains a `data-mode="quiet"` CSS state
+- Timer logic reuses the standalone Quiet Corner implementation (shared component)
+- The contextual Quiet Corner does not track or store session data
+- **Extends ADR-038** (dwell mode) with a practice bridge; **extends the Quiet Corner** from a standalone page to a reading mode
+
+---
+
+## ADR-096: "Start Here" — Newcomer Path
+
+**Status:** Accepted | **Date:** 2026-02-20
+
+### Context
+
+The portal assumes seekers will search, browse themes, or go directly to the reader. But someone who has never read Yogananda — and millions haven't — faces an unmarked starting line. The Library lists books. The About page tells them who Yogananda was. Neither answers: "Where should I begin?"
+
+### Decision
+
+Add editorially curated "Start Here" sections on the homepage and library page, offering three entry paths based on the seeker's disposition:
+
+**Homepage — below Today's Wisdom, above thematic doors:**
+
+```
+New to Yogananda?
+
+→ Start with Chapter 14: "An Experience in Cosmic Consciousness"
+  — Yogananda's account of his first direct experience of the infinite. 15 min read.
+
+→ Or browse by what you need right now
+  [Peace]  [Courage]  [Healing]  [Joy]  [Purpose]  [Love]
+```
+
+**Library page — above the book grid:**
+
+```
+Where to Begin
+
+The curious reader     →  Autobiography of a Yogi (his life story)
+The person in need     →  Where There Is Light (organized by life topic)
+The meditation seeker  →  How You Can Talk With God (practical and foundational)
+```
+
+**Design:**
+- Warm cream card with Merriweather Light typography. Quiet, inviting — not a tutorial or onboarding flow.
+- Content is editorial, not AI-generated. Lives in `messages/en.json` initially; in Contentful per locale from Phase 10+.
+- Each locale gets independently authored "Start Here" content (not translated from English) to ensure cultural resonance (consistent with ADR-061's cultural consultation commitment).
+
+### Phase
+
+Phase 2 (it's editorial content on existing pages, no new infrastructure).
+
+### Consequences
+
+- Homepage and library page gain a "Start Here" section
+- Content externalized in locale files (i18n-ready from day one)
+- Phase 11: per-locale cultural adaptation of entry paths
+- No tracking of which path is chosen — DELTA-compliant
+- **Complements ADR-013** (thematic doors) and **ADR-035** (empathic entry points) with a third navigation strategy: guided entry for newcomers
+
+---
+
+## ADR-097: Passage Resonance Signals — Content Intelligence Without Surveillance
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-014 (DELTA boundaries), ADR-029 (observability), ADR-068 (search intelligence)
+
+### Context
+
+The portal tracks search queries (anonymized) and search themes (aggregated) per ADR-068. But it has no signal for which *passages* resonate with seekers. Which quotes are shared most? Which cross-book connections are traversed most? This is content intelligence — understanding which teachings serve seekers best — not user tracking.
+
+### Decision
+
+Collect anonymous, aggregated, passage-level resonance signals for editorial use. Strictly content-level, never user-level.
+
+**Signals collected:**
+
+| Signal | Source | Storage |
+|--------|--------|---------|
+| Share count | Increment when share link/image/PDF generated (ADR-015) | `book_chunks.share_count` (integer) |
+| Dwell count | Increment when dwell mode activated (ADR-038) | `book_chunks.dwell_count` (integer) |
+| Relation traversal | Increment when a chunk_relation link is followed | `chunk_relations.traversal_count` (integer) |
+| "Show me another" skip | Increment when Today's Wisdom "Show me another" is clicked | `daily_passages.skip_count` (integer) |
+
+**Constraints:**
+- Counters are simple integers. No timestamps, no session correlation, no user identification.
+- Counters are increment-only (no decrement, no reset). Monotonic.
+- Not exposed to seekers. Never displayed publicly ("Most shared passage" would create a popularity contest — antithetical to Calm Technology).
+- Accessible only in the editorial review portal (ADR-064) for curation intelligence: "Which passages are resonating?" informs Today's Wisdom selection, theme page curation, and the "What Is Humanity Seeking?" dashboard.
+- Rate-limited: one increment per signal type per client IP per hour (prevents gaming without requiring user accounts).
+
+### Phase
+
+- Instrumentation: Phase 2 (simple counter increments on existing API responses).
+- Editorial dashboard: Phase 5 (alongside the editorial review portal, Deliverable 5.10).
+
+### Consequences
+
+- Four new integer columns on existing tables (no new tables)
+- Rate-limiting logic added to share, dwell, and relation API handlers
+- Editorial review portal gains a "Resonance" view showing top-shared, top-dwelled, and most-traversed passages
+- **Extends ADR-068** from query-level intelligence to passage-level intelligence
+- **Complements ADR-014** (DELTA boundaries) — content intelligence, not user intelligence
+
+---
+
+## ADR-098: Knowledge Graph Visualization
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-034 (chunk relations), ADR-048 (theme taxonomy), ADR-055 (reverse bibliography), ADR-058 (exploration categories), ADR-092 (people library)
+
+### Context
+
+The portal's schema contains a complete semantic map of Yogananda's teachings: chunk relations (similarity), theme tags (quality, situation, person, principle, scripture, practice, yoga_path), reverse bibliography (external references), editorial cross-references, People Library entities, and cross-language alignment. No such map exists for any major spiritual figure. This semantic structure is navigable through linear interfaces (search, theme pages, reader side panel) but has never been visualized as a whole.
+
+### Decision
+
+Build an interactive knowledge graph visualization at `/explore` that renders the portal's semantic structure as a navigable, visual map.
+
+**Nodes:**
+- Books (large, colored by book)
+- Passages / chunks (small, clustered around their book)
+- Themes (medium, connecting clusters)
+- People (medium, from People Library)
+- Scriptures and external references
+
+**Edges:**
+- Chunk relations (similarity, with thickness proportional to similarity score)
+- Theme memberships (chunk → theme)
+- External references (chunk → scripture/person)
+- Cross-book connections (strongest relations between books)
+
+**Interaction:**
+- Enter from any node: click a theme, person, or book to center and expand
+- Zoom: mouse wheel / pinch. Pan: drag.
+- Click a passage node to see its text, citation, and "Read in context →" link
+- Filter by: book, theme category, relation type
+- Two views: full graph (all books, all themes) and focused view (single book's connections)
+
+**Technology:** Client-side graph rendering via `d3-force` or `@react-three/fiber` (3D option for immersive exploration). Pre-computed graph data served as static JSON from S3 (regenerated nightly). No real-time graph queries — the visualization is a pre-baked artifact.
+
+**Design:** Warm tones, `--portal-bg` background, `--srf-gold` edges, `--srf-navy` nodes. Not a clinical network diagram — a contemplative map of interconnected wisdom. Generous whitespace at the edges. Slow, deliberate animation (nodes drift gently, not bounce). `prefers-reduced-motion`: static layout, no animation.
+
+### Phase
+
+Phase 7 (after chunk relations are computed across the full multi-book corpus in Phases 6-7). The graph needs multi-book density to be meaningful.
+
+### Consequences
+
+- New page at `/explore` (linked from Library and themes pages, not primary nav)
+- Pre-computed graph JSON generated nightly by Lambda (extension of chunk relation computation)
+- Client-side rendering adds ~50-80KB JS (loaded only on `/explore` — not in the global bundle)
+- Graph data is a static artifact — no database queries during exploration
+- **Extends ADR-034** (chunk relations) from a search/reader feature to a visual discovery tool
+
+---
+
+## ADR-099: Study Circle Sharing
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-075 (study guide view), ADR-077 (talk preparation), ADR-061 (Global South delivery)
+
+### Context
+
+Study circles (satsanga groups) are a core SRF community practice — groups of devotees meeting weekly to study Yogananda's teachings together. The Talk Preparation Workspace (ADR-077, Phase 8) serves monastics and center leaders. But lay study groups get nothing until Phase 16. In India, Latin America, and many African communities, these groups communicate via WhatsApp and SMS.
+
+### Decision
+
+Add a **"Share with your circle"** feature to the Study Guide view (ADR-075, Phase 8) that generates a shareable, self-contained page optimized for group communication channels.
+
+**From the Study Guide view**, a "Share with your circle" button generates a unique URL:
+
+```
+/study/[book-slug]/[chapter]/share/[hash]
+```
+
+**The shared page contains:**
+- Chapter title and book citation
+- Key passages (the 3-5 highest-relation-density paragraphs)
+- Discussion prompts from `chapter_study_notes` (if available)
+- Cross-book connections as "Also read..." suggestions
+- "Open in the portal →" link for the full chapter
+
+**Design constraints:**
+- The page is public, no authentication required
+- Pre-rendered at share time, served from edge cache (content-hashed URL)
+- Lightweight: < 30KB HTML (optimized for WhatsApp preview and low-bandwidth sharing)
+- OG card: chapter title + first key passage + portal branding
+- No tracking. No analytics on the shared page. The share count on the source chapter increments (ADR-097) but the shared page itself is anonymous.
+
+### Phase
+
+Phase 8 (alongside Study Guide view, Deliverable 8.3).
+
+### Consequences
+
+- Study Guide view gains a "Share with your circle" button
+- New route: `/study/[book-slug]/[chapter]/share/[hash]`
+- Shared pages are static HTML, edge-cached, lightweight
+- WhatsApp link preview works cleanly (OG card with chapter title and passage)
+- **Extends ADR-075** (study guide) from a solo preparation tool to a community sharing feature
+- **Serves ADR-061** (Global South) by optimizing for the communication channels study groups actually use
+
+---
+
+## ADR-100: Calendar Reading Journeys — Structured Multi-Day Experiences
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-054 (editorial threads), ADR-056 (calendar-aware surfacing), ADR-018 (daily email)
+
+### Context
+
+Calendar-aware content surfacing (ADR-056) handles individual daily passages for specific dates. Editorial threads (ADR-054) handle curated multi-passage reading paths. Neither supports *time-bound journeys* — a structured reading experience spanning days or weeks, delivered one passage per day.
+
+### Decision
+
+Introduce **reading journeys** as a time-bound variant of editorial threads. A reading journey is a sequence of daily passages, editorially curated, with a defined start date and duration.
+
+**Examples:**
+- **"40 Days with Yogananda"** — Foundational teachings, one per day, building from accessible to deep
+- **"Christmas with Yogananda"** — 12 days of passages on Christ Consciousness from *The Second Coming of Christ*
+- **"Navratri Contemplations"** — 9 passages on the Divine Mother
+- **"New Year, New Resolve"** — 7 days of teachings on willpower and fresh beginnings
+
+**Schema extension to `editorial_threads`:**
+
+```sql
+ALTER TABLE editorial_threads ADD COLUMN journey_type TEXT
+    CHECK (journey_type IN ('evergreen', 'seasonal', 'annual'));
+ALTER TABLE editorial_threads ADD COLUMN journey_duration_days INTEGER;
+ALTER TABLE editorial_threads ADD COLUMN journey_start_month INTEGER;  -- 1-12
+ALTER TABLE editorial_threads ADD COLUMN journey_start_day INTEGER;    -- 1-31
+```
+
+- `journey_type = NULL` means a standard editorial thread (no time-binding)
+- `journey_type = 'evergreen'` means available year-round (seeker picks start date)
+- `journey_type = 'seasonal'` means tied to a specific calendar window
+- `journey_type = 'annual'` means recurs annually on a fixed date
+
+**Delivery:** Via the daily email (Phase 9). A seeker can subscribe to a journey; they receive one passage per day for the journey's duration instead of (or alongside) the standard daily passage. No app, no login required — email is the delivery mechanism.
+
+**Browse:** `/journeys` page lists available journeys with descriptions, durations, and "Subscribe" buttons. Active seasonal journeys are highlighted.
+
+### Phase
+
+- Schema extension: Phase 6 (when editorial threads ship)
+- Browse page + email delivery: Phase 9 (when daily email ships)
+- Initial journeys: curated during Phase 9 from the existing multi-book corpus
+
+### Consequences
+
+- `editorial_threads` table extended with journey columns (no new tables)
+- `/journeys` page added to the portal
+- Daily email service gains journey-aware delivery logic
+- Editorial effort: each journey is a curated reading path — requires editorial investment
+- **Extends ADR-054** (editorial threads) with time-bound delivery
+- **Extends ADR-018** (daily email) with journey subscriptions
+
+---
+
+## ADR-101: Quiet Corner Audio from Phase 2
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-076 (audio-visual ambiance), DELTA Embodiment principle
+
+### Context
+
+ADR-076 established ambient audio in the reader and Quiet Corner as a Phase 12 feature — off by default, three options (Off / Temple / Nature), two ~200–400KB audio loops. But the Quiet Corner's core purpose — a micro-sanctuary for someone in crisis — would be transformed by two specific sounds: a singing bowl strike when the timer begins, and a gentle chime when it ends. These are not ambient loops; they are discrete audio cues that mark the boundaries of a contemplative pause.
+
+### Decision
+
+**Move two discrete audio cues to Phase 2** (the Quiet Corner's delivery phase), leaving ambient audio loops in Phase 12:
+
+| Audio | File | Size | Purpose |
+|-------|------|------|---------|
+| Singing bowl strike | `bowl.mp3` | ~15KB | Marks the beginning of the contemplative pause |
+| Gentle chime | `chime.mp3` | ~15KB | Marks the end of the timer |
+
+**Behavior:**
+- Singing bowl plays when the seeker taps "Begin" (timer start)
+- Chime plays when the timer completes
+- Both at fixed ~15% volume (matching ADR-076's volume level)
+- Both via Web Audio API (same as the existing chime specification in DESIGN.md)
+- Both respect `prefers-reduced-motion` (visual flash equivalent already specified)
+- No ambient loops, no continuous audio — just two moments of sound
+
+**Storage:** Bundled as static assets (30KB total). Not on S3 — they're small enough to include in the app shell.
+
+### Phase
+
+Phase 2 (Deliverable 2.3, the Quiet Corner).
+
+### Consequences
+
+- Two small audio files added to static assets
+- The Quiet Corner gains auditory boundaries from launch
+- ADR-076's full ambient audio system remains Phase 12 — this ADR only moves the two discrete cues
+- The contextual Quiet Corner (ADR-095) inherits these audio cues
+- **Amends ADR-076** by extracting two discrete audio cues to Phase 2 while leaving ambient loops in Phase 12
+
+---
+
+## ADR-102: Practice Bridge After Search
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-003 (AI as librarian), ADR-049 E1 (search intent classification), DELTA Embodiment principle
+
+### Context
+
+When a seeker searches "How do I meditate?" the portal returns Yogananda's verbatim passages about meditation — correct per ADR-003. But the seeker's next question is: "OK, but *how do I actually start?*" The portal provides the teaching but not the bridge to practice. The "Go Deeper" links exist on the About page and footer, but they are not contextual to the search query.
+
+### Decision
+
+Add a **contextual practice signpost** on search results when the search intent classifier (ADR-049 E1) detects a practice-oriented query. The signpost appears below the search results, not above or alongside them — Yogananda's words always come first.
+
+**Signpost examples:**
+
+| Detected intent | Signpost text |
+|----------------|---------------|
+| Meditation practice | "Yogananda taught a specific science of meditation. To begin a practice: SRF Lessons →" |
+| Healing / affirmation | "Yogananda developed a system of healing affirmations. Explore them in the Quiet Corner →" |
+| Finding a community | "Yogananda encouraged group meditation. Find a meditation group near you →" |
+| Kriya Yoga | "Kriya Yoga is taught through SRF's Home Study Lessons. Learn more →" |
+
+**Design:**
+- Below search results, separated by generous whitespace
+- Warm cream card with subtle `--srf-gold` left border
+- Open Sans, `--portal-text-muted` — understated, not promotional
+- External links open in new tabs
+- The signpost is **never** shown when the query doesn't match a practice intent — it is not a persistent element
+
+**Constraints:**
+- This is a signpost, not a funnel. No tracking of click-through. No conversion metrics. No A/B testing.
+- The signpost text is editorial, not AI-generated. Stored in `messages/en.json`.
+- Only practice-related intents trigger signposts — not all searches.
+
+### Phase
+
+Phase 5 (when search intent classification is mature and multi-book content provides sufficient results).
+
+### Consequences
+
+- Search results page gains a conditional signpost section
+- Search intent classifier (ADR-049 E1) extended with practice-intent detection
+- Signpost text externalized for i18n
+- **Extends ADR-003** by connecting the librarian's results to the reader's next step
+- **Serves DELTA's Embodiment principle** — the portal encourages the seeker to move from reading to practice
+
+---
+
+## ADR-103: Content Integrity Verification
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-066 (content-addressable deep links), ADR-003 (direct quotes only)
+
+### Context
+
+The portal's core promise is sacred text fidelity: every displayed passage is verbatim from Yogananda's published works. But there is no mechanism to *verify* this — to prove that the portal's text hasn't drifted from SRF's source publications. Content-addressable deep links (ADR-066) use content hashes for URL stability, but they don't solve provenance.
+
+### Decision
+
+Implement per-chapter content integrity hashes that enable verification of the portal's text against SRF's master publications.
+
+**Approach:**
+- At ingestion time, compute a SHA-256 hash of each chapter's concatenated, normalized text (whitespace-normalized, Unicode NFC)
+- Store the hash in `chapters.content_hash TEXT NOT NULL`
+- Expose hashes via API: `GET /api/v1/books/{slug}/integrity` returns a JSON array of `{ chapter_number, chapter_title, content_hash }` for all chapters
+- SRF can independently compute the same hashes from their master text files and compare
+
+**Verification page (`/integrity`):**
+- Simple public page listing all books and their chapter hashes
+- "How to verify" instructions for computing hashes from physical books
+- Statement: "Every word on this portal is verified against SRF's published editions."
+
+**Hash computation is deterministic:**
+
+```typescript
+function chapterHash(chunks: string[]): string {
+  const normalized = chunks
+    .map(c => c.normalize('NFC').replace(/\s+/g, ' ').trim())
+    .join('\n');
+  return sha256(normalized);
+}
+```
+
+### Phase
+
+Phase 1 (computed during ingestion, stored in schema). The `/integrity` page is Phase 2.
+
+### Consequences
+
+- `chapters.content_hash` column added to schema
+- Ingestion pipeline computes hashes automatically
+- `/integrity` page and API endpoint added
+- Hash recomputation on any content update (catches drift)
+- **Extends ADR-066** from URL stability to content provenance
+
+---
+
+## ADR-104: "What's New in the Library" Indicator
+
+**Status:** Accepted | **Date:** 2026-02-20
+
+### Context
+
+When new books are ingested (Phase 5+), returning visitors have no way to discover the addition without manually checking the Library page. The portal needs a subtle mechanism to surface new content without violating Calm Technology principles (no notifications, no badges, no attention-seeking).
+
+### Decision
+
+A minimal **"New" indicator** on the Library page and navigation item when new books have been added since the seeker's last visit.
+
+**Mechanism:**
+- The portal sets a `localStorage` timestamp (`portal:last-library-visit`) when the seeker visits the Library page
+- On subsequent visits to any page, the navigation compares the latest book's `created_at` against the stored timestamp
+- If a new book exists: a small `--srf-gold` dot (6px) appears beside "Books" in the navigation
+- On visiting the Library page: the dot disappears, timestamp updates
+- On the Library page itself: new books display a subtle "New" label (Open Sans, `--srf-gold`, `--text-xs`)
+
+**Constraints:**
+- The dot is the only indicator. No badge count, no popup, no animation.
+- No server interaction — purely client-side comparison
+- New visitors (no localStorage) see no indicator (everything is "new" to them)
+- The indicator disappears permanently after the seeker visits the Library
+
+### Phase
+
+Phase 5 (when the first new books are added beyond Phase 1's Autobiography).
+
+### Consequences
+
+- Navigation component checks localStorage timestamp against book catalog
+- Library page sets timestamp on visit
+- Minimal, calm, and respectful of attention
+- No tracking of "was the new book noticed" — not measurable, by design
+
+---
+
+## ADR-105: Magazine Integration — Self-Realization Magazine as First-Class Content
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-003 (direct quotes only), ADR-012 (content scope), ADR-024 (API-first), ADR-087 (content hub)
+
+### Context
+
+Self-Realization Magazine, published by SRF since 1925, contains: (1) articles by Paramahansa Yogananda — published teachings with the same sacred text status as his books, (2) articles by SRF monastics — authorized commentary and contemporary guidance, (3) devotee experiences, and (4) organizational news. The magazine represents a significant body of Yogananda's published writings not found in his books.
+
+Additionally, the portal's "What Is Humanity Seeking?" data (ADR-094) is an ideal candidate for a recurring magazine feature, creating a symbiotic relationship between the portal and the magazine.
+
+### Decision
+
+Integrate Self-Realization Magazine as a first-class content type with differentiated treatment by content category:
+
+| Category | Search Index | Theme Tags | Daily Pool | Reader Treatment |
+|----------|-------------|------------|------------|-----------------|
+| Yogananda's articles | Full (same as books) | Yes | Yes | Full reader with gold quote marks |
+| Monastic articles | Filtered (opt-in via `include_commentary` param) | Yes | No | Reader with author byline |
+| Devotee experiences | No | No | No | Browsable, not searchable |
+| News/editorial | No | No | No | Browsable, archival |
+
+**Core principle:** Yogananda's magazine articles are published teachings — they enter the same chunk/search/theme pipeline as book passages. A seeker searching "how to overcome fear" finds the relevant magazine article alongside book passages, ranked by relevance. The citation adapts: *— Self-Realization Magazine, Vol. 97 No. 2, p. 14*.
+
+### Schema
+
+```sql
+CREATE TABLE magazine_issues (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    volume INTEGER NOT NULL,
+    issue_number INTEGER NOT NULL,
+    season TEXT CHECK (season IN ('spring', 'summer', 'fall', 'winter')),
+    publication_date DATE NOT NULL,
+    title TEXT NOT NULL,
+    cover_image_url TEXT,
+    editorial_note TEXT,
+    language TEXT NOT NULL DEFAULT 'en',
+    access_level TEXT NOT NULL DEFAULT 'public'
+        CHECK (access_level IN ('public', 'subscriber')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(volume, issue_number)
+);
+
+CREATE TABLE magazine_articles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    issue_id UUID NOT NULL REFERENCES magazine_issues(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_type TEXT NOT NULL
+        CHECK (author_type IN ('yogananda', 'monastic', 'devotee', 'editorial')),
+    position INTEGER NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en',
+    access_level TEXT NOT NULL DEFAULT 'public'
+        CHECK (access_level IN ('public', 'subscriber')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(issue_id, slug)
+);
+
+CREATE TABLE magazine_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    article_id UUID NOT NULL REFERENCES magazine_articles(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    page_number INTEGER,
+    embedding VECTOR(1536),
+    embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small',
+    embedding_dimension INTEGER NOT NULL DEFAULT 1536,
+    embedded_at TIMESTAMPTZ DEFAULT now(),
+    content_tsv TSVECTOR,
+    content_hash TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en',
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(article_id, chunk_index)
+);
+
+CREATE INDEX idx_magazine_chunks_embedding ON magazine_chunks
+    USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+CREATE INDEX idx_magazine_chunks_fts ON magazine_chunks USING GIN (content_tsv);
+CREATE INDEX idx_magazine_chunks_language ON magazine_chunks(language);
+```
+
+### Navigation
+
+```
+Search · Books · Videos · Magazine · Quiet · About
+```
+
+"Magazine" added to primary navigation between "Videos" and "Quiet".
+
+### UI Pages
+
+- `/magazine` — Landing page: latest issue (cover + table of contents), browse by year, "Yogananda's Magazine Writings" index
+- `/magazine/{year}/{season}` — Single issue: cover, editorial note, article list with author types
+- `/magazine/{year}/{season}/{slug}` — Article reader: same reader component as books, with author byline and issue citation
+
+### API Endpoints
+
+```
+GET /api/v1/magazine/issues                          → Paginated issue list
+GET /api/v1/magazine/issues/{year}/{season}          → Single issue with articles
+GET /api/v1/magazine/articles/{slug}                 → Single article with chunks
+GET /api/v1/magazine/issues/{year}/{season}/pdf      → Issue PDF (pre-rendered)
+GET /api/v1/magazine/articles/{slug}/pdf             → Article PDF
+```
+
+### Search Integration
+
+The `hybrid_search` function extends to query `magazine_chunks` where `author_type = 'yogananda'` alongside `book_chunks`. Monastic articles are searchable via an `include_commentary=true` query parameter (default false — Yogananda's words are always primary).
+
+### Magazine ↔ "What Is Humanity Seeking?" Symbiosis
+
+The public `/seeking` dashboard (ADR-094) links to published magazine features: "Read the full analysis in Self-Realization Magazine →". The magazine publishes a curated narrative drawn from the portal's aggregated search data. Each amplifies the other.
+
+### Phase
+
+- Schema and ingestion pipeline: Phase 8 (alongside chapter/book PDF infrastructure)
+- Magazine browsing UI: Phase 8
+- Search integration (Yogananda's articles): Phase 8
+- Magazine ↔ "What Is Humanity Seeking?" symbiosis: Phase 9
+
+### Consequences
+
+- Three new tables: `magazine_issues`, `magazine_articles`, `magazine_chunks`
+- `magazine_chunks` participates in `chunk_relations` (or `content_relations` post-Phase 13) graph
+- `hybrid_search` extended to include magazine chunks
+- Navigation updated: "Magazine" added between "Videos" and "Quiet"
+- Magazine ingestion pipeline mirrors book ingestion (PDF → chunk → embed → QA)
+- Content availability: depends on SRF providing digital magazine archives
+- Access level support: some issues may be subscriber-only (`access_level = 'subscriber'`), gated via Auth0 in Phase 15+
+- **Extends ADR-012** (content scope) to include magazine content
+- **Extends ADR-024** (API-first) with magazine endpoints
+
+---
+
+## ADR-106: Digital Watermarking Strategy for SRF Images
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-086 (image content type), ADR-045 (SRF imagery strategy), ADR-016 (sacred image guidelines)
+
+### Context
+
+SRF images — particularly guru photographs and archival images of Yogananda — carry deep spiritual significance and organizational branding. ADR-045 establishes visible branding (the SRF lotus mark on OG images, PDF watermarks, and quote cards). But visible marks can be cropped or removed. The portal will serve images globally, and unauthorized reuse, manipulation, or misattribution of sacred images is a real concern for SRF.
+
+### Decision
+
+Adopt a **two-layer watermarking strategy**: visible branding (already established) plus invisible digital watermarking for provenance and attribution tracking.
+
+**Layer 1: Visible branding (existing)**
+
+Already specified in ADR-045 and ADR-059: lotus watermark on PDFs and quote cards, photographer credit on image pages, SRF copyright notice. No changes.
+
+**Layer 2: Invisible watermarking**
+
+Embed imperceptible metadata into all portal-served images that survives common transformations (cropping, resizing, compression, screenshots):
+
+| Technology | Approach | Survives | Cost | Recommendation |
+|-----------|----------|----------|------|---------------|
+| **Steganographic watermark** | Embed bit pattern in spatial frequency domain (DCT/DWT coefficients) | Crop, resize, moderate JPEG compression, screenshot | Open-source libraries (e.g., `invisible-watermark` Python, `stegano`) | **Recommended for Phase 14** |
+| **C2PA / Content Credentials** | W3C standard for content provenance (used by Adobe, Google, BBC). Embeds cryptographically signed metadata about origin, edits, and attribution | Standards-compliant verification tools; visible "Content Credentials" icon in supporting platforms | Open standard, free libraries (`c2patool`) | **Recommended for Phase 14** |
+| **Digimarc / commercial DRM** | Enterprise invisible watermarking with commercial detection network | Most transformations; commercial scanning | $$$, enterprise licensing | Not recommended (cost disproportionate to need) |
+| **EXIF/XMP metadata** | Standard metadata fields (copyright, author, source URL) | Only survives if metadata not stripped | Free, universal | **Recommended from Phase 2** (baseline, not sufficient alone) |
+
+**Recommended approach — three tiers:**
+
+**Tier 1 (Phase 2): EXIF/XMP metadata on all served images.**
+- Copyright: "© Self-Realization Fellowship"
+- Source: "teachings.yogananda.org"
+- Description: Image caption
+- Applied server-side during image processing (S3 upload trigger or ingestion pipeline)
+- Limitation: easily stripped by social media platforms and messaging apps
+
+**Tier 2 (Phase 14): C2PA Content Credentials on all guru photographs and archival images.**
+- Cryptographically signed provenance chain: "This image originated from the SRF Online Teachings Portal"
+- Verifiable via Adobe Content Authenticity Initiative tools and supporting browsers
+- The standard is gaining adoption (Adobe Photoshop, Google Search, BBC, Microsoft)
+- Applied during image ingestion pipeline (`c2patool` CLI)
+- Cost: free (open standard)
+
+**Tier 3 (Phase 14): Steganographic watermark on sacred images (`is_yogananda_subject = true`).**
+- Invisible bit pattern embedded in DCT frequency domain
+- Survives JPEG compression up to 70% quality, moderate cropping, resizing, and screenshots
+- Encodes: image ID, portal URL, and a short provenance string
+- Detection: SRF can verify provenance using the extraction tool (a Python script in `/scripts/watermark-verify.py`)
+- Applied during image ingestion pipeline (Python Lambda function)
+- **Only on sacred images** (guru photographs, Yogananda's personal images) — not on nature photography or UI assets
+
+### Rationale
+
+- **Tier 1 is baseline hygiene.** Every professional image pipeline includes copyright metadata. It's stripped by social platforms but survives email, download, and professional use.
+- **Tier 2 (C2PA) is the future.** The web is moving toward content provenance standards. Early adoption positions SRF's images as verifiably authentic — important when AI-generated images of spiritual figures become common.
+- **Tier 3 (steganographic) is the safety net.** When someone posts an uncredited Yogananda photograph on social media, SRF can extract the watermark and verify it originated from the portal. This is forensic, not preventive — it proves provenance after the fact.
+- **Not DRM.** The portal makes content freely available. Watermarking is about attribution and provenance, not access restriction. Consistent with the mission of spreading the teachings.
+
+### Consequences
+
+- Phase 2: EXIF/XMP metadata injection in image processing pipeline
+- Phase 14: C2PA signing and steganographic watermarking in image ingestion Lambda
+- `/scripts/watermark-verify.py` tool for SRF to verify image provenance
+- Sacred images (`is_yogananda_subject = true` per ADR-086) receive all three tiers
+- Non-sacred images receive Tiers 1 and 2 only
+- C2PA library (`c2patool`) added as Lambda dependency
+- Invisible watermark library (e.g., Python `invisible-watermark`) added as Lambda dependency
+- **Extends ADR-086** (image content type) with provenance infrastructure
+- **Extends ADR-045** (imagery strategy) from visible branding to invisible verification
+
+---
+
+## ADR-107: Multi-Size Image Serving and Download Options
+
+**Status:** Accepted | **Date:** 2026-02-20
+**Context:** ADR-086 (image content type), ADR-106 (digital watermarking), ADR-059 (sharing formats), ADR-083 (PDF generation)
+
+### Context
+
+ADR-086 specifies three responsive image sizes generated at upload time: thumbnail (300px), display (1200px), and full-resolution. This serves the portal's own rendering needs — thumbnails in gallery grids, display sizes in detail pages, full-resolution for lightbox views. But it doesn't address seekers who want to *use* these images elsewhere: devotees who want a high-quality guru portrait for their meditation space desktop wallpaper, center leaders preparing a presentation who need specific dimensions, a temple that wants to print a framed photograph, or a seeker who wants a small version to share in a group chat.
+
+The portal makes Yogananda's teachings freely available. The photographic archive should follow the same principle: freely downloadable at the size that serves the seeker's actual need. Stock photo sites offer multi-size downloads as standard practice. Sacred images deserve at least the same courtesy.
+
+### Decision
+
+Extend ADR-086's responsive serving with **five named size tiers** and a **user-facing download interface** on image detail pages.
+
+**Size tiers:**
+
+| Tier | Name | Max dimension | Use case | Format |
+|------|------|--------------|----------|--------|
+| `thumb` | Thumbnail | 300px | Gallery grids, chat previews, quick reference | WebP + JPEG fallback |
+| `small` | Small | 640px | Social media sharing, messaging apps, email | WebP + JPEG fallback |
+| `medium` | Medium | 1200px | Blog posts, presentations, web use | WebP + JPEG fallback |
+| `large` | Large | 2400px | Desktop wallpaper, high-DPI displays, large screens | WebP + JPEG fallback |
+| `original` | Original | Source dimensions | Print, archival, professional use | Original format (JPEG/TIFF) |
+
+All sizes are generated at ingestion time (not on-demand) to avoid compute overhead on download. The Lambda ingestion pipeline already processes each image for thumbnail and display sizes (ADR-086) — this extends it to produce all five tiers in a single pass using `sharp` (Node.js) or Pillow (Python Lambda).
+
+**Storage layout:**
+
+```
+s3://srf-portal-images/
+  {image-id}/
+    original.jpg          — Source file, untouched
+    large.webp            — 2400px max dimension
+    large.jpg             — 2400px JPEG fallback
+    medium.webp           — 1200px max dimension
+    medium.jpg            — 1200px JPEG fallback
+    small.webp            — 640px max dimension
+    small.jpg             — 640px JPEG fallback
+    thumb.webp            — 300px max dimension
+    thumb.jpg             — 300px JPEG fallback
+```
+
+**Schema extension to `images` table:**
+
+```sql
+-- Add size metadata columns (populated during ingestion)
+ALTER TABLE images ADD COLUMN sizes JSONB NOT NULL DEFAULT '{}';
+-- Example value:
+-- {
+--   "thumb":    {"width": 300, "height": 200, "url": "/thumb.webp", "bytes": 18200},
+--   "small":    {"width": 640, "height": 427, "url": "/small.webp", "bytes": 42100},
+--   "medium":   {"width": 1200, "height": 800, "url": "/medium.webp", "bytes": 98500},
+--   "large":    {"width": 2400, "height": 1600, "url": "/large.webp", "bytes": 285000},
+--   "original": {"width": 4000, "height": 2667, "url": "/original.jpg", "bytes": 1850000}
+-- }
+```
+
+**API:**
+
+```
+GET /api/v1/images/{slug}
+  → response includes `sizes` object with all available tiers, dimensions, and byte sizes
+
+GET /api/v1/images/{slug}/download?size=medium&format=jpg
+  → Returns a redirect (302) to the CloudFront URL for the requested size and format
+  → Valid sizes: thumb, small, medium, large, original
+  → Valid formats: webp, jpg (original tier returns source format)
+  → Default: medium, webp
+  → Response headers: Content-Disposition: attachment; filename="{slug}-{size}.{ext}"
+```
+
+**Frontend — download UI on `/images/[slug]`:**
+
+The image detail page includes a "Download" section below the image viewer:
+
+```
+┌─────────────────────────────────────────────────┐
+│  [Full image view with lightbox]                │
+│                                                  │
+│  Caption · Photographer · Era · Collection       │
+│                                                  │
+│  Download                                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐        │
+│  │  Small   │ │  Medium  │ │  Large   │        │
+│  │ 640×427  │ │ 1200×800 │ │ 2400×1600│        │
+│  │  42 KB   │ │  98 KB   │ │  285 KB  │        │
+│  └──────────┘ └──────────┘ └──────────┘        │
+│  ┌──────────┐ ┌──────────────────────┐          │
+│  │ Original │ │  Format: WebP ▾      │          │
+│  │ 4000×2667│ └──────────────────────┘          │
+│  │  1.8 MB  │                                    │
+│  └──────────┘                                    │
+│                                                  │
+│  © Self-Realization Fellowship                   │
+│  Free for personal and devotional use.           │
+│  Please credit: teachings.yogananda.org          │
+└─────────────────────────────────────────────────┘
+```
+
+- Each size tier is a button showing dimensions and file size
+- A format toggle (WebP / JPEG) applies to all size buttons
+- "Original" always downloads in the source format
+- A brief attribution line appears below the download options — not a license wall, not a gate
+- Sacred images (`is_yogananda_subject = true`) include a gentle note: "This sacred photograph is shared freely for devotional and educational purposes."
+
+**Watermarking integration (ADR-106):**
+
+- All generated sizes receive Tier 1 EXIF/XMP metadata (Phase 2)
+- Sizes `medium`, `large`, and `original` receive Tier 2 C2PA Content Credentials (Phase 14)
+- `original` size of sacred images additionally receives Tier 3 steganographic watermark (Phase 14)
+- `thumb` and `small` are too small for reliable steganographic embedding — they receive EXIF/XMP and C2PA only
+
+### Rationale
+
+- **Five tiers cover real-world use cases.** Thumbnail for reference, small for messaging, medium for web/presentations, large for high-DPI displays and wallpapers, original for print. This eliminates the awkward "right-click save" workflow where seekers get whatever size the browser rendered.
+- **Pre-generated, not on-demand.** On-demand resizing adds latency, compute cost, and cache complexity. The image archive is finite and grows slowly (curated by editors). Generating all sizes at ingestion is the simpler, more predictable approach for a 10-year horizon.
+- **WebP + JPEG dual format.** WebP offers ~30% smaller files for the same quality. JPEG fallback for older browsers and systems that don't support WebP. The format toggle respects seeker choice.
+- **Download endpoint with Content-Disposition.** A dedicated download endpoint (not just a direct image URL) allows proper filename formatting, download tracking via Amplitude (anonymous: `image_downloaded` event with size tier, no user identification), and future rate limiting if needed.
+- **Attribution, not restriction.** The portal's mission is to spread the teachings freely. The attribution line is a gentle request, not a license gate. No click-through agreements, no watermark-over-face, no resolution limits behind sign-up walls.
+
+### Consequences
+
+- Image ingestion Lambda extended to produce 5 size tiers (was 3) in dual format (WebP + JPEG)
+- S3 storage per image increases from ~3 files to ~9 files; acceptable given curated archive size
+- `images.sizes` JSONB column added to Phase 14 migration
+- New download API endpoint: `GET /api/v1/images/{slug}/download`
+- Image detail page (`/images/[slug]`) gains download section with size selector
+- Amplitude event: `image_downloaded` with properties `{size, format}` (no user identification — DELTA compliant, ADR-029)
+- **Extends ADR-086** (image content type) from 3 responsive sizes to 5 named download tiers
+- **Extends ADR-106** (digital watermarking) with per-tier watermarking rules
 
 ---
 

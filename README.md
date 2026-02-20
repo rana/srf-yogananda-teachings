@@ -14,7 +14,12 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 - **Life-theme navigation ("Doors of Entry")** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without formulating a query
 - **Today's Wisdom** — a different Yogananda passage on each visit, creating a living homepage
 - **The Quiet Corner** — a micro-sanctuary with a single affirmation and optional gentle timer, for the moment of immediate need
-- **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, and keyboard-first navigation
+- **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, keyboard-first navigation, and contextual Quiet Corner for in-reader practice
+- **Living Glossary** — user-facing spiritual terminology with inline reader highlighting and Yogananda's own definitions as verbatim passages
+- **Self-Realization Magazine** — magazine archives as a first-class content type, with Yogananda's articles fully searchable alongside book passages
+- **"What Is Humanity Seeking?"** — a public-facing, contemplative dashboard visualizing anonymized global search themes ("Right now, the world is seeking peace...")
+- **Calendar reading journeys** — structured multi-day experiences ("40 Days with Yogananda") delivered via daily email
+- **Knowledge graph** — interactive visual map of the teaching corpus showing cross-book connections, themes, persons, and scriptures
 - **Multi-language support** — architecture designed from day one to serve official SRF/YSS translations in all available languages
 - **Cross-media search** (later phases) — video talks, audio recordings, and photographs searchable alongside book text through a unified content hub
 
@@ -46,19 +51,19 @@ The project is planned across 16 phases, each delivering a working increment. Th
 | Phase | Focus |
 |-------|-------|
 | **1** | Prove the search — single book (*Autobiography of a Yogi*), search API + UI, basic reader |
-| **2** | Complete portal — all pages, SRF visual identity, accessibility, i18n infrastructure, sharing |
+| **2** | Complete portal — all pages, SRF visual identity, accessibility, i18n infrastructure, sharing, newcomer path, content integrity |
 | **3** | Engineering infrastructure — testing, Terraform, Figma, Storybook, KaiOS CI, OpenAPI spec |
 | **4** | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
-| **5** | Multi-book expansion — first-wave books, theme tagging, Doors of Entry, editorial review portal |
+| **5** | Multi-book expansion — first-wave books, theme tagging, Doors of Entry, editorial review portal, glossary, practice bridge |
 | **6** | Related Teachings — cross-book connections, reader side panel, editorial threads |
-| **7** | Full library — remaining books, verse-aware chunking, production observability |
-| **8** | Reader export & staff tools — PDF downloads, presentation mode, study guides, talk preparation |
-| **9** | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp |
+| **7** | Full library — remaining books, verse-aware chunking, observability, "What Is Humanity Seeking?" dashboard, knowledge graph |
+| **8** | Reader export & staff tools — PDF downloads, presentation mode, study guides, talk preparation, magazine integration, study circle sharing |
+| **9** | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp, calendar reading journeys |
 | **10** | Contentful integration — CMS as editorial source of truth, GitLab migration |
 | **11** | Multi-language — official SRF/YSS translations in 8+ languages |
 | **12** | Accessibility audit & polish — formal WCAG audit, PWA, Calm Technology design system |
 | **13** | Video intelligence & content hub — platform-agnostic video catalog, transcription, cross-media search |
-| **14** | Audio, images & branding — audio library, photograph gallery, multi-media threads, YSS branding |
+| **14** | Audio, images & branding — audio library, photograph gallery, multi-media threads, YSS branding, digital watermarking |
 | **15** | User accounts — optional sign-in for bookmarks sync, reading progress, personalized daily passage |
 | **16** | Community & events — event calendar, center discovery, SMS/Telegram access |
 
@@ -70,5 +75,5 @@ This repository contains comprehensive design documentation produced using Claud
 
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
 - [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 90 Architecture Decision Records with full rationale
+- [DECISIONS.md](DECISIONS.md) — 107 Architecture Decision Records with full rationale
 - [ROADMAP.md](ROADMAP.md) — 16 phases with deliverables and success criteria

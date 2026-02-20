@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 1 implementation.
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (90 ADRs), ROADMAP.md (16 phases). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (107 ADRs), ROADMAP.md (16 phases). No code yet.
 
 **What's next:** Phase 1 — Prove the Search. Ingest *Autobiography of a Yogi*, build hybrid search (vector + FTS), deliver a working search UI and basic reader. See ROADMAP.md § Phase 1 for the 12 deliverables.
 
@@ -325,6 +325,7 @@ The teaching portal should use these technologies wherever possible, introducing
 - Scientific Healing Affirmations
 - How You Can Talk With God
 - Metaphysical Meditations
+- Self-Realization Magazine archives (Yogananda's articles as searchable teachings, monastic articles as opt-in commentary — ADR-105)
 - Other SRF/YSS publications
 
 ### Audio Recordings (Phase 14+)

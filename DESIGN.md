@@ -1819,12 +1819,12 @@ The "Go Deeper" section is the most important part of this page. It is the natur
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  ☸ SRF Teaching Portal    Search  Books  Videos  Quiet  About│
+│  ☸ SRF Teaching Portal    Search  Books  Videos  Magazine  Quiet  About│
 └──────────────────────────────────────────────────────────────┘
 ```
 
 - ☸ = SRF lotus mark (small, links to homepage)
-- Primary nav: Search, Books, Videos, Quiet Corner, About
+- Primary nav: Search, Books, Videos, Magazine, Quiet Corner, About
 - Mobile: collapses to hamburger menu
 - No notification badges. No user avatar. No bell icon. The nav is purely navigational.
 
@@ -2799,6 +2799,11 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
   quiet.ts           → getAffirmation(language)
   relations.ts       → getRelatedChunks(chunkId, filters, limit)
   thread.ts          → getChapterThread(bookSlug, chapterNumber)
+  glossary.ts        → getGlossaryTerms(language, category), getTermBySlug(slug, language)
+  magazine.ts        → getIssues(cursor, limit), getIssue(year, season), getArticle(slug)
+  seeking.ts         → getSeekingDashboard(), getThemeTrends(period)
+  journeys.ts        → getJourneys(language), getJourney(slug)
+  resonance.ts       → getResonanceSignals(type, limit)
 ```
 
 **The rule:** Never put business logic in a Server Component or Route Handler that doesn't delegate to a service function. If a Server Component needs data, it calls a service function directly (in-process). If a mobile app needs the same data, it calls the API route, which calls the same service function.
@@ -2828,6 +2833,10 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
 | `/api/v1/books` | `max-age=86400` | Book catalog rarely changes |
 | `/api/v1/chunks/[id]/related` | `max-age=86400, stale-while-revalidate=604800` | Relations stable; only change on new content ingestion |
 | `/api/v1/chapters/[slug]/[number]/thread` | `max-age=86400, stale-while-revalidate=604800` | Same as related — changes only on new content |
+| `/api/v1/magazine/issues` | `max-age=86400` | Issue catalog changes rarely |
+| `/api/v1/magazine/articles/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Article text is effectively immutable |
+| `/api/v1/glossary` | `max-age=86400` | Glossary changes infrequently |
+| `/api/v1/seeking` | `max-age=86400` | Aggregated nightly, not real-time |
 
 ### Deep Link Readiness
 
@@ -4474,6 +4483,148 @@ When the shared component library begins (Phase 12), Figma Professional ($15/edi
 - Design system documentation alongside Storybook
 - Branching for design exploration
 - Multi-property reuse (portal, convocation site, future SRF projects)
+
+---
+
+## Magazine Section Architecture
+
+Self-Realization Magazine (published since 1925) is a first-class content type alongside books, audio, and video. Yogananda's magazine articles enter the full search/theme/daily-passage pipeline. Monastic articles are searchable via opt-in filter. See ADR-105.
+
+### Magazine API Endpoints
+
+```
+GET /api/v1/magazine/issues                          → Paginated issue list (cursor-based)
+GET /api/v1/magazine/issues/{year}/{season}          → Single issue with articles
+GET /api/v1/magazine/articles/{slug}                 → Single article with chunks
+GET /api/v1/magazine/issues/{year}/{season}/pdf      → Issue PDF (pre-rendered, S3 + CloudFront)
+GET /api/v1/magazine/articles/{slug}/pdf             → Article PDF (pre-rendered)
+```
+
+### Magazine Page Layout
+
+```
+/magazine                           → Magazine landing
+├── Latest Issue (cover, TOC, featured article)
+├── Browse by Year (accordion → issue covers)
+└── Yogananda's Magazine Writings (searchable index, chronological + by theme)
+
+/magazine/{year}/{season}           → Single issue view
+├── Cover image + editorial note
+├── Article list with author types (gold marks for Yogananda, neutral for others)
+└── "Read full issue PDF →" download
+
+/magazine/{year}/{season}/{slug}    → Article reader (same reader component as books)
+├── Author byline below title
+├── Issue citation in reader header
+└── "In this issue" sidebar (replaces Related Teachings when browsing within an issue)
+```
+
+### Search Integration
+
+The `hybrid_search` function queries `magazine_chunks` alongside `book_chunks`. Only `author_type = 'yogananda'` articles are included by default. The `include_commentary=true` parameter extends search to monastic articles. Citations adapt: *— Self-Realization Magazine, Vol. 97 No. 2, p. 14*.
+
+---
+
+## Glossary Architecture
+
+The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-052) is surfaced as a user-facing glossary. See ADR-093.
+
+### Glossary API Endpoints
+
+```
+GET /api/v1/glossary                     → All glossary terms (paginated, cursor-based)
+    ?language=en                         — Filter by language
+    ?category=sanskrit                   — Filter by category
+    ?q=samadhi                           — Search within glossary (trigram fuzzy)
+
+GET /api/v1/glossary/{slug}              → Single term with definition and Yogananda's explanation passage
+```
+
+### Glossary Page Layout
+
+```
+/glossary                               → Glossary landing
+├── Search bar ("Find a term...")
+├── Category filter (Sanskrit, Yogic Concepts, Spiritual States, Scriptural, Cosmological, Practice)
+├── Alphabetical term list
+│   ├── Term + brief definition (1-2 sentences)
+│   ├── "Yogananda's explanation →" link to source passage
+│   └── Related theme links
+└── Inline reader integration (opt-in via reader settings: "Show glossary terms")
+    └── Dotted underline on recognized terms → tooltip with definition
+```
+
+---
+
+## "What Is Humanity Seeking?" Dashboard Architecture
+
+A public-facing, contemplative visualization of anonymized search intelligence. See ADR-094.
+
+### Seeking API Endpoints
+
+```
+GET /api/v1/seeking                      → Dashboard data (aggregated, nightly)
+    Response: { top_themes[], geographic_summary[], seasonal_rhythm[], common_questions[] }
+
+GET /api/v1/seeking/themes               → Theme trends over time
+    ?period=month|quarter|year
+```
+
+### Seeking Dashboard Layout
+
+```
+/seeking                                → Public dashboard (contemplative, not analytical)
+├── "Right now, the world is seeking..." — Top 3-5 themes, warm text emphasis
+├── Geographic view — Warm-toned world map, soft regional highlights
+├── Seasonal rhythm — Year-view of theme ebb and flow
+├── The questions — Most common question-form queries (anonymized, clustered)
+└── "Read the full analysis in Self-Realization Magazine →" (when available)
+```
+
+---
+
+## Additional New UI Pages
+
+### `/journeys` — Calendar Reading Journeys (ADR-100)
+
+Browse available time-bound reading experiences. Lists evergreen, seasonal, and annual journeys with descriptions, durations, and "Subscribe" buttons. Active seasonal journeys highlighted.
+
+### `/explore` — Knowledge Graph Visualization (ADR-098)
+
+Interactive visual map of the teaching corpus. Pre-computed graph JSON, client-side rendering. Linked from Library and themes pages (not primary nav).
+
+### `/integrity` — Content Integrity Verification (ADR-103)
+
+Public page listing all books and their per-chapter content hashes. "How to verify" instructions. Statement of textual fidelity.
+
+### `/study/[book-slug]/[chapter]/share/[hash]` — Study Circle Sharing (ADR-099)
+
+Pre-rendered, shareable page with key passages, discussion prompts, and cross-book connections. < 30KB HTML. Optimized for WhatsApp/SMS preview.
+
+---
+
+## Image Serving Architecture (ADR-086, ADR-106, ADR-107)
+
+Images are stored in S3 and served via CloudFront. At ingestion, the Lambda pipeline generates five named size tiers in dual format (WebP + JPEG):
+
+| Tier | Max dimension | Use case |
+|------|--------------|----------|
+| `thumb` | 300px | Gallery grids, chat previews |
+| `small` | 640px | Social sharing, messaging |
+| `medium` | 1200px | Web use, presentations |
+| `large` | 2400px | Wallpapers, high-DPI displays |
+| `original` | Source | Print, archival |
+
+**Storage:** `s3://srf-portal-images/{image-id}/{tier}.{format}`
+
+**Download endpoint:** `GET /api/v1/images/{slug}/download?size=medium&format=webp` — returns 302 redirect to CloudFront URL with `Content-Disposition: attachment`.
+
+**Watermarking per tier (ADR-106):**
+- All tiers: EXIF/XMP metadata (Phase 2)
+- `medium`, `large`, `original`: C2PA Content Credentials (Phase 14)
+- `original` of sacred images: steganographic watermark (Phase 14)
+
+**Service file:** `/lib/services/images.ts` — image queries, size resolution, download URL generation.
 
 ---
 

@@ -198,3 +198,29 @@ What other areas of reflection would I benefit from exploring?
 Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
 
 You have complete design autonomy.
+
+---
+
+Look through the existing markdown documents. Mine for unseen opportunities. Do a deep, multi-dimensional perspective.
+
+Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.
+
+---
+
+Look through the existing markdown documents. 
+
+Deep multi-dimensional coherence check.
+
+Deep multi-dimensional gap check.
+
+Deep multi-dimensional mistake check.
+
+Deep multi-dimensional cross-reference check.
+
+Deep multi-dimensional (AI picks N choices) check.
+
+Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.
