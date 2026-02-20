@@ -127,7 +127,7 @@ Book text needs to live somewhere with editorial management: version control, re
 
 ### Decision
 
-Use **Contentful** as the editorial source of truth for production. Book text is authored and managed in Contentful, then synced to Neon (via webhooks) for search indexing. For Phases 1–7, books are ingested directly into Neon from PDFs, but the schema is designed to accommodate Contentful IDs for future integration.
+Use **Contentful** as the editorial source of truth for production. Book text is authored and managed in Contentful, then synced to Neon (via webhooks) for search indexing. For Phases 1–9, books are ingested directly into Neon from PDFs, but the schema is designed to accommodate Contentful IDs for future integration.
 
 ### Rationale
 
@@ -141,7 +141,7 @@ Use **Contentful** as the editorial source of truth for production. Book text is
 
 - Production requires a Contentful → Neon sync service (webhook-driven)
 - The Neon schema includes `contentful_id` columns for linkage
-- Phases 1–7 operate without Contentful (PDF → Neon direct) but the schema is designed for easy Contentful integration later
+- Phases 1–9 operate without Contentful (PDF → Neon direct) but the schema is designed for easy Contentful integration later
 - Contentful pricing must be evaluated for the full corpus (may exceed free tier)
 
 ---
@@ -461,7 +461,7 @@ Phase 1 uses **Next.js API routes** (running on Vercel) as the backend. No Lambd
 
 ### Context
 
-The Roadmap (Phase 4) originally listed post-Phase 1 books in an order roughly corresponding to scholarly depth and corpus size: The Second Coming of Christ, God Talks With Arjuna, Man's Eternal Quest, The Divine Romance, etc. However, the question of what makes the portal *essential* for seekers shifts the optimization target from scholarly completeness to life-impact — which books most directly address the reasons people seek spiritual guidance?
+The Roadmap (Phase 5) originally listed post-Phase 1 books in an order roughly corresponding to scholarly depth and corpus size: The Second Coming of Christ, God Talks With Arjuna, Man's Eternal Quest, The Divine Romance, etc. However, the question of what makes the portal *essential* for seekers shifts the optimization target from scholarly completeness to life-impact — which books most directly address the reasons people seek spiritual guidance?
 
 | Ordering Criterion | Optimizes For | Risk |
 |-------------------|---------------|------|
@@ -498,10 +498,10 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 
 ### Consequences
 
-- Phase 4 scope changes: the multi-volume scriptural commentaries move from "first after Phase 1" to "after the collected talks"
-- The verse-aware chunking challenge (originally a Phase 4 concern) is deferred, allowing more time to design a robust solution
+- Phase 5 scope changes: the multi-volume scriptural commentaries move from "first after Phase 1" to "after the collected talks"
+- The verse-aware chunking challenge (originally a Phase 5 concern) is deferred, allowing more time to design a robust solution
 - The portal reaches "critical mass" of quotable, thematically diverse content sooner
-- *Where There Is Light* + *Sayings* + *Scientific Healing Affirmations* can potentially be ingested in the same sprint as Phase 4 begins, since they are short and structurally simple
+- *Where There Is Light* + *Sayings* + *Scientific Healing Affirmations* can potentially be ingested in the same sprint as Phase 5 begins, since they are short and structurally simple
 
 ---
 
@@ -616,9 +616,9 @@ Classify personalization features into three tiers:
 
 ### Consequences
 
-- Phase 12 (Optional User Accounts) remains the appropriate phase for bookmark/reading-position features
-- The "personalized daily passage" in Phase 12 must use explicit theme preference, not behavioral inference
-- The portal's anonymous experience (Phases 1–11) must be excellent without any personalization — personalization enhances but never gates the core experience
+- Phase 15 (Optional User Accounts) remains the appropriate phase for bookmark/reading-position features
+- The "personalized daily passage" in Phase 15 must use explicit theme preference, not behavioral inference
+- The portal's anonymous experience (Phases 1–14) must be excellent without any personalization — personalization enhances but never gates the core experience
 
 ---
 
@@ -730,18 +730,18 @@ Establish strict image usage guidelines that treat guru photographs as sacred ob
 
 ### Context
 
-The original roadmap placed accessibility in Phase 10 ("Calm Technology Polish & Accessibility"). This is too late. Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free if the right structural choices are made at the start.
+The original roadmap placed accessibility in Phase 12 ("Calm Technology Polish & Accessibility"). This is too late. Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free if the right structural choices are made at the start.
 
 SRF's audience includes elderly devotees, seekers in developing countries on low-end devices, and visually impaired users. The Gemini research document specifically notes visually impaired devotees who described the SRF app's screen reader support as "transformative." Accessibility is not a feature — it is a theological imperative per SRF's mission to serve "all of humanity" and the DELTA framework's Dignity principle.
 
 | Approach | Cost | Risk |
 |----------|------|------|
 | **Phase 2 (build in)** | Low — semantic HTML, ARIA, keyboard nav are free if done from the start | None — this is best practice |
-| **Phase 10 (retrofit)** | High — requires auditing and rewriting markup, fixing tab order, adding ARIA after the fact | Significant — inaccessible patterns get baked into components and propagated |
+| **Phase 12 (retrofit)** | High — requires auditing and rewriting markup, fixing tab order, adding ARIA after the fact | Significant — inaccessible patterns get baked into components and propagated |
 
 ### Decision
 
-Move **core accessibility** from Phase 10 to **Phase 2**. Phase 10 becomes the audit and polish phase (professional WCAG audit, native TTS, advanced reading mode), not the "add accessibility" phase.
+Move **core accessibility** from Phase 12 to **Phase 2**. Phase 12 becomes the audit and polish phase (professional WCAG audit, native TTS, advanced reading mode), not the "add accessibility" phase.
 
 **Phase 2 accessibility requirements:**
 
@@ -755,7 +755,7 @@ Move **core accessibility** from Phase 10 to **Phase 2**. Phase 10 becomes the a
 | **Performance** | < 100KB initial load. Lazy-loaded images. `font-display: swap`. Progressive enhancement. |
 | **Reading** | Basic reading mode: font size adjustment, line spacing control, dark mode toggle for evening reading. |
 
-**Phase 10 (reframed as "Accessibility Audit & Polish"):**
+**Phase 12 (reframed as "Accessibility Audit & Polish"):**
 - Professional WCAG 2.1 AA audit (automated + manual + real assistive technology users)
 - Native TTS "Listen" button in the reader (Web Speech API)
 - Advanced reading mode (sepia, custom fonts, reading ruler)
@@ -786,7 +786,7 @@ The existing design tokens have contrast failures that must be corrected before 
 - Every component built in Phases 1–2 must pass basic accessibility checks (Lighthouse, axe DevTools)
 - The design token `--portal-text-muted` must be corrected to `#595959` before implementation begins
 - `--srf-gold` must never be used as text on light backgrounds
-- Phase 10 scope shrinks (audit and polish, not build-from-scratch) but gains TTS and professional audit
+- Phase 12 scope shrinks (audit and polish, not build-from-scratch) but gains TTS and professional audit
 
 ---
 
@@ -810,9 +810,9 @@ Daily devotional emails are one of the most successful formats in spiritual publ
 
 Implement a **daily email** delivering a single verbatim Yogananda passage with full citation.
 
-**Phase 7 (non-personalized):** Same passage pool as Today's Wisdom. One email per day. Subscriber provides email address and language. No account required.
+**Phase 9 (non-personalized):** Same passage pool as Today's Wisdom. One email per day. Subscriber provides email address and language. No account required.
 
-**Phase 12 (personalized):** Subscribers can optionally select theme preferences ("I'd like more passages about Peace and Healing"). Passages are filtered by theme from the `chunk_topics` join. This is an *explicit user choice*, never behavioral inference.
+**Phase 15 (personalized):** Subscribers can optionally select theme preferences ("I'd like more passages about Peace and Healing"). Passages are filtered by theme from the `chunk_topics` join. This is an *explicit user choice*, never behavioral inference.
 
 ### Design
 
@@ -821,8 +821,8 @@ Implement a **daily email** delivering a single verbatim Yogananda passage with 
 | Frequency | Daily, consistent time (configurable per timezone if feasible, otherwise fixed 6 AM EST) |
 | Content | One verbatim passage + book/chapter/page citation + "Read in context" link to portal |
 | Format | Minimal HTML email: Georgia serif (email-safe Merriweather equivalent), warm cream background (`#FAF8F5`), passage text, citation, portal link. No images. No announcements. No CTAs beyond "Read more." |
-| Source | `daily_passages` pool (Phase 4 expands this from *Sayings* and *Where There Is Light*) |
-| Signup | Email address + language. Optional: theme preferences (Phase 12). No account required. |
+| Source | `daily_passages` pool (Phase 5 expands this from *Sayings* and *Where There Is Light*) |
+| Signup | Email address + language. Optional: theme preferences (Phase 15). No account required. |
 | Unsubscribe | One-click. CAN-SPAM and GDPR compliant. |
 | Provider | Resend or AWS SES — transactional email services, not marketing platforms |
 | Tracking | Open rates and click rates are **not tracked**. The email is a gift, not a funnel. Delivery success/bounce rates tracked for operational health only. |
@@ -869,7 +869,7 @@ Yogananda's teachings are extraordinarily shareable — short, vivid, universal.
 
 **User sharing (Phase 2):** Already covered by ADR-015. Clean links with OG cards. Downloadable quote images. No social media buttons. No tracking scripts.
 
-**SRF organizational sharing (Phase 7+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the daily_passages pool). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
+**SRF organizational sharing (Phase 9+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the daily_passages pool). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
 
 ### Platform-Specific Considerations
 
@@ -902,7 +902,7 @@ This is a **content production tool**, not an auto-poster. The human decides whe
 ### Consequences
 
 - Phase 2: User sharing works via OG cards and quote images (already in ADR-015)
-- Phase 7+: Admin dashboard (Retool) adds a "Social Assets" view showing daily quote images and suggested captions
+- Phase 9+: Admin dashboard (Retool) adds a "Social Assets" view showing daily quote images and suggested captions
 - Multi-aspect-ratio image generation needed (`@vercel/og` with configurable dimensions)
 - SRF's social media team needs access to the admin dashboard
 - No automated posting. Ever. The portal generates; humans distribute.
@@ -968,7 +968,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 3. **`reader_url` is locale-relative.** API responses return `/books/slug/chapter#chunk` without locale prefix. The client (web or mobile) prepends the locale. This keeps the API presentation-agnostic per ADR-024.
 
-4. **Locale + English fallback is the multilingual model.** The practical need is the seeker's language plus English supplementation — not arbitrary cross-language search (e.g., Japanese query finding German results). The multilingual embedding model *enables* cross-language search at near-zero cost, but the core experience is locale-first with English fallback. Cross-language search may be activated later if usage data justifies it, but it is not a core Phase 9 deliverable.
+4. **Locale + English fallback is the multilingual model.** The practical need is the seeker's language plus English supplementation — not arbitrary cross-language search (e.g., Japanese query finding German results). The multilingual embedding model *enables* cross-language search at near-zero cost, but the core experience is locale-first with English fallback. Cross-language search may be activated later if usage data justifies it, but it is not a core Phase 11 deliverable.
 
 5. **`canonical_book_id` links translations to originals.** A new column on `books` enables "Available in 6 languages" on the library page and "Read in English →" navigation between editions. The `canonical_chunk_id` column on `book_chunks` enables passage-level cross-language links.
 
@@ -976,21 +976,21 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Phase 1's English-only search quality evaluation (Deliverable 1.11) and prevents launching a language with degraded retrieval quality.
 
-8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Phase 9 ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
+8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Phase 11 ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
 
 ### Consequences
 
 - Phase 2 includes i18n infrastructure setup (locale routing, string externalization) even though content is English-only
-- Phase 2 includes the `topic_translations` table (empty until Phase 9)
-- Phase 9 requires knowing which books SRF has in digital translated form (stakeholder question)
-- Phase 9 UI string translation uses an AI-assisted workflow: Claude generates drafts of locale JSON files, then a human reviewer (fluent in the target language and familiar with SRF's devotional register) refines tone, spiritual terminology, and cultural nuance. See ADR-023.
+- Phase 2 includes the `topic_translations` table (empty until Phase 11)
+- Phase 11 requires knowing which books SRF has in digital translated form (stakeholder question)
+- Phase 11 UI string translation uses an AI-assisted workflow: Claude generates drafts of locale JSON files, then a human reviewer (fluent in the target language and familiar with SRF's devotional register) refines tone, spiritual terminology, and cultural nuance. See ADR-023.
 - The content availability matrix creates asymmetric experiences per language — this is honest, not a bug
 - The book catalog per language shows only available books, plus a "Also available in English" section
 - The `hybrid_search` function accepts a `search_language` parameter and filters to the user's locale
 - The `content_tsv` column uses a trigger (not GENERATED ALWAYS) to select the correct PostgreSQL text search dictionary per chunk's language
 - All content-serving API endpoints accept a `language` parameter with English fallback at the service layer
-- Per-language search quality test suite (15–20 queries per language) is a launch gate before any language goes live in Phase 9
-- Per-language chunk size benchmarking required during Phase 9 ingestion for non-Latin scripts
+- Per-language search quality test suite (15–20 queries per language) is a launch gate before any language goes live in Phase 11
+- Per-language chunk size benchmarking required during Phase 11 ingestion for non-Latin scripts
 - `books.bookstore_url` provides "Find this book" links to SRF Bookstore. Per-language bookstore routing deferred (ADR-051).
 
 ---
@@ -1052,9 +1052,9 @@ Omitting Hindi and Bengali from the portal — whose stated mission is global av
 
 ### Decision
 
-Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave in Phase 9**, following the initial Western-language wave.
+Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave in Phase 11**, following the initial Western-language wave.
 
-**Phase 9 locale waves:**
+**Phase 11 locale waves:**
 
 | Wave | Languages | Rationale |
 |------|-----------|-----------|
@@ -1071,10 +1071,10 @@ Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave
 
 ### Consequences
 
-- Phase 9 is split into waves (9a Western, 9b Indian, 9c evaluation)
+- Phase 11 is split into waves (9a Western, 9b Indian, 9c evaluation)
 - Need to confirm YSS has digital text of Hindi/Bengali translations (stakeholder question)
 - May need YSS-specific UI adaptations (organizational branding differences between SRF and YSS)
-- Google Fonts Noto Sans Devanagari and Noto Sans Bengali added to the font stack for Phase 9 Indian wave
+- Google Fonts Noto Sans Devanagari and Noto Sans Bengali added to the font stack for Phase 11 Indian wave
 - The portal URL and branding question: is the Hindi/Bengali version served from the same domain (teachings.yogananda.org/hi/) or a YSS-branded domain?
 
 ---
@@ -1086,7 +1086,7 @@ Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave
 
 ### Context
 
-Phase 9 requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 6+ languages. The question: who translates these, and how?
+Phase 11 requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 6+ languages. The question: who translates these, and how?
 
 Three categories of translatable content exist in the portal, each with fundamentally different fidelity requirements:
 
@@ -1144,7 +1144,7 @@ The Claude system prompt for UI translation should include:
 - **Cost efficiency.** Professional translation of 300 strings × 8 languages = 2,400 translation units. AI drafting reduces this to a review task rather than a from-scratch task, cutting cost and time significantly.
 - **Quality floor.** Claude produces competent translations in all target languages (es, de, fr, it, pt, ja, hi, bn). The human reviewer elevates from competent to appropriate — catching tone, register, and spiritual terminology issues.
 - **Sacred text boundary is absolute.** No amount of cost savings justifies AI-translating Yogananda's words. The portal serves *official SRF/YSS translations* or nothing. This is a theological constraint, not a technical one.
-- **Scalable.** As new languages are added (Phase 9 evaluation wave), the same workflow applies — Claude draft → human review. No need to find full professional translation services for each new locale.
+- **Scalable.** As new languages are added (Phase 11 evaluation wave), the same workflow applies — Claude draft → human review. No need to find full professional translation services for each new locale.
 
 ### Alternatives Considered
 
@@ -1158,7 +1158,7 @@ The Claude system prompt for UI translation should include:
 
 The glossary is a critical dependency for both the AI drafting step and the human review step. It defines how spiritual terms are handled per language — which terms remain in Sanskrit, which have approved translations, and which are transliterated.
 
-**Storage:** A JSONB column in Neon, stored as a per-language glossary file at `/messages/glossary-{locale}.json`. This is a content-editor-centric artifact — maintained alongside the locale JSON files, version-controlled in Git, and eventually migrated to Contentful when the CMS is adopted (Phase 8+).
+**Storage:** A JSONB column in Neon, stored as a per-language glossary file at `/messages/glossary-{locale}.json`. This is a content-editor-centric artifact — maintained alongside the locale JSON files, version-controlled in Git, and eventually migrated to Contentful when the CMS is adopted (Phase 10+).
 
 **Structure:**
 
@@ -1188,16 +1188,16 @@ The glossary is a critical dependency for both the AI drafting step and the huma
 
 **Workflow:** The glossary is built incrementally during the first human review cycle for each language. The reviewer flags terms, provides translations, and adds notes. Subsequent review cycles and AI drafting both reference the glossary. The Claude system prompt for UI translation includes the glossary to improve first-draft quality.
 
-**Migration path:** When Contentful is adopted (Phase 8+), glossaries can be modeled as a Contentful content type with per-locale entries, enabling content editors to manage terminology without touching JSON files.
+**Migration path:** When Contentful is adopted (Phase 10+), glossaries can be modeled as a Contentful content type with per-locale entries, enabling content editors to manage terminology without touching JSON files.
 
 ### Consequences
 
-- Phase 9 deliverable 9.1 uses AI-assisted workflow: Claude draft → human review → production
+- Phase 11 deliverable 11.1 uses AI-assisted workflow: Claude draft → human review → production
 - Spiritual terminology glossary stored as `/messages/glossary-{locale}.json` — built incrementally during first review cycle, referenced by both AI drafting and human review
 - The `messages/{locale}.draft.json` → `messages/{locale}.json` promotion step should be tracked (Git diff review)
 - Reviewer recruitment: SRF likely has multilingual monastics and volunteers who can review UI translations — this is a stakeholder question
 - The same workflow applies to portal-authored content (About page, theme descriptions, "Seeking..." entry points, etc.)
-- Glossary files migrate to Contentful content types when the CMS is adopted (Phase 8+)
+- Glossary files migrate to Contentful content types when the CMS is adopted (Phase 10+)
 
 ---
 
@@ -1212,7 +1212,7 @@ The SRF already has a native mobile app (iOS/Android) with an eReader. While a d
 
 Next.js encourages a pattern where business logic lives inside React Server Components. This is convenient for web development but creates a platform lock: Server Components are callable only by the Next.js rendering pipeline, not by a mobile app, a third-party integration, or a PWA Service Worker.
 
-If business logic migrates into Server Components during Phases 1–11, extracting it later into a proper API layer is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
+If business logic migrates into Server Components during Phases 1–14, extracting it later into a proper API layer is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
 ### Decision
 
@@ -1255,7 +1255,7 @@ When the API evolves, `/api/v2/` coexists with `/api/v1/`. The web frontend alwa
 
 #### 3. Authentication: Public by Default
 
-**Phases 1–11: All API routes are public.** No authentication required. The portal's core mission is frictionless access to the teachings — adding "Sign in" contradicts this.
+**Phases 1–14: All API routes are public.** No authentication required. The portal's core mission is frictionless access to the teachings — adding "Sign in" contradicts this.
 
 What auth would serve, and how it's handled without it:
 
@@ -1267,7 +1267,7 @@ What auth would serve, and how it's handled without it:
 | Admin dashboards | Retool has its own auth |
 | Content protection | Not needed — the mission is free access |
 
-**Phase 12+ (if needed):** When optional accounts are introduced for cross-device sync, evaluate the lightest mechanism that serves the need (magic links, passkeys, or Auth0 if SSO with other SRF properties is required). Public search and reading remain unauthenticated regardless. Auth is additive middleware on specific protected endpoints — never a gate on reading or search.
+**Phase 15+ (if needed):** When optional accounts are introduced for cross-device sync, evaluate the lightest mechanism that serves the need (magic links, passkeys, or Auth0 if SSO with other SRF properties is required). Public search and reading remain unauthenticated regardless. Auth is additive middleware on specific protected endpoints — never a gate on reading or search.
 
 #### 4. Cursor-Based Pagination
 
@@ -1325,10 +1325,10 @@ The URL structure is decided now. The association files are added when the app l
 
 - Phase 1 API routes use `/api/v1/` prefix (update DESIGN.md)
 - All features implemented via `/lib/services/` functions first, then exposed via Server Components and API routes
-- API routes are public (no auth) through Phase 11; auth middleware added only if/when Phase 12 accounts are implemented
+- API routes are public (no auth) through Phase 14; auth middleware added only if/when Phase 15 accounts are implemented
 - List endpoints return cursor-based pagination
 - Cache-Control headers on all API responses
-- PWA readiness added to roadmap (Phase 10)
+- PWA readiness added to roadmap (Phase 12)
 - Stakeholder question: does the portal get its own mobile app, or do features integrate into the existing SRF app?
 
 ---
@@ -1346,7 +1346,7 @@ For the teaching portal specifically, offline reading is a natural use case: a s
 
 ### Decision
 
-Add **PWA readiness** as a Phase 10 deliverable. This includes:
+Add **PWA readiness** as a Phase 12 deliverable. This includes:
 
 | Feature | Implementation | Benefit |
 |---------|---------------|---------|
@@ -1365,7 +1365,7 @@ Add **PWA readiness** as a Phase 10 deliverable. This includes:
 
 ### Consequences
 
-- Phase 10 includes PWA deliverables (manifest, Service Worker, offline caching)
+- Phase 12 includes PWA deliverables (manifest, Service Worker, offline caching)
 - Offline mode only caches previously viewed content — it does not pre-download entire books (that's a future decision)
 - Push notifications deferred — Android supports Web Push, but iOS support is limited and the daily email already serves the notification use case
 - The existing SRF mobile app relationship must be clarified (stakeholder question) to avoid confusing seekers with two "apps"
@@ -1438,14 +1438,14 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 - Brief description of its significance in Yogananda's life and mission
 - **Cross-reference to the book** — "Read about this place in Autobiography of a Yogi, Chapter X" with deep link to the reader
 - Visiting information — address, hours, link to SRF/YSS site for details
-- Simple map (Phase 10)
+- Simple map (Phase 12)
 
 **The unique value:** The teaching portal is the only place that can cross-reference sacred places with the specific passages that describe them. When a seeker reads about Serampore in the Autobiography, the portal can show "Visit this place." When they browse the Sacred Places page, each entry links back to every passage that mentions it. The teachings and the places illuminate each other.
 
 ### Map Strategy
 
-- **Phase 7:** No maps. Text descriptions with addresses and "Get Directions" links (opens user's native maps app).
-- **Phase 10:** No embedded map library. Add **"See This Place" Street View links** (plain Google Maps URLs, no SDK) to place cards where coverage exists. Zero map dependencies, zero tile servers, zero maintenance. See ADR-047.
+- **Phase 9:** No maps. Text descriptions with addresses and "Get Directions" links (opens user's native maps app).
+- **Phase 12:** No embedded map library. Add **"See This Place" Street View links** (plain Google Maps URLs, no SDK) to place cards where coverage exists. Zero map dependencies, zero tile servers, zero maintenance. See ADR-047.
 - **Future:** Dynamic center locator (if SRF provides data). If a center locator requires an embedded map, evaluate Leaflet + OpenStreetMap or Google Maps at that point — separate decision for a different page with different requirements.
 
 ### Rationale
@@ -1468,8 +1468,8 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 
 ### Consequences
 
-- Phase 7 adds static Events section and initial Sacred Places page (SRF properties, no maps)
-- Phase 10 adds biographical sites and "See This Place" Street View links (ADR-047) — no embedded map library
+- Phase 9 adds static Events section and initial Sacred Places page (SRF properties, no maps)
+- Phase 12 adds biographical sites and "See This Place" Street View links (ADR-047) — no embedded map library
 - Sacred Places content needs SRF/YSS review — biographical descriptions must be accurate and approved
 - Cross-referencing places with book passages requires a `places` table and a `chunk_places` junction table (or place tags on chunks)
 - Stakeholder question: can SRF provide or approve property photographs? (Already raised.)
@@ -1571,11 +1571,11 @@ Adopt a **layered testing strategy** with specific tools for each layer:
 |-------|------|---------------|-------|
 | **Unit / Integration** | **Vitest** + React Testing Library | Service functions, API route handlers, component rendering, database queries | Phase 3 |
 | **End-to-End** | **Playwright** | Full user flows: search → read → share → navigate. Cross-browser (Chrome, Firefox, Safari). | Phase 3 (core flows) |
-| **Accessibility** | **axe-core** (CI) + Playwright a11y assertions | Automated WCAG checks on every page. Keyboard navigation flows. | Phase 2 (basic) / Phase 3 (CI) |
+| **Accessibility** | **axe-core** (CI) + Playwright a11y assertions | Automated WCAG checks on every page. Keyboard navigation flows. | Phase 2 (basic) / Phase 4 (CI) |
 | **Search quality** | Custom Vitest suite | ~30 representative queries with expected passages. Precision/recall metrics. | Phase 1 (deliverable 1.11) |
 | **Performance** | **Lighthouse CI** | Core Web Vitals thresholds: LCP < 2.5s, CLS < 0.1, INP < 200ms. | Phase 3 |
 | **Visual** | **Storybook** | Component documentation, design token consistency, interactive component states | Phase 3 (design system) |
-| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes to reading UI, passage cards, Quiet Corner | Phase 10 |
+| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes to reading UI, passage cards, Quiet Corner | Phase 12 |
 
 #### Tool Choices
 
@@ -1583,7 +1583,7 @@ Adopt a **layered testing strategy** with specific tools for each layer:
 
 **Playwright over Cypress:** Multi-browser support (Chrome, Firefox, WebKit/Safari), native accessibility snapshot API (`page.accessibility.snapshot()`), more reliable in CI, better parallel execution. Playwright's test generator also speeds up writing E2E tests.
 
-**Storybook deferred to Phase 3:** In Phases 1–2, the component count is small (~15-20 components). Storybook adds setup overhead without proportional value. When the Calm Technology design system arrives (Phase 10), Storybook becomes the documentation platform for reusable components across SRF properties.
+**Storybook deferred to Phase 3:** In Phases 1–2, the component count is small (~15-20 components). Storybook adds setup overhead without proportional value. When the Calm Technology design system arrives (Phase 12), Storybook becomes the documentation platform for reusable components across SRF properties.
 
 **No MCP-based testing.** MCP servers are valuable for development workflows (Neon MCP for database operations), but test execution must be deterministic, automated, and reproducible. MCP doesn't add value to test pipelines.
 
@@ -1635,7 +1635,7 @@ CI pipeline:
 - Neon branches are created/deleted per test run (Neon free tier supports this)
 - Storybook is introduced in Phase 3 alongside the design system foundations
 - Search quality test suite is a Phase 1 deliverable (1.11) and grows as the corpus expands
-- Visual regression testing begins in Phase 10 when the component library stabilizes
+- Visual regression testing begins in Phase 12 when the component library stabilizes
 
 ---
 
@@ -1737,7 +1737,7 @@ Country code derived from Vercel/Cloudflare edge headers, not IP geolocation loo
 ### Consequences
 
 - Phase 1 includes Sentry setup, structured logging (`lib/logger.ts`), and health check endpoint
-- New Relic integration in Phase 6 (depending on SRF providing New Relic account access)
+- New Relic integration in Phase 7 (depending on SRF providing New Relic account access)
 - Amplitude configured with explicit allowlist — no autocapture, no user identification
 - DELTA compliance review of all observability configuration before launch
 - Vercel Analytics enabled from Phase 1 (free with Vercel deployment)
@@ -1751,11 +1751,11 @@ Country code derived from Vercel/Cloudflare edge headers, not IP geolocation loo
 
 ### Context
 
-The portal needs a design tool for screen mockups, component design, and eventually the Calm Technology design system (Phase 10). The SRF tech stack brief does not prescribe a design tool. Options range from free open-source tools to industry-standard paid platforms.
+The portal needs a design tool for screen mockups, component design, and eventually the Calm Technology design system (Phase 12). The SRF tech stack brief does not prescribe a design tool. Options range from free open-source tools to industry-standard paid platforms.
 
 ### Decision
 
-Use **Figma** for design, starting with the **free Starter plan** in Phase 3, upgrading to **Professional** when the design system work begins in Phase 10.
+Use **Figma** for design, starting with the **free Starter plan** in Phase 3, upgrading to **Professional** when the design system work begins in Phase 12.
 
 #### Phase 3 (Free Starter Plan — $0)
 
@@ -1764,7 +1764,7 @@ Use **Figma** for design, starting with the **free Starter plan** in Phase 3, up
 - Core screens designed and available for developer reference
 - Design tokens (colors, typography, spacing) documented in Figma and exported to `tailwind.config.ts`
 
-#### Phase 10+ (Professional Plan — $15/editor/month)
+#### Phase 12+ (Professional Plan — $15/editor/month)
 
 - Unlimited files
 - Shared component library (Calm Technology design system)
@@ -1812,7 +1812,7 @@ This ensures the design language stays synchronized between Figma and the codeba
 ### Consequences
 
 - Phase 3: Figma free tier for core screen design
-- Phase 10: Upgrade to Professional when Calm Technology design system begins
+- Phase 12: Upgrade to Professional when Calm Technology design system begins
 - Figma Tokens plugin configured to export to `tokens.json`
 - `tailwind.config.ts` imports from `tokens.json` for design token synchronization
 - Storybook (Phase 3+) references Figma component designs for visual parity
@@ -1845,10 +1845,10 @@ Use **Terraform** for all infrastructure provisioning from Phase 3. The portal r
 
 | Phase | SCM | CI/CD | Terraform State |
 |-------|-----|-------|-----------------|
-| **Phases 1–7** | GitHub | GitHub Actions | Terraform Cloud free tier or S3 backend |
-| **Phase 8+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
+| **Phases 1–9** | GitHub | GitHub Actions | Terraform Cloud free tier or S3 backend |
+| **Phase 10+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
 
-Phases 1–7 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness in Phase 8.
+Phases 1–9 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness in Phase 10.
 
 #### Terraform Module Structure
 
@@ -1903,7 +1903,7 @@ The SRF standard defines four environments: dev, qa, stg, prod. Terraform worksp
     prod.tfvars
 ```
 
-For Phases 1–7, only `dev` is needed. Additional environments are added as the portal moves toward production.
+For Phases 1–9, only `dev` is needed. Additional environments are added as the portal moves toward production.
 
 #### What Terraform Manages vs. What It Doesn't
 
@@ -1919,7 +1919,7 @@ For Phases 1–7, only `dev` is needed. Additional environments are added as the
 
 The boundary: Terraform creates and configures the *services*. Application code configures *how the app uses those services*. Database schema is managed by dbmate migrations, not Terraform — schema changes require migration semantics (up/down), not declarative state.
 
-#### CI/CD Pipeline (Phases 1–7 — GitHub Actions)
+#### CI/CD Pipeline (Phases 1–9 — GitHub Actions)
 
 ```yaml
 # .github/workflows/terraform.yml
@@ -1940,7 +1940,7 @@ jobs:
     # Production: manual approval gate
 ```
 
-#### CI/CD Pipeline (Phase 8+ — GitLab CI)
+#### CI/CD Pipeline (Phase 10+ — GitLab CI)
 
 ```yaml
 # .gitlab-ci.yml (aligned with SRF IDP)
@@ -1972,14 +1972,14 @@ terraform:apply:
 - **Reproducible environments.** `terraform apply` creates a complete environment from scratch. Disaster recovery, staging environment creation, and onboarding new developers all become simple operations.
 - **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code. This prevents the "someone changed a setting in the dashboard and nobody knows" problem.
 - **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code. A change to an alert threshold or a DNS record is visible, reviewable, and auditable.
-- **GitHub → GitLab migration path.** Starting with GitHub Actions for Phases 1–7 velocity, then migrating to GitLab CI for SRF IDP alignment, is a clean path. The Terraform code itself is SCM-agnostic — only the CI pipeline config changes.
+- **GitHub → GitLab migration path.** Starting with GitHub Actions for Phases 1–9 velocity, then migrating to GitLab CI for SRF IDP alignment, is a clean path. The Terraform code itself is SCM-agnostic — only the CI pipeline config changes.
 
 ### Alternatives Considered
 
 | Option | Pros | Cons |
 |--------|------|------|
 | **Terraform from Phase 3 (chosen)** | SRF-aligned; reproducible environments; AI-assisted authoring | Upfront setup time; state backend needed |
-| **Terraform deferred to Phase 8** | Simpler Phases 1–2; no state management overhead | Deviates from SRF standards; manual infrastructure creates undocumented state; harder to retrofit |
+| **Terraform deferred to Phase 10** | Simpler Phases 1–2; no state management overhead | Deviates from SRF standards; manual infrastructure creates undocumented state; harder to retrofit |
 | **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; not integrated into SRF IDP; smaller provider ecosystem |
 | **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle; each service configured independently |
 | **AWS CDK** | Strong AWS integration | Portal is Vercel-based, not AWS-heavy; CDK is AWS-centric; not the SRF standard for non-Lambda infrastructure |
@@ -1987,13 +1987,13 @@ terraform:apply:
 ### Consequences
 
 - Phase 3 includes `/terraform` directory with modules for Neon, Vercel, and Sentry
-- Phases 1–7 use GitHub + GitHub Actions; Phase 8 migrates to GitLab + GitLab CI (SRF IDP)
-- Terraform state stored in Terraform Cloud free tier (Phases 3–7) or GitLab Terraform backend (Phase 8+)
+- Phases 1–9 use GitHub + GitHub Actions; Phase 10 migrates to GitLab + GitLab CI (SRF IDP)
+- Terraform state stored in Terraform Cloud free tier (Phases 3–9) or GitLab Terraform backend (Phase 10+)
 - All environment variables and service configuration defined in Terraform — no undocumented dashboard settings
 - `.env.example` still maintained for local development (developers run the app locally without Terraform)
-- Auth0, New Relic, and Cloudflare modules added as those services are introduced (Phases 4–5)
+- Auth0, New Relic, and Cloudflare modules added as those services are introduced (Phases 5–6)
 - Four-environment convention (dev/qa/stg/prod) adopted per SRF standard, with only `dev` active in Phase 3
-- Stakeholder question: does SRF prefer the portal repo in GitLab from day one, or is GitHub acceptable for Phases 1–7 with a planned migration?
+- Stakeholder question: does SRF prefer the portal repo in GitLab from day one, or is GitHub acceptable for Phases 1–9 with a planned migration?
 
 ---
 
@@ -2068,7 +2068,7 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 ### Rationale
 
 - **Models will change.** OpenAI has already released three generations of embedding models (ada-002 → 3-small → 3-large). The pace will continue. Designing for model lock-in is designing for obsolescence.
-- **Corpus grows over time.** By Phase 9 (multi-language), the corpus may be 10x larger than Phase 1. Re-embedding at that scale is hours of API calls and significant cost. Incremental migration keeps the portal online throughout.
+- **Corpus grows over time.** By Phase 11 (multi-language), the corpus may be 10x larger than Phase 1. Re-embedding at that scale is hours of API calls and significant cost. Incremental migration keeps the portal online throughout.
 - **Search quality is the core mission.** A better embedding model directly improves passage retrieval. The portal should be able to adopt improvements without architectural changes.
 - **Zero cost now.** Three columns and a convention. No additional infrastructure.
 
@@ -2076,7 +2076,7 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 
 **The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. OpenAI's text-embedding-3-small places semantically equivalent text in different languages close together in vector space. This means:
 
-- English embeddings generated in Phase 1 remain valid when Spanish, German, and Japanese chunks are added in Phase 9 — no re-embedding of the English corpus.
+- English embeddings generated in Phase 1 remain valid when Spanish, German, and Japanese chunks are added in Phase 11 — no re-embedding of the English corpus.
 - The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — even when the user typed their query in Spanish.
 - Cross-language passage alignment (`canonical_chunk_id`) is validated by embedding proximity, not just paragraph index matching.
 - Any future embedding model migration must preserve this multilingual property.
@@ -2089,7 +2089,7 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 - The ingestion pipeline records which model it used per chunk
 - Search quality test suite (deliverable 1.11) becomes the gate for model migration decisions
 - Model migration is a maintenance operation, not an architecture change
-- Budget for re-embedding costs when evaluating new models (Phase 9 multilingual benchmarking is a natural trigger)
+- Budget for re-embedding costs when evaluating new models (Phase 11 multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
 
 ---
@@ -2248,12 +2248,12 @@ In Phase 1 (English only), this is equivalent to the original "top 30" — the E
 ### Consequences
 
 - The ingestion pipeline gains a new Step 7: Compute Chunk Relations (after embedding, before final verification)
-- A `chunk_relations` table is added to migration 001 (empty until Phase 5 populates it with multi-book content)
+- A `chunk_relations` table is added to migration 001 (empty until Phase 6 populates it with multi-book content)
 - A `chunk_references` table is added for human-curated editorial cross-references (supplements automatic similarity)
 - Two new API endpoints: `/api/v1/chunks/[id]/related` and `/api/v1/chapters/[slug]/[number]/thread`
 - Two new service functions: `relations.ts` and `thread.ts`
 - The Book Reader component gains a Related Teachings side panel (desktop) and bottom sheet (mobile)
-- A related content quality test suite (Phase 5+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends
+- A related content quality test suite (Phase 6+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends
 - The `books` table gains a `bookstore_url` column to power "Find this book" links (physical book bridge)
 
 ---
@@ -2485,7 +2485,7 @@ Implement **Time-Aware Reading** as an **opt-out** feature (on by default):
 - The time-band preference (`auto`/`light`/`dark`) is stored in `localStorage` under a portal-namespaced key
 - The reader header gains a small time-band toggle icon (sun/moon)
 - The `prefers-color-scheme: dark` media query is handled as a separate concern — if active, it overrides time-banding to ensure the user's OS preference is always respected
-- Phase 10 Reading Mode (10.3) builds on this foundation — sepia mode, font size adjustment, and high-contrast mode complement the time bands
+- Phase 12 Reading Mode (10.3) builds on this foundation — sepia mode, font size adjustment, and high-contrast mode complement the time bands
 
 ---
 
@@ -2533,7 +2533,7 @@ When navigating between chapters in the book reader:
 
 ### Context
 
-The portal's design philosophy prioritizes immediate access without registration (Phase 12 introduces optional accounts). But readers still need a way to save their place across reading sessions. Without bookmarks, a reader must remember where they were — or re-search for a passage they found meaningful.
+The portal's design philosophy prioritizes immediate access without registration (Phase 15 introduces optional accounts). But readers still need a way to save their place across reading sessions. Without bookmarks, a reader must remember where they were — or re-search for a passage they found meaningful.
 
 Browser bookmarks are too coarse (they save a URL, not a reading position). The portal needs a lightweight, private, account-free bookmarking system.
 
@@ -2557,7 +2557,7 @@ Implement **Lotus Bookmarks** using `localStorage`:
 
 5. **No server interaction, no accounts, no tracking.** Bookmarks exist only in the user's browser. Clearing browser data removes them. This is stated clearly on the bookmarks page.
 
-6. **Phase 12 migration:** When optional accounts are introduced (Phase 12), bookmarks are synced to the server on login. `localStorage` bookmarks are offered for import. Until then, bookmarks are entirely client-side.
+6. **Phase 15 migration:** When optional accounts are introduced (Phase 15), bookmarks are synced to the server on login. `localStorage` bookmarks are offered for import. Until then, bookmarks are entirely client-side.
 
 ### Rationale
 
@@ -2573,7 +2573,7 @@ Implement **Lotus Bookmarks** using `localStorage`:
 - The dwell mode UI (ADR-038) gains a lotus bookmark icon alongside the share icon
 - A `/bookmarks` page is added to the navigation (appears only when bookmarks exist, or always in footer)
 - `localStorage` has a ~5MB limit per origin — sufficient for thousands of bookmarks
-- Users on different browsers/devices will have separate bookmark collections until Phase 12 sync
+- Users on different browsers/devices will have separate bookmark collections until Phase 15 sync
 - The bookmarks page is a client-only page (no SSR needed — reads directly from `localStorage` on mount)
 
 ---
@@ -2726,7 +2726,7 @@ SRF has extraordinary imagery: the Encinitas hermitage cliffs, Lake Shrine garde
 
 ### Decision
 
-1. **The reading experience is text-only.** No images appear in the book reader column. Imagery would compete with Yogananda's words, and his words always win. The side panel may show video thumbnails (Phase 11) but never photographs.
+1. **The reading experience is text-only.** No images appear in the book reader column. Imagery would compete with Yogananda's words, and his words always win. The side panel may show video thumbnails (Phase 13) but never photographs.
 
 2. **Homepage hero:** A single, wide, soft-focus photograph of an SRF property (Encinitas coastline, Lake Shrine) overlaid with "Today's Wisdom" in white Merriweather on a semi-transparent `--srf-navy` band. Updated seasonally (4 images per year). If SRF cannot provide or approve photographs, the homepage uses the warm cream background with no hero image — the design works without it.
 
@@ -2802,7 +2802,7 @@ Below the "Today's Wisdom" passage on the homepage, display a single text link: 
 
 ### Context
 
-ADR-026 originally specified Leaflet + OpenStreetMap as the Phase 10 embedded map for the Sacred Places page. On re-evaluation, the embedded map adds a library dependency for a page that already communicates geography effectively through its card layout (grouped by category, each card showing city and country). The page works in Phase 4 without any map. "Get Directions" already delegates to the user's preferred maps app for navigation. The one thing no outbound link provided was a *virtual visit* — seeing what a place looks like before traveling there.
+ADR-026 originally specified Leaflet + OpenStreetMap as the Phase 12 embedded map for the Sacred Places page. On re-evaluation, the embedded map adds a library dependency for a page that already communicates geography effectively through its card layout (grouped by category, each card showing city and country). The page works in Phase 5 without any map. "Get Directions" already delegates to the user's preferred maps app for navigation. The one thing no outbound link provided was a *virtual visit* — seeing what a place looks like before traveling there.
 
 ### Decision
 
@@ -2847,7 +2847,7 @@ ALTER TABLE places ADD COLUMN street_view_url TEXT;  -- nullable, only for place
 
 - Leaflet and OpenStreetMap are removed from the project's dependency list
 - The `places` table gains a nullable `street_view_url` column
-- Phase 10 Sacred Places work is simpler: add biographical sites + Street View links + Reader ↔ Place cross-reference cards
+- Phase 12 Sacred Places work is simpler: add biographical sites + Street View links + Reader ↔ Place cross-reference cards
 - The future center locator (if built) makes its own map library decision independently
 - CLAUDE.md tech stack table updated to remove the Maps row
 
@@ -2938,16 +2938,16 @@ CREATE INDEX idx_chunk_topics_pending ON chunk_topics(tagged_by) WHERE tagged_by
 
 ### Multilingual Implications
 
-None. The existing `topic_translations` table handles localized names for any theme regardless of category. Theme descriptions used for auto-tagging are internal (not displayed). The multilingual embedding model produces reasonable candidates for non-English chunks even from English-language theme descriptions. Per-language theme descriptions can improve accuracy in Phase 9 but are not required.
+None. The existing `topic_translations` table handles localized names for any theme regardless of category. Theme descriptions used for auto-tagging are internal (not displayed). The multilingual embedding model produces reasonable candidates for non-English chunks even from English-language theme descriptions. Per-language theme descriptions can improve accuracy in Phase 11 but are not required.
 
 ### Consequences
 
-- Phase 4 scope expanded: deliverable 4.2 (theme tagging pipeline) now includes the auto-tagging infrastructure, not just manual tagging
-- Situation themes are added incrementally during Phase 4+ as content is ingested and sufficient passages confirmed
+- Phase 5 scope expanded: deliverable 5.2 (theme tagging pipeline) now includes the auto-tagging infrastructure, not just manual tagging
+- Situation themes are added incrementally during Phase 5+ as content is ingested and sufficient passages confirmed
 - The homepage stays calm — six quality doors, one quiet link to explore all themes
 - Editorial governance needed: who decides when a new theme has enough passages to go live?
 - The `description` field on `teaching_topics` now serves double duty: internal reference *and* auto-tagging input. Descriptions should be written as rich keyword-laden paragraphs, not terse labels.
-- The review queue (`tagged_by = 'auto'`) needs a workflow — Phase 1–7 uses a script or Retool dashboard; Phase 8+ uses Contentful
+- The review queue (`tagged_by = 'auto'`) needs a workflow — Phase 1–9 uses a script or Retool dashboard; Phase 10+ uses Contentful
 - **Extended by ADR-058:** Four additional exploration categories (person, principle, scripture, practice) added to the taxonomy, using the same infrastructure
 
 ---
@@ -3046,7 +3046,7 @@ Enhance query expansion with tradition-aware vocabulary mapping. Seekers arrive 
 
 **Why this matters:** The portal serves Earth's population. Most seekers worldwide have never read Yogananda. They arrive with the vocabulary of their own tradition, their therapist, or their Google search. If the portal can only find passages using Yogananda's exact terminology, it fails the people who need it most.
 
-#### E3: Passage Accessibility Rating (Phase 4)
+#### E3: Passage Accessibility Rating (Phase 5)
 
 **Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check
 
@@ -3093,9 +3093,9 @@ Automate the search quality evaluation (Deliverable 1.11) by using Claude as the
 
 **Implementation:** CI job that runs the 30 benchmark queries against the search API, passes results to Claude for evaluation, and reports a quality score. Threshold: ≥ 80% of queries return at least one relevant passage in the top 3. Runs on every PR that touches the search pipeline, embedding model, or chunking strategy.
 
-**Why this matters:** Manual evaluation of 30 queries is feasible at launch but doesn't scale. As the corpus grows (Phase 4–6) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade.
+**Why this matters:** Manual evaluation of 30 queries is feasible at launch but doesn't scale. As the corpus grows (Phase 5–7) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade.
 
-#### E6: Cross-Book Conceptual Threading (Phase 5)
+#### E6: Cross-Book Conceptual Threading (Phase 6)
 
 **Category:** Classifying | **Cost:** ~$0.50/book pair (one-time) | **Human review:** Spot-check
 
@@ -3108,7 +3108,7 @@ Enhance `chunk_relations` (ADR-034) with conceptual understanding. Vector simila
 | `personal_story` | A teaching principle + an autobiographical illustration of it | "Yogananda shares a personal experience of this in..." |
 | `practical_application` | A philosophical passage + a concrete technique or affirmation | "For a practical approach to this teaching, see..." |
 
-**Implementation:** During chunk relation computation (Phase 5, Deliverable 5.1), for the top 10 most similar cross-book passages per chunk, Claude classifies the relation type. Stored as a `relation_type` column on `chunk_relations`. Used to diversify the "Continue the Thread" suggestions and add context labels in the side panel.
+**Implementation:** During chunk relation computation (Phase 6, Deliverable 6.1), for the top 10 most similar cross-book passages per chunk, Claude classifies the relation type. Stored as a `relation_type` column on `chunk_relations`. Used to diversify the "Continue the Thread" suggestions and add context labels in the side panel.
 
 **Why this matters:** This is what a human librarian does that a search engine cannot. "If you liked this passage about courage, here's where he tells the story of his own test of courage" — that's a world-class reading experience. No physical book, no PDF, no ebook can do this.
 
@@ -3124,7 +3124,7 @@ Generate reverential, descriptive alt text for the portal's Yogananda photograph
 
 **Why this matters:** Direct accessibility improvement for visually impaired seekers. A portal that claims accessibility as a foundational principle should describe its sacred images with the same care it gives to its text.
 
-#### E8: Daily Passage Tone Classification (Phase 4)
+#### E8: Daily Passage Tone Classification (Phase 5)
 
 **Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check
 
@@ -3200,9 +3200,9 @@ The portal works without Claude. Claude makes it *world-class*.
 - ADR-003 (Direct Quotes Only) and ADR-007 (Claude API for AI Features) remain the foundational references; this ADR consolidates and extends them
 - The three-category model (Finding / Classifying / Drafting) provides a clear framework for evaluating future Claude use cases
 - E1 (intent classification) and E2 (terminology bridge) are added to Phase 1 deliverables — they directly improve search quality at launch
-- E3 (accessibility rating) and E8 (tone classification) are added to Phase 4 — they require multi-book content to be meaningful
+- E3 (accessibility rating) and E8 (tone classification) are added to Phase 5 — they require multi-book content to be meaningful
 - E4 (QA assistant) and E5 (eval judge) are added to Phase 1 — they improve quality foundations
-- E6 (cross-book threading) is added to Phase 5 — it enhances the Related Teachings system
+- E6 (cross-book threading) is added to Phase 6 — it enhances the Related Teachings system
 - E7 (alt text) is added to Phase 2 — it's an accessibility deliverable
 - The spiritual terminology mapping (`/lib/data/spiritual-terms.json`) becomes a maintained artifact, reviewed by SRF-aware editors. ADR-052 defines the per-book evolution lifecycle.
 - Every new Claude use case proposed in future phases should be evaluated against this ADR's three-category model and hard prohibitions
@@ -3300,7 +3300,7 @@ Reader controls currently defined across multiple ADRs (font size in ADR-017, ci
 - Reader component gains: chapter reading time element (build-time computed), scroll position indicator (client-side), settings popover
 - `book_chunks` metadata can store per-chapter word count for reading time calculation (or computed at build time from chunk content)
 - ADR-042 keyboard map gains `s` for settings
-- Phase 3 deliverable scope: reader settings consolidation
+- Phase 4 deliverable scope: reader settings consolidation
 - The scroll position indicator uses `IntersectionObserver` or `scroll` event with `requestAnimationFrame` — standard performance-safe approaches
 - The three prohibitions (no countdown, no percentage, no streaks) should be added to the Calm Technology constraint for permanence
 
@@ -3318,14 +3318,14 @@ The original schema included a `book_store_links` table for per-language booksto
 
 Remove the `book_store_links` table entirely. The `books.bookstore_url` column is sufficient — it points to the SRF Bookstore for all books. The portal is not an e-commerce gateway; directing seekers to the SRF Bookstore is the appropriate action for all languages in all foreseeable phases.
 
-If per-language bookstore routing is genuinely needed in Phase 9 (YSS Bookstore for Hindi/Bengali editions), a simple lookup table or additional column can be added at that time — a trivial migration.
+If per-language bookstore routing is genuinely needed in Phase 11 (YSS Bookstore for Hindi/Bengali editions), a simple lookup table or additional column can be added at that time — a trivial migration.
 
 ### Consequences
 
 - One fewer table, one fewer foreign key relationship, one fewer fallback logic path
 - `books.bookstore_url` is the single source for "Find this book" links
-- Phase 9 deliverable 9.11 updated to reference `books.bookstore_url` instead of `book_store_links`
-- Zero impact on any Phase 1–8 deliverable
+- Phase 11 deliverable 11.11 updated to reference `books.bookstore_url` instead of `book_store_links`
+- Zero impact on any Phase 1–10 deliverable
 
 ---
 
@@ -3407,7 +3407,7 @@ Threads are not AI-generated content. They are curated paths through existing ve
 
 ### Phase
 
-Phase 5 (Related Teachings & Reader Intelligence) — editorial threads complement the algorithmic chunk relations with human curation.
+Phase 6 (Related Teachings & Reader Intelligence) — editorial threads complement the algorithmic chunk relations with human curation.
 
 ### Consequences
 
@@ -3449,7 +3449,7 @@ Category: **Classifying** | Output: JSON array of `{source, type, nature}` | Hum
 
 ### Phase
 
-Phase 5 (Related Teachings & Reader Intelligence) — the reverse bibliography is a natural companion to chunk relations and editorial threads.
+Phase 6 (Related Teachings & Reader Intelligence) — the reverse bibliography is a natural companion to chunk relations and editorial threads.
 
 ### Consequences
 
@@ -3467,7 +3467,7 @@ Phase 5 (Related Teachings & Reader Intelligence) — the reverse bibliography i
 
 ### Context
 
-The `daily_passages` pool supports optional seasonal weighting, but the connection between specific calendar dates and Yogananda's teachings is not explicitly modeled. Separately, Phase 4 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification), but these classifications are not yet combined into a browsable dimension.
+The `daily_passages` pool supports optional seasonal weighting, but the connection between specific calendar dates and Yogananda's teachings is not explicitly modeled. Separately, Phase 5 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification), but these classifications are not yet combined into a browsable dimension.
 
 ### Decision
 
@@ -3490,8 +3490,8 @@ Calendar categories:
 
 ### Phase
 
-- Calendar-aware surfacing: Phase 4 (when multi-book content enables meaningful calendar coverage)
-- Quiet Index browsing: Phase 4 (after E3 and E8 classifications are applied)
+- Calendar-aware surfacing: Phase 5 (when multi-book content enables meaningful calendar coverage)
+- Quiet Index browsing: Phase 5 (after E3 and E8 classifications are applied)
 
 ### DELTA Alignment
 
@@ -3513,7 +3513,7 @@ Calendar events are the same for every visitor — no personalization, no behavi
 
 ### Context
 
-Phase 11 (Cross-Media Search & Video Transcription) was described at a high level in the roadmap. The availability of multiple transcription services with word-level timestamp support enables a richer architecture: time-synced playback, cross-media chunk relations, and synchronized transcript display.
+Phase 13 (Cross-Media Search & Video Transcription) was described at a high level in the roadmap. The availability of multiple transcription services with word-level timestamp support enables a richer architecture: time-synced playback, cross-media chunk relations, and synchronized transcript display.
 
 ### Decision
 
@@ -3535,7 +3535,7 @@ Full transcription of SRF's YouTube library (~500 videos) via Whisper: $150–30
 
 ### Consequences
 
-- Two new tables (`video_transcripts`, `video_chunks`) added in Phase 11
+- Two new tables (`video_transcripts`, `video_chunks`) added in Phase 13
 - The hybrid search function extends to query `video_chunks` alongside `book_chunks`
 - `chunk_relations` computation expands to include cross-media similarity
 - The video player page (`/videos/[id]`) gains a synchronized transcript panel
@@ -3603,16 +3603,16 @@ Categories appear only when they contain at least one published topic. The homep
 
 ### Phase
 
-- `quality` and `situation` themes: Phase 4 (existing plan)
-- `practice` themes: Phase 4+ (practical themes like Meditation naturally emerge from the early content)
-- `person`, `principle`, `scripture` themes: Phase 5+ (requires multi-book content for meaningful coverage; benefits from the Reverse Bibliography extraction pipeline)
+- `quality` and `situation` themes: Phase 5 (existing plan)
+- `practice` themes: Phase 5+ (practical themes like Meditation naturally emerge from the early content)
+- `person`, `principle`, `scripture` themes: Phase 6+ (requires multi-book content for meaningful coverage; benefits from the Reverse Bibliography extraction pipeline)
 
 ### Alternatives Considered
 
 | Approach | Why Rejected |
 |----------|-------------|
 | **Separate tables per category** | Unnecessary complexity; the same tagging infrastructure applies to all categories |
-| **Hierarchical taxonomy** (e.g., scripture → Gita → Chapter 2) | Over-engineering for Phase 5; a flat per-category list is sufficient. Sub-categories can be added later if content depth warrants |
+| **Hierarchical taxonomy** (e.g., scripture → Gita → Chapter 2) | Over-engineering for Phase 6; a flat per-category list is sufficient. Sub-categories can be added later if content depth warrants |
 | **Merge with Reverse Bibliography** | Different user intent: "teach me about X" vs "show me where X is cited." Both valuable, different navigation paths |
 
 ### Consequences
@@ -3693,7 +3693,7 @@ A single-page PDF containing:
 
 Suitable for printing, framing, placing on a meditation altar, or keeping as a digital artifact. The lotus watermark establishes provenance (like a publisher's colophon) without being intrusive.
 
-**Chapter PDF (Phase 7):**
+**Chapter PDF (Phase 8):**
 
 A multi-page PDF with book-like typographic treatment:
 - Cover page: book title, "by Paramahansa Yogananda," chapter title, SRF lotus centered at bottom
@@ -3704,7 +3704,7 @@ A multi-page PDF with book-like typographic treatment:
 - Portal URL on final page: `teachings.yogananda.org`
 - A4 page size
 
-**Book PDF (Phase 7):**
+**Book PDF (Phase 8):**
 
 The full book as PDF:
 - Title page with book title, author, SRF lotus
@@ -3767,15 +3767,15 @@ The menu is a quiet dropdown — no social media logos, no platform-specific but
 - **PDF bridges digital and physical.** A printed passage on warm cream paper, placed beside a meditation altar, serves the DELTA Embodiment principle. A PDF of a full book serves seekers without reliable internet.
 - **A4 is global.** US Letter (8.5×11") is used almost exclusively in the US and Canada. The rest of the world uses A4. For a portal serving Earth, A4 is the correct default.
 - **Lotus as colophon, not brand.** The watermark says "this came from somewhere trustworthy" without saying "look at our logo." It mirrors how physical SRF books carry the lotus on the spine — present, dignified, never shouting.
-- **Phase 2 / Phase 7 split.** Passage-level sharing (email + image + PDF) is simple and high-value — Phase 2. Chapter and book PDFs require proper typographic layout and caching infrastructure — Phase 7, alongside the daily email and social assets.
+- **Phase 2 / Phase 8 split.** Passage-level sharing (email + image + PDF) is simple and high-value — Phase 2. Chapter and book PDFs require proper typographic layout and caching infrastructure — Phase 8 (alongside the daily email and social assets in Phase 9).
 
 ### Consequences
 
 - Phase 2 adds email and PDF options to the existing share menu
-- Phase 7 adds chapter/book PDF generation with caching
+- Phase 8 adds chapter/book PDF generation with caching
 - The `/api/v1/pdf/` routes need rate limiting (PDF generation is CPU-intensive)
 - PDF font embedding requires bundling Merriweather and Open Sans font files server-side (Google Fonts license permits this)
-- Non-Latin script PDFs (Phase 9) require per-locale font bundles (Noto Sans Devanagari, Noto Sans Bengali, Noto Sans CJK) — same constraint as OG images
+- Non-Latin script PDFs (Phase 11) require per-locale font bundles (Noto Sans Devanagari, Noto Sans Bengali, Noto Sans CJK) — same constraint as OG images
 - The warm cream background in PDFs uses CMYK values for print fidelity, not just RGB hex
 - **Extends ADR-015** with email and PDF formats; **complements ADR-019** by giving seekers direct sharing tools alongside SRF's organizational assets
 
@@ -3818,7 +3818,7 @@ Long-press (500ms) triggers dwell directly, as per ADR-038. No hover-reveal on t
 
 `d` enters dwell mode on the focused paragraph, per ADR-042.
 
-**First-visit hint (Phase 3):**
+**First-visit hint (Phase 4):**
 
 On the seeker's first visit to the book reader, a subtle one-time tooltip appears near the first paragraph: *"Hover over any passage to focus on it for contemplation."* Dismissed on any interaction. Stored in `localStorage` so it appears only once. This tooltip is the primary discoverability mechanism; the hover icon is the reinforcement for desktop users who explore with their cursor.
 
@@ -3912,17 +3912,17 @@ Not all seekers have smartphones. KaiOS (JioPhone, Nokia feature phones) runs a 
 In many families globally, one phone serves 3–5 people. The portal must not assume a device belongs to a single person.
 
 **Commitments:**
-- **No user accounts until Phase 12+** — the portal works fully without sign-in, which is already the design. This is correct for shared devices.
-- **Bookmarks (ADR-041) use `localStorage`** — they disappear if the browser data is cleared. This is acceptable for Phase 3. Phase 12+ (user accounts) can optionally sync bookmarks, but the local-first design is correct for shared devices where privacy between users matters.
+- **No user accounts until Phase 15+** — the portal works fully without sign-in, which is already the design. This is correct for shared devices.
+- **Bookmarks (ADR-041) use `localStorage`** — they disappear if the browser data is cleared. This is acceptable for Phase 4. Phase 15+ (user accounts) can optionally sync bookmarks, but the local-first design is correct for shared devices where privacy between users matters.
 - **No "Welcome back" or personalization.** The portal greets every visit the same way. No reading history displayed on the homepage. No "Continue where you left off" (which would expose one family member's reading to another).
 
 #### 4. Intermittent Connectivity as the Norm
 
-The PWA (ADR-025) is Phase 10. For Phases 1–9, seekers with unreliable connections have no offline support. This is a long gap.
+The PWA (ADR-025) is Phase 12. For Phases 1–11, seekers with unreliable connections have no offline support. This is a long gap.
 
 **Commitments:**
-- **Phase 2: Service Worker for static assets only.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker. Book content is not cached offline until Phase 10, but the portal loads instantly on repeat visits even with no connectivity change.
-- **Phase 3: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
+- **Phase 2: Service Worker for static assets only.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker. Book content is not cached offline until Phase 12, but the portal loads instantly on repeat visits even with no connectivity change.
+- **Phase 4: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
 - **Offline indicator.** When the Service Worker detects no connectivity, a subtle banner appears: *"You're reading offline. Search requires a connection."* Not an error state — a calm acknowledgment. Matches the portal's warm cream palette, not a red warning bar.
 
 #### 5. Community and Group Reading
@@ -3930,7 +3930,7 @@ The PWA (ADR-025) is Phase 10. For Phases 1–9, seekers with unreliable connect
 In India, Latin America, and many African communities, spiritual texts are read aloud in groups — satsang, study circles, family devotions. The portal's reader is designed for individual silent reading.
 
 **Commitments:**
-- **Presentation mode (Phase 7).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern.
+- **Presentation mode (Phase 8).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern.
 - **This is not a separate feature — it is a CSS mode.** The same reader component, the same content, the same accessibility. `data-mode="present"` on the reader container triggers the enlarged, chrome-free layout.
 
 #### 6. Cultural Consultation for Entry Points
@@ -3938,8 +3938,8 @@ In India, Latin America, and many African communities, spiritual texts are read 
 The "Seeking..." empathic entry points (ADR-035) and theme doors are currently written from an English-language, Western-spiritual perspective. "What happens after death?" is a natural question in one culture but may be phrased as "Where does the soul go?" or "What is the cycle of birth?" in another.
 
 **Commitments:**
-- **Phase 9 (multilingual launch) requires cultural consultation, not just translation.** For each Wave 1 language, SRF engages a native-speaking devotee (not a professional translator) to review the entry points and theme door labels for cultural resonance. The consultant answers: "Would a seeker in [country] phrase this question this way? What would feel more natural?"
-- **The "Seeking..." prompts are editorial content, not UI chrome.** They live in Contentful (Phase 8+), not in `messages/{locale}.json`. Each locale has independently authored prompts, not translations of the English originals.
+- **Phase 11 (multilingual launch) requires cultural consultation, not just translation.** For each Wave 1 language, SRF engages a native-speaking devotee (not a professional translator) to review the entry points and theme door labels for cultural resonance. The consultant answers: "Would a seeker in [country] phrase this question this way? What would feel more natural?"
+- **The "Seeking..." prompts are editorial content, not UI chrome.** They live in Contentful (Phase 10+), not in `messages/{locale}.json`. Each locale has independently authored prompts, not translations of the English originals.
 - **Query expansion (Claude API) handles the bridge.** Even if the entry point is culturally adapted, a seeker may still type their question in a culturally specific way. The terminology bridge (ADR-052) and Claude's query expansion handle the mapping from the seeker's phrasing to the passage corpus.
 
 #### 7. Right-to-Left as a First-Class Layout
@@ -3947,7 +3947,7 @@ The "Seeking..." empathic entry points (ADR-035) and theme doors are currently w
 CSS logical properties (ADR-021) provide the technical foundation for RTL. But RTL is more than mirrored margins.
 
 **Commitments:**
-- **Phase 9 RTL languages (Arabic, Urdu — if added in Wave 3+) require a native RTL reader to review every page.** Not just CSS mirroring, but visual hierarchy, reading flow, and icon directionality (e.g., a "next chapter" arrow points left in RTL).
+- **Phase 11 RTL languages (Arabic, Urdu — if added in Wave 3+) require a native RTL reader to review every page.** Not just CSS mirroring, but visual hierarchy, reading flow, and icon directionality (e.g., a "next chapter" arrow points left in RTL).
 - **The share menu, dwell icon (ADR-060), and reader navigation all use `inline-start`/`inline-end` positioning** — already specified in their respective ADRs. This commitment makes the RTL audit a verification exercise, not a redesign.
 - **Bidirectional text.** Yogananda quotes in Arabic translation may contain Sanskrit terms (samadhi, pranayama) in Latin script. The portal must handle `dir="auto"` on passage elements to allow mixed-direction text within a single paragraph.
 
@@ -3971,10 +3971,10 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 
 - Homepage payload budget tightened from 100KB to 50KB (HTML + critical CSS + inline JS)
 - Text-only mode added to site footer and reader settings (Phase 2)
-- Minimal Service Worker deployed in Phase 2 (static assets only), expanded in Phase 3 (last-read chapter)
+- Minimal Service Worker deployed in Phase 2 (static assets only), expanded in Phase 4 (last-read chapter)
 - KaiOS emulator added to CI in Phase 3
-- Presentation mode added to the reader in Phase 7
-- Cultural consultation budget required for Phase 9 multilingual launch
+- Presentation mode added to the reader in Phase 8
+- Cultural consultation budget required for Phase 11 multilingual launch
 - RTL design review by native reader required before any RTL language goes live
 - `font-display: swap` and unicode-range subsetting are non-negotiable for all font loading
 - **Extends ADR-017** (accessibility), **ADR-020** (multilingual), and **ADR-025** (PWA) with concrete global equity commitments
@@ -4186,10 +4186,10 @@ For a 30-paragraph chapter with 3 relations each: ~30–50KB. Loaded after the c
 
 The portal's offline story has three phases:
 - Phase 2: Service Worker caches static assets (app shell, fonts, CSS)
-- Phase 3: Last-read chapter cached (ADR-061)
-- Phase 10: Full PWA with explicit download and offline reading
+- Phase 4: Last-read chapter cached (ADR-061)
+- Phase 12: Full PWA with explicit download and offline reading
 
-Between Phase 3 and Phase 10, there is a gap. A seeker reading chapter 14 of the Autobiography on a bus in São Paulo loses connectivity mid-chapter. The current chapter is cached (Phase 3), but chapter 15 isn't. The reading session ends — not because the seeker chose to stop, but because the infrastructure failed them.
+Between Phase 4 and Phase 12, there is a gap. A seeker reading chapter 14 of the Autobiography on a bus in São Paulo loses connectivity mid-chapter. The current chapter is cached (Phase 4), but chapter 15 isn't. The reading session ends — not because the seeker chose to stop, but because the infrastructure failed them.
 
 This ADR closes that gap with **proactive caching** — the Service Worker observes sequential reading and fetches ahead, so that connectivity loss during a reading session doesn't interrupt the experience.
 
@@ -4220,7 +4220,7 @@ readingState = {
 
 When a reading session is active and a new chapter is fetched:
 
-1. **Cache the current chapter** (already happening via Phase 3 last-read caching)
+1. **Cache the current chapter** (already happening via Phase 4 last-read caching)
 2. **Proactively fetch the next 2 chapters** via `requestIdleCallback` or `setTimeout(0)` — non-blocking, after the current page has rendered
 3. **Proactively fetch the relations data** for the next 2 chapters (`/api/v1/chapters/[slug]/[number]/relations`) — only if the seeker is on the batch prefetch tier (ADR-062)
 
@@ -4287,21 +4287,21 @@ For the on-demand tier (slow connections): the reading session still caches chap
 |------|--------------------------|----------------------|
 | Batch prefetch (good connection) | Yes, 2 chapters ahead | Yes, 2 chapters ahead |
 | On-demand (slow connection) | Yes, 2 chapters ahead | No — on-tap when seeker arrives |
-| No loading (Save-Data / 2G) | No proactive caching — only the current chapter (Phase 3 baseline) | No |
+| No loading (Save-Data / 2G) | No proactive caching — only the current chapter (Phase 4 baseline) | No |
 
 #### Phase placement
 
-- **Phase 3:** Last-read chapter caching (ADR-061). The Service Worker infrastructure exists.
-- **Phase 5:** Reading session detection + proactive chapter HTML caching. Also: batch prefetch API (`/api/v1/chapters/[slug]/[number]/relations`) built as a core Phase 5 deliverable alongside the Related Teachings system — not deferred as an optimization.
-- **Phase 5+:** Proactive relations caching (depends on batch prefetch API existing).
-- **Phase 10:** Full PWA — explicit "Download this book for offline reading" becomes available. The reading session remains as the *implicit* complement to the *explicit* download feature.
+- **Phase 4:** Last-read chapter caching (ADR-061). The Service Worker infrastructure exists.
+- **Phase 6:** Reading session detection + proactive chapter HTML caching. Also: batch prefetch API (`/api/v1/chapters/[slug]/[number]/relations`) built as a core Phase 6 deliverable alongside the Related Teachings system — not deferred as an optimization.
+- **Phase 6+:** Proactive relations caching (depends on batch prefetch API existing).
+- **Phase 12:** Full PWA — explicit "Download this book for offline reading" becomes available. The reading session remains as the *implicit* complement to the *explicit* download feature.
 
 ### Alternatives Considered
 
 | Approach | Why rejected |
 |----------|-------------|
 | **Full book download on first chapter access** | Too aggressive — a seeker opening chapter 1 may not read the whole book. Caching all 48 chapters of the Autobiography (~1–2MB) on first touch is wasteful, especially on metered connections. |
-| **User-initiated "Download for offline"** | Correct for Phase 10 (PWA), but requires UI, user decision, and storage consent. The reading session is invisible — it just works. Both features coexist: implicit proactive caching (this ADR) and explicit download (Phase 10). |
+| **User-initiated "Download for offline"** | Correct for Phase 12 (PWA), but requires UI, user decision, and storage consent. The reading session is invisible — it just works. Both features coexist: implicit proactive caching (this ADR) and explicit download (Phase 12). |
 | **No proactive caching** | Acceptable but suboptimal. Connectivity drops during reading sessions are common on buses, trains, and in areas with spotty coverage. Two chapters of read-ahead covers most brief connectivity gaps. |
 | **Prefetch more than 2 chapters** | Diminishing returns. Two chapters ahead covers ~30–60 minutes of reading. A connectivity gap longer than that is not a brief interruption — the seeker has likely stopped reading. The cache budget stays small. |
 
@@ -4309,16 +4309,16 @@ For the on-demand tier (slow connections): the reading session still caches chap
 
 - **Invisible resilience.** The seeker never knows the caching is happening. They never configure it, never approve it, never see a download progress bar. They just notice that chapter transitions are instant and that reading continues even when the train enters a tunnel. The technology fades into the background — exactly what calm technology means.
 - **Privacy by architecture.** No reading history is stored. The SW's in-memory state is ephemeral. The cache is indistinguishable from normal browser caching. A shared device reveals nothing.
-- **Complementary to explicit offline.** Phase 10 adds "Download this book." The reading session is the implicit counterpart — it handles the common case (brief connectivity loss during a session) without requiring user action. Both features serve different needs and coexist.
-- **Batch prefetch integration.** Building the batch prefetch API as a Phase 5 deliverable (not an optimization) means the reading session can cache relations data ahead, making the Related Teachings side panel work across cached chapters. The alternative — per-paragraph API calls that can't be proactively cached — would leave the side panel broken during offline chapter transitions.
+- **Complementary to explicit offline.** Phase 12 adds "Download this book." The reading session is the implicit counterpart — it handles the common case (brief connectivity loss during a session) without requiring user action. Both features serve different needs and coexist.
+- **Batch prefetch integration.** Building the batch prefetch API as a Phase 6 deliverable (not an optimization) means the reading session can cache relations data ahead, making the Related Teachings side panel work across cached chapters. The alternative — per-paragraph API calls that can't be proactively cached — would leave the side panel broken during offline chapter transitions.
 
 ### Consequences
 
 - The Service Worker gains reading session detection logic (~50 lines of JS)
 - A chapter cache with LRU eviction is added to the SW (Cache API, ~30 lines)
-- The batch prefetch API (`/api/v1/chapters/[slug]/[number]/relations`) is built in Phase 5 as a core deliverable, not deferred
+- The batch prefetch API (`/api/v1/chapters/[slug]/[number]/relations`) is built in Phase 6 as a core deliverable, not deferred
 - The reader component's offline behavior is specified: cached chapters serve normally, uncached chapters show a gentle redirect to the nearest cached chapter
-- Phase 10's explicit download feature builds on the same caching infrastructure — the download action simply pre-fills the cache for all chapters in a book, using the same cache keys the reading session uses
+- Phase 12's explicit download feature builds on the same caching infrastructure — the download action simply pre-fills the cache for all chapters in a book, using the same cache keys the reading session uses
 - **Extends ADR-025** (PWA), **ADR-061** (global equity / Service Worker), and **ADR-062** (batch prefetch integration)
 
 ---
@@ -4365,7 +4365,7 @@ Contentful remains the editorial source of truth (ADR-002) for all authored cont
 - Teaching topic descriptions
 - Calendar event definitions
 - Sacred Places descriptions and imagery
-- "Seeking..." empathic entry point text (Phase 9 — cultural adaptation per locale)
+- "Seeking..." empathic entry point text (Phase 11 — cultural adaptation per locale)
 - Daily passage pool membership
 
 Contentful's native workflow (Draft → In Review → Published), role-based permissions, audit trail, and locale management serve this authoring use case well. No change from the existing design for content authoring.
@@ -4424,14 +4424,14 @@ Only the sections relevant to the staff member's role appear. A translation revi
 
 | Workflow | First Needed | Description |
 |---|---|---|
-| **Theme tag review** | Phase 4 | Passage displayed with full citation. Theme name and description visible. Similarity score and AI confidence shown (but not as primary decision input). Approve, reject, or adjust relevance weight. Keyboard shortcuts: `a` approve, `r` reject, `→` next. |
-| **Daily passage curation** | Phase 4 | 7-day lookahead calendar. Each day's passage shown with tone badge. Swap from pool. Flag inappropriate timing (e.g., a "challenging" passage on a holiday). |
-| **Calendar event management** | Phase 4 | Event list with dates. For each event, associated passages shown. Add/remove associations. Preview how the homepage will look on that date. |
-| **Social media asset review** | Phase 7 | Today's quote image at actual platform dimensions (1:1, 9:16, 16:9). Caption below with inline editing. Download per platform. Mark as "posted" per platform (tracking, not automation). Weekly lookahead view. |
-| **Translation review** | Phase 9 | Side-by-side: English source string and AI draft. UI context note ("this appears on the search button"). Approve, edit inline, or flag `[REVIEW]`. Batch view (40–100 strings per session). Progress indicator per locale. |
-| **Ingestion QA review** | Phase 4+ | Flagged passages with Claude's suggestion and confidence. Accept correction, reject (keep original), or edit manually. Grouped by flag type (OCR error, formatting, truncation). |
-| **Tone/accessibility spot-check** | Phase 4 | Random sample of classified passages. "Does this feel `contemplative`? Is this `universal`-level accessibility?" Confirm or reclassify. |
-| **Content preview** | Phase 4 | "Preview as seeker" — see exactly what a theme page, daily passage, or editorial thread will look like before publication. |
+| **Theme tag review** | Phase 5 | Passage displayed with full citation. Theme name and description visible. Similarity score and AI confidence shown (but not as primary decision input). Approve, reject, or adjust relevance weight. Keyboard shortcuts: `a` approve, `r` reject, `→` next. |
+| **Daily passage curation** | Phase 5 | 7-day lookahead calendar. Each day's passage shown with tone badge. Swap from pool. Flag inappropriate timing (e.g., a "challenging" passage on a holiday). |
+| **Calendar event management** | Phase 5 | Event list with dates. For each event, associated passages shown. Add/remove associations. Preview how the homepage will look on that date. |
+| **Social media asset review** | Phase 9 | Today's quote image at actual platform dimensions (1:1, 9:16, 16:9). Caption below with inline editing. Download per platform. Mark as "posted" per platform (tracking, not automation). Weekly lookahead view. |
+| **Translation review** | Phase 11 | Side-by-side: English source string and AI draft. UI context note ("this appears on the search button"). Approve, edit inline, or flag `[REVIEW]`. Batch view (40–100 strings per session). Progress indicator per locale. |
+| **Ingestion QA review** | Phase 5+ | Flagged passages with Claude's suggestion and confidence. Accept correction, reject (keep original), or edit manually. Grouped by flag type (OCR error, formatting, truncation). |
+| **Tone/accessibility spot-check** | Phase 5 | Random sample of classified passages. "Does this feel `contemplative`? Is this `universal`-level accessibility?" Confirm or reclassify. |
+| **Content preview** | Phase 5 | "Preview as seeker" — see exactly what a theme page, daily passage, or editorial thread will look like before publication. |
 
 #### Layer 4: Retool — Technical Operations
 
@@ -4481,11 +4481,11 @@ The editorial review portal is introduced incrementally, matching the content wo
 
 | Phase | Staff Experience Deliverables |
 |---|---|
-| **Phase 4** | Minimal editorial review portal: theme tag review queue, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Email digest for review notifications. Auth0 roles: `editor`, `reviewer`. |
-| **Phase 7** | Social media asset review workflow added to the admin portal. |
-| **Phase 8** | Contentful integration. Contentful Custom Apps (sidebar panels). Full admin editorial workflow connecting Contentful authoring with portal review queues. |
-| **Phase 9** | Translation review UI added to admin portal. Auth0 role: `translator:{locale}`. Volunteer reviewer access with minimal permissions. |
-| **Phase 9+** | Impact dashboard for leadership. |
+| **Phase 5** | Minimal editorial review portal: theme tag review queue, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Email digest for review notifications. Auth0 roles: `editor`, `reviewer`. |
+| **Phase 9** | Social media asset review workflow added to the admin portal. |
+| **Phase 10** | Contentful integration. Contentful Custom Apps (sidebar panels). Full admin editorial workflow connecting Contentful authoring with portal review queues. |
+| **Phase 11** | Translation review UI added to admin portal. Auth0 role: `translator:{locale}`. Volunteer reviewer access with minimal permissions. |
+| **Phase 11+** | Impact dashboard for leadership. |
 
 ### Alternatives Considered
 
@@ -4495,7 +4495,7 @@ The editorial review portal is introduced incrementally, matching the content wo
 | **Everything in Contentful** | Contentful is excellent for content authoring but not designed for AI classification review workflows (approve/reject per passage at scale), social media asset visual review, or translation side-by-side comparison. Forcing these workflows into Contentful's content model would require awkward workarounds. |
 | **Everything in Retool** | Retool can technically build any admin UI, but the result is always "an admin tool." For the AE developer, this is fine. For a monastic editor reviewing whether a passage about inner peace is correctly tagged — the experience matters. Retool's generic form builders and data grids don't support the focused, reverent interaction these workflows demand. |
 | **Third-party editorial workflow tool (Jira, Asana, Monday)** | Introduces a new vendor with its own UX, its own authentication, its own learning curve. Doesn't integrate with portal data (passages, themes, embeddings). Adds cost. The editorial review workflows are specific to this portal's data model — generic project management tools would require extensive customization to be useful. |
-| **Build the admin portal from Phase 1** | Premature. Phase 1 has a single book with a one-time ingestion QA process. The first real demand for review workflows comes in Phase 4 (theme tagging at scale across multiple books). Building the portal earlier would be over-engineering. |
+| **Build the admin portal from Phase 1** | Premature. Phase 1 has a single book with a one-time ingestion QA process. The first real demand for review workflows comes in Phase 5 (theme tagging at scale across multiple books). Building the portal earlier would be over-engineering. |
 
 ### Rationale
 
@@ -4504,18 +4504,2318 @@ The editorial review portal is introduced incrementally, matching the content wo
 - **Review workflows are the bottleneck.** The portal's most distinctive constraint — human review as mandatory gate — means the speed and quality of staff review directly determines how quickly new content reaches seekers. A cumbersome review process means fewer themes published, fewer passages curated, slower translation cycles. The review experience is a first-class product concern, not an afterthought.
 - **The calm design system already exists.** Building the admin portal in the same Next.js application, with the same design tokens, means zero incremental design cost. The portal's warm cream, Merriweather, and gold accents serve the staff experience as naturally as the seeker experience.
 - **Auth0 already exists in the SRF stack.** Role-based access for the admin portal uses SRF's established identity provider. No new authentication system.
-- **Incremental delivery.** Phase 4 delivers only the review workflows needed for theme tagging (the first AI-proposal workflow at scale). Each subsequent phase adds only the workflows demanded by its content features. The admin portal grows organically, never ahead of actual need.
+- **Incremental delivery.** Phase 5 delivers only the review workflows needed for theme tagging (the first AI-proposal workflow at scale). Each subsequent phase adds only the workflows demanded by its content features. The admin portal grows organically, never ahead of actual need.
 
 ### Consequences
 
 - **Revises the DESIGN.md statement** "The portal never builds custom admin UIs for either use case." The portal now builds a purpose-built editorial review UI for non-technical staff. Contentful remains the content authoring tool. Retool remains the technical operations tool. The admin portal fills the gap between them.
-- Phase 4 gains a new deliverable: minimal editorial review portal
-- Phase 7 gains social media asset review in the admin portal
-- Phase 8 gains Contentful Custom Apps (sidebar panels)
-- Phase 9 gains translation review UI and volunteer reviewer access
+- Phase 5 gains a new deliverable: minimal editorial review portal
+- Phase 9 gains social media asset review in the admin portal
+- Phase 10 gains Contentful Custom Apps (sidebar panels)
+- Phase 11 gains translation review UI and volunteer reviewer access
 - Auth0 role schema: `editor`, `reviewer`, `translator:{locale}`, `admin`, `leadership`
 - Email digest infrastructure: scheduled serverless function for daily review summaries
 - The admin portal shares the Next.js application, design system, and database — zero new infrastructure
 - **Extends ADR-002** (Contentful as editorial source of truth — now one layer of five, not the whole story), **ADR-019** (social media — review workflow now specified), **ADR-023** (translation workflow — review UI now specified), and **ADR-048** (theme tagging — review workflow now specified)
+
+---
+
+## ADR-065: AWS Lambda for Batch and Background Workloads
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The portal's current architecture routes all server-side logic through Next.js API routes on Vercel. This works well for request/response workloads (search, reader, API calls) but is unsuitable for batch operations that exceed Vercel's function timeout limits (10s hobby, 60s Pro, 300s Enterprise):
+
+- **Embedding generation** for a full book (~500–2,000 chunks × embedding API call) can take 5–30 minutes.
+- **Chunk relation computation** for a new book requires O(N_new × N_existing) vector comparisons — manageable but long-running.
+- **Daily email dispatch** (Phase 9) sends the same passage to all subscribers — a fan-out operation.
+- **Social media asset generation** (Phase 9) renders quote images at multiple aspect ratios.
+- **Contentful webhook processing** (Phase 10) extracts text → embeds → upserts Neon → updates chunk relations.
+- **YouTube transcript ingestion** (Phase 13) downloads and processes transcripts for potentially hundreds of videos.
+
+SRF's established tech stack (SRF Tech Stack Brief) uses AWS Lambda + Serverless Framework v4 for all backend compute. The portal currently deviates from this pattern because Phases 1–4 have no batch workloads. As the portal grows, aligning batch processing with SRF's standard infrastructure pattern reduces operational divergence.
+
+### Decision
+
+Add AWS Lambda functions for batch and background workloads, using **Serverless Framework v4** per SRF's IDP standard. Next.js API routes continue to handle all request/response workloads. Lambda handles everything that is scheduled, event-driven, or long-running.
+
+#### Directory structure
+
+```
+/serverless/
+  serverless.yml              — Serverless Framework config
+  /functions/
+    /ingest/                  — Book ingestion: PDF → chunks → embeddings → Neon
+    /relations/               — Chunk relation computation (incremental + full)
+    /email/                   — Daily passage email dispatch (Phase 9)
+    /social/                  — Quote image generation (Phase 9)
+    /webhook/                 — Contentful webhook consumer (Phase 10)
+    /transcript/              — YouTube transcript ingestion (Phase 13)
+  /layers/
+    /shared/                  — Shared dependencies (Neon client, Claude SDK, etc.)
+```
+
+#### Invocation patterns
+
+| Workload | Trigger | Phase |
+|----------|---------|-------|
+| Book ingestion | Manual invocation (CLI or Retool button) | Phase 5 |
+| Chunk relation computation | Triggered after ingestion completes (Step Functions or EventBridge) | Phase 6 |
+| Daily email | EventBridge cron (daily at configurable time) | Phase 9 |
+| Social media generation | Manual invocation (Retool or admin portal) | Phase 9 |
+| Contentful webhook | EventBridge (webhook → SNS → Lambda) | Phase 10 |
+| YouTube transcript | Manual invocation + EventBridge for batch scheduling | Phase 13 |
+
+#### What stays in Next.js API routes
+
+All request/response APIs: search, reader, related teachings, bookmarks, health check, OG image generation. These are fast (< 5s), user-facing, and benefit from Vercel's edge network.
+
+#### What moves to Lambda
+
+All batch, scheduled, or event-driven workloads. These are slow (seconds to minutes), staff-initiated or automated, and benefit from Lambda's 15-minute timeout and independent scaling.
+
+### Rationale
+
+- **Timeout alignment.** Lambda functions run up to 15 minutes. Vercel functions time out at 60–300s. Book ingestion and relation computation exceed Vercel limits.
+- **SRF standard compliance.** The SRF Tech Stack Brief mandates Lambda + Serverless Framework for backend compute. Aligning batch processing with this standard reduces the gap between the portal and SRF's IDP.
+- **Cost efficiency.** Lambda charges per 100ms of execution. Batch jobs that run for a few minutes per month cost pennies. No idle compute.
+- **Separation of concerns.** User-facing request/response stays on Vercel (fast, edge-cached). Staff/system-facing batch processing runs on Lambda (long-running, independently scalable). Neither affects the other.
+- **Phase 10 readiness.** When the portal migrates to GitLab (Phase 10), the Serverless Framework deployment integrates directly into GitLab CI/CD per SRF's established pipeline pattern.
+
+### Consequences
+
+- `/serverless/` directory added to repo alongside `/terraform/`
+- Terraform gains a module for Lambda infrastructure (IAM roles, VPC config if needed for Neon private networking)
+- CI/CD pipeline gains `serverless deploy` step for Lambda changes
+- Phase 5+ batch workloads run on Lambda instead of manual scripts or timeout-constrained API routes
+- Lambda functions share the same `/lib/services/` business logic as Next.js — framework-agnostic service layer pays off here
+- **Extends ADR-031** (Terraform), aligns with SRF Tech Stack Brief
+
+---
+
+## ADR-066: Content-Addressable Passage Deep Links
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The current deep linking scheme uses `chapter + paragraph_index` to link to specific passages (e.g., `/books/autobiography/14#p7` for chapter 14, paragraph 7). This has a fragility problem: if a book is re-ingested with different chunking (corrected OCR, revised paragraph boundaries, different chunk sizes), the `paragraph_index` values may shift, breaking all previously shared links.
+
+Shared passage links are permanent artifacts. A seeker shares a link to a Yogananda quote with a friend. That link appears in emails, WhatsApp messages, social media posts, browser bookmarks, and physical printouts (QR codes on passage PDFs). If a re-ingestion breaks the link, the seeker's friend arrives at the wrong passage — or worse, a 404. This violates the 10-year architecture principle (ADR-033).
+
+### Decision
+
+Add a **content hash** column to `book_chunks` that provides a stable, content-addressable identifier for each passage. Deep links use this hash as a fallback when `paragraph_index` no longer matches.
+
+#### Schema addition
+
+```sql
+ALTER TABLE book_chunks ADD COLUMN content_hash TEXT GENERATED ALWAYS AS (
+    encode(sha256(encode(left(content, 200), 'utf8')), 'hex')
+) STORED;
+
+CREATE INDEX idx_chunks_content_hash ON book_chunks(content_hash);
+```
+
+The hash is computed from the first 200 characters of the passage content. This is enough to uniquely identify a passage within a book (duplicate openings across chapters are astronomically rare in Yogananda's prose), while remaining stable across minor edits (trailing whitespace, typographic normalization).
+
+#### Deep link resolution
+
+```
+1. Try exact match: book_slug + chapter_number + paragraph_index
+2. If paragraph content doesn't match the OG-embedded content_hash:
+   a. Search same chapter for matching content_hash
+   b. Search same book for matching content_hash
+3. If found: redirect to correct location (301)
+4. If not found: show the chapter with a gentle message:
+   "This passage may have moved. Here is the chapter it was in."
+```
+
+#### Share URL format
+
+Current: `/books/autobiography/14#p7`
+Enhanced: `/books/autobiography/14#p7?h=a3f2c8` (first 6 chars of content_hash)
+
+The `h` parameter is used only for resolution fallback when the paragraph_index doesn't match. Normal navigation ignores it.
+
+### Rationale
+
+- **Link permanence.** Shared links survive re-ingestion, re-chunking, and content corrections. A 10-year-old shared URL still works.
+- **Graceful degradation.** If the hash can't be resolved (passage genuinely removed), the seeker sees the chapter rather than an error. Content Availability Honesty principle.
+- **Zero cost in the happy path.** When paragraph_index matches (99% of cases), the hash is never consulted. The resolution chain adds latency only when content has actually changed.
+- **Minimal schema impact.** One generated column, one index. No migration complexity.
+
+### Consequences
+
+- `content_hash` column added to `book_chunks` table in the initial migration (Phase 1)
+- Share URLs include the `h` parameter (short hash suffix)
+- OG meta tags embed the content_hash for later verification
+- Re-ingestion scripts log when paragraph_index shifts occur, enabling link audit
+- **Extends ADR-033** (10-year architecture) and **ADR-015** (passage sharing)
+
+---
+
+## ADR-067: Search API Rate Limiting and Abuse Prevention
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The search API (`/api/v1/search`) calls the Claude API for query expansion and passage ranking. Each search costs approximately $0.01–0.02 in Claude API usage. The portal has no authentication until Phase 15+. All API routes are public.
+
+A bot or bad actor could hammer the search endpoint and generate significant Claude API costs. At 100 requests/second, the portal would burn through $50–100/hour in Claude API charges. Even accidental abuse (a misbehaving scraper, a search indexer hitting the API) could spike costs.
+
+The DESIGN.md security section mentions "Rate limiting on API routes" but doesn't specify the implementation.
+
+### Decision
+
+Implement rate limiting at two layers:
+
+#### Layer 1: Cloudflare (edge — Phase 1)
+
+Cloudflare's free tier includes basic rate limiting via WAF rules. Configure:
+
+| Rule | Limit | Scope |
+|------|-------|-------|
+| Global API rate limit | 60 requests/minute per IP | All `/api/v1/*` routes |
+| Search rate limit | 15 requests/minute per IP | `/api/v1/search` specifically |
+| Burst protection | 5 requests/second per IP | All routes |
+
+These limits are generous for human seekers (who search a few times per session) but block automated abuse.
+
+#### Layer 2: Application (API route — Phase 1)
+
+A lightweight in-memory rate limiter (e.g., `rate-limiter-flexible` with Vercel's edge runtime, or a simple sliding window counter in a Vercel KV store) as a defense-in-depth measure:
+
+- **Claude API calls gated**: If the IP exceeds the search rate limit, the API falls back to database-only search (vector + FTS without Claude query expansion or re-ranking). The seeker still gets results — just without the AI refinement layer. This is graceful degradation, not a hard block.
+- **Hard block threshold**: If an IP exceeds 200 requests/hour to any API endpoint, return `429 Too Many Requests` with a `Retry-After` header and a calm message: "Please wait a moment before searching again."
+
+#### Claude API budget cap
+
+Set a monthly spending cap via the Anthropic API dashboard. If the cap is reached, the search API silently falls back to database-only search for all users. The portal degrades gracefully — search still works, just without query expansion. This is the last line of defense against cost runaway.
+
+### Rationale
+
+- **Cost protection is a Phase 1 requirement**, not an afterthought. The Claude API is the only variable-cost component in the early phases. Unbounded cost exposure on a public, unauthenticated API is an unacceptable risk.
+- **Graceful degradation over hard blocks.** A seeker who happens to search frequently (exploring themes, trying different queries) should never see an error page. They see slightly less refined results. The portal remains welcoming.
+- **Two-layer defense.** Cloudflare catches the obvious abuse (bots, scrapers). The application layer catches the edge cases (distributed abuse, legitimate but excessive use).
+
+### Consequences
+
+- Cloudflare WAF rules configured in Phase 1 (added to Terraform Cloudflare module)
+- Application-level rate limiter in the search API route
+- Claude API monthly budget cap set via Anthropic dashboard
+- Search gracefully degrades to database-only when rate-limited or budget-exceeded
+- Monitoring: Sentry alert on rate limit triggers; New Relic dashboard for Claude API usage (Phase 7)
+- **Extends** the security section of DESIGN.md with concrete implementation
+
+---
+
+## ADR-068: "What Is Humanity Seeking?" — Anonymized Search Intelligence
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The portal's `search_queries` table logs every search query without any user identification (ADR-029, DELTA compliance). Over time, this data represents something unprecedented: a real-time, global window into what humanity is seeking spiritual guidance about.
+
+- "Fear" spikes during crises. "Death" rises after public tragedies. "Love" peaks seasonally. "Purpose" trends among younger seekers.
+- These patterns are aggregated and anonymous — no individual is identified, no session is tracked.
+- The philanthropist's foundation funded this project to expand the global availability of Yogananda's teachings. Demonstrating *what the world is seeking* is a profound way to show impact.
+
+### Decision
+
+Produce a yearly **"What Is Humanity Seeking?"** report from aggregated, anonymized search query data. This is a research and mission contribution, not a product feature.
+
+#### Data pipeline
+
+1. **Aggregation (automated, nightly):** Group search queries by theme (using the existing theme taxonomy from ADR-048), by geography (country-level from Cloudflare analytics — no finer granularity), and by time period (weekly, monthly, yearly). Store aggregates in a `search_theme_aggregates` table.
+2. **Trend detection (automated):** Identify rising/falling themes, seasonal patterns, and correlations with world events. Claude can assist with narrative-quality trend descriptions — but all descriptions are reviewed by a human before publication.
+3. **Report generation (annual, human-curated):** SRF staff or the philanthropist's foundation curates the data into a narrative report. The portal provides the raw aggregates and trend data; the human provides the interpretation.
+
+#### Schema addition
+
+```sql
+CREATE TABLE search_theme_aggregates (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    period_start    DATE NOT NULL,
+    period_end      DATE NOT NULL,
+    period_type     TEXT NOT NULL CHECK (period_type IN ('week', 'month', 'quarter', 'year')),
+    theme_slug      TEXT,                          -- NULL for unclassified queries
+    country_code    TEXT,                          -- ISO 3166-1 alpha-2, NULL for global
+    query_count     INTEGER NOT NULL DEFAULT 0,
+    unique_terms    INTEGER NOT NULL DEFAULT 0,     -- distinct query strings
+    sample_queries  TEXT[],                         -- 5–10 representative (anonymized) queries for context
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_search_aggregates_period ON search_theme_aggregates(period_type, period_start);
+CREATE INDEX idx_search_aggregates_theme ON search_theme_aggregates(theme_slug, period_type);
+```
+
+#### Visibility
+
+- **Phase 7:** Search analytics dashboard in Retool (staff-only). Raw aggregate exploration.
+- **Phase 11:** Impact dashboard at `/admin/impact` (leadership-facing). Includes "What Is Humanity Seeking?" visualization: warm-toned world map, trending themes, and temporal patterns.
+- **Annual report:** Published by SRF or the philanthropist's foundation. Format TBD (PDF, web page, or both). Not automatically generated — human-curated from the aggregate data.
+
+#### DELTA compliance
+
+- **Dignity:** No individual is identified. No query is attributable to a person. The data is always aggregated (minimum granularity: country + week).
+- **Agency:** Seekers are not aware of or affected by the aggregation. Their search experience is unchanged.
+- **Embodiment:** The report encourages reflection on collective human need, not individual tracking.
+- Minimum aggregation threshold: theme + country combinations with fewer than 10 queries in a period are suppressed (to prevent inference about small populations).
+
+### Rationale
+
+- **Mission alignment.** The philanthropist asked: "What can we do to help SRF make Paramahansa Yogananda's books available freely throughout the world?" Understanding what the world is seeking is a direct answer to that question.
+- **Unique contribution.** No other spiritual organization has real-time data on what humanity seeks spiritual guidance about. This data, handled with DELTA integrity, is a gift to the world — not a surveillance product.
+- **Impact reporting.** The foundation that funded the portal deserves to see its impact beyond page view counts. "Fear was the most searched theme globally in 2027, and 47 countries found guidance in Yogananda's words on courage" is infinitely more meaningful than "2.3M page views."
+
+### Consequences
+
+- `search_theme_aggregates` table added (Phase 7, alongside search analytics dashboard)
+- Nightly aggregation Lambda function (Phase 7, uses ADR-065 Lambda infrastructure)
+- Theme classification of search queries integrated into the search pipeline (lightweight Claude call or keyword matching against theme taxonomy)
+- Impact dashboard in Phase 11 gains "What Is Humanity Seeking?" section
+- Annual report production becomes an SRF staff responsibility (the portal provides data, not the report itself)
+- Minimum aggregation threshold (10 queries) prevents inference about small populations
+- **Extends ADR-029** (DELTA-compliant analytics) and **ADR-048** (theme taxonomy)
+
+---
+
+## ADR-069: Edition-Aware Content Model
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+Yogananda's books have been published in multiple editions over decades. Page numbers, chapter organization, and even paragraph boundaries can differ between editions. If SRF publishes a revised edition of *Where There Is Light* with corrected page numbers or reorganized content, every citation in the portal referencing the previous edition becomes inaccurate.
+
+The current data model does not track edition. The `books` table has `publication_year` but no edition identifier. A re-ingestion of a revised edition would overwrite the previous data, potentially breaking:
+- Shared passage links (if paragraph boundaries shifted — mitigated by ADR-066)
+- Cached OG images with old page numbers
+- External citations referencing portal page numbers
+- Email archives with old citations
+
+### Decision
+
+Add `edition` and `edition_year` columns to the `books` table. Track which edition the portal serves.
+
+#### Schema addition
+
+```sql
+ALTER TABLE books ADD COLUMN edition TEXT;       -- e.g., "13th Edition", "Revised 2024"
+ALTER TABLE books ADD COLUMN edition_year INTEGER; -- year of this specific edition
+```
+
+#### Content policy
+
+- The portal serves **one edition per language per book** at any time. There is no multi-edition viewer.
+- When a new edition is ingested, the old edition's data is archived (not deleted) in a `book_chunks_archive` table, preserving historical citations.
+- Shared links to the old edition resolve via content-hash fallback (ADR-066). If the passage exists in the new edition (even at a different location), the link still works.
+- The book landing page displays the served edition: *"Autobiography of a Yogi — 13th Edition (1998)"*.
+
+#### Transition workflow
+
+1. Ingest new edition to a Neon branch (not production)
+2. Run content-hash comparison: identify passages that moved, changed, or were added/removed
+3. Human review of all changes
+4. Apply to production, archiving old edition data
+5. Regenerate chunk relations for affected passages
+6. Log all paragraph_index shifts for link audit
+
+### Rationale
+
+- **Citation accuracy over time.** The 10-year architecture horizon (ADR-033) means the portal will almost certainly serve updated editions. Tracking editions now costs two columns and prevents citation confusion later.
+- **Transparent sourcing.** Displaying the edition on book pages tells seekers exactly which text they're reading. This is Sacred Text Fidelity in practice.
+- **Archive for auditability.** If a theological question arises about a specific passage rendering, the archive preserves what was served and when.
+
+### Consequences
+
+- `edition` and `edition_year` columns added to `books` table in Phase 1 migration
+- `book_chunks_archive` table created (can be empty until an actual re-ingestion occurs)
+- Book landing pages display edition information
+- Re-ingestion workflow documented in the operational playbook
+- **Extends ADR-033** (10-year architecture) and **ADR-066** (content-addressable links)
+
+---
+
+## ADR-070: CI-Agnostic Deployment Scripts
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The portal will migrate from GitHub Actions (Phases 1–9) to GitLab CI/CD (Phase 10+) per SRF IDP standards. Both CI systems call the same operations: run tests, apply Terraform, run migrations, deploy. If pipeline logic is embedded in CI-specific YAML (GitHub Actions workflow syntax vs. GitLab CI YAML syntax), the Phase 10 migration requires rewriting every pipeline step.
+
+### Decision
+
+Add a `scripts/` directory with CI-system-agnostic deployment scripts. Both GitHub Actions and GitLab CI call these scripts rather than embedding logic in workflow YAML.
+
+#### Directory structure
+
+```
+/scripts/
+  terraform-plan.sh          — Run terraform plan for a given environment
+  terraform-apply.sh         — Run terraform apply for a given environment
+  db-migrate.sh              — Run dbmate migrations against a given database URL
+  smoke-test.sh              — Run smoke tests against a deployed environment
+  search-quality.sh          — Run the search quality evaluation suite
+```
+
+#### CI workflow pattern
+
+GitHub Actions (Phases 1–9):
+```yaml
+steps:
+  - run: ./scripts/terraform-plan.sh dev
+  - run: ./scripts/db-migrate.sh $DATABASE_URL
+  - run: ./scripts/smoke-test.sh $DEPLOYMENT_URL
+```
+
+GitLab CI (Phase 10+):
+```yaml
+script:
+  - ./scripts/terraform-plan.sh dev
+  - ./scripts/db-migrate.sh $DATABASE_URL
+  - ./scripts/smoke-test.sh $DEPLOYMENT_URL
+```
+
+The CI config becomes a thin orchestration layer. The scripts contain the actual logic.
+
+#### Multi-environment promotion pipeline
+
+For Phase 10+ with four environments (dev/qa/stg/prod):
+
+```
+PR → dev (auto) → qa (manual gate) → stg (manual gate) → prod (manual gate)
+```
+
+Each promotion runs:
+1. `terraform-apply.sh {env}` — apply infrastructure for target environment
+2. `db-migrate.sh {env}` — run migrations against target environment's database
+3. Vercel deployment to target environment's project
+4. `smoke-test.sh {env}` — verify the deployment
+
+Migration sequencing: Terraform apply runs *first* (in case it creates the database), then dbmate migrations (which depend on the database existing), then Vercel deploys the new code (which depends on the new schema).
+
+### Rationale
+
+- **Migration cost reduction.** The Phase 10 SCM migration becomes a CI config swap (rewrite `.github/workflows/*.yml` → `.gitlab-ci.yml`), not a logic rewrite. The scripts are identical.
+- **Local reproducibility.** Developers can run `./scripts/db-migrate.sh` locally. CI parity with local execution prevents "works on my machine" issues.
+- **Testability.** Scripts can be tested independently of the CI system. ShellCheck lint in CI catches script errors.
+
+### Consequences
+
+- `/scripts/` directory added to repo in Phase 1
+- GitHub Actions workflows call scripts instead of inline commands
+- Phase 10 GitLab migration rewrites CI config only, not deployment logic
+- All scripts accept environment name as parameter, defaulting to `dev`
+- **Extends ADR-031** (Terraform) with concrete deployment orchestration
+
+---
+
+## ADR-071: Native Share API as Primary Mobile Sharing
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The passage sharing design (ADR-015) provides a share menu with four options: copy link, email passage, save as image, save as PDF. This serves desktop seekers well. But in the Global South — India, Brazil, Nigeria, Indonesia — WhatsApp is the primary sharing mechanism for spiritual content. A seeker in Mumbai who wants to share a Yogananda quote with a friend opens WhatsApp, not email.
+
+The Web Share API (`navigator.share()`) surfaces the device's native sharing sheet, which includes WhatsApp, Telegram, Signal, SMS, and any other installed sharing apps. It is the most natural way to share on mobile, and it removes the portal's need to know which apps the seeker uses.
+
+### Decision
+
+Use `navigator.share()` as the **primary** share action on mobile devices that support it. The custom share menu (copy link, email, save as image, save as PDF) is the fallback for desktop and unsupported browsers.
+
+#### Behavior
+
+```
+Mobile (navigator.share supported):
+  Tap share icon → native share sheet opens immediately
+  Shares: passage text (truncated) + deep link URL
+  "Save as image" and "Save as PDF" remain as separate actions in a "..." overflow menu
+
+Mobile (navigator.share NOT supported):
+  Tap share icon → custom share menu (copy link, email, save as image, save as PDF)
+
+Desktop:
+  Click share icon → custom share menu (always)
+```
+
+#### Share payload
+
+```javascript
+navigator.share({
+  title: 'Paramahansa Yogananda — Autobiography of a Yogi',
+  text: '"The soul is ever free; it is deathless, birthless..." — Chapter 26, p. 312',
+  url: 'https://teachings.yogananda.org/books/autobiography/26#p7?h=a3f2c8'
+});
+```
+
+### Rationale
+
+- **Global South alignment.** WhatsApp has 2+ billion users, concentrated in exactly the regions the portal serves. `navigator.share()` reaches WhatsApp without adding a WhatsApp-specific button or SDK.
+- **Privacy by design.** No third-party sharing scripts. No social media tracking pixels. The browser handles the share natively. DELTA-compliant by architecture.
+- **Reduced UI complexity.** On mobile, one tap opens the native sheet. No custom menu to build, maintain, or localize.
+- **Future-proof.** New sharing apps appear; old ones fade. The native share sheet automatically reflects the user's installed apps. The portal doesn't need to keep a list of sharing targets.
+
+### Consequences
+
+- Share icon behavior branches on `navigator.share` support (feature detection, not device detection)
+- "Save as image" and "Save as PDF" are separate from the share action (they generate files, not share intents)
+- Desktop always shows the custom share menu
+- Mobile shows the native sheet with an overflow menu for image/PDF generation
+- **Amends ADR-015** (passage sharing) with mobile-first native sharing
+
+---
+
+## ADR-072: Database Backup to S3
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The portal's canonical content — book text, embeddings, theme tags, chunk relations, daily passages, calendar events — lives in Neon PostgreSQL. Neon provides point-in-time recovery (PITR), which protects against accidental data loss within Neon's retention window.
+
+However, PITR doesn't protect against:
+- Neon service-level incidents beyond their disaster recovery capability
+- A catastrophic bad migration that corrupts data and isn't noticed within the PITR window
+- The need to restore specific tables or rows without restoring the entire database
+- A future vendor migration (if SRF moves away from Neon for any reason)
+
+The 10-year architecture horizon (ADR-033) demands that the data survive any single vendor relationship. Neon may not exist in 10 years. The data must.
+
+### Decision
+
+Add a **nightly `pg_dump` to S3** as a Phase 3 deliverable, alongside the Terraform work.
+
+#### Implementation
+
+- **Lambda function** (using ADR-065 infrastructure) runs nightly via EventBridge cron
+- `pg_dump --format=custom` (most flexible restore format)
+- Uploaded to an encrypted S3 bucket (`aws:kms` server-side encryption)
+- **Retention:** 90 days of daily backups, plus the 1st of each month retained for 1 year
+- **Size estimate:** Phase 1 database (~2,000 chunks + embeddings) ≈ 50–100MB compressed. Full library (~50,000 chunks) ≈ 1–2GB compressed. S3 cost: < $1/month.
+
+#### Terraform module
+
+```
+/terraform/modules/backup/
+  main.tf         — S3 bucket, Lambda function, EventBridge rule, IAM role
+  variables.tf    — Bucket name, retention policy, schedule
+  outputs.tf      — Bucket ARN
+```
+
+#### Restore procedure (documented in operational playbook)
+
+1. Download backup from S3: `aws s3 cp s3://srf-portal-backups/{date}.dump ./`
+2. Create a Neon branch for restore testing
+3. `pg_restore --dbname=... {date}.dump`
+4. Verify content integrity
+5. If verified: promote restored branch to production (or merge specific tables)
+
+### Rationale
+
+- **Vendor independence.** The backup exists outside Neon's infrastructure. If Neon has a catastrophic failure or if SRF migrates to another PostgreSQL provider, the data is recoverable from S3.
+- **Negligible cost.** S3 Standard-IA with lifecycle rules: < $1/month for the full library backup history.
+- **Operational confidence.** Having an independent backup makes risky operations (embedding model migration per ADR-032, major re-ingestion) safer. Rollback is always possible.
+
+### Consequences
+
+- `/terraform/modules/backup/` added in Phase 3
+- Lambda function for nightly pg_dump added in Phase 3 (or Phase 5 when Lambda infrastructure from ADR-065 is first deployed)
+- S3 bucket created and managed by Terraform
+- Restore procedure documented in operational playbook
+- Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
+- **Extends ADR-031** (Terraform) and **ADR-033** (10-year architecture)
+
+---
+
+## ADR-073: Ephemeral Reading Highlights
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+Readers naturally mark passages that strike them as they read. Physical books have underlines and dog-ears. The portal has lotus bookmarks (ADR-041) for permanent saves. But bookmarks are a commitment — adding every passage that resonates during a long chapter reading session clutters the bookmarks page and dilutes its value.
+
+There is a middle ground: **ephemeral highlights** that persist for the reading session only, allowing seekers to mark passages that resonate, then decide at the chapter boundary which (if any) to permanently bookmark.
+
+### Decision
+
+Add ephemeral paragraph highlights to the reader. These are session-only visual markers — in-memory state, not persisted to `localStorage` or any storage.
+
+#### Interaction
+
+- **Activate:** Double-tap (mobile) or double-click (desktop) on any paragraph. A subtle gold left-border appears (2px, `--srf-gold` at 60% opacity). The paragraph is "highlighted."
+- **Deactivate:** Double-tap/double-click again removes the highlight.
+- **End of chapter prompt:** When the seeker navigates to the next chapter (or closes the tab), if they have any highlighted passages, a gentle bottom sheet appears:
+
+  ```
+  You paused on 3 passages in this chapter.
+  Would you like to bookmark any of them?
+
+  [Show passages]     [Continue reading]
+  ```
+
+  "Show passages" reveals the highlighted excerpts with individual lotus bookmark icons. "Continue reading" dismisses without saving. Both actions clear the highlights.
+
+#### Technical implementation
+
+- Highlights stored in a `Set<string>` in the reader component state (React `useState` or `useRef`). No `localStorage`, no `IndexedDB`, no server calls.
+- Cleared on chapter navigation, page close, or explicit dismissal.
+- No analytics. Highlighting is a private reading moment.
+- `prefers-reduced-motion`: gold border appears instantly (no transition).
+
+### Rationale
+
+- **Respects the contemplative reading mode.** Seekers can engage with passages without the friction of deciding "Is this worth bookmarking?" in the moment. The decision is deferred to the chapter boundary.
+- **Zero privacy footprint.** Nothing is stored. A shared device reveals no trace of highlights. Consistent with ADR-061 (shared device principle).
+- **Complements bookmarks, doesn't replace them.** Bookmarks are permanent and intentional. Highlights are ephemeral and spontaneous. Different gestures (single tap vs. double-tap) prevent confusion.
+
+### Consequences
+
+- Ephemeral highlights added to the reader in Phase 6 (alongside the Related Teachings side panel, as both enhance the reading experience)
+- Double-tap/double-click gesture added to reader paragraph interaction model
+- End-of-chapter highlight review prompt added to chapter transition flow
+- No storage, no analytics, no server interaction
+- Keyboard shortcut: `h` to highlight the currently focused paragraph (extends ADR-042)
+- **Extends ADR-041** (bookmarks) and **ADR-042** (keyboard navigation)
+
+---
+
+## ADR-074: Side-by-Side Commentary View
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+Two of Yogananda's major works are verse-by-verse commentaries on sacred scriptures:
+- *The Second Coming of Christ* (commentary on the New Testament)
+- *God Talks With Arjuna* (commentary on the Bhagavad Gita)
+
+These books have a distinctive structure: each section presents a scripture verse, followed by Yogananda's commentary on that verse. Readers of these works naturally want to see the verse and commentary together, and often want to compare Yogananda's interpretation of adjacent verses.
+
+Phase 7 introduces verse-aware chunking (deliverable 7.2) to handle this structure. This ADR specifies the reader UI for verse-commentary content.
+
+### Decision
+
+Add a **split-pane reader view** for verse-commentary books. This is a reader mode, not a separate page.
+
+#### Layout (≥ 1024px screens)
+
+```
+┌──────────────────────────────┬──────────────────────────────┐
+│  Scripture Verse               │  Yogananda's Commentary       │
+│                                │                                │
+│  "For the Spirit searcheth     │  "The all-knowing Spirit       │
+│   all things, yea, the deep    │   reveals to the devotee       │
+│   things of God."              │   who meditates deeply the     │
+│                                │   truth behind all things..."  │
+│   — 1 Corinthians 2:10         │                                │
+│                                │   — The Second Coming of       │
+│                                │     Christ, Vol. 1, p. 234     │
+└──────────────────────────────┴──────────────────────────────┘
+```
+
+- Left pane: scripture verse (Lora italic, slightly muted, fixed position while scrolling through commentary)
+- Right pane: Yogananda's commentary (Merriweather, standard reader typography)
+- Verse navigation: up/down arrows cycle through verses; both panes update
+
+#### Layout (< 1024px screens)
+
+Sequential layout — verse appears as a highlighted block above the commentary, scrolling naturally:
+
+```
+┌────────────────────────────────────┐
+│  ┌──────────────────────────────┐  │
+│  │  "For the Spirit searcheth   │  │
+│  │   all things..."             │  │
+│  │   — 1 Corinthians 2:10      │  │
+│  └──────────────────────────────┘  │
+│                                     │
+│  "The all-knowing Spirit reveals    │
+│   to the devotee who meditates     │
+│   deeply the truth behind all      │
+│   things..."                        │
+│                                     │
+│  — The Second Coming of Christ,     │
+│    Vol. 1, p. 234                  │
+└────────────────────────────────────┘
+```
+
+#### Data model support
+
+The verse-aware chunking (Phase 7) already produces `book_chunks` with `section_heading` (the verse reference) and `metadata` JSONB (which can carry `verse_text`, `verse_reference`, and `is_commentary: true`). No additional schema changes.
+
+### Rationale
+
+- **Faithful to the book's structure.** These commentaries are designed to be read verse-by-verse. A linear rendering that mixes verses and commentary into a single stream obscures the verse → commentary relationship.
+- **Reader expectations.** Seekers studying *The Second Coming of Christ* typically reference specific verses. The split-pane view makes verse-hopping natural.
+- **Reusable for Wine of the Mystic.** Omar Khayyam quatrains + Yogananda's mystical commentary follow the same verse → commentary structure.
+
+### Consequences
+
+- Split-pane reader mode activated automatically for books with `is_verse_commentary: true` metadata
+- Verse-aware chunking (Phase 7) produces the necessary data structure
+- Reader component gains a `VersePaneReader` variant alongside the standard `ChapterReader`
+- Related Teachings side panel still works — it attaches to the commentary pane on wide screens, or appears below the commentary on narrow screens
+- Keyboard navigation: `v` toggles between verse and commentary focus; `j`/`k` navigate verses (extends ADR-042)
+- **Depends on** Phase 7 (verse-aware chunking). **Extends ADR-036** (reader design) and **ADR-042** (keyboard navigation)
+
+---
+
+## ADR-075: Study Guide View for Group Reading
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+In India, Latin America, and many communities worldwide, Yogananda's teachings are studied in groups — satsang, study circles, family reading sessions. Phase 8 adds presentation mode (enlarged text, hidden chrome) for group reading. But group study needs more than large text — it needs discussion structure.
+
+The portal already has the data to support study guides: theme tags, Related Teachings (cross-book connections), ephemeral highlights, and reader typography. A "Study Guide" view reorganizes this existing data into a format useful for a satsang leader preparing a group reading session.
+
+### Decision
+
+Add a **Study Guide view** for each chapter, accessible via a "Study Guide" button in the reader header (alongside the existing "Present" button).
+
+#### Content (generated from existing data — no new editorial input required)
+
+1. **Key themes in this chapter** — theme tags that appear on passages in this chapter, grouped by category (quality, situation, practice)
+2. **Notable passages** — passages with the highest Related Teachings density (most cross-book connections), suggesting they are thematic anchor points
+3. **Cross-book connections** — "Continue the Thread" content, presented as discussion prompts: "Yogananda explores [theme] further in [book], [chapter]. How does this compare?"
+4. **Discussion questions** — Not AI-generated. Editorially curated, optional. Stored in a `chapter_study_notes` table. Empty until editors add them. The study guide works without them.
+
+#### Schema addition
+
+```sql
+CREATE TABLE chapter_study_notes (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chapter_id      UUID NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+    note_type       TEXT NOT NULL CHECK (note_type IN ('discussion_question', 'context_note', 'practice_suggestion')),
+    content         TEXT NOT NULL,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    language        TEXT NOT NULL DEFAULT 'en',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### URL and interaction
+
+- URL: `/books/[slug]/[chapter]/study` (study guide for a specific chapter)
+- Print-friendly layout by default (study guides are often printed for group use)
+- "Start presenting" button transitions from study guide to presentation mode at the first passage
+
+### Rationale
+
+- **Serves community reading.** ADR-061 recognized group reading as a Global South norm. Presentation mode addresses the *display* need; the study guide addresses the *preparation* need.
+- **Zero editorial cost at launch.** The study guide is 100% generated from existing data (theme tags, relations, notable passages). Editorial discussion questions are optional enhancements added over time.
+- **Leverages existing investment.** Theme tagging (Phase 5), Related Teachings (Phase 6), and presentation mode (Phase 8) are already built. The study guide is a reorganization view, not a new data system.
+
+### Consequences
+
+- `/books/[slug]/[chapter]/study` route added in Phase 8 (alongside presentation mode)
+- `chapter_study_notes` table added (empty until editorial content is available)
+- Study guide generates from existing data: theme tags, chunk relations, passage accessibility levels
+- Print stylesheet for study guide pages
+- **Extends ADR-061** (group reading) and **ADR-036** (reader design)
+
+---
+
+## ADR-076: Audio-Visual Ambiance Toggle
+
+**Status:** Accepted | **Date:** 2026-02-19
+
+### Context
+
+The Quiet Corner offers a timer and chime for micro-meditation. The reader's circadian color temperature (ADR-039) subtly shifts background warmth by time of day. Both features serve the principle that the portal should feel like a contemplative space, not a commercial website.
+
+An optional ambient audio mode — not music, but the subtle environmental sounds of a quiet temple reading room — could deepen this contemplative quality. A distant singing bowl. Gentle wind through trees. The ambiance of a sacred space.
+
+This must be completely opt-in, off by default, and never imposed. It serves seekers who read in noisy environments and want to create a pocket of calm, or seekers who find that ambient sound helps them settle into contemplative reading.
+
+### Decision
+
+Add an optional ambient audio toggle to the reader settings popover and the Quiet Corner.
+
+#### Implementation
+
+- **Off by default.** Always. Stored in `localStorage`.
+- **Three options:** Off / Temple (singing bowl + distant wind, ~60-second loop) / Nature (birdsong + gentle stream, ~90-second loop)
+- **Audio files:** Two short ambient loops, hosted on S3, streamed via `<audio>` element with `loop` attribute. Total size: ~200–400KB each (AAC, low bitrate — ambiance doesn't need high fidelity).
+- **Volume:** Fixed at ~15% of system volume. Not adjustable in the portal. This is background, not foreground.
+- **Behavior:** Fades in over 3 seconds on activation. Fades out on page navigation. Resumes on new page load if still enabled. Pauses if browser tab loses focus.
+- **Text-only mode (ADR-061):** Ambient audio is disabled in text-only mode. Data cost respect.
+
+### Rationale
+
+- **Aligned with calm technology.** Not Spotify. Not a meditation app. The sound of a place where people read sacred texts. The technology fades into the background.
+- **Completely opt-in.** No seeker ever hears ambient audio without choosing it. No autoplay. No popups asking "Enable ambient sound?"
+- **Low cost.** Two 200KB audio files on S3. Negligible bandwidth.
+
+### Consequences
+
+- Ambient audio toggle added to reader settings popover (Phase 12, alongside circadian reading and other reader polish)
+- Ambient audio toggle added to Quiet Corner settings
+- Two audio files commissioned or sourced (royalty-free ambient recordings)
+- `localStorage` preference key: `portal-ambiance` (`off` | `temple` | `nature`)
+- Disabled in text-only mode
+- **Extends ADR-039** (circadian reading) and the calm technology principles
+
+---
+
+## ADR-077: Talk Preparation Workspace
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-003 (AI as librarian), ADR-035 (Doors of Entry), ADR-046 (social assets), ADR-075 (Study Guide View)
+
+### Context
+
+SRF monastics and meditation center leaders regularly give lectures and guided readings that draw on Yogananda's teachings. Today they prepare manually — searching books, copying passages, assembling notes. The portal already indexes every passage and clusters them by theme. A dedicated workspace can accelerate preparation without altering any published content.
+
+### Decision
+
+Build a Talk Preparation Workspace as a staff/auth-protected area (`/prepare`) that supports theme-driven passage discovery, passage collection, teaching arc assembly, and optional presentation mode export. The workspace is a composition tool — it does not create new content; it assembles existing indexed passages into teaching outlines.
+
+### Workflow
+
+1. **Theme Exploration.** The preparer enters a theme or question ("How does Yogananda describe divine love?"). The system uses the existing search API — query expansion, passage ranking — to surface relevant passages across all books.
+2. **Passage Collection.** Selected passages are added to a working collection (persisted per-user via Auth0 identity). Each item retains full citation (book, chapter, page). Notes can be attached per passage.
+3. **Teaching Arc Assembly.** Collected passages are arranged into a narrative sequence. The preparer drags passages into sections (e.g., "Opening," "Core Teaching," "Practice," "Closing"). Section headings and personal speaking notes are freeform text, clearly distinguished from Yogananda's words.
+4. **Export.** The assembled outline exports as:
+   - **Print PDF** — formatted outline with full citations, preparer's notes, and passage text.
+   - **Presentation mode** — full-screen sequential display of passages (extends Phase 8's presentation mode from ADR-046).
+   - **Plain text** — copy-pasteable outline for personal files.
+5. **Persistence.** Saved outlines are private to the authenticated user. No sharing mechanism in initial release (sharing introduces editorial review questions that require SRF guidance).
+
+### Data Model
+
+```sql
+CREATE TABLE talk_outlines (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,             -- Auth0 sub
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'ready', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE talk_outline_sections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    outline_id UUID NOT NULL REFERENCES talk_outlines(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,                -- e.g., "Opening", "Core Teaching"
+    speaker_notes TEXT,                 -- preparer's personal notes (NOT Yogananda's words)
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE talk_outline_passages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    section_id UUID NOT NULL REFERENCES talk_outline_sections(id) ON DELETE CASCADE,
+    chunk_id UUID NOT NULL REFERENCES book_chunks(id),
+    personal_note TEXT,                 -- preparer's annotation
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_talk_outlines_user ON talk_outlines(user_id);
+```
+
+### Rationale
+
+- **Serves an underserved persona.** The portal was conceived for individual seekers. Monastics and center leaders are a high-impact audience who prepare teachings weekly. A dedicated workspace makes the portal indispensable to SRF's teaching mission.
+- **No new content created.** The workspace assembles existing indexed passages. The preparer's own speaking notes are clearly separated. This respects ADR-003 — the AI finds, the human curates.
+- **Leverages existing infrastructure.** Theme exploration uses the search API. Passage collection references `book_chunks`. No new ingestion pipeline needed.
+- **Auth-protected from day one.** Unlike the public portal, talk preparation requires Auth0 authentication. This is consistent with the Editorial Review Portal (ADR-064) and doesn't conflict with Phase 15's public user accounts.
+
+### Consequences
+
+- New protected route `/prepare` with Auth0 guard (same mechanism as `/admin`)
+- Talk preparation tables added to schema (Phase 8 or Phase 10, after presentation mode exists)
+- Export to PDF reuses the PDF generation from Phase 8 chapter downloads
+- Presentation mode extended to accept talk outlines as input (not just single chapters)
+- Future: sharing outlines between authenticated staff (requires SRF editorial guidance)
+- Future: AI-suggested passage ordering ("Given these 8 passages on divine love, here's one possible teaching arc") — always as suggestion, never auto-applied
+
+---
+
+## ADR-078: Audio Library and Cross-Media Audio Search
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-003 (AI as librarian), ADR-020 (multilingual schema), ADR-022 (YouTube integration), ADR-043 (cross-media search), ADR-069 (edition-aware content model)
+
+### Context
+
+SRF possesses audio recordings of Paramahansa Yogananda's own voice — lectures, informal talks, guided meditations, chanting. These are sacred artifacts and content simultaneously. SRF also produces modern audio recordings: monastics reading from published works, guided meditations, and chanting sessions. The portal's architecture already supports cross-media search across books and YouTube. Audio is a natural third content type.
+
+### Decision
+
+Add audio as a first-class content type with its own data model, ingestion pipeline, browse/listen experience, and search integration. Audio recordings are hosted on S3 with CloudFront delivery. Transcriptions are generated via OpenAI Whisper, human-reviewed (ADR-023's mandatory human gate), and indexed for full-text and semantic search alongside books and video.
+
+### Data Model
+
+```sql
+CREATE TABLE audio_recordings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    speaker TEXT NOT NULL,              -- "Paramahansa Yogananda", "Brother Anandamoy", etc.
+    recording_type TEXT NOT NULL CHECK (recording_type IN (
+        'lecture', 'reading', 'guided_meditation', 'chant', 'informal_talk', 'interview'
+    )),
+    recording_date DATE,                -- when originally recorded (may be approximate)
+    duration_seconds INTEGER NOT NULL,
+    s3_key TEXT NOT NULL,               -- S3 object key for audio file
+    cloudfront_url TEXT,                -- populated on publish
+    cover_image_url TEXT,               -- album art / thumbnail
+    is_yogananda_voice BOOLEAN NOT NULL DEFAULT false,  -- sacred artifact flag
+    source_collection TEXT,             -- e.g., "The Voice of the Master", "SRF Recordings Archive"
+    language TEXT NOT NULL DEFAULT 'en',
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'review', 'published', 'archived')),
+    published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE audio_segments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recording_id UUID NOT NULL REFERENCES audio_recordings(id) ON DELETE CASCADE,
+    segment_index INTEGER NOT NULL,
+    start_time_ms INTEGER NOT NULL,     -- millisecond offset
+    end_time_ms INTEGER NOT NULL,
+    transcript_text TEXT NOT NULL,       -- human-reviewed transcription
+    transcript_status TEXT NOT NULL DEFAULT 'machine' CHECK (transcript_status IN (
+        'machine', 'review', 'approved'
+    )),
+    content TEXT NOT NULL,              -- cleaned text for embedding (same pattern as book_chunks.content)
+    embedding vector(1536),             -- text-embedding-3-small
+    language TEXT NOT NULL DEFAULT 'en',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_audio_recordings_slug ON audio_recordings(slug);
+CREATE INDEX idx_audio_recordings_speaker ON audio_recordings(speaker);
+CREATE INDEX idx_audio_recordings_type ON audio_recordings(recording_type);
+CREATE INDEX idx_audio_recordings_language ON audio_recordings(language);
+CREATE INDEX idx_audio_segments_recording ON audio_segments(recording_id);
+CREATE INDEX idx_audio_segments_embedding ON audio_segments USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);
+```
+
+### Audio Ingestion Pipeline
+
+1. **Upload.** Audio files uploaded to S3 via Contentful or admin tool. Metadata entered in CMS.
+2. **Transcription.** AWS Lambda triggers Whisper transcription. Output: timestamped segments.
+3. **Human Review.** Transcription enters editorial review (same portal as book chunks and video transcripts). Reviewers correct errors, especially for Yogananda's voice recordings where fidelity is paramount.
+4. **Embedding.** Approved segments are embedded using text-embedding-3-small (same model as book chunks).
+5. **Indexing.** Segments added to the cross-media search index. Audio results appear alongside book passages and video clips.
+
+### Audio Player Experience
+
+- **Synchronized transcript.** As audio plays, the transcript highlights the current segment. Seekers can read along or click any segment to jump to that point.
+- **Sacred artifact treatment.** Recordings of Yogananda's own voice receive special visual treatment — a subtle indicator and contextual note about the recording's provenance. These are not "content" in the same way as a book excerpt; they are encounters with the Master's voice.
+- **Browse experience.** Audio library page with filtering by speaker, recording type, date, and collection. Visual design consistent with the book library and video library.
+- **Playback controls.** Standard: play/pause, seek, speed (0.75×–1.5×), volume. No social features, no comments, no likes.
+
+### Rationale
+
+- **Yogananda's voice is irreplaceable content.** No book passage can substitute for hearing the Master speak. The portal's mission is to make Yogananda's teachings freely accessible — his voice recordings are among the most direct expressions of those teachings.
+- **Transcription enables search integration.** Without transcription, audio is a silo. With it, a seeker searching "how to meditate" finds relevant passages from books, video clips, and now audio segments — a complete cross-media experience.
+- **Infrastructure already exists.** S3 + CloudFront for hosting, Lambda for batch processing, pgvector for embeddings, the editorial review portal for human approval. Audio adds a content type, not an infrastructure layer.
+- **Human review is non-negotiable.** Machine transcription of Yogananda's voice — often recorded in early/mid 20th century with period audio quality — will contain errors. Every segment must be human-reviewed before publication.
+
+### Consequences
+
+- New audio tables added to schema (Phase 10 or Phase 11, after cross-media search foundation exists)
+- Audio ingestion Lambda functions added to `/serverless/`
+- CloudFront distribution configured for audio streaming (Terraform module)
+- Cross-media search API updated to include audio segments in results
+- Audio player component built for reader/library (synchronized transcript display)
+- `is_yogananda_voice` flag enables special sacred artifact presentation
+- Storage costs: audio files are larger than text but smaller than video. S3 Standard for active, S3 IA for archive.
+- Future: chapter-aligned audio (e.g., audiobook chapters mapped to book chapters for side-by-side reading+listening)
+
+---
+
+## ADR-079: YSS Organizational Branding and Locale Strategy
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-020 (multilingual schema), ADR-021 (locale infrastructure), ADR-061 (Global South delivery)
+
+### Context
+
+Yogoda Satsanga Society of India (YSS) is the Indian counterpart of Self-Realization Fellowship. While the teachings are identical, the organizational branding differs: different name, different logo, different publishing imprint. Indian seekers — and seekers accessing the portal from India — may expect YSS branding. The portal must be able to present the same content under either organizational identity without duplicating the content itself.
+
+### Decision
+
+Implement locale-aware organizational branding as a presentation layer concern. The content remains unified in the database. The frontend selects branding assets (logo, organization name, footer text, "about" content) based on the seeker's locale or explicit preference. This is not a separate site or subdomain — it is a theming layer.
+
+### Design
+
+```
+Organization branding configuration:
+├── /messages/en-US/org.json      → { "org_name": "Self-Realization Fellowship", "org_abbr": "SRF", ... }
+├── /messages/en-IN/org.json      → { "org_name": "Yogoda Satsanga Society of India", "org_abbr": "YSS", ... }
+├── /messages/hi/org.json         → { "org_name": "योगदा सत्संग सोसाइटी ऑफ़ इंडिया", "org_abbr": "YSS", ... }
+├── /public/brand/srf/            → SRF logo, favicon, OG images
+└── /public/brand/yss/            → YSS logo, favicon, OG images
+```
+
+- **Locale detection.** `Accept-Language` header + explicit locale selector in footer. No IP-based geolocation (unreliable, privacy concern).
+- **Content is never duplicated.** The same book passages, the same search index, the same audio recordings. Only organizational presentation differs.
+- **Book publisher attribution.** Books published by YSS show the YSS imprint in citations when viewed in YSS-branded context. The `books` table already has a `publisher` field; the frontend formats it appropriately.
+- **Explicit opt-out.** A seeker in India can switch to SRF branding; a seeker in the US can switch to YSS branding. The portal respects explicit choice over locale inference.
+
+### Rationale
+
+- **Organizational reality.** SRF and YSS are legally distinct organizations with distinct brands. Indian devotees identify with YSS. Presenting SRF branding exclusively to Indian users would feel foreign.
+- **Content unity.** Yogananda's teachings are universal. Duplicating content for branding purposes would create maintenance burden and violate the "one source of truth" principle.
+- **Low implementation cost.** This is a `next-intl` namespace plus an asset directory. No schema changes, no API changes, no content duplication.
+
+### Consequences
+
+- Organization-specific message namespaces added to `/messages/` locale files
+- Brand asset directories (`/public/brand/srf/`, `/public/brand/yss/`) with logos and OG images
+- Locale selector in footer includes organization context
+- OG images and meta tags switch based on active organizational brand
+- Future: YSS-specific landing page content (about page, history section) managed in Contentful
+- **Does not affect:** search, reading, audio, video, API responses, or any content-layer behavior
+
+---
+
+## ADR-080: Multi-Tenant Infrastructure Design
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-065 (Lambda batch), ADR-070 (CI-agnostic scripts), ADR-072 (S3 backup)
+
+### Context
+
+The portal will operate across multiple environments (dev, staging, production) and will transition from GitHub to GitLab as SRF's Internal Developer Platform. SRF uses AWS as their cloud provider, Terraform for IaC, and has established patterns for multi-account AWS architectures. The architecture team has autonomous design authority for infrastructure decisions regarding GitLab CI/CD templates, AWS account structure, and Contentful space strategy.
+
+### Decision
+
+Design infrastructure for three isolated environments with promotion gates, using SRF's established tooling patterns.
+
+### AWS Account Strategy
+
+```
+SRF AWS Organization
+├── srf-teachings-dev        — Development account
+│   ├── Neon dev branch (or separate project)
+│   ├── S3: srf-teachings-dev-assets
+│   ├── Lambda: dev deployments
+│   └── CloudFront: dev distribution
+├── srf-teachings-staging    — Staging / QA account
+│   ├── Neon staging branch
+│   ├── S3: srf-teachings-stg-assets
+│   ├── Lambda: staging deployments
+│   └── CloudFront: staging distribution
+└── srf-teachings-prod       — Production account
+    ├── Neon production (primary)
+    ├── S3: srf-teachings-prod-assets
+    ├── Lambda: production deployments
+    └── CloudFront: production distribution (global edge)
+```
+
+- **Account isolation.** Each environment in its own AWS account. IAM boundaries prevent dev from touching prod. SRF standard pattern.
+- **Terraform workspaces.** One Terraform configuration, three workspaces (`dev`, `stg`, `prod`). Environment-specific values in `terraform/environments/{env}.tfvars`.
+- **Neon branching.** Dev and staging use Neon branches (instant, free). Production uses the primary Neon project. Schema migrations promoted through branches before reaching production.
+
+### GitLab CI/CD Strategy
+
+```yaml
+# .gitlab-ci.yml (Phase 10+)
+stages:
+  - validate
+  - test
+  - build
+  - deploy-dev
+  - deploy-staging
+  - deploy-prod
+
+deploy-prod:
+  stage: deploy-prod
+  when: manual                    # manual gate for production
+  environment:
+    name: production
+    url: https://teachings.yogananda.org
+  only:
+    - main
+  script:
+    - ./scripts/deploy.sh prod
+    - ./scripts/migrate.sh prod
+    - ./scripts/verify.sh prod
+```
+
+- **CI-agnostic scripts.** All deployment logic lives in `/scripts/` (ADR-070). GitLab CI/CD calls the same scripts that GitHub Actions called. Migration is a YAML change, not a logic rewrite.
+- **Manual production gate.** Production deployments always require manual approval. No automatic promotion from staging to production.
+- **GitLab environments.** Each environment is a GitLab environment with its own URL, enabling GitLab's built-in deployment tracking.
+
+### Contentful Space Strategy
+
+```
+Contentful Organization
+├── SRF Teachings — Development     — dev space (content modeling, testing)
+├── SRF Teachings — Staging         — staging space (content preview, QA)
+└── SRF Teachings — Production      — production space (published content)
+```
+
+- **Space-per-environment.** Each environment has its own Contentful space. Content is promoted via Contentful's environment aliasing or export/import.
+- **Webhook isolation.** Each space's webhooks point to its corresponding environment's API. Dev webhooks trigger dev sync; prod webhooks trigger prod sync.
+- **Content modeling in dev.** New content types are modeled in the dev space, tested in staging, then promoted to production. Contentful's migration CLI manages schema changes.
+
+### Rationale
+
+- **SRF standard patterns.** Multi-account AWS, Terraform workspaces, and GitLab CI/CD are established at SRF. This architecture doesn't invent — it applies.
+- **Autonomous design authority.** The user confirmed autonomous decision-making for infrastructure. These decisions align with SRF's tech stack while optimizing for the portal's specific needs.
+- **Blast radius containment.** A broken dev deployment can never affect production. Account-level isolation is the strongest boundary AWS offers.
+- **Migration-ready from day one.** Because deployment scripts are CI-agnostic, the GitHub→GitLab migration at Phase 10 is a configuration change, not a re-architecture.
+
+### Consequences
+
+- Terraform configurations parameterized by environment from Phase 1
+- AWS account creation requested through SRF's cloud team (or single-account with IAM isolation if multi-account is delayed)
+- Contentful spaces created per environment (free tier supports one space; paid tier needed for multi-space)
+- GitLab CI/CD templates prepared during Phase 9, activated at Phase 10
+- Neon branching strategy documented in runbook
+- **Fallback:** If multi-account AWS is operationally heavy for early phases, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
+
+---
+
+## ADR-081: Lessons Integration Readiness
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-003 (AI as librarian), ADR-012 (content scope), ADR-024 (API-first)
+
+### Context
+
+SRF's Home Study Lessons are the organization's core spiritual curriculum — private, sequential instruction in meditation techniques including Kriya Yoga. The Lessons are explicitly out of scope for the public portal (ADR-012). However, SRF has indicated that Lessons might eventually be incorporated for authorized students (those who have enrolled in the Lessons) and Kriya Yoga initiates (kriyabans). This may never happen, or it may be years away. The architecture should not assume it will happen, but it should not make it structurally impossible.
+
+### Decision
+
+Design a content-level access control architecture that enables future gating of specific content types to authorized users, without implementing any Lessons-specific features now. The architectural affordance is: any content item can carry an `access_level` that the API layer respects.
+
+### Design
+
+```sql
+-- Future migration (NOT included in Phase 1 schema)
+-- Shown here to document the architectural pattern
+
+ALTER TABLE book_chunks ADD COLUMN access_level TEXT NOT NULL DEFAULT 'public'
+    CHECK (access_level IN ('public', 'enrolled', 'kriyaban'));
+
+-- The same pattern would apply to any future content table
+-- (lessons_chunks, practice_instructions, etc.)
+```
+
+```typescript
+// Future API middleware pattern
+function requireAccess(level: 'public' | 'enrolled' | 'kriyaban') {
+  return (req: Request) => {
+    if (level === 'public') return true;
+    const user = getAuthenticatedUser(req); // Auth0
+    if (!user) return false;
+    return user.accessLevel >= ACCESS_LEVELS[level];
+  };
+}
+```
+
+### What This Means in Practice
+
+1. **Today:** All content is `access_level = 'public'`. No auth required. No change to any current behavior.
+2. **If Lessons are added:** New content types (e.g., `lessons` table) are created with `access_level = 'enrolled'` or `access_level = 'kriyaban'`. The API checks the caller's authentication and authorization before returning restricted content. Search results for restricted content show only the existence and citation — not the full text — to unauthorized users.
+3. **Auth0 integration:** Auth0 already supports custom claims. SRF's enrollment system could set `access_level` claims on user tokens. The portal's API reads the claim and enforces access.
+4. **The Lessons themselves are never AI-searchable in the same way as published books.** If Lessons content is added, it would likely be a separate, curated reading experience — not dumped into the general search index. The search might acknowledge "This topic is also covered in SRF Lesson 24" without revealing the Lesson's content.
+
+### Rationale
+
+- **Respects current scope.** Zero Lessons code ships in any phase. No tables, no migrations, no UI. This ADR is a design note, not a deliverable.
+- **Prevents architectural lock-in.** If every API route assumes all content is public (no access control middleware), adding Lessons later would require retrofitting every route. By acknowledging the pattern now, the API design naturally accommodates it.
+- **Auth0 is already in the stack.** The Editorial Review Portal uses Auth0. Extending it to student/kriyaban authorization is an Auth0 configuration change, not a new identity system.
+- **Acknowledges organizational reality.** SRF has expressed interest. The architecture should not be surprised by the request when it arrives.
+
+### Consequences
+
+- No implementation work in any current phase
+- API service layer designed with access control hooks (even if all content is currently public)
+- Auth0 tenant configured with extensible role/claim structure
+- If Lessons integration is approved: new content tables, enrollment verification flow, restricted search results UI, and a dedicated Lessons reading experience would be scoped as a new phase
+- **Explicit non-goals:** The portal never teaches Kriya Yoga techniques. Even with Lessons integration, technique instructions would remain outside the portal's scope. The portal might host the written Lessons (with proper authorization), but it does not replace the Lesson-by-mail experience or the guru-disciple relationship.
+
+---
+
+## ADR-082: Redundancy, Failover, and Regional Distribution Strategy
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-065 (Lambda batch), ADR-072 (S3 backup), ADR-078 (audio library), ADR-080 (multi-tenant infrastructure)
+
+### Context
+
+The portal serves a global audience. Seekers in India, Latin America, Africa, and Southeast Asia are as important as those in North America and Europe. The architecture must balance global availability and latency against cost and operational complexity. The key question: which layers need multi-region redundancy, and which are adequately served by edge caching in front of a single-region origin?
+
+### Decision
+
+Adopt a **single-region origin with global edge distribution** strategy for Phases 1–9, expanding to **read replicas and cross-region asset replication** at Phase 10+ when traffic patterns justify it. No active-active multi-region. The portal is a reading and search tool, not a financial transaction system — the availability requirements are high but not extreme.
+
+### Architecture by Layer
+
+**Layer 1: Edge (global from day one)**
+
+| Service | Distribution | Notes |
+|---------|-------------|-------|
+| Vercel Edge Network | 70+ PoPs worldwide | Static pages (ISR) cached at edge. HTML reaches seekers from the nearest PoP. |
+| Cloudflare WAF | Global edge | DDoS protection and rate limiting before requests reach Vercel. |
+| CloudFront | Global edge | Audio files, PDFs, and static assets cached at edge. Origin is S3 in the primary region. |
+
+Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a Vercel PoP in Mumbai, a PDF from a CloudFront PoP in Mumbai, and only the search query itself routes to the single-region origin.
+
+**Layer 2: Compute (single-region, Phases 1–9)**
+
+| Service | Region | Failover |
+|---------|--------|----------|
+| Vercel Serverless Functions | `us-east-1` (or `ap-south-1` if Neon region is in Asia) | Vercel provides within-region redundancy. No cross-region failover. |
+| AWS Lambda | Same region as Neon primary | Within-region redundancy (Lambda runs across multiple AZs automatically). |
+
+**Layer 3: Database (single-region with HA, Phases 1–9)**
+
+| Service | Strategy | Notes |
+|---------|----------|-------|
+| Neon PostgreSQL | Single-region primary with automatic AZ failover | Neon manages replication and failover within the region. If the primary compute goes down, Neon promotes a replica. |
+| Neon read replicas (Phase 10+) | Add read replicas in EU and Asia-Pacific | Search queries and reader pages route to the nearest read replica. Write operations (ingestion, editorial review) route to the primary. |
+
+**Layer 4: Storage (single-region with CDN, expanding at Phase 10+)**
+
+| Service | Strategy | Notes |
+|---------|----------|-------|
+| S3 (primary) | Single-region | Audio files, PDFs, backups. CloudFront sits in front for global delivery. |
+| S3 Cross-Region Replication (Phase 10+) | Replicate to a second region | Disaster recovery for assets. If primary region S3 is unavailable, CloudFront falls back to the replica bucket. |
+
+### Failure Scenarios and Response
+
+| Scenario | Impact | Recovery |
+|----------|--------|----------|
+| Vercel outage (regional) | Pages unavailable | Vercel's global load balancing routes to other regions. ISR-cached pages still served from edge. |
+| Neon outage (regional) | Search and dynamic content unavailable. Static pages still served. | Neon's automatic AZ failover. If full region down: portal degrades to static content only (ISR pages, cached PDFs). |
+| S3 outage (regional) | New PDF/audio requests fail. CloudFront serves cached copies. | CloudFront continues serving cached assets. At Phase 10+, cross-region replica takes over. |
+| Lambda outage | Batch jobs fail (ingestion, backup, email) | Lambda retries automatically. Batch jobs are idempotent — safe to re-run. Email delayed, not lost. |
+| CloudFront outage | Asset delivery degraded | Extremely rare (global service). Fallback: direct S3 URLs (slower, no edge caching). |
+
+### Rationale
+
+- **Cost-proportionate resilience.** Active-active multi-region would cost 3–5× more in infrastructure and add significant operational complexity. The portal's availability SLA does not justify this. "Search is down for 30 minutes while Neon fails over" is acceptable; "a seeker loses their reading progress" is not (but all reading state is client-side in `localStorage` anyway).
+- **Edge caching covers the latency gap.** The majority of portal requests — page loads, PDFs, audio streams, static assets — are served from the edge. Only search queries and dynamic API calls reach the origin. For search, 200ms of additional latency to a cross-region origin is acceptable.
+- **Neon read replicas are the right Phase 10+ investment.** When traffic justifies it, adding a read replica in `ap-south-1` (Mumbai) cuts search latency for the largest seeker population (India) in half. This is a Terraform change, not an architectural change.
+- **Backup is separate from failover.** ADR-072 (nightly pg_dump to S3) provides data recovery. This ADR addresses service availability. They complement each other.
+
+### Consequences
+
+- Primary region selected based on Neon availability and SRF's AWS account structure (likely `us-east-1` or `us-west-2`)
+- Vercel function region co-located with Neon primary
+- Lambda functions deployed to the same region as Neon primary
+- CloudFront distribution configured for all static assets from Phase 1
+- Phase 10+: Terraform module for Neon read replicas, S3 CRR, and Vercel multi-region functions
+- Health check endpoint (`/api/v1/health`) reports database connectivity, enabling uptime monitoring
+- **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration.
+
+---
+
+## ADR-083: PDF Generation Strategy — Resource-Anchored Exports
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-059 (chapter PDF downloads), ADR-061 (Global South delivery), ADR-077 (talk preparation), ADR-078 (audio library)
+
+### Context
+
+The portal generates PDFs for multiple content types: full books, individual chapters, audio transcripts, video transcripts, talk outlines, and arbitrary passage collections. A coherent PDF strategy must address three concerns: (1) where PDF routes live in the API, (2) which PDFs are pre-rendered vs. dynamic, and (3) the generation technology.
+
+### Decision
+
+**Principle: PDF is a format of a resource, not a separate resource type.** When a resource supports PDF export, the PDF route is a `/pdf` sub-path of that resource — not a parallel namespace. This keeps the API navigable: if you know where a resource lives, you know where its PDF lives.
+
+### API Surface
+
+```
+# ── Pre-rendered PDFs (GET, cacheable, served from S3 via CloudFront) ──
+
+GET /api/v1/books/{slug}/pdf                    → Full book PDF
+GET /api/v1/books/{slug}/chapters/{n}/pdf       → Chapter PDF
+GET /api/v1/audio/{slug}/transcript/pdf         → Audio transcript PDF
+GET /api/v1/videos/{id}/transcript/pdf          → Video transcript PDF
+
+# ── Dynamic PDFs (on-demand generation) ──
+
+GET  /api/v1/prepare/outlines/{id}/pdf          → Talk outline PDF (Auth0)
+POST /api/v1/exports/pdf                        → Arbitrary content PDF
+     Body: { "type": "passages", "ids": ["uuid", ...] }
+     Body: { "type": "search", "query": "...", "language": "en" }
+```
+
+### Pre-rendered vs. Dynamic
+
+| PDF Type | Strategy | Trigger | Cache |
+|----------|----------|---------|-------|
+| Full book | Pre-rendered, S3 + CloudFront | Generated at ingestion time. Regenerated on content update (Contentful webhook or re-ingestion). | Long-lived. CloudFront TTL: 30 days. Invalidated on content change. |
+| Chapter | Pre-rendered, S3 + CloudFront | Same as book. | Same. |
+| Audio transcript | Pre-rendered, S3 + CloudFront | Generated when transcript status reaches `approved`. Regenerated on transcript update. | Same. |
+| Video transcript | Pre-rendered, S3 + CloudFront | Same as audio transcript. | Same. |
+| Talk outline | Dynamic, Lambda | On-demand when preparer clicks "Export PDF." | Not cached (private, user-specific). |
+| Passage collection | Dynamic, Lambda | On-demand when seeker clicks "Download as PDF." | Short-lived: 1 hour. Keyed by sorted passage IDs. |
+| Search results | Dynamic, Lambda | On-demand. | Short-lived: 1 hour. Keyed by query + filters. |
+
+### Transcript Sub-Resource Pattern
+
+Audio and video transcripts are sub-resources that serve dual purpose — as JSON for the synchronized player, and as PDF for download:
+
+```
+GET /api/v1/audio/{slug}/transcript             → JSON (timestamped segments for player)
+GET /api/v1/audio/{slug}/transcript/pdf         → PDF (formatted transcript for reading/printing)
+
+GET /api/v1/videos/{id}/transcript              → JSON (timestamped chunks for player)
+GET /api/v1/videos/{id}/transcript/pdf          → PDF (formatted transcript for reading/printing)
+```
+
+The `/transcript` endpoint is useful on its own — it's what the synchronized audio player and video player consume. The `/transcript/pdf` endpoint is a formatted view of the same data.
+
+### Generation Technology
+
+**`@react-pdf/renderer`** for all PDF generation. Rationale:
+
+- Produces PDFs from React components — the PDF layout shares design tokens (Merriweather serif, SRF Gold accents, warm cream) with the web reader.
+- Runs in Node.js (Lambda and Vercel Serverless Functions) without a headless browser.
+- Lighter and faster than Puppeteer/Playwright approaches.
+- The portal's PDFs are structurally simple (text + citations + headers) — no need for full browser rendering.
+
+### PDF Design Treatment
+
+All PDFs share a consistent visual language:
+
+- **Cover page** (books only): Title, author, SRF/YSS logo, lotus watermark
+- **Running header**: Content source (book title, recording title, "Search Results")
+- **Running footer**: "From the SRF Online Teachings Portal — teachings.yogananda.org" + page number
+- **Typography**: Merriweather serif for body, Open Sans for headers and metadata
+- **Citations**: Every passage includes book/chapter/page or recording/timestamp
+- **Page size**: A4 default (global standard). US Letter as `?pageSize=letter` query param.
+- **File size display**: Download buttons show estimated file size (ADR-071 principle — honest about what the seeker is downloading, especially for Global South bandwidth constraints)
+- **Accessibility**: PDF/UA tagged for screen reader compatibility. Language attribute set. Bookmarks for chapters/sections.
+
+### Why Not `/api/v1/pdf/books/{slug}`
+
+A separate `/pdf/` namespace creates a parallel hierarchy where every resource path is duplicated. This is harder to discover, harder to document, and means two places to maintain when routes change. By anchoring PDFs to their parent resource (`/books/{slug}/pdf`), the API remains navigable — a developer or seeker who knows the resource URL can append `/pdf` to get the downloadable version.
+
+### The `POST /api/v1/exports/pdf` Exception
+
+Pre-renderable PDFs are GET endpoints on their parent resources. But a seeker who selects 7 passages from a search wants a PDF of an *ad-hoc collection* that doesn't correspond to a single existing resource. `POST /api/v1/exports/pdf` handles this:
+
+- POST because the request body can be complex (list of UUIDs, search query with filters)
+- POST because it's a generation action, not retrieval of a pre-existing document
+- The `type` field in the body disambiguates: `"passages"` (explicit IDs) vs. `"search"` (re-execute a query and format results)
+
+### Rationale
+
+- **Consistent pattern.** Every content type that supports PDF export does it the same way: `/{resource}/pdf`. No exceptions, no parallel namespaces.
+- **Pre-rendering where possible.** Books and transcripts change rarely. Generating PDFs at ingestion time and serving from CloudFront means zero generation latency for the seeker and zero compute cost per download.
+- **Dynamic where necessary.** Talk outlines and passage collections are unique per request. Lambda handles these on-demand with short-lived caching for popular search queries.
+- **Shared design system.** `@react-pdf/renderer` with shared design tokens ensures every PDF — book, transcript, outline, passage collection — looks like it came from the same portal.
+
+### Consequences
+
+- Pre-rendered PDFs added to ingestion pipeline: book PDFs generated after book ingestion, transcript PDFs generated after transcript approval
+- S3 bucket structure: `s3://srf-teachings-{env}-assets/pdf/books/{slug}.pdf`, `s3://srf-teachings-{env}-assets/pdf/books/{slug}/chapters/{n}.pdf`, `s3://srf-teachings-{env}-assets/pdf/audio/{slug}-transcript.pdf`, `s3://srf-teachings-{env}-assets/pdf/videos/{id}-transcript.pdf`
+- Lambda function for dynamic PDF generation (`/serverless/pdf-generator/`)
+- `@react-pdf/renderer` added as a dependency (or in a shared package if Lambda and Vercel both generate PDFs)
+- CloudFront invalidation on content update (book re-ingestion, transcript edit)
+- File size stored in metadata and displayed on download buttons
+- Phase 8: Book and chapter PDFs (pre-rendered)
+- Phase 8: Talk outline PDFs (dynamic)
+- Phases 13–14: Audio and video transcript PDFs (pre-rendered)
+- Future: Passage collection and search result PDFs (dynamic, Phase 15+ or as demand warrants)
+
+---
+
+## ADR-084: Machine-Readable Content and AI Citation Strategy
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-003 (AI as librarian), ADR-024 (API-first), ADR-067 (rate limiting), ADR-061 (Global South delivery)
+
+### Context
+
+The portal serves three classes of machine consumer: (1) traditional search engine crawlers (Google, Bing), (2) AI agents and LLM crawlers (GPTBot, PerplexityBot, Google AI), and (3) developer/integration API clients. Each has different needs, but all serve the same mission: making Yogananda's teachings discoverable and correctly attributed. When an AI system quotes Yogananda with book, chapter, and page citation — and links to the portal as the source — that is mission success. The portal should make correct citation so easy and obvious that machines have no reason to paraphrase.
+
+### Decision
+
+Implement a comprehensive machine-readability strategy spanning structured data, citation guidance, syndication feeds, and API documentation. Treat machines as first-class consumers of the portal's content — not as an afterthought.
+
+### 1. Structured Data (JSON-LD)
+
+Every page emits schema.org JSON-LD appropriate to its content type:
+
+```html
+<!-- Book reader page -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "Autobiography of a Yogi",
+  "author": { "@type": "Person", "name": "Paramahansa Yogananda" },
+  "publisher": { "@type": "Organization", "name": "Self-Realization Fellowship" },
+  "isbn": "978-0-87612-083-5",
+  "inLanguage": "en",
+  "hasPart": [
+    {
+      "@type": "Chapter",
+      "name": "An Experience in Cosmic Consciousness",
+      "position": 14
+    }
+  ]
+}
+</script>
+
+<!-- Passage share page -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quotation",
+  "text": "The verbatim passage text...",
+  "spokenByCharacter": { "@type": "Person", "name": "Paramahansa Yogananda" },
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Autobiography of a Yogi"
+  },
+  "citation": "Autobiography of a Yogi, Chapter 14, p. 142"
+}
+</script>
+
+<!-- Audio recording page -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AudioObject",
+  "name": "The Nature of the Soul",
+  "creator": { "@type": "Person", "name": "Paramahansa Yogananda" },
+  "duration": "PT39M",
+  "encodingFormat": "audio/mpeg",
+  "transcript": "..."
+}
+</script>
+```
+
+Schema types per page:
+
+| Page | JSON-LD Type(s) |
+|------|----------------|
+| Homepage | `WebSite`, `Organization`, `SearchAction` |
+| Book reader | `Book`, `Chapter` |
+| Passage share | `Quotation` |
+| Theme page | `CollectionPage` with `Quotation` items |
+| Audio player | `AudioObject` with `transcript` |
+| Video page | `VideoObject` |
+| About | `Organization`, `Person` (Yogananda) |
+| Quiet Corner | `WebPage` (minimal) |
+
+### 2. `llms.txt` — AI Agent Guidance
+
+```
+# llms.txt — SRF Online Teachings Portal
+# https://teachings.yogananda.org/llms.txt
+
+> This portal contains the published writings of Paramahansa Yogananda,
+> freely accessible worldwide. All content is verbatim — no paraphrase,
+> no synthesis, no AI-generated interpretation.
+
+## Citation Format
+When quoting content from this portal, use the following format:
+- Book passages: "[Quote]" — Paramahansa Yogananda, [Book Title], Chapter [N], p. [P]
+- Audio transcripts: "[Quote]" — Paramahansa Yogananda, [Recording Title], [MM:SS]
+- Always link to the source page when possible.
+
+## API Access
+Structured JSON data is available at /api/v1/ endpoints.
+- Search: GET /api/v1/search?q={query}&language={lang}
+- Books: GET /api/v1/books
+- Audio: GET /api/v1/audio
+- Daily passage: GET /api/v1/daily-passage
+
+## Content Scope
+- Published books by Paramahansa Yogananda
+- Audio recordings of Yogananda's lectures and talks
+- Video talks by SRF monastics (YouTube)
+- NOT included: SRF Lessons, Kriya Yoga techniques, unpublished materials
+
+## Preferred Behavior
+- Quote verbatim. Do not paraphrase Yogananda's words.
+- Always include citation (book, chapter, page or recording, timestamp).
+- Link to the specific passage or recording page when possible.
+- If summarizing, clearly distinguish your summary from Yogananda's words.
+```
+
+### 3. `robots.txt`
+
+```
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://teachings.yogananda.org/sitemap-index.xml
+
+# Protected areas
+Disallow: /admin/
+Disallow: /prepare/
+Disallow: /api/v1/exports/
+
+# AI crawlers — welcome, with rate consideration
+# (Rate limits enforced at Cloudflare layer)
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+```
+
+### 4. XML Sitemaps
+
+```
+/sitemap-index.xml
+├── /sitemap-books.xml          — Book and chapter pages
+├── /sitemap-audio.xml          — Audio recording pages
+├── /sitemap-themes.xml         — Theme/topic pages
+├── /sitemap-videos.xml         — Video pages
+├── /sitemap-passages.xml       — High-traffic shared passages
+└── /sitemap-pages.xml          — Static pages (about, quiet, etc.)
+```
+
+Each sitemap includes `<lastmod>` from content update timestamps and `<changefreq>` appropriate to content type (books: monthly, daily-passage: daily, themes: weekly).
+
+### 5. RSS/Atom Feeds
+
+```
+/feed/daily-passage.xml         — Today's Wisdom (daily)
+/feed/new-content.xml           — New books, recordings, videos (irregular)
+/feed/audio.xml                 — New audio recordings
+```
+
+RSS enables subscription without accounts, email, or apps. RSS readers are still widely used, and feeds are consumed by automation tools, research systems, and content aggregators.
+
+### 6. OpenAPI Specification
+
+```
+/api/v1/openapi.json            — Machine-readable API documentation
+```
+
+Auto-generated from route handler types (via `next-swagger-doc` or similar). Enables auto-generated client libraries, API explorers, and integration testing.
+
+### 7. Crawler-Tier Rate Limiting
+
+Extend ADR-067's rate limiting with a separate tier for known crawler user agents:
+
+| Tier | Rate Limit | User Agents |
+|------|-----------|-------------|
+| Anonymous | 30 req/min | Unknown / unidentified |
+| Known crawler | 120 req/min | Googlebot, Bingbot, GPTBot, PerplexityBot, ClaudeBot |
+| API consumer (future) | 300 req/min | Authenticated API keys (Phase 15+) |
+
+Known crawlers get 4× the anonymous rate limit. They're identified by user agent string and verified by reverse DNS where possible (Googlebot verification). This is generous enough for thorough indexing while preventing abuse.
+
+### 8. Citation Meta Tags
+
+Every passage and content page includes machine-readable citation in `<meta>` tags:
+
+```html
+<meta name="citation_title" content="Autobiography of a Yogi" />
+<meta name="citation_author" content="Paramahansa Yogananda" />
+<meta name="citation_publisher" content="Self-Realization Fellowship" />
+<meta name="citation_chapter" content="14" />
+<meta name="citation_page" content="142" />
+```
+
+These follow the Google Scholar citation format, making the portal's content indexable by academic search engines alongside popular ones.
+
+### Rationale
+
+- **Mission alignment.** The portal exists to make Yogananda's teachings freely accessible. Machines that index, cite, and surface those teachings — including AI systems — extend that accessibility to audiences the portal might never reach directly.
+- **The paraphrase concern is real but net positive.** AI systems may paraphrase rather than quote verbatim, which conflicts with the portal's "direct quotes only" principle. But: (a) the `llms.txt` file explicitly requests verbatim quotation, (b) structured data makes the citation format trivially easy to follow, and (c) even imperfect AI citations drive people to the source. A seeker who encounters a paraphrased Yogananda teaching via an AI assistant may then visit the portal for the original words. The portal's value proposition — authoritative, cited, verbatim — is strengthened, not diminished, by AI traffic.
+- **Low implementation cost.** JSON-LD, sitemaps, robots.txt, and RSS are standard web infrastructure. `llms.txt` is a single static file. OpenAPI generation is automated. None of this requires new architecture.
+
+### Consequences
+
+- Phase 1: `robots.txt` (permissive), crawler-tier rate limits
+- Phase 2: JSON-LD structured data on all pages, XML sitemaps, citation meta tags, `llms.txt`
+- Phase 3: OpenAPI specification (alongside testing infrastructure)
+- Phase 9: RSS feeds (alongside daily email)
+- All structured data maintained alongside content — when a book is re-ingested, its JSON-LD is regenerated
+- Google Search Console and Bing Webmaster Tools configured for monitoring indexing
+- **Extends** ADR-067 (rate limiting) with crawler tiers
+- **Complements** Phase 2's SEO deliverable (2.7) with deeper structured data specification
+
+---
+
+## ADR-085: Low-Tech and Messaging Channel Strategy
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Architecture team
+**Context:** ADR-024 (API-first), ADR-061 (Global South delivery), ADR-065 (Lambda batch), ADR-071 (native share), ADR-078 (audio library)
+
+### Context
+
+The portal's primary interface is a web application. This serves smartphone and desktop users well, but excludes seekers who access the internet primarily through:
+
+- **Feature phones** (KaiOS, basic browsers) — ~1 billion devices globally, concentrated in India, Africa, Southeast Asia
+- **Basic phones** (SMS-only, no browser) — ~3 billion people worldwide
+- **Metered data** where even a 100KB page load is a considered expense
+- **No personal device** — shared community phones, cybercafé access
+
+The portal's mission is to make Yogananda's teachings freely accessible *worldwide*. "Worldwide" includes the seeker in rural Bihar who has a basic Nokia phone and intermittent SMS access. The API-first architecture (ADR-024) already enables non-web access channels — every passage, every search result is available via a JSON API. The question is: which channels should we build?
+
+### Decision
+
+Build a multi-channel access strategy that meets seekers where they are, using the messaging platforms they already use. Prioritize by reach and cost-effectiveness.
+
+### Channel Assessment
+
+| Channel | Reach | Cost Model | Richness | Implementation |
+|---------|-------|-----------|----------|----------------|
+| **WhatsApp Business API** | 2.7B users. Dominant in India, Brazil, Nigeria, Indonesia, Mexico | Per-conversation: $0.005–0.08 depending on region and initiation | Rich: text, images, audio clips, buttons, links | Lambda + WhatsApp Cloud API |
+| **SMS (inbound + outbound)** | Universal. Every phone. No internet required. | Per-message: $0.002–0.04 depending on country and provider | 160 chars (Latin) / 70 chars (non-Latin). Multi-part available. | Lambda + Twilio or Africa's Talking |
+| **Telegram Bot** | 800M users. Popular in Russia, Iran, Southeast Asia, parts of Africa | Free (no per-message cost) | Rich: text, images, audio, inline keyboards, formatting | Lambda + Telegram Bot API |
+| **USSD** | Universal in Africa. Works on any phone. | Per-session: $0.01–0.05 | Menu-driven, 182 chars per screen, session-based | Requires telco partnership (Africa's Talking) |
+| **IVR (Voice)** | Universal. Serves non-literate seekers. | Per-minute: $0.01–0.10 | Audio only. Could play Yogananda's voice recordings. | Lambda + Twilio Voice |
+
+### Tier 1: WhatsApp (Highest Impact)
+
+WhatsApp is the most impactful channel for the Global South. In India alone, WhatsApp has 500M+ users. A seeker can message the portal's WhatsApp number with a spiritual question and receive passages with full citations.
+
+```
+Seeker: "What does Yogananda say about overcoming fear?"
+
+Portal: 📖 From *Autobiography of a Yogi*, Chapter 12, p. 98:
+
+"Fearlessness means faith in God: faith in His
+protection, His justice, His wisdom, His mercy,
+His love, and His omnipresence."
+
+— Paramahansa Yogananda
+
+📖 1 more passage found. Reply MORE to see it.
+🔗 Read the full chapter: teachings.yogananda.org/books/autobiography/12
+
+Reply with any topic to search, or DAILY for today's wisdom.
+```
+
+**WhatsApp capabilities:**
+- **Search queries.** Seeker sends a question or topic. Lambda queries the search API, formats top 1-2 results for WhatsApp's message format (1024 char limit per message, Markdown-like formatting).
+- **Daily Wisdom opt-in.** Seeker sends "DAILY" to subscribe. Each morning, the same daily passage from the web portal is sent via WhatsApp. Opt-out: send "STOP."
+- **Audio clips.** When a search matches an audio recording, send a brief audio clip (WhatsApp supports up to 16MB audio messages). "Listen to Yogananda speak about this topic."
+- **Language selection.** Seeker sends "HINDI" or "ESPAÑOL" to switch language for UI messages. Content availability depends on translated corpus.
+- **Share from portal.** On the web portal, `navigator.share()` already surfaces WhatsApp as a sharing target. The shared link includes Open Graph metadata so the message renders with a passage preview.
+
+**Implementation:**
+```
+Seeker (WhatsApp) → WhatsApp Cloud API webhook → API Gateway → Lambda
+    │
+    ├── Parse message intent (topic search, command, language switch)
+    ├── Query /api/v1/search or /api/v1/daily-passage
+    ├── Format response for WhatsApp (Markdown, citations, buttons)
+    └── Send reply via WhatsApp Cloud API
+```
+
+### Tier 2: SMS (Widest Reach)
+
+SMS reaches every phone on Earth. No app, no internet, no data plan. The seeker texts a topic keyword to a phone number and receives a Yogananda passage by SMS.
+
+```
+Seeker texts "FEAR" to +1-XXX-YYY-ZZZZ
+
+Reply:
+"Fearlessness means faith in God: faith in His
+protection, His justice, His wisdom, His love."
+— Yogananda, Autobiography of a Yogi, Ch.12, p.98
+Reply FEAR2 for more. DAILY for daily wisdom.
+```
+
+**SMS constraints:**
+- **160 characters** (Latin script) or **70 characters** (Unicode/non-Latin) per segment. Multi-part SMS is possible but more expensive and less reliable.
+- **Short passages only.** Affirmations, aphorisms, and brief quotes from *Sayings of Paramahansa Yogananda* and *Scientific Healing Affirmations* fit well. Long narrative passages from *Autobiography* must be truncated with "..." and a citation.
+- **No links** (feature phones can't open URLs). The passage must be self-contained.
+- **Cost.** SMS costs vary widely: ~$0.002/message in India, ~$0.04/message in the US, ~$0.01–0.02/message in Africa. Monthly cost depends on volume. At 1,000 messages/day globally: ~$600–1,200/month.
+- **Dedicated numbers.** Short codes (e.g., "text YOGANANDA to 12345") are expensive ($500–1,000/month in the US). Long codes or toll-free numbers are cheaper. Local numbers per country reduce inbound cost for seekers.
+
+**SMS sharing from the portal:**
+- `navigator.share()` already includes SMS as a sharing target on smartphones
+- The shared content should be the passage text + citation (not just a URL), since the recipient may be on a feature phone that can't open links
+- Passage share format for SMS: `"{quote}" — Yogananda, {Book}, Ch.{N}, p.{P}`
+
+**SMS inbound implementation:**
+```
+Seeker (SMS) → Twilio / Africa's Talking webhook → API Gateway → Lambda
+    │
+    ├── Parse keyword (topic, command)
+    ├── Query /api/v1/search (limit=1, optimized for short passages)
+    ├── Format for SMS (truncate to 160 chars, include citation)
+    └── Send reply via SMS gateway
+```
+
+### Tier 3: Telegram Bot (Free, Rich)
+
+Telegram is free to operate (no per-message cost) and offers rich formatting. Worth building because the marginal cost after WhatsApp is low — same Lambda function, different message formatting.
+
+```
+/search overcoming fear     → Search and return passages
+/daily                      → Subscribe to daily wisdom
+/audio fear                 → Find audio recordings on this topic
+/language hindi             → Switch UI language
+```
+
+### Tier 4: USSD and IVR (Exploration)
+
+USSD and voice are the deepest-reach channels but require telco partnerships and are operationally complex. Evaluate after WhatsApp and SMS prove demand.
+
+**USSD concept (Africa):**
+```
+Dial *384*YOGA#
+1. Search teachings
+2. Today's wisdom
+3. Listen to audio
+4. Change language
+```
+
+**IVR concept:**
+```
+Call +1-XXX-YYY-ZZZZ
+"Welcome to the teachings of Paramahansa Yogananda.
+Press 1 to hear today's wisdom.
+Press 2 to search by topic.
+Press 3 to hear a recording of Yogananda's voice."
+```
+
+IVR is uniquely powerful because it serves non-literate seekers and allows playing Yogananda's actual voice recordings — a direct connection to the Master's teachings that no text channel can provide.
+
+### Shared Architecture
+
+All channels share the same backend:
+
+```
+                    ┌──────────────┐
+WhatsApp webhook ──→│              │
+SMS webhook ───────→│   Lambda     │──→ /api/v1/search
+Telegram webhook ──→│  (channel    │──→ /api/v1/daily-passage
+USSD callback ────→│   router)    │──→ /api/v1/audio
+IVR webhook ──────→│              │──→ /api/v1/books
+                    └──────────────┘
+                         │
+                    Format response
+                    per channel constraints
+                         │
+                    ┌──────────────┐
+                    │  Send reply  │
+                    │  via channel │
+                    │  API         │
+                    └──────────────┘
+```
+
+The Lambda function:
+1. Receives the webhook (channel-agnostic intent parsing)
+2. Queries the same `/api/v1/` endpoints that the web portal uses
+3. Formats the response for the channel's constraints (160 chars for SMS, 1024 chars for WhatsApp, Markdown for Telegram)
+4. Sends the reply via the channel's API
+
+**No new content infrastructure.** Every passage served via messaging channels is the same passage served on the web — same database, same search, same citations.
+
+### Data Model
+
+```sql
+-- Messaging channel subscriptions (daily wisdom opt-in)
+CREATE TABLE messaging_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'sms', 'telegram')),
+    channel_id TEXT NOT NULL,           -- phone number or Telegram user ID
+    subscription_type TEXT NOT NULL DEFAULT 'daily' CHECK (subscription_type IN ('daily')),
+    language TEXT NOT NULL DEFAULT 'en',
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'unsubscribed')),
+    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    unsubscribed_at TIMESTAMPTZ,
+    UNIQUE (channel, channel_id, subscription_type)
+);
+
+-- Messaging interaction log (anonymized, for cost tracking and channel health)
+-- NO personal data. NO message content. Just aggregate counts.
+CREATE TABLE messaging_metrics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    channel TEXT NOT NULL,
+    interaction_type TEXT NOT NULL CHECK (interaction_type IN ('search', 'daily', 'subscribe', 'unsubscribe', 'audio')),
+    country_code TEXT,                  -- from phone number prefix (not stored with identity)
+    language TEXT NOT NULL DEFAULT 'en',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_messaging_subs_channel ON messaging_subscriptions(channel, status);
+CREATE INDEX idx_messaging_metrics_daily ON messaging_metrics(created_at, channel);
+```
+
+**DELTA compliance:** The `messaging_metrics` table stores interaction counts, not conversations. No message content is stored. No behavioral profiling. Country code is derived from phone number prefix for aggregate reporting only (e.g., "42% of SMS queries come from India"), never stored with identity.
+
+### Cost Projection
+
+| Channel | Monthly Cost (est. at 1,000 daily interactions) | Notes |
+|---------|------------------------------------------------|-------|
+| WhatsApp | $150–300 | Per-conversation pricing. User-initiated conversations are cheapest. |
+| SMS | $600–1,200 | Varies wildly by country. India is cheap; US is expensive. |
+| Telegram | $0 | Free API. Only Lambda compute cost. |
+| USSD | Requires telco negotiation | Typically $0.01–0.05/session in Africa. |
+| IVR | $300–600 | Per-minute voice pricing. Short interactions. |
+
+### Rationale
+
+- **The mission demands it.** "Freely accessible worldwide" cannot mean "freely accessible to people with smartphones and data plans." 3+ billion people have basic phones. If the portal only serves web browsers, it is not fulfilling its mission.
+- **API-first makes it cheap.** The `/api/v1/` endpoints already exist. Each messaging channel is a Lambda function that reformats API responses. The content infrastructure cost is zero — only the delivery channel costs money.
+- **WhatsApp is the highest-leverage investment.** 2.7 billion users, dominant in exactly the regions where the teachings are most sought (India, Latin America, Africa). A WhatsApp bot costs less per month than a single Contentful developer seat.
+- **SMS is the deepest-reach investment.** No smartphone needed, no internet needed, no data plan needed. A seeker in a village with a basic phone can text "PEACE" and receive Yogananda's words. This is the most mission-aligned feature the portal could build.
+- **Channels compose.** Each new channel is incremental — same Lambda, same API, different formatter. Adding Telegram after WhatsApp is a weekend of work, not a quarter of work.
+
+### Consequences
+
+- Phase 9: WhatsApp Business API integration (alongside daily email — shared infrastructure). Daily wisdom via WhatsApp. Search via WhatsApp.
+- Phase 9: RSS feeds (machine syndication, complementary channel)
+- Phase 16: SMS access gateway (requires cost evaluation per region, dedicated phone numbers)
+- Phase 16: Telegram bot (low cost, incremental after WhatsApp)
+- Future: USSD (requires telco partnership, evaluate in Phase 16)
+- Future: IVR/Voice (evaluate after audio library exists, Phase 14+)
+- `messaging_subscriptions` and `messaging_metrics` tables added to schema
+- Lambda function for channel routing (`/serverless/functions/messaging/`)
+- WhatsApp Business account registration (requires Meta business verification)
+- SMS provider evaluation: Twilio (global), Africa's Talking (Africa-optimized), Gupshup (India-optimized)
+- Passage formatting service in `/lib/services/format.ts` — formats a passage for different channel constraints (160 chars, 1024 chars, Markdown, plain text)
+- **Extends** ADR-071 (native share) — SMS sharing from the portal now includes passage text, not just a URL
+- **Extends** Phase 16.5 (SMS access gateway) — now part of a broader multi-channel strategy, not a standalone experiment
+- **Replaces** the Phase 16.5 "exploration" framing with a committed delivery plan starting at Phase 9 (WhatsApp)
+
+---
+
+## ADR-086: Image Content Type — Photographs as First-Class Content
+
+### Context
+
+SRF possesses a photographic archive spanning nearly a century — historical photographs of Paramahansa Yogananda across decades of his life, portraits of the guru lineage (Sri Yukteswar, Lahiri Mahasaya, artistic depictions of Babaji and Krishna), photographs of SRF/YSS properties and biographical sites, event documentation from convocations and commemorations, and devotional artwork. The portal currently treats images as decorative assets: book covers on `books.cover_image_url`, About page portraits, Sacred Places property photographs. But photographs of Yogananda are sacred artifacts — equivalent in spiritual significance to his voice recordings — and the broader photographic archive is a content dimension that no other medium provides.
+
+A seeker reading Autobiography's account of Yogananda at the Ranchi school cannot see the school in a physical book's photo section (unless they own that edition). A seeker exploring Sacred Places cannot see historical photographs alongside modern Street View links. A seeker studying Sri Yukteswar's teachings cannot see the guru's portrait alongside the passages. The portal can close these gaps by treating images as searchable, browsable, relatable content.
+
+### Decision
+
+Images become a first-class content type with their own data model, browse/search experience, and participation in the cross-media content fabric (Related Teachings, editorial threads, theme tagging, place connections).
+
+**Schema:**
+
+```sql
+CREATE TABLE images (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title               TEXT NOT NULL,
+    slug                TEXT NOT NULL UNIQUE,
+    description         TEXT,
+    alt_text            TEXT NOT NULL,             -- Accessibility: mandatory, Claude-drafted, human-reviewed
+    caption             TEXT,                      -- Short display caption
+    photographer        TEXT,
+    date_taken          DATE,
+    date_approximate    TEXT,                      -- "circa 1935" when exact date unknown
+    era                 TEXT,                      -- 'india_early', 'america_early', 'encinitas', 'modern'
+    location            TEXT,
+    subject_type        TEXT NOT NULL CHECK (subject_type IN (
+        'portrait', 'group', 'place', 'event', 'artifact',
+        'illustration', 'book_cover', 'devotional'
+    )),
+    subjects            TEXT[],                    -- ['yogananda', 'sri_yukteswar'] — who/what appears
+    is_yogananda_subject BOOLEAN NOT NULL DEFAULT false,
+    source_collection   TEXT,                      -- '1920s_india', 'encinitas_hermitage', 'convocation'
+    s3_key              TEXT NOT NULL,
+    cloudfront_url      TEXT,
+    width               INTEGER NOT NULL,
+    height              INTEGER NOT NULL,
+    format              TEXT NOT NULL DEFAULT 'jpg',
+    language            TEXT NOT NULL DEFAULT 'en',
+    status              TEXT NOT NULL DEFAULT 'draft'
+                        CHECK (status IN ('draft', 'review', 'published', 'archived')),
+    published_at        TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Image descriptions embedded for semantic search
+-- Images don't have body text to chunk; the description is the searchable proxy
+CREATE TABLE image_descriptions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    image_id            UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+    description_text    TEXT NOT NULL,              -- Rich contextual description for embedding
+    embedding           vector(1536),
+    language            TEXT NOT NULL DEFAULT 'en',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Image ↔ Place spatial connections
+CREATE TABLE image_places (
+    image_id            UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+    place_id            UUID NOT NULL REFERENCES sacred_places(id) ON DELETE CASCADE,
+    relationship        TEXT NOT NULL DEFAULT 'depicts'
+                        CHECK (relationship IN ('depicts', 'taken_at', 'related_to')),
+    PRIMARY KEY (image_id, place_id)
+);
+```
+
+**Frontend:**
+
+- `/images` — gallery browse with filters (subject type, era, collection, place)
+- `/images/[slug]` — image detail page: full-resolution view, metadata, related passages, related places, related images from same era/collection
+
+**API:**
+
+- `GET /api/v1/images` — browse and filter (cursor-based pagination)
+- `GET /api/v1/images/{slug}` — image detail with full metadata
+- `GET /api/v1/images/{slug}/related` — cross-media related content (passages, other images, places, media)
+
+**Key principles:**
+
+- `is_yogananda_subject` triggers sacred artifact treatment — a visual provenance indicator, same pattern as `is_yogananda_voice` in ADR-078
+- Alt text is mandatory on every image. Claude drafts descriptive, reverential alt text at ingestion time; human review is mandatory before publishing (ADR-049 E7 pattern)
+- Image descriptions are the searchable proxy — the description text is embedded for vector search, since the image file itself is not textually searchable. One image, one embedding — no chunking needed.
+- Content authority: images are supplementary to Yogananda's verbatim words. In search results and Related Teachings, a photograph never displaces a passage in ranking.
+- Images cannot be machine-generated, AI-enhanced, or colorized. Photographic authenticity is paramount. The portal presents images as they are.
+- Responsive image serving: thumbnail (300px), display (1200px), full-resolution variants generated at upload time
+
+### Consequences
+
+- `images` and `image_descriptions` tables added to Phase 1 schema (empty until content ingestion)
+- Image ingestion pipeline, gallery, and player added when the image content type goes live
+- S3 storage for images uses the same bucket and CloudFront distribution as audio files (ADR-078)
+- Image search integration via unified content hub (ADR-087) when cross-media features arrive
+- Claude drafts alt text and rich descriptions at ingestion time; human review mandatory before publishing
+- Image descriptions are localized alongside other content in Phase 11 (Multi-Language) via `image_descriptions.language`
+- Sacred Places pages (ADR-026) gain a photographs section — images connected via `image_places`
+- **Extends** ADR-049 E7 (Claude-generated alt text) — from About page photos to the entire image archive
+- **Extends** ADR-078 (audio sacred artifacts) — same `is_yogananda_subject` pattern for visual sacred artifacts
+
+---
+
+## ADR-087: Unified Content Hub — Cross-Media Relations, Search, and Theming
+
+### Context
+
+The portal has four content types that participate in search, Related Teachings, theme tagging, and editorial threads: book chunks, video chunks (ADR-057), audio segments (ADR-078), and images (ADR-086). Each content type has its own specialized table with domain-specific columns (book chunks have page numbers; video chunks have timestamps; audio segments have transcript status; images have dimensions and alt text).
+
+The challenge is cross-media operations. Maintaining separate relation tables per content-type pair creates combinatorial explosion: 4 types produce 6 unique pairs (book↔video, book↔audio, book↔image, video↔audio, video↔image, audio↔image), each requiring its own relation table, plus 4 self-relation tables — 10 tables total. Adding a fifth content type (e.g., published letters) would require 15 tables. Each pair also needs its own theme-tagging junction table and its own place-connection junction table. This is unmaintainable over a 10-year horizon.
+
+### Decision
+
+Introduce a `content_items` hub table as a thin polymorphic registry for cross-media operations. Each content type retains its specialized table with all domain-specific columns. The hub provides four unified capabilities:
+
+1. **Unified embedding** for cross-media vector search
+2. **Single relation table** for any-to-any content relations
+3. **Unified theme tagging** across all content types
+4. **Unified place connections** across all content types
+
+**Schema:**
+
+```sql
+-- Unified content registry for cross-media operations
+CREATE TABLE content_items (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_type        TEXT NOT NULL CHECK (content_type IN (
+        'book_chunk', 'video_chunk', 'audio_segment', 'image'
+    )),
+    book_chunk_id       UUID REFERENCES book_chunks(id) ON DELETE CASCADE,
+    video_chunk_id      UUID REFERENCES video_chunks(id) ON DELETE CASCADE,
+    audio_segment_id    UUID REFERENCES audio_segments(id) ON DELETE CASCADE,
+    image_id            UUID REFERENCES images(id) ON DELETE CASCADE,
+    embedding           vector(1536),
+    language            TEXT NOT NULL DEFAULT 'en',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT exactly_one_ref CHECK (
+        (book_chunk_id IS NOT NULL)::int +
+        (video_chunk_id IS NOT NULL)::int +
+        (audio_segment_id IS NOT NULL)::int +
+        (image_id IS NOT NULL)::int = 1
+    )
+);
+
+-- One relation table for ALL cross-media relations
+CREATE TABLE content_relations (
+    source_id           UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    target_id           UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    similarity          FLOAT NOT NULL,
+    relation_type       TEXT,           -- same_topic, develops_further, depicts, illustrates,
+                                        -- personal_story, practical, supplements
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (source_id, target_id)
+);
+
+-- Unified theme tagging for all content types
+CREATE TABLE content_topics (
+    content_item_id     UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    topic_id            UUID NOT NULL REFERENCES teaching_topics(id) ON DELETE CASCADE,
+    tagged_by           TEXT NOT NULL DEFAULT 'auto'
+                        CHECK (tagged_by IN ('manual', 'auto', 'reviewed')),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (content_item_id, topic_id)
+);
+
+-- Unified place connections for all content types
+CREATE TABLE content_places (
+    content_item_id     UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    place_id            UUID NOT NULL REFERENCES sacred_places(id) ON DELETE CASCADE,
+    relationship        TEXT NOT NULL CHECK (relationship IN (
+        'depicts', 'taken_at', 'recorded_at', 'describes', 'set_in'
+    )),
+    PRIMARY KEY (content_item_id, place_id)
+);
+```
+
+**Timing — no premature abstraction:**
+
+| Phase | Content Model | Relation Model |
+|-------|--------------|----------------|
+| Phases 1–7 | `book_chunks` only | `chunk_relations`, `chunk_topics` referencing `book_chunks` directly. Simple, fast. |
+| Phase 16 (Video) | Book + video chunks | **Introduce `content_items` hub.** Migrate existing book chunks. Add video chunks. `content_relations` replaces `chunk_relations`. |
+| Phase 14 (Audio + Images) | All four types | Add audio segments and images to the hub. Full cross-media fabric complete. |
+
+**Phase 16 migration (the critical moment):**
+
+1. Create `content_items`, `content_relations`, `content_topics`, `content_places` tables
+2. Populate `content_items` from existing `book_chunks` (one hub entry per chunk)
+3. Migrate `chunk_relations` data into `content_relations`
+4. Migrate `chunk_topics` data into `content_topics`
+5. Migrate `chunk_places` data into `content_places`
+6. Add video chunks to the hub
+7. Drop or retain legacy tables as backward-compatible views
+
+**Cross-media search via the hub:**
+
+```sql
+SELECT ci.id, ci.content_type, ci.embedding <=> $query_embedding AS distance
+FROM content_items ci
+WHERE ci.language = $language
+ORDER BY distance
+LIMIT 20;
+```
+
+Each result's `content_type` determines presentation: book passages show verbatim text with citations, video clips show thumbnails with timestamps, audio segments show player links, images show thumbnails with captions.
+
+### Consequences
+
+- `content_items` table created in the Phase 16 migration — not before
+- Unified pgvector index on `content_items.embedding` replaces per-table indexes for cross-media queries
+- Per-table indexes retained for single-type queries (book-only search remains fast — no performance regression)
+- Content authority hierarchy is enforced in the presentation layer, not the data layer. All types have equal standing in the hub; the UI ranks Yogananda's words above supplementary media.
+- Adding a fifth content type requires: one new specialized table, one new `CHECK` constraint value, and `content_items` population. No new relation tables, no new topic tables, no new place tables.
+- The hub adds one level of indirection for cross-media queries. Single-type queries (e.g., book-only search) bypass the hub and query the specialized table directly.
+- `chunk_relations` and `chunk_topics` (Phases 1–7) are not wasted work — their data migrates into the hub at Phase 16
+- **Extends** ADR-034 (chunk relations) — from book-only to cross-media
+- **Extends** ADR-048 (teaching topics) — from book chunks to all content types
+- **Extends** ADR-057 (video transcription) — video chunks join the unified search index
+
+---
+
+## ADR-088: Platform-Agnostic Video Model and Documentary Integration
+
+### Context
+
+The current video architecture assumes YouTube as the sole video platform, with `youtube_video_id` fields baked into the data model. In practice, SRF's video content spans multiple platforms and content types:
+
+| Content | Platform | Duration | Rights |
+|---------|----------|----------|--------|
+| Monastic How-to-Live talks | YouTube | 20–60 min | SRF-owned |
+| Guided meditations | YouTube / Vimeo | 10–45 min | SRF-owned |
+| Convocation sessions | Vimeo (likely) | 1–3 hrs | SRF-owned |
+| "Awake: The Life of Yogananda" | Vimeo / streaming | 87 min | Third-party (Counterpoint Films) |
+| Other documentaries about Yogananda | Various | Varies | Third-party |
+| Historical/archival footage | Self-hosted or Vimeo | Varies | SRF-owned |
+| Interview excerpts | YouTube / Vimeo | 5–30 min | Varies |
+
+SRF already uses Vimeo in their established tech stack (SRF AE Tech Stack Brief). The Phase 2 YouTube-only integration covers only the first row. A platform-locked video model cannot serve the full content landscape.
+
+### Decision
+
+Abstract the video model from YouTube-specific to platform-agnostic. Introduce a `videos` catalog table that supports YouTube, Vimeo, and self-hosted sources. An `integration_level` field distinguishes fully-integrated content (embedded player, transcribed, indexed in search) from linked-only content (cataloged with metadata and timestamps, but linking out for viewing). A content authority hierarchy ensures documentary and third-party content is clearly distinguished from Yogananda's own teachings.
+
+**Schema:**
+
+```sql
+CREATE TABLE videos (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title               TEXT NOT NULL,
+    slug                TEXT NOT NULL UNIQUE,
+    description         TEXT,
+    video_type          TEXT NOT NULL CHECK (video_type IN (
+        'talk', 'documentary', 'interview', 'meditation',
+        'ceremony', 'clip', 'lecture', 'archival'
+    )),
+    -- Platform-agnostic source
+    platform            TEXT NOT NULL CHECK (platform IN (
+        'youtube', 'vimeo', 'self_hosted'
+    )),
+    platform_id         TEXT,                      -- YouTube video ID or Vimeo video ID
+    platform_url        TEXT,                      -- Canonical URL on the platform
+    self_hosted_s3_key  TEXT,                      -- S3 key if self-hosted
+    self_hosted_url     TEXT,                      -- CloudFront URL if self-hosted
+    -- Speakers
+    primary_speaker     TEXT,                      -- Main speaker or narrator
+    speakers            TEXT[],                    -- All speakers/interviewees
+    -- Metadata
+    duration_seconds    INTEGER NOT NULL,
+    thumbnail_url       TEXT,
+    release_date        DATE,
+    series              TEXT,                      -- 'how_to_live', 'awake', 'convocation_2025'
+    -- Rights and integration
+    rights_holder       TEXT NOT NULL DEFAULT 'srf',
+    integration_level   TEXT NOT NULL DEFAULT 'full' CHECK (integration_level IN (
+        'full',                                    -- Embedded player, transcribed, indexed
+        'linked'                                   -- Cataloged + timestamped, links out for viewing
+    )),
+    attribution         TEXT,                      -- Required credit text for third-party content
+    -- Standard fields
+    is_yogananda_subject BOOLEAN NOT NULL DEFAULT false,
+    language            TEXT NOT NULL DEFAULT 'en',
+    status              TEXT NOT NULL DEFAULT 'draft'
+                        CHECK (status IN ('draft', 'review', 'published', 'archived')),
+    published_at        TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+The existing `video_transcripts` and `video_chunks` tables (ADR-057) now reference `videos.id` instead of carrying `youtube_video_id` directly. `video_chunks` gains two fields for documentary support:
+
+```sql
+ALTER TABLE video_chunks ADD COLUMN speaker TEXT;
+ALTER TABLE video_chunks ADD COLUMN segment_type TEXT
+    CHECK (segment_type IN (
+        'narration', 'interview', 'yogananda_quote', 'archival', 'music'
+    ));
+```
+
+**Content authority hierarchy:**
+
+| Level | Content | Treatment |
+|-------|---------|-----------|
+| Primary | Yogananda's verbatim book text | Full passage, gold accent, always cited |
+| Primary | Yogananda's own voice/image | Sacred artifact treatment (ADR-078, ADR-086) |
+| Secondary | Monastic talks (SRF lineage) | Attributed to speaker, linked to source passages |
+| Tertiary | Documentary/interview content | Attributed to film/speaker, clearly marked as "about" not "by" |
+
+Search results and Related Teachings maintain this hierarchy visually. A documentary clip about meditation never displaces a Yogananda passage about meditation.
+
+**Frontend — platform-agnostic `<VideoPlayer>` component:**
+
+| Platform | Integration Level | Rendering |
+|----------|------------------|-----------|
+| YouTube | `full` | YouTube IFrame Player API + synchronized transcript |
+| Vimeo | `full` | Vimeo Player SDK + synchronized transcript |
+| Self-hosted | `full` | HTML5 `<video>` with CloudFront source + synchronized transcript |
+| Any | `linked` | Thumbnail + "Watch on [Platform] →" button (no embed) |
+
+**Frontend routes:**
+
+- `/videos` — all video content, filterable by type, speaker, series, platform
+- `/videos/[slug]` — video detail with platform-appropriate player + synchronized transcript
+- `/videos/collections/[slug]` — series groupings ("How-to-Live Talks," "Convocation 2025")
+- `/videos/films` — documentary films section with film-style cards, poster art, director attribution, "Where to Watch" links
+
+### Consequences
+
+- Phase 1 schema creates the `videos` table (empty initially)
+- Phase 2 video display is populated from both YouTube RSS and Vimeo API (both free for public content)
+- Phase 16 transcription and cross-media search work identically across all platforms
+- Speaker diarization tooling (pyannote or whisperX) added to the transcription pipeline for multi-speaker content (documentaries, interviews, panel discussions)
+- Third-party content (documentaries, interviews) enters the catalog only with SRF editorial approval
+- Vimeo Player SDK (~15KB gzipped) added as a frontend dependency alongside the YouTube IFrame API
+- Self-hosted video uses the same S3 + CloudFront infrastructure as audio (ADR-078)
+- `integration_level = 'linked'` enables cataloging films the portal cannot embed, with metadata and timestamped scene references
+- **Replaces** the YouTube-specific `youtube_video_id` field in `video_transcripts` with a FK to `videos.id`
+- **Extends** ADR-057 (video transcription) — from YouTube-only to all platforms
+- **Extends** ADR-034 (chunk relations) — video chunks from any platform participate in Related Teachings
+
+---
+
+## ADR-089: Multi-Media Editorial Threads and Continue the Thread
+
+### Context
+
+Editorial threads (`editorial_threads` + `thread_passages`, ADR-054) are currently designed as sequences of book passages — curated reading paths through Yogananda's text. A thread titled "The Nature of the Soul" links seven passages from four books into a coherent progression.
+
+With four content types now participating in the content fabric (books, video, audio, images), threads limited to book passages miss the multi-dimensional potential. A thread titled "Yogananda's Journey to America" could interleave:
+
+1. 📖 Passage from Autobiography — receiving the vision to go to America
+2. 📷 Photograph — Yogananda aboard the ship, 1920
+3. 📖 Passage — arriving in Boston, the Congress of Religions
+4. 🎥 Video clip — Brother Chidananda describing the early American years
+5. 📷 Photograph — the first SRF center in Los Angeles
+6. 🔊 Audio — Yogananda speaking about his mission in America
+
+No physical book can provide this multi-sensory exploration. No video can provide the depth of written text alongside the immediacy of a photograph. The portal's unique strength is combining all media into coherent journeys.
+
+Separately, "Continue the Thread" at the end of each content page currently shows only related book passages. With cross-media content available, it should surface related items across all media types.
+
+### Decision
+
+Generalize `thread_passages` to `thread_items` supporting all content types via the unified content hub (ADR-087). Implement three modes of content continuation:
+
+**Mode 1 — Single-media continuation** (auto-generated from `content_relations`):
+- End of an audio recording: "More recordings from this collection"
+- Bottom of an image detail: "More photographs from this era"
+- End of a video: "Related talks on this topic"
+- End of a book chapter: "Yogananda also explores this in..." (current behavior, preserved)
+
+**Mode 2 — Cross-media exploration** (auto-generated, mixed types):
+- End of any content page: show the top related item from each *other* media type
+- End of a book chapter: one related video clip, one photograph, one audio segment
+- The seeker picks the medium that draws them
+
+**Mode 3 — Editorial multi-media threads** (human-curated):
+- Sequences of items from any content type, with editorial transition notes between items
+- Published at `/threads/[slug]`
+- Human-curated with `is_published` gate
+- Same editorial review workflow as other content (AI proposes order, humans decide)
+
+**Schema:**
+
+```sql
+-- Replaces thread_passages (generalized for all media types)
+CREATE TABLE thread_items (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id           UUID NOT NULL REFERENCES editorial_threads(id) ON DELETE CASCADE,
+    item_type           TEXT NOT NULL CHECK (item_type IN (
+        'book_chunk', 'video_chunk', 'audio_segment', 'image'
+    )),
+    book_chunk_id       UUID REFERENCES book_chunks(id),
+    video_chunk_id      UUID REFERENCES video_chunks(id),
+    audio_segment_id    UUID REFERENCES audio_segments(id),
+    image_id            UUID REFERENCES images(id),
+    editorial_note      TEXT,                      -- Transition text between items
+    sort_order          INTEGER NOT NULL DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT exactly_one_item CHECK (
+        (book_chunk_id IS NOT NULL)::int +
+        (video_chunk_id IS NOT NULL)::int +
+        (audio_segment_id IS NOT NULL)::int +
+        (image_id IS NOT NULL)::int = 1
+    )
+);
+```
+
+The `editorial_threads` table itself stays unchanged (title, slug, description, is_published, language, etc.).
+
+**Content authority in threads:**
+
+- Editorial transition notes are clearly distinguished from Yogananda's words (different typography, muted color, italicized)
+- Mixed-media threads maintain the authority hierarchy: book passages display with full passage treatment; media items display as supplementary cards
+- Thread authors cannot edit or paraphrase Yogananda's text — they select existing passages and arrange them
+- Third-party content (documentary clips) in threads shows attribution and rights holder
+
+**Frontend:**
+
+- `/threads` index and `/threads/[slug]` reading experience support mixed media items
+- Thread items render according to their type: passages show verbatim text, images show responsive thumbnails, video/audio show playback cards with platform-appropriate controls
+- Mode 1 and Mode 2 appear as "Continue exploring..." sections at the bottom of every content page
+- Mode 3 (editorial threads) appears as curated collections, browsable by theme
+
+### Consequences
+
+- `thread_items` replaces `thread_passages` in the Phase 7 migration (when editorial threads are introduced)
+- Initially, Phase 7 `thread_items` will contain only `book_chunk` references — same as the current `thread_passages` design, no over-engineering
+- Phase 16+ enables video, audio, and image items in threads as those content types join the content hub
+- Modes 1 and 2 (auto-generated) require `content_relations` (ADR-087), available from Phase 16
+- Before Phase 16, "Continue the Thread" shows only book passages (current behavior preserved)
+- Editorial review portal (ADR-064) gains a thread editor with drag-and-drop support for mixed media items, preview of the full multi-media thread, and platform-appropriate media previews
+- Thread items inherit the content's theme tags via `content_topics`, enabling "threads about peace" or "threads about courage" browsing
+- **Replaces** ADR-054's `thread_passages` table with the more general `thread_items` table (backward-compatible — existing `book_chunk` references work identically)
+- **Extends** ADR-034 (chunk relations) — "Continue the Thread" becomes cross-media when the content hub arrives
+- **Extends** ADR-062 (Related Teachings side panel) — the panel now includes all media types, with content authority hierarchy determining visual treatment
+
+---
+
+## ADR-090: MCP Server Strategy — Development Tooling for AI Implementation
+
+### Context
+
+The portal is implemented by AI (Claude Code) with human oversight. MCP (Model Context Protocol) servers provide the AI with direct access to external services during development — querying databases, reading error logs, inspecting CMS content models — without leaving the coding context. The question is which MCP servers provide genuine value versus adding configuration overhead for marginal benefit.
+
+The evaluation criteria:
+1. **Frequency** — Is this queried during active development, or only during setup?
+2. **Context value** — Does seeing this data improve code decisions in the moment?
+3. **Alternative quality** — Is the CLI or dashboard already excellent?
+
+### Decision
+
+Three tiers of MCP server adoption, phased with the project:
+
+**Essential (configure now):**
+
+| MCP Server | Purpose | Why Essential |
+|------------|---------|---------------|
+| **Neon** | Database schema management, SQL execution, migration testing, branch-per-test isolation | The database is the center of everything. Used in virtually every development session. |
+| **Sentry** | Error investigation — stack traces, breadcrumbs, affected routes, error frequency | When something breaks during development, seeing the full error context without switching tools is genuinely valuable. Eliminates context switching during debugging. |
+
+**High value (add when the service is introduced):**
+
+| MCP Server | Phase | Purpose | Why Valuable |
+|------------|-------|---------|-------------|
+| **Contentful** | Phase 12+ | Content model queries, entry management, webhook debugging | When Contentful becomes the editorial source of truth, the content model is tightly coupled to code. Prevents drift between what code expects and what CMS provides. |
+
+**Evaluate (try, keep if useful):**
+
+| MCP Server | Phase | Purpose | Assessment |
+|------------|-------|---------|------------|
+| **GitHub** | Phases 1–11 | Issue context, PR details, review comments | Modest benefit over `gh` CLI. Try it; drop if redundant. |
+| **Vercel** | Phase 1+ | Deployment status, build logs, preview URLs | Useful for debugging deployment failures. The `vercel` CLI covers most of this. |
+| **Cloudflare** | Phase 1+ | WAF analytics, rate limit monitoring, traffic patterns | Terraform handles declarative config; MCP useful only for real-time monitoring queries. |
+
+**Not recommended (skip):**
+
+| Service | Why Skip |
+|---------|----------|
+| **AWS** | Terraform manages infrastructure declaratively. Sentry catches errors. The gap — "what's in that S3 bucket?" — is too narrow. `aws` CLI through Bash handles rare ad-hoc queries. |
+| **Figma** | Design tokens are exported once to `tokens.json` and consumed by Tailwind. The AI reads the local file; no interactive Figma queries needed. |
+| **Amplitude** | Analytics code targets the SDK, not the query API. By the time analytics data matters (Phase 7+), queries are infrequent. Dashboard is adequate. |
+| **New Relic** | APM data (slow queries, endpoint latency) is useful during the Phase 7 observability work, but that's a narrow window. Dashboards handle ongoing monitoring. |
+| **Auth0** | Auth is configured once and rarely touched. When it breaks, the Auth0 CLI or dashboard is adequate for the low frequency of interaction. |
+
+**Custom MCP server (Phase 1):**
+
+The **SRF Corpus MCP** server (planned since the original design) gives the AI development-time access to the book corpus — "find all passages about meditation in Autobiography." This enables the AI to reference actual content when building search features, theme pages, and test fixtures.
+
+### Consequences
+
+- Sentry MCP added to project configuration at Phase 1 alongside existing Neon MCP
+- Contentful MCP evaluated and added when Phase 12 Contentful migration begins
+- GitHub MCP evaluated during Phase 1; kept or dropped based on actual utility versus `gh` CLI
+- SRF Corpus MCP server built as a Phase 1 deliverable (custom, queries Neon directly)
+- AWS MCP explicitly not adopted — Terraform + Sentry + `aws` CLI is sufficient
+- MCP server configuration documented in CLAUDE.md for all future AI sessions
+- This decision is revisited at Phase 10 (Contentful), Phase 13 (cross-media), and Phase 15 (user accounts) when new services enter the stack
+
+---
 
 *Last updated: 2026-02-19*

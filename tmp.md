@@ -134,3 +134,57 @@ Be pro-active (that's why OpenClaw may work well).
 Remember you have vast capability, intelligence and agency.
 
 You have complete design autonomy.
+
+---
+
+1. Let's think through deploying the whole app release from GitHub. How would we approach it? We consider terraform. Is that appropriate to interface to all services. Consider we may eventually have multiple environments. Migration to GitLab may occur.
+
+2. How are "Related Teachings" distinct from "Continue the Thread"?
+
+3. Consider the entire stack for cost optimization. Would using AWS services benefit us at all. Consider Lambdas, teh stated SRF tech stack. Be open to alternatives when there is a compelling value proposition.
+
+4. Let's deeply consider the Global South. Have we done everything to serve them?
+
+5. Let's explore design for mobile apps (Android, iOS, etc?). We can prioritize towards end phases. The sooner we design for, the better?
+
+What questions am I not asking?
+
+What would serve our mission well?
+
+Are there any improvements to the reading experience?
+
+Be pro-active (that's why OpenClaw may work well).
+Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.
+
+---
+
+1. Look at the whole project from an operational point fo view. Are there gaps in our design? What are the operational costs? What am I not asking? You have complete design autonomy.
+
+2. Is there value in re-number the ADRs to sequential based on reading for your benefit? Currently they are number based on historical creation time. What am I not asking? You have complete design autonomy.
+
+3. Are the markdown documents coherent? Are there obsolete info? Are there incorrect associations? Labels? Do the diagrams in DESIGN.md need revisions? Are the diagram endpoints still valid? Do the diagrams have ommissions? Would you use as is? What am I not asking? You have complete design autonomy.
+
+4. What are the blind spots? Trace through each phase? Trace through operations through architecture. What am I not asking? You have complete design autonomy.
+
+5. Inhabit the heart and mind of each of the cultures: spanish, german, french, italian, portuguese, english, japanese, hindi, bengali. What are we doing, if anything, doesn't make sense from that cultural lense? How can we serve each culture as best as possible? What are our blind spots? What am I not asking? You have complete design autonomy.
+
+6. Expand list of REST endpoints? Evaluate adding REST endpoints:
+- `/v1/places/[slug]`
+- `/v1/people/[slug]`
+- `/v1/explore(or theme, or similar)/[courage|etc]` for ADR-013: Teaching Topics — Curated Thematic Entry Points
+
+What other REST endpoints might be helpful?
+
+And, what value or convenience, if any, would each endpoint provide?
+
+What am I not asking? You have complete design autonomy.
+
+
+_
+What other areas of reflection would I benefit from exploring?
+
+Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.

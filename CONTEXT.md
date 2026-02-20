@@ -45,7 +45,7 @@ The world does not lack spiritual content. It lacks *findability in the moment o
 
 ### Explicitly Out of Scope
 
-- **SRF Lessons** — the progressive home-study program is reserved and private. This portal does not include Lesson content, Kriya Yoga technique instruction, or any materials requiring the Lessons Pledge.
+- **SRF Lessons** — the progressive home-study program is reserved and private. This portal does not include Lesson content, Kriya Yoga technique instruction, or any materials requiring the Lessons Pledge. (Note: the architecture is designed to accommodate future Lessons integration for authorized students if SRF decides to pursue this — see ADR-081 and the "Future Consideration: SRF Lessons" section under Content Scope. No Lessons code ships in any current phase.)
 
 ### The "What Next" Bridge
 
@@ -101,6 +101,24 @@ Standard engagement metrics (time on site, session depth, retention) optimize fo
 
 ---
 
+## Operational Staffing (Requires SRF Input)
+
+The editorial review portal (ADR-064) provides tooling for content governance. But tooling without humans is empty. The following operational roles require dedicated staff time, and SRF must determine *who* fills each role before Phase 5 launches the editorial workflows.
+
+| Role | Responsibility | Estimated Time | Phase Needed |
+|------|---------------|----------------|--------------|
+| **Content editor** | Theme tag review, daily passage curation, calendar event management | 2–3 hours/day | Phase 5 |
+| **Theological reviewer** | Final approval on theme associations, editorial thread accuracy | Periodic (high-stakes, low-frequency) | Phase 5 |
+| **On-call engineer** | Sentry alert response, infrastructure monitoring, Neon health | As needed (shared with AE team) | Phase 1 |
+| **Book ingestion operator** | Run ingestion pipeline for new books, coordinate human QA | Per-book (1–2 days per ingestion cycle) | Phase 5 |
+| **Social media reviewer** | Review quote images and captions, distribute to platforms | 20–30 min/day | Phase 9 |
+| **Translation reviewer** | Compare AI-drafted translations with English source, approve/correct | Batch sessions (per language sprint) | Phase 11 |
+| **Impact report curator** | Curate "What Is Humanity Seeking?" data into narrative report | Annual | Phase 11+ |
+
+**Key question for SRF:** Does the monastic order, the AE team, a dedicated content editor, or some combination own these responsibilities? The answer shapes Phase 5's editorial workflow design.
+
+---
+
 ## Theological and Ethical Constraints
 
 ### Sacred Text Fidelity
@@ -131,7 +149,7 @@ Accessibility is therefore not a polish phase or a nice-to-have. It is a Phase 2
 - `prefers-reduced-motion` support for users with vestibular disorders
 - Performance budgets that serve seekers on low-bandwidth mobile connections (India, Africa, Latin America)
 
-Phase 10 exists for formal audit, advanced features (TTS, dark mode, high-contrast), and third-party testing — not for introducing accessibility after the fact. See ADR-017.
+Phase 12 exists for formal audit, advanced features (TTS, dark mode, high-contrast), and third-party testing — not for introducing accessibility after the fact. See ADR-017.
 
 ### Multilingual from the Foundation
 
@@ -141,11 +159,11 @@ The philanthropist's question was about making Yogananda's books "available free
 
 - **Schema:** Every content table carries a `language` column from the first migration. Cross-language linking (`canonical_book_id`, `canonical_chunk_id`) is built into the data model, not retrofitted.
 - **API:** Every content-serving endpoint accepts a `language` parameter. URL structure uses locale prefixes (`/es/search`, `/de/quiet`). Theme slugs stay in English for URL stability; display names are localized.
-- **Search:** The embedding model is multilingual by explicit requirement — Phase 1 embeddings remain valid when Phase 9 adds new languages. The hybrid search function accepts `search_language` and uses language-appropriate PostgreSQL dictionaries. English fallback is implemented at the service layer.
+- **Search:** The embedding model is multilingual by explicit requirement — Phase 1 embeddings remain valid when Phase 11 adds new languages. The hybrid search function accepts `search_language` and uses language-appropriate PostgreSQL dictionaries. English fallback is implemented at the service layer.
 - **UI:** All strings are externalized to locale files (`messages/*.json`) from Phase 2. CSS logical properties (`margin-inline-start` not `margin-left`) are used throughout, ensuring RTL languages work without refactoring. The `lang` attribute is set on `<html>`.
 - **Content fidelity:** Only official SRF/YSS human translations are served. Machine translation of Yogananda's words is never acceptable (see Sacred Text Fidelity above). If an official translation does not exist, the book is unavailable in that language — the portal is honest about content availability.
 
-Phase 1 launches in English only, but the architecture is locale-ready. Phase 9 activates multilingual content. The gap between "English only" and "multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-020, ADR-021, ADR-022, ADR-023.)
+Phase 1 launches in English only, but the architecture is locale-ready. Phase 11 activates multilingual content. The gap between "English only" and "multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-020, ADR-021, ADR-022, ADR-023.)
 
 ### Calm Technology Principles
 
@@ -181,6 +199,8 @@ What this means in practice:
 - No engagement metrics that optimize for screen time (session duration, pages per session, return visit frequency are explicitly excluded from analytics — see DELTA Framework above)
 - No gamification (reading streaks, badges, completion tracking) — see Calm Technology above
 - The portal links to SRF's broader ecosystem without duplicating it: the Bookstore for physical books, the Online Meditation Center for live events, the convocation site for gatherings, the app for private Lessons reading
+- **The portal complements the physical bookstore — it does not replace it.** The portal makes teachings freely accessible online; the bookstore serves seekers who want physical books. This complementary relationship should hold for at least 10 years.
+- **The portal is an SRF initiative.** Partnerships with other Yogananda lineages or interfaith groups are not planned. The architecture does not depend on external organizational partnerships. This may be revisited in the future, but it is not a current consideration.
 
 ### Content Availability Honesty
 
@@ -249,7 +269,7 @@ The teaching portal should use these technologies wherever possible, introducing
 
 **Autobiography of a Yogi** by Paramahansa Yogananda — the most widely read and accessible of Yogananda's works. Available in multiple editions and translations.
 
-### Broader Corpus (Phase 4+)
+### Broader Corpus (Phase 5+)
 
 - The Second Coming of Christ (2 volumes, ~1,600 pages)
 - God Talks With Arjuna: The Bhagavad Gita (2 volumes)
@@ -263,6 +283,22 @@ The teaching portal should use these technologies wherever possible, introducing
 - How You Can Talk With God
 - Metaphysical Meditations
 - Other SRF/YSS publications
+
+### Audio Recordings (Phase 14+)
+
+SRF possesses audio recordings of Paramahansa Yogananda's own voice — lectures, informal talks, guided meditations, and chanting. These are sacred artifacts and content simultaneously. Yogananda's voice recordings are among the most direct expressions of his teachings; no book passage can substitute for hearing the Master speak. The portal will treat these with reverence in presentation and with full indexing for discoverability.
+
+SRF also produces modern audio recordings: monastics reading from published works, guided meditations, and chanting sessions.
+
+Audio recordings are a first-class content type in the portal architecture (ADR-078), with their own data model, transcription pipeline (Whisper → human review), and search integration alongside books and video.
+
+### Unreleased and Forthcoming Materials
+
+SRF has indicated that additional unreleased materials exist — books, audio, and video. The architecture accommodates new content types gracefully, with no schema migrations required for standard additions to the book or audio catalog.
+
+### Future Consideration: SRF Lessons
+
+The SRF Home Study Lessons are the organization's core spiritual curriculum — sequential private instruction in meditation and Kriya Yoga. They are **explicitly out of scope** for the public portal. However, SRF has indicated they might eventually be incorporated for authorized students (those enrolled in the Lessons) and Kriya Yoga initiates (kriyabans). This may never happen, or may be years away. The architecture is designed so it is not structurally impossible (ADR-081), but no Lessons-specific code ships in any current phase.
 
 ### Phase 1 Content Sources
 

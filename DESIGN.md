@@ -305,7 +305,7 @@ CREATE TABLE books (
     cover_image_url TEXT,
     bookstore_url   TEXT,          -- SRF Bookstore URL for "Find this book" link.
                                    -- Points to SRF Bookstore for all books. If per-language bookstore
-                                   -- routing is needed in Phase 9 (YSS for Hindi/Bengali), add a simple
+                                   -- routing is needed in Phase 11 (YSS for Hindi/Bengali), add a simple
                                    -- lookup then — zero schema changes required now. (ADR-051)
     canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
                                                  -- NULL for originals. Enables "Available in 6 languages"
@@ -320,7 +320,7 @@ CREATE TABLE books (
 -- The book_store_links table was removed as over-designed for a portal
 -- that is not an e-commerce gateway. The books.bookstore_url column
 -- points to the SRF Bookstore. If per-language bookstore routing is
--- needed in Phase 9, a simple table or column can be added then.
+-- needed in Phase 11, a simple table or column can be added then.
 
 -- ============================================================
 -- CHAPTERS
@@ -368,7 +368,7 @@ CREATE TABLE book_chunks (
     prev_chunk_id   UUID,          -- previous chunk for context continuity
     next_chunk_id   UUID,          -- next chunk for "read more"
 
-    -- Cross-language alignment (Phase 9)
+    -- Cross-language alignment (Phase 11)
     canonical_chunk_id UUID REFERENCES book_chunks(id), -- links translated chunk to its English original;
                                                         -- NULL for originals. Enables "Read this in Spanish →".
 
@@ -408,7 +408,7 @@ CREATE INDEX idx_chunks_language ON book_chunks(language);
 -- Uses each chunk's language column to select the correct PostgreSQL
 -- text search dictionary (stemming, stop words). A GENERATED ALWAYS
 -- column cannot reference another column as a regconfig, so we use
--- a trigger instead. Phase 1 has only 'english'; Phase 9 adds
+-- a trigger instead. Phase 1 has only 'english'; Phase 11 adds
 -- 'spanish', 'german', 'french', 'italian', 'portuguese', etc.
 -- Languages without a built-in PG dictionary (ja, hi, bn) use 'simple'.
 
@@ -472,7 +472,7 @@ CREATE INDEX idx_teaching_topics_category ON teaching_topics(category);
 -- ============================================================
 -- Slugs stay in English for URL stability (/es/themes/peace, not /es/temas/paz).
 -- Display names and header quotes are localized per language.
--- Phase 2: table created (empty). Phase 9: populated via AI-assisted workflow (ADR-023).
+-- Phase 2: table created (empty). Phase 11: populated via AI-assisted workflow (ADR-023).
 
 CREATE TABLE topic_translations (
     theme_id        UUID NOT NULL REFERENCES teaching_topics(id) ON DELETE CASCADE,
@@ -550,7 +550,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
     ('Purpose', 'purpose', 'quality', 5, 'Life purpose, meaning, dharma, vocation, finding direction, why am I here, fulfilling divine plan'),
     ('Love',    'love',    'quality', 6, 'Divine love, unconditional love, devotion, human love, expanding the heart, love for God, love for all beings');
 
--- Phase 4+: life situation themes (accessible from "Browse all themes" page, not on homepage grid)
+-- Phase 5+: life situation themes (accessible from "Browse all themes" page, not on homepage grid)
 -- These are added as content is ingested and sufficient passages are confirmed.
 -- Minimum threshold: ~20 reviewed passages before a situation theme page goes live.
 -- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
@@ -561,7 +561,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
 --     ('Loneliness',     'loneliness',     'situation', 5, 'Isolation, feeling alone, finding the inner companion, solitude vs loneliness, divine companionship, belonging'),
 --     ('Aging',          'aging',          'situation', 6, 'Growing older, the body and the soul, vitality, wisdom of age, preparing for the afterlife, eternal youth of the spirit');
 
--- Phase 5+: exploration themes — persons, principles, scriptures, practices (ADR-058)
+-- Phase 6+: exploration themes — persons, principles, scriptures, practices (ADR-058)
 -- Same tagging pipeline as quality/situation themes. No fixed minimum — editorial judgment decides when a topic has enough depth to publish.
 -- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
 --
@@ -673,7 +673,7 @@ CREATE TABLE chunk_relations (
     target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
     similarity      FLOAT NOT NULL,
     rank            INTEGER NOT NULL,   -- 1 = most similar, 2 = second, etc.
-    relation_type   TEXT,               -- NULL (Phase 1–4), classified in Phase 5 (ADR-049 E6):
+    relation_type   TEXT,               -- NULL (Phase 1–4), classified in Phase 6 (ADR-049 E6):
                                         -- 'same_topic'     — both passages address the same theme
                                         -- 'develops_further'— target develops the source idea at greater length
                                         -- 'personal_story' — target is a personal illustration of the source teaching
@@ -696,7 +696,7 @@ CREATE INDEX idx_chunk_relations_target ON chunk_relations(target_chunk_id);
 -- "As my guru Sri Yukteswar taught..." → link to that passage.
 -- Supplements the automatic embedding-based relations above.
 
--- chunk_references table added in Phase 5 (Related Teachings & Reader Intelligence)
+-- chunk_references table added in Phase 6 (Related Teachings & Reader Intelligence)
 CREATE TABLE chunk_references (
     source_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
     target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
@@ -1190,7 +1190,7 @@ Framed through aspiration, not suffering. "Seeking" aligns with the search bar's
 - Style: `--portal-text-muted`, Merriweather Light, gentle `--srf-gold` underline on hover
 - The section heading "Seeking..." is in Merriweather Light, not bold — it's an invitation, not a label
 - Editorially curated: the portal team can add, remove, or refine entry points based on anonymized search trends (from `search_queries` table)
-- **Cultural adaptation (Phase 9):** The "Seeking..." entry points are deeply English-idiomatic ("The heart to forgive," "Peace in a restless mind"). These need cultural adaptation, not mechanical translation. Treat them as **editorial content per locale** — each language's reviewer may rephrase, reorder, or replace entry points to match cultural expression. Include these in the ADR-023 human review scope alongside UI strings.
+- **Cultural adaptation (Phase 11):** The "Seeking..." entry points are deeply English-idiomatic ("The heart to forgive," "Peace in a restless mind"). These need cultural adaptation, not mechanical translation. Treat them as **editorial content per locale** — each language's reviewer may rephrase, reorder, or replace entry points to match cultural expression. Include these in the ADR-023 human review scope alongside UI strings.
 - Mobile: full-width, stacked list
 - This section is below the fold — a deliberate choice. The above-the-fold experience (Today's Wisdom + search bar) is for all visitors; this section is for the ones who scroll because they need more
 
@@ -1249,9 +1249,9 @@ The library is how seekers browse and discover books. Even with a single book in
 - "Begin reading →" link to chapter 1
 - "Find this book →" link to SRF Bookstore
 
-**Phase 4 growth:** As Wave 2a–2d books are ingested, the library page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-012), which mirrors life-impact ordering.
+**Phase 5 growth:** As Wave 2a–2d books are ingested, the library page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-012), which mirrors life-impact ordering.
 
-**Phase 9 multi-language:** The library shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-020 content availability matrix).
+**Phase 11 multi-language:** The library shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-020 content availability matrix).
 
 **API:** `GET /api/v1/books` (already defined). Returns all books with metadata, chapter count, and slugs.
 
@@ -1358,7 +1358,7 @@ The single most important typographic decision: **line length**. Optimal for ext
 
 | Property | Value | Rationale |
 |----------|-------|-----------|
-| Max text width | `38rem` (~65-75 chars) | Optimal reading line length. **CJK note (Phase 9):** 38rem holds ~30–35 CJK characters per line — within the traditional optimal range for Japanese (25–40 chars/line). Line height should tighten from 1.8 to 1.6–1.7 for CJK text. Validate with actual translated content before launch. |
+| Max text width | `38rem` (~65-75 chars) | Optimal reading line length. **CJK note (Phase 11):** 38rem holds ~30–35 CJK characters per line — within the traditional optimal range for Japanese (25–40 chars/line). Line height should tighten from 1.8 to 1.6–1.7 for CJK text. Validate with actual translated content before launch. |
 | Font | Merriweather 400 | Serif for extended reading |
 | Size | `--text-base` (18px) | Comfortable for long reading sessions |
 | Line height | `--leading-relaxed` (1.8) | Spacious for contemplation |
@@ -1390,8 +1390,8 @@ The right side panel displays passages from *other books* that are semantically 
 
 **Filters (in "Explore all" expanded view):**
 - By book (dropdown of all available books)
-- By content type: Books / Videos (once transcripts exist, Phase 11)
-- By language (when multi-language content available, Phase 9)
+- By content type: Books / Videos (once transcripts exist, Phase 13)
+- By language (when multi-language content available, Phase 11)
 - By topic (Peace, Courage, Christ, Meditation, Yoga Sutras, etc.)
 
 **Data source and loading strategy (ADR-062):**
@@ -1538,13 +1538,13 @@ A `@media print` stylesheet ensures passages and chapters print beautifully:
 - Portal URL in small footer: `teachings.yogananda.org`
 - Page breaks between chapters (for full chapter printing)
 - No background colors (saves ink, respects user paper)
-- **Non-Latin font support (Phase 9):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
+- **Non-Latin font support (Phase 11):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
 
 #### Reader Typography Refinements (ADR-037)
 
 The reader's typographic details signal care and reverence for the words. These are the micro-details that distinguish a sacred text presentation from a blog post:
 
-**Drop capitals:** Each chapter opens with a drop capital — Merriweather 700, `--srf-navy`, spanning 3 lines. Uses CSS `::first-letter`. A tradition from illuminated manuscripts signaling "something begins here." **Language-conditional (Phase 9):** Drop capitals are enabled for Latin-script languages only. CSS `::first-letter` behaves unpredictably with CJK and Indic scripts, and the illuminated-manuscript tradition is Western. For Japanese, Hindi, and Bengali, substitute a culturally appropriate chapter-opening treatment: generous whitespace with a subtle `--srf-gold` rule above the first paragraph.
+**Drop capitals:** Each chapter opens with a drop capital — Merriweather 700, `--srf-navy`, spanning 3 lines. Uses CSS `::first-letter`. A tradition from illuminated manuscripts signaling "something begins here." **Language-conditional (Phase 11):** Drop capitals are enabled for Latin-script languages only. CSS `::first-letter` behaves unpredictably with CJK and Indic scripts, and the illuminated-manuscript tradition is Western. For Japanese, Hindi, and Bengali, substitute a culturally appropriate chapter-opening treatment: generous whitespace with a subtle `--srf-gold` rule above the first paragraph.
 
 **Decorative opening quotation marks:** Every displayed Yogananda passage (search results, quote cards, shared passages) uses a large decorative opening quote mark — Merriweather 700, 48px, `--srf-gold` at 40% opacity, positioned as a hanging element above-left. This visual language instantly says: *these are his words*.
 
@@ -1659,7 +1659,7 @@ A lightweight, private bookmarking system using `localStorage`:
 
 **Storage:** `localStorage` under `srf-portal:bookmarks`. No server, no accounts, no tracking. Clearing browser data removes bookmarks. This is stated clearly on the bookmarks page.
 
-**Phase 12 migration:** When optional accounts arrive, `localStorage` bookmarks are offered for import and server sync.
+**Phase 15 migration:** When optional accounts arrive, `localStorage` bookmarks are offered for import and server sync.
 
 #### Keyboard-First Reading Navigation (ADR-042)
 
@@ -1689,7 +1689,7 @@ All shortcuts are single-key (no modifier), active only when no input/textarea i
 - Keyboard navigation: full vim-style shortcuts (see above, ADR-042)
 - Skip link: "Skip to chapter text" at page top
 - Each paragraph is an `<article>` with `role="article"` and `aria-label` including page number
-- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until Phase 10
+- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until Phase 12
 - `prefers-reduced-motion`: side panel updates without animation, dwell transitions instant, breath between chapters skipped, opening moment skipped
 - Dwell mode: screen reader announcements on enter/exit
 - All keyboard shortcuts suppressed when input elements have focus
@@ -1874,7 +1874,7 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - Uses `@vercel/og` (Satori) to render a PNG: passage text in Merriweather on warm cream, citation below, subtle SRF lotus mark, portal URL at bottom
 - Same image used for OG cards and "Save as image" download
 - Suitable for messaging apps, social media, printing, phone wallpaper
-- **Non-Latin script support (Phase 9):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Japanese or Hindi quote image will render as empty boxes unless the build bundles Noto font subsets for each active script. The OG image route must select the correct font based on the passage's `language` column. Font map: `ja` → Noto Serif JP, `hi` → Noto Serif Devanagari, `bn` → Noto Serif Bengali. All Latin-script languages use Merriweather.
+- **Non-Latin script support (Phase 11):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Japanese or Hindi quote image will render as empty boxes unless the build bundles Noto font subsets for each active script. The OG image route must select the correct font based on the passage's `language` column. Font map: `ja` → Noto Serif JP, `hi` → Noto Serif Devanagari, `bn` → Noto Serif Bengali. All Latin-script languages use Merriweather.
 
 **Email sharing (ADR-059):**
 - "Email this passage" opens the seeker's email client via `mailto:` link
@@ -1885,8 +1885,8 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 
 **PDF generation (ADR-059):**
 - Passage PDF: single A4 page — Merriweather 14pt, warm cream background, citation, lotus watermark (8% opacity, bottom-right), portal URL
-- Chapter PDF (Phase 7): cover page, running headers, page numbers, drop capitals, lotus watermark on first page
-- Book PDF (Phase 7): title page, table of contents, all chapters, colophon
+- Chapter PDF (Phase 8): cover page, running headers, page numbers, drop capitals, lotus watermark on first page
+- Book PDF (Phase 8): title page, table of contents, all chapters, colophon
 - API: `GET /api/v1/pdf/passage/{chunk-id}`, `GET /api/v1/pdf/chapter/{book-slug}/{chapter}`, `GET /api/v1/pdf/book/{book-slug}`
 
 **Share menu:**
@@ -2001,7 +2001,7 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
   --portal-text:        #2C2C2C;  /* Primary reading text — softer than black */
   --portal-text-muted:  #595959;  /* Citations, metadata, secondary text (corrected from #6B6B6B for WCAG AA contrast on cream) */
 
-  /* === Time-Aware Reading Bands (ADR-039) — defined in Phase 10 === */
+  /* === Time-Aware Reading Bands (ADR-039) — defined in Phase 12 === */
   /* --portal-bg-morning, --portal-bg-evening, --portal-bg-night, --portal-text-night
      are introduced when circadian color temperature is implemented. */
 
@@ -2170,9 +2170,9 @@ The SVG is defined once as a reusable component, parameterized for size, color, 
 
 | Layer | What | Approach | Phase |
 |-------|------|----------|-------|
-| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-023). | Infrastructure in Phase 2. Translations in Phase 9. |
-| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales in production. **Never machine-translate sacred text.** | Phase 9 |
-| **Search** | FTS, vector similarity, query expansion | Per-language tsvector. Multilingual embedding model. Claude expands queries per language. | Phase 9 |
+| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-023). | Infrastructure in Phase 2. Translations in Phase 11. |
+| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales in production. **Never machine-translate sacred text.** | Phase 11 |
+| **Search** | FTS, vector similarity, query expansion | Per-language tsvector. Multilingual embedding model. Claude expands queries per language. | Phase 11 |
 
 ### Phase 2 — English Only, i18n-Ready
 
@@ -2276,7 +2276,7 @@ CREATE INDEX idx_chunks_fts_localized ON book_chunks
     USING GIN (content_tsv_localized);
 ```
 
-**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Phase 1 remain valid when Spanish, German, and Japanese chunks are added in Phase 9 — no re-embedding of the English corpus. Any future embedding model migration (ADR-032) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Phase 9 (Deliverable 9.10). Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
+**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Phase 1 remain valid when Spanish, German, and Japanese chunks are added in Phase 11 — no re-embedding of the English corpus. Any future embedding model migration (ADR-032) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Phase 11 (Deliverable 9.10). Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
 **Query expansion:** Claude handles all target languages. The expansion prompt includes the target language:
 
@@ -2311,13 +2311,13 @@ The multilingual architecture serves two practical use cases, not arbitrary cros
 
 2. **Cross-language passage alignment.** When the same book exists in multiple translations, the `canonical_chunk_id` column on `book_chunks` links a translated chunk to its English original. This enables "Read this passage in Spanish →" navigation between editions. Alignment is done during ingestion by matching (canonical_book_id, chapter_number, paragraph_index). Edge cases (translator's notes, merged paragraphs) are resolved in the human QA step.
 
-**Cross-language search as optional future feature:** The multilingual embedding model places semantically equivalent text in different languages close together in vector space. If usage data (Phase 9 analytics) reveals demand for searching across all languages simultaneously, this can be enabled by calling `hybrid_search` without the `language` filter. But this is not a core Phase 9 deliverable — locale + English fallback covers the practical need.
+**Cross-language search as optional future feature:** The multilingual embedding model places semantically equivalent text in different languages close together in vector space. If usage data (Phase 11 analytics) reveals demand for searching across all languages simultaneously, this can be enabled by calling `hybrid_search` without the `language` filter. But this is not a core Phase 11 deliverable — locale + English fallback covers the practical need.
 
 ### Chunk Relations in a Multilingual Corpus
 
 The `chunk_relations` table stores pre-computed semantic similarity. In a multilingual corpus, a naive "top 30 global" approach would leave non-English languages underserved — most of the 30 slots would be consumed by chunks in other languages (predominantly English, which will be the largest corpus).
 
-**Computation strategy (Phase 9):**
+**Computation strategy (Phase 11):**
 - For each chunk, store **top 30 same-language** relations + **top 10 English supplemental** relations (best from English corpus when the chunk is non-English; empty for English chunks)
 - Total: up to 40 rows per chunk (at 400K chunks across all languages = 16M rows — trivial for PostgreSQL)
 - Same-language relations power the default "Related Teachings" side panel
@@ -2340,8 +2340,8 @@ Français
 Italiano
 Português
 日本語
-हिन्दी (Phase 9 Indian wave)
-বাংলা (Phase 9 Indian wave)
+हिन्दी (Phase 11 Indian wave)
+বাংলা (Phase 11 Indian wave)
 ```
 
 Selection stored in a cookie. Available on every page. Not gated by account.
@@ -2370,15 +2370,15 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 1. **Locale-first search:** The `language` API parameter means the user's locale, not the detected query language. No auto-detection of query language. English fallback implemented at service layer.
 2. **Theme slugs stay in English** for URL stability (`/es/themes/peace`, not `/es/temas/paz`). Display names localized via `topic_translations` table.
-3. **Embedding model must be multilingual.** Explicit requirement (not accident). Ensures Phase 1 embeddings remain valid when Phase 9 adds new languages.
+3. **Embedding model must be multilingual.** Explicit requirement (not accident). Ensures Phase 1 embeddings remain valid when Phase 11 adds new languages.
 4. **`reader_url` is locale-relative.** API returns `/books/slug/chapter#chunk`. Client prepends locale prefix. API stays presentation-agnostic.
 5. **`chunk_relations` store per-language.** Top 30 same-language + top 10 English supplemental per chunk. Ensures non-English languages get first-class related teachings with English fallback.
 6. **Locale + English fallback is the multilingual model.** Arbitrary cross-language search (e.g., Japanese query finding German results) is deferred as optional — the practical need is the user's language plus English fallback, not N×N language combinations. The multilingual embedding model enables cross-language search at near-zero cost if usage data later justifies it.
-7. **Chunk size must be validated per language (Phase 9).** Token economies differ across scripts — a 300-token chunk in Japanese may hold less semantic content than 300 English tokens. Per-language chunk size benchmarking is required before ingesting non-English content. At minimum, validate that English-calibrated chunk sizes produce acceptable retrieval quality in all target languages.
+7. **Chunk size must be validated per language (Phase 11).** Token economies differ across scripts — a 300-token chunk in Japanese may hold less semantic content than 300 English tokens. Per-language chunk size benchmarking is required before ingesting non-English content. At minimum, validate that English-calibrated chunk sizes produce acceptable retrieval quality in all target languages.
 
 ### Open Questions (Require SRF Input)
 
-1. **Does SRF/YSS have digital text of official translations?** If yes, the ingestion pipeline is straightforward. If only printed books exist, OCR/scanning per language is a massive effort requiring fluent reviewers. This is the single highest-impact question for Phase 9 planning.
+1. **Does SRF/YSS have digital text of official translations?** If yes, the ingestion pipeline is straightforward. If only printed books exist, OCR/scanning per language is a massive effort requiring fluent reviewers. This is the single highest-impact question for Phase 11 planning.
 2. **Who reviews the AI-drafted UI translations?** Claude drafts locale JSON files (ADR-023), but human review is mandatory — someone fluent in the target language and familiar with SRF's devotional register. SRF may have multilingual monastics or volunteers who can serve as reviewers.
 3. **Portal branding for YSS languages (Hindi/Bengali):** Same domain (`teachings.yogananda.org/hi/`) or a YSS-branded domain? This is an SRF/YSS organizational question.
 4. **Do translated editions preserve paragraph structure?** If yes, `canonical_chunk_id` alignment during ingestion is straightforward (match by chapter_number + paragraph_index). If translations reorganize content, alignment requires semantic matching — still feasible but requires more QA effort.
@@ -2562,7 +2562,7 @@ Implementation:
 ```
 Query params:
   language   (optional)  — default 'en'. Returns books available in user's locale.
-                           Phase 9: also returns an "also_available_in_english"
+                           Phase 11: also returns an "also_available_in_english"
                            section for untranslated works (per ADR-020).
 
 Response:
@@ -2720,7 +2720,7 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
 | Convention | Rule | Rationale |
 |------------|------|-----------|
 | **Versioning** | All routes prefixed `/api/v1/`. Never break v1 after mobile apps ship. | Mobile apps can't force-update users. |
-| **Auth** | All routes public (no auth) through Phase 11. Auth added only if/when Phase 12 accounts are implemented. | Frictionless access is the mission. Auth is additive, never a gate on reading or search. |
+| **Auth** | All routes public (no auth) through Phase 14. Auth added only if/when Phase 15 accounts are implemented. | Frictionless access is the mission. Auth is additive, never a gate on reading or search. |
 | **Pagination** | Cursor-based: `{ results, cursor, hasMore }`. No page-number pagination. | Stable across data changes; mobile infinite scroll. |
 | **Cache headers** | Explicit `Cache-Control` on every response. Book text: long-lived. Search: no-store. Daily passage: 1 hour. | Mobile apps cache intelligently without custom logic. |
 | **Response shape** | Presentation-agnostic JSON. No HTML in responses. No assumptions about rendering. | Same response serves web, mobile, and any future consumer. |
@@ -2752,7 +2752,7 @@ Passage URLs (`/passage/[chunk-id]`) are designed for universal link interceptio
 
 These files are added when a native app launches. The URL structure that makes them work is established now.
 
-### PWA Readiness (Phase 10)
+### PWA Readiness (Phase 12)
 
 Before native apps, a Progressive Web App provides offline reading, home screen installation, and a lighter footprint. See ADR-025.
 
@@ -2974,7 +2974,7 @@ When monastic talks are transcribed, the transcripts become a new content type a
 
 ```sql
 -- ============================================================
--- VIDEO TRANSCRIPTS (Phase 11)
+-- VIDEO TRANSCRIPTS (Phase 13)
 -- ============================================================
 CREATE TABLE video_transcripts (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2987,7 +2987,7 @@ CREATE TABLE video_transcripts (
 );
 
 -- ============================================================
--- VIDEO CHUNKS (time-synced, embeddable, searchable — Phase 11)
+-- VIDEO CHUNKS (time-synced, embeddable, searchable — Phase 13)
 -- ============================================================
 -- Same chunking strategy as book_chunks. Each chunk carries start/end
 -- timestamps enabling direct links to the exact video playback moment.
@@ -3099,7 +3099,7 @@ Located at `/events` or as a section on the About page (TBD based on content vol
 
 ### Implementation
 
-- **Phase 7:** Static content. MDX or hardcoded in a Next.js page. No CMS needed.
+- **Phase 9:** Static content. MDX or hardcoded in a Next.js page. No CMS needed.
 - **Production:** Contentful entry type `event` with fields: `title`, `date`, `description`, `externalUrl`, `image`. Editors update annually.
 - **No dynamic event data.** The portal does not fetch from SRF's event systems. It links to them.
 
@@ -3217,7 +3217,7 @@ CREATE INDEX idx_chunk_places_chunk ON chunk_places(chunk_id);
 │  │  📖 Read Chapter 12 →                      │   │
 │  └────────────────────────────────────────────┘   │
 │                                                   │
-│  [Phase 10: Street View links on place cards]       │
+│  [Phase 12: Street View links on place cards]       │
 │                                                   │
 │  ── Find a Meditation Group Near You ───────────  │
 │  External link → yogananda.org/center-locator     │
@@ -3247,7 +3247,7 @@ Referenced in:
   • Autobiography of a Yogi, Chapter 42 — "Last days with my guru"
 ```
 
-### Place Links Strategy (Phase 10)
+### Place Links Strategy (Phase 12)
 
 No embedded map library. Each place card links out to external maps services — zero map dependencies, zero tile servers, zero maintenance. See ADR-047.
 
@@ -3321,9 +3321,9 @@ Response:
 
 | Phase | Scope |
 |-------|-------|
-| **Phase 7** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." Cross-references with Autobiography passages. No maps. |
-| **Phase 10** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi). "See This Place" Street View links on place cards (ADR-047). Reader ↔ Place cross-reference cards. |
-| **Future** | Dynamic center locator (if SRF provides data). Multi-language place descriptions (Phase 9). |
+| **Phase 9** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." Cross-references with Autobiography passages. No maps. |
+| **Phase 12** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi). "See This Place" Street View links on place cards (ADR-047). Reader ↔ Place cross-reference cards. |
+| **Future** | Dynamic center locator (if SRF provides data). Multi-language place descriptions (Phase 11). |
 
 ---
 
@@ -3390,7 +3390,7 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 |-------------|---------------|
 | Video captions | YouTube embeds always load with captions enabled (`&cc_load_policy=1` parameter). Rely on YouTube's auto-captions and SRF's uploaded captions. |
 | Quiet Corner chime | The timer completion chime has a visual equivalent: a gentle, full-screen pulse animation (`@media (prefers-reduced-motion: no-preference)`) or a text message ("Your time is complete") for users with `prefers-reduced-motion: reduce`. |
-| Audio content | Any future audio features (Phase 10 TTS, Phase 11 audio clips) must provide text transcripts. |
+| Audio content | Any future audio features (Phase 12 TTS, Phase 14 audio clips) must provide text transcripts. |
 
 #### Motor and Mobility
 
@@ -3407,11 +3407,11 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 | Requirement | Implementation |
 |-------------|---------------|
 | `prefers-reduced-motion` | All animations and transitions respect `@media (prefers-reduced-motion: reduce)`. When active: no hover animations, no page transitions, timer chime is text-only. |
-| `prefers-color-scheme` | Support `dark` scheme in Phase 10 (Reading mode). Phase 2 uses light theme only but CSS architecture supports future dark mode via custom properties. |
+| `prefers-color-scheme` | Support `dark` scheme in Phase 12 (Reading mode). Phase 2 uses light theme only but CSS architecture supports future dark mode via custom properties. |
 | `prefers-contrast` | When `more`, increase border widths and ensure all text exceeds 7:1 contrast. |
 | Clear language | All UI copy at 8th-grade reading level or below. Error messages are specific and actionable ("No passages found for this search. Try different words." not "Error 404"). |
 | Consistent navigation | Header and footer identical on every page. No layout shifts between pages. |
-| Reading mode | Phase 2: clean reader with generous whitespace. Phase 10: adjustable font size, sepia/dark mode. |
+| Reading mode | Phase 2: clean reader with generous whitespace. Phase 12: adjustable font size, sepia/dark mode. |
 
 #### Performance as Accessibility
 
@@ -3421,7 +3421,7 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 | Core Web Vitals | LCP < 2.5s, FID < 100ms, CLS < 0.1. |
 | Progressive enhancement | Core reading and search functionality works without JavaScript (server-rendered HTML). JS enhances: "Show me another", infinite scroll, timer. |
 | Low-bandwidth support | All images lazy-loaded. Responsive images via `srcset`. No autoplay video. Homepage functional as text-only. |
-| Offline resilience | Phase 2: service worker caches the Quiet Corner page and current reading position. Full PWA in Phase 10 (ADR-025). |
+| Offline resilience | Phase 2: service worker caches the Quiet Corner page and current reading position. Full PWA in Phase 12 (ADR-025). |
 
 ### Accessibility Testing Strategy
 
@@ -3431,7 +3431,7 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 | Manual keyboard testing | Every new component | Developer checklist |
 | Screen reader testing | Before each phase release | VoiceOver (macOS), NVDA (Windows) |
 | Color contrast validation | Design token changes | Chrome DevTools, WebAIM Contrast Checker |
-| Real-user testing | Phase 10 | Engage accessibility testers (consider SRF community members with disabilities) |
+| Real-user testing | Phase 12 | Engage accessibility testers (consider SRF community members with disabilities) |
 
 ---
 
@@ -3451,7 +3451,7 @@ The "Seeking..." entry points already hint at this. Threads make the connection 
 
 ```sql
 -- ============================================================
--- EDITORIAL THREADS (curated multi-book reading paths — Phase 5+)
+-- EDITORIAL THREADS (curated multi-book reading paths — Phase 6+)
 -- ============================================================
 CREATE TABLE editorial_threads (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3510,7 +3510,7 @@ This is a "Classifying" category use — JSON output, no prose. Spot-checked by 
 
 ```sql
 -- ============================================================
--- EXTERNAL REFERENCES (reverse bibliography — Phase 5+)
+-- EXTERNAL REFERENCES (reverse bibliography — Phase 6+)
 -- ============================================================
 CREATE TABLE external_references (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3562,7 +3562,7 @@ The `daily_passages` pool already supports optional seasonal weighting. Calendar
 
 ```sql
 -- ============================================================
--- CALENDAR EVENTS (date-to-passage associations — Phase 4+)
+-- CALENDAR EVENTS (date-to-passage associations — Phase 5+)
 -- ============================================================
 CREATE TABLE calendar_events (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3594,7 +3594,7 @@ This aligns with "Signpost, not destination" — the portal meets seekers where 
 
 ## The Quiet Index — Browsable Contemplative Taxonomy (ADR-056)
 
-Phase 4 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification). The Quiet Index combines these two planned classifications into a browsable dimension: passages organized by their contemplative texture.
+Phase 5 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification). The Quiet Index combines these two planned classifications into a browsable dimension: passages organized by their contemplative texture.
 
 ### Passage Textures
 
@@ -3626,11 +3626,11 @@ A seeker who arrives at 2 AM seeking comfort needs a different texture than one 
 
 A daily email delivering a single Yogananda passage — verbatim, with citation and a link to read in context. The email is the portal reaching out to meet the seeker, rather than waiting for the seeker to visit.
 
-### Phase 7: Non-Personalized Daily Email
+### Phase 9: Non-Personalized Daily Email
 
 All subscribers receive the same passage each day. The passage is selected from the `daily_passages` pool with optional seasonal weighting.
 
-### Phase 12: Theme-Preference Email
+### Phase 15: Theme-Preference Email
 
 Logged-in subscribers choose preferred themes (Peace, Courage, etc.). The daily email selects from theme-tagged passages matching their preferences.
 
@@ -3648,7 +3648,7 @@ CREATE TABLE email_subscribers (
     is_active       BOOLEAN NOT NULL DEFAULT true,     -- can unsubscribe
     confirm_token   TEXT,                              -- for double opt-in confirmation
     unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
-    theme_preferences TEXT[],                          -- Phase 12: ['peace', 'courage']
+    theme_preferences TEXT[],                          -- Phase 15: ['peace', 'courage']
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     confirmed_at    TIMESTAMPTZ,
     unsubscribed_at TIMESTAMPTZ
@@ -3692,7 +3692,7 @@ CREATE INDEX idx_subscribers_active ON email_subscribers(is_active, is_confirmed
 
 **Design constraints:**
 - Plain HTML email (no JavaScript, no web fonts — fallback to Georgia/serif)
-- **Non-Latin script support (Phase 9):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
+- **Non-Latin script support (Phase 11):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
 - Warm cream background (`#FAF8F5`), navy text (`#1A2744`)
 - Single passage, single CTA ("Read in context"), no other links except footer
 - Unsubscribe link uses `unsubscribe_token` — one-click, no login required
@@ -3720,7 +3720,7 @@ GET /api/v1/email/unsubscribe?token=xxx
 
 | Component | Service | Notes |
 |-----------|---------|-------|
-| Email delivery | Resend (free tier: 100 emails/day) or AWS SES (~$0.10 per 1,000) | Resend for early Phase 7; SES for scale |
+| Email delivery | Resend (free tier: 100 emails/day) or AWS SES (~$0.10 per 1,000) | Resend for early Phase 9; SES for scale |
 | Cron trigger | Vercel Cron Jobs (free tier: 1/day) or AWS EventBridge | Daily at 5:00 AM UTC |
 | Template | Server-rendered HTML string (no template engine needed) | Keep simple — one passage, one link |
 | Daily passage selection | Same logic as `/api/v1/daily-passage` but with a fixed daily seed | All subscribers receive the same passage on the same day |
@@ -3753,7 +3753,7 @@ Content flows through a five-layer staff experience architecture (ADR-064). Each
 
 ### Content Flow by Type
 
-| Content Type | Phases 1–3 | Phases 4–7 | Production (Phase 8+) | Why |
+| Content Type | Phases 1–4 | Phases 5–9 | Production (Phase 10+) | Why |
 |---|---|---|---|---|
 | **Book text, chapters** | PDF ingestion script → Neon | Same | Contentful (editorial source of truth) → webhook sync → Neon | Editorial workflow with drafts, review, publish, locale variants |
 | **Theme tag review** | — | Admin portal review queue | Admin portal (bridged via Contentful sidebar) | AI proposes, humans approve — needs focused review UI |
@@ -3768,7 +3768,7 @@ Content flows through a five-layer staff experience architecture (ADR-064). Each
 
 ### Contentful → Neon Sync
 
-The webhook sync service (Phase 8, deliverable 8.3) is the primary coupling point. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
+The webhook sync service (Phase 10, deliverable 10.3) is the primary coupling point. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
 
 ```
 Contentful (editorial) ──webhook──→ Serverless function ──→ Neon (search index)
@@ -3843,7 +3843,7 @@ When a staff member logs in, they see a personalized summary filtered by their r
 
 #### Review Workflows
 
-**Theme tag review** (Phase 4):
+**Theme tag review** (Phase 5):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Theme: Peace — Review Candidates (8 of 23)                 │
@@ -3867,7 +3867,7 @@ When a staff member logs in, they see a personalized summary filtered by their r
 
 Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session position saved — resume where you left off tomorrow.
 
-**Social media asset review** (Phase 7):
+**Social media asset review** (Phase 9):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Tomorrow's Passage — Review                                │
@@ -3892,7 +3892,7 @@ Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session po
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Translation review** (Phase 9):
+**Translation review** (Phase 11):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  German Translation Review — 14 strings remaining           │
@@ -3971,11 +3971,11 @@ Business logic lives in `/lib/services/` (consistent with ADR-024). The admin ro
 
 | Phase | Staff Experience Work |
 |---|---|
-| **Phase 4** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Auth0 integration. Email digest. |
-| **Phase 7** | Social media asset review added. |
-| **Phase 8** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. |
-| **Phase 9** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
-| **Phase 9+** | Impact dashboard for leadership. |
+| **Phase 5** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Auth0 integration. Email digest. |
+| **Phase 9** | Social media asset review added. |
+| **Phase 10** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. |
+| **Phase 11** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
+| **Phase 11+** | Impact dashboard for leadership. |
 
 ---
 
@@ -4159,10 +4159,10 @@ Testing is a fidelity guarantee, not optional polish. A bug that misattributes a
 | **End-to-End** | Playwright | Full user flows: search → read → share → navigate. Cross-browser. | Phase 3 |
 | **Accessibility** | axe-core (CI) + Playwright a11y | Automated WCAG checks. Keyboard navigation flows. | Phase 3 |
 | **Search quality** | Custom Vitest suite | ~30 queries with expected passages. Precision/recall. | Phase 3 |
-| **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Phase 5 |
+| **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Phase 6 |
 | **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Phase 3 |
 | **Visual** | Storybook | Component documentation, design token consistency | Phase 3 |
-| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes | Phase 10 |
+| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes | Phase 12 |
 
 ### Database Test Isolation via Neon Branching
 
@@ -4208,7 +4208,7 @@ All must pass before merge.
 | **Continue the Thread** | Read to end of chapter → verify "Continue the Thread" section shows cross-book passages → click one → verify navigation |
 | **Seeking entry points** | Homepage → scroll to "Seeking..." → click entry point → verify search results page with relevant passages |
 
-### Related Content Quality Evaluation (Phase 5+)
+### Related Content Quality Evaluation (Phase 6+)
 
 Mirrors the search quality evaluation (deliverable 1.11) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
 
@@ -4250,9 +4250,9 @@ All infrastructure is defined as code per SRF engineering standards. See ADR-031
 
   /environments/
     dev.tfvars               — Phase 3 (only active environment)
-    qa.tfvars                — Phase 8+
-    stg.tfvars               — Phase 8+
-    prod.tfvars              — Phase 8+
+    qa.tfvars                — Phase 10+
+    stg.tfvars               — Phase 10+
+    prod.tfvars              — Phase 10+
 ```
 
 ### Boundary: Terraform vs. Application Code
@@ -4263,15 +4263,15 @@ All infrastructure is defined as code per SRF engineering standards. See ADR-031
 | Environment variables, secrets | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
 | DNS records, domain bindings | Application routing (`next.config.js`) |
 | Alert rules, Synthetics monitors | Structured logging (`lib/logger.ts`) |
-| Auth provider (Phase 12+, if needed) | Auth SDK integration in Next.js |
+| Auth provider (Phase 15+, if needed) | Auth SDK integration in Next.js |
 | Repo settings, branch protection | CI/CD workflow files |
 
 ### Source Control and CI/CD
 
 | Phase | SCM | CI/CD | Terraform State |
 |-------|-----|-------|-----------------|
-| **Phases 1–7** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
-| **Phase 8+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+| **Phases 1–9** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Phase 10+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
 #### Phase 3 CI/CD Pipeline (GitHub Actions)
 
@@ -4314,18 +4314,18 @@ OPENAI_API_KEY=            # Set manually (secret)
 NEXT_PUBLIC_SENTRY_DSN=    # Terraform output: module.sentry.dsn
 SENTRY_AUTH_TOKEN=         # Set manually (secret)
 
-# Auth (Phase 12+, if needed — no auth variables required for Phases 1–11)
+# Auth (Phase 15+, if needed — no auth variables required for Phases 1–14)
 
 # YouTube
 YOUTUBE_API_KEY=           # Set manually (secret)
 
-# Email (Phase 7)
+# Email (Phase 9)
 RESEND_API_KEY=            # Set manually (secret)
 
-# Amplitude (Phase 6)
+# Amplitude (Phase 7)
 NEXT_PUBLIC_AMPLITUDE_KEY= # Terraform output: module.amplitude.api_key
 
-# New Relic (Phase 6)
+# New Relic (Phase 7)
 NEW_RELIC_LICENSE_KEY=     # Set manually (secret)
 ```
 
@@ -4379,9 +4379,9 @@ Figma design tokens (via Figma Tokens plugin)
 
 Changes to design tokens in Figma propagate to `tokens.json`, which updates `tailwind.config.ts`, which is reflected in all components. The design language stays synchronized between design and code.
 
-### Phase 10: Calm Technology Design System
+### Phase 12: Calm Technology Design System
 
-When the shared component library begins (Phase 10), Figma Professional ($15/editor/month) enables:
+When the shared component library begins (Phase 12), Figma Professional ($15/editor/month) enables:
 - Shared component library with variants
 - Design system documentation alongside Storybook
 - Branching for design exploration
@@ -4399,7 +4399,7 @@ When the shared component library begins (Phase 10), Figma Professional ($15/edi
 
 4. **"No results" experience:** When the corpus doesn't contain relevant passages, what does the portal show? A gentle message? Suggested related topics?
 
-5. **Contentful free tier viability:** 10,000 records and 2 locales. May be insufficient if we model at paragraph granularity. Need to evaluate whether a paid Contentful space is needed, or if Phases 1–7 uses Neon-only with Contentful deferred to production.
+5. **Contentful free tier viability:** 10,000 records and 2 locales. May be insufficient if we model at paragraph granularity. Need to evaluate whether a paid Contentful space is needed, or if Phases 1–9 uses Neon-only with Contentful deferred to production.
 
 ---
 

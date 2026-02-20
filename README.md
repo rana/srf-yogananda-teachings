@@ -16,7 +16,7 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 - **The Quiet Corner** — a micro-sanctuary with a single affirmation and optional gentle timer, for the moment of immediate need
 - **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, and keyboard-first navigation
 - **Multi-language support** — architecture designed from day one to serve official SRF/YSS translations in all available languages
-- **Cross-media search** (later phases) — monastic How-to-Live talks from YouTube, transcribed and searchable alongside book text
+- **Cross-media search** (later phases) — video talks, audio recordings, and photographs searchable alongside book text through a unified content hub
 
 ## Design Principles
 
@@ -34,30 +34,33 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Database | Neon PostgreSQL + pgvector (hybrid vector + full-text search) |
 | AI | Claude API (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | OpenAI text-embedding-3-small (multilingual) |
-| CMS | Contentful (Phase 8+) |
-| Video | YouTube RSS + Data API v3 |
+| CMS | Contentful (Phase 10+) |
+| Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
 
 Business logic lives in `/lib/services/` (framework-agnostic TypeScript). The architecture is designed for a **10-year maintenance horizon**: data in PostgreSQL, migrations in raw SQL, dependencies treated as commitments.
 
 ## Phasing
 
-The project is planned across 13 phases, each delivering a working increment:
+The project is planned across 16 phases, each delivering a working increment. Three monolithic phases were decomposed into focused pairs (3→3+4, 7→8+9, 11→13+14):
 
 | Phase | Focus |
 |-------|-------|
 | **1** | Prove the search — single book (*Autobiography of a Yogi*), search API + UI, basic reader |
 | **2** | Complete portal — all pages, SRF visual identity, accessibility, i18n infrastructure, sharing |
-| **3** | Engineering foundation — testing, Terraform, Figma, reader interactions (dwell mode, bookmarks, keyboard nav) |
-| **4** | Multi-book expansion — first-wave books, theme tagging, editorial review portal |
-| **5** | Related Teachings — cross-book connections, reader side panel, reading threads |
-| **6** | Full library — remaining books, verse-aware chunking, production observability |
-| **7** | Outreach — daily email, social media assets, Sacred Places, PDF downloads |
-| **8** | Contentful integration — CMS as editorial source of truth, GitLab migration |
-| **9** | Multi-language — official translations in 8+ languages |
-| **10** | Accessibility audit — formal WCAG audit, PWA, design system, contemplative polish |
-| **11** | Cross-media search — video transcription, unified book + video search |
-| **12** | User accounts — optional sign-in for bookmarks, reading progress, personalized daily passage |
-| **13** | Community — event calendar, meditation center discovery |
+| **3** | Engineering infrastructure — testing, Terraform, Figma, Storybook, KaiOS CI, OpenAPI spec |
+| **4** | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
+| **5** | Multi-book expansion — first-wave books, theme tagging, Doors of Entry, editorial review portal |
+| **6** | Related Teachings — cross-book connections, reader side panel, editorial threads |
+| **7** | Full library — remaining books, verse-aware chunking, production observability |
+| **8** | Reader export & staff tools — PDF downloads, presentation mode, study guides, talk preparation |
+| **9** | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp |
+| **10** | Contentful integration — CMS as editorial source of truth, GitLab migration |
+| **11** | Multi-language — official SRF/YSS translations in 8+ languages |
+| **12** | Accessibility audit & polish — formal WCAG audit, PWA, Calm Technology design system |
+| **13** | Video intelligence & content hub — platform-agnostic video catalog, transcription, cross-media search |
+| **14** | Audio, images & branding — audio library, photograph gallery, multi-media threads, YSS branding |
+| **15** | User accounts — optional sign-in for bookmarks sync, reading progress, personalized daily passage |
+| **16** | Community & events — event calendar, center discovery, SMS/Telegram access |
 
 ## Current Status
 
@@ -67,5 +70,5 @@ This repository contains comprehensive design documentation produced using Claud
 
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
 - [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 63 Architecture Decision Records with full rationale
-- [ROADMAP.md](ROADMAP.md) — 13 phases with deliverables and success criteria
+- [DECISIONS.md](DECISIONS.md) — 90 Architecture Decision Records with full rationale
+- [ROADMAP.md](ROADMAP.md) — 16 phases with deliverables and success criteria
