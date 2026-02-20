@@ -10,7 +10,7 @@ This portal is a **digital library with an AI librarian**, not a chatbot or cont
 
 ### Phase 1 Architecture (Minimal)
 
-Three services. One database. One AI provider.
+Three services. One database. One AI provider (via AWS Bedrock).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -41,12 +41,12 @@ Three services. One database. One AI provider.
 │             │                                                │
 │             ▼ (query expansion + passage ranking only)       │
 │  ┌─────────────────────────────────────┐                    │
-│  │     Claude API (Anthropic)           │                    │
+│  │     Claude via AWS Bedrock (ADR-110) │                    │
 │  │                                      │                    │
 │  │  • Expand user queries into          │                    │
-│  │    semantic search terms             │                    │
-│  │  • Re-rank candidate passages        │                    │
-│  │  • Identify highlight boundaries     │                    │
+│  │    semantic search terms  [Haiku]    │                    │
+│  │  • Re-rank candidate passages [Haiku]│                    │
+│  │  • Classify search intent [Haiku]    │                    │
 │  │  • NEVER generate/paraphrase text    │                    │
 │  └─────────────────────────────────────┘                    │
 └─────────────────────────────────────────────────────────────┘
@@ -116,7 +116,7 @@ The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it 
    "How do I overcome fear?"
         │
         ▼
-2. QUERY EXPANSION (Claude API — optional, for complex queries)
+2. QUERY EXPANSION (Claude Haiku via Bedrock — optional, for complex queries)
    Claude expands the query into semantic search terms:
    ["fear", "courage", "anxiety", "fearlessness", "divine protection",
     "dread", "worry", "soul immortal", "overcome terror"]
@@ -143,7 +143,7 @@ The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it 
       - Deduplicate, producing top 20 candidates
         │
         ▼
-4. PASSAGE RANKING (Claude API — optional refinement)
+4. PASSAGE RANKING (Claude Haiku via Bedrock — optional refinement; promote to Sonnet if benchmarks warrant, ADR-110)
    Given the user's original question and 20 candidate passages,
    Claude selects and ranks the 5 most relevant.
 
@@ -179,7 +179,7 @@ Before query expansion, a lightweight Claude call classifies the seeker's intent
 User types: "I'm scared"
         │
         ▼
-INTENT CLASSIFICATION (Claude API — lightweight, ~$0.002/query)
+INTENT CLASSIFICATION (Claude Haiku via Bedrock — lightweight, ~$0.0005/query, ADR-110)
   Claude classifies the query:
   { "intent": "emotional", "route": "theme", "theme_slug": "courage" }
 
@@ -264,6 +264,27 @@ Book ingestion pipeline (new step after chunking, before embedding):
 
 Provenance tracking enables source-aware expansion: when a seeker is reading *Man's Eternal Quest*, expansion terms sourced from that book can be boosted in relevance. The bridge file remains a single versioned JSON artifact in git — no schema migration required.
 
+#### Schema: `/lib/data/spiritual-terms.json`
+
+```typescript
+interface SpiritualTermsFile {
+  version: string;           // Schema version (e.g., "1.0")
+  lastReviewed: string;      // ISO date of last human review
+  terms: SpiritualTerm[];
+}
+
+interface SpiritualTerm {
+  canonical: string;         // Yogananda's preferred term (e.g., "samadhi")
+  alternates: string[];      // Cross-tradition equivalents (e.g., ["enlightenment", "cosmic consciousness"])
+  modern: string[];          // Modern seeker vocabulary (e.g., ["spiritual awakening", "peak experience"])
+  category: "sanskrit" | "yogic" | "christian" | "universal" | "scientific";
+  books: string[];           // Book slugs where this term appears prominently
+  notes?: string;            // Editorial note on Yogananda's specific usage
+}
+```
+
+Phase 1 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-052) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
+
 ### Search Without AI (Fallback / Simple Queries)
 
 For straightforward keyword queries, the system can operate without any LLM calls:
@@ -277,6 +298,19 @@ User types: "divine mother"
 ```
 
 The LLM is invoked only when the query is conceptual/semantic and benefits from expansion or re-ranking. This keeps costs low and latency minimal for simple searches.
+
+### Claude API Graceful Degradation
+
+When Claude (via AWS Bedrock, ADR-110) is unavailable (timeout, error, rate limit, or monthly budget cap), search degrades gracefully through four levels. No seeker ever sees an error — quality decreases silently.
+
+| Level | Trigger | What Works | What Doesn't | User Impact |
+|-------|---------|-----------|--------------|-------------|
+| **Full** | Claude API healthy | Query expansion + passage ranking | — | Best results: conceptual queries understood, top 5 precisely ranked |
+| **No ranking** | Passage ranking call fails | Query expansion, RRF ranking | Claude re-ranking | Slightly less precise ordering; top 5 from RRF scores |
+| **No expansion** | Query expansion also fails | Raw query → hybrid search (vector + FTS) | Conceptual query broadening | Keyword-dependent; "How do I find peace?" works less well than "peace" |
+| **Database only** | All Claude calls fail | Pure hybrid search | All AI enhancement | Still returns relevant verbatim passages via vector similarity + FTS |
+
+**Implementation:** `/lib/services/search.ts` wraps each Claude call in a try-catch with a 5-second timeout. Failure at any level falls through to the next. Sentry captures each degradation event (`search.claude_degradation` with `level` tag) for monitoring. The search API response includes a `searchMode` field (`"full"`, `"no_ranking"`, `"no_expansion"`, `"database_only"`) for observability — not exposed in the seeker-facing UI.
 
 ---
 
@@ -436,7 +470,11 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_book_chunks_tsvector
     BEFORE INSERT OR UPDATE OF content, language ON book_chunks
     FOR EACH ROW EXECUTE FUNCTION book_chunks_tsvector_trigger();
+```
 
+> **Terminology note:** The database table `teaching_topics` is exposed as `themes` in the API (`/api/v1/themes`) and displayed as "Doors of Entry" in the seeker-facing UI. The related junction table `chunk_topics` links passages to themes. These terms all refer to the same concept: curated thematic groupings of Yogananda's teachings (e.g., Peace, Courage, Healing). See ADR-013 and ADR-048.
+
+```sql
 -- ============================================================
 -- LIFE THEMES (curated thematic entry points)
 -- ============================================================
@@ -950,6 +988,71 @@ Step 4: Update chunk relations (incremental)
 
 Step 5: Search index and relations are always in sync
         with editorial source
+```
+
+---
+
+## Phase 1 Bootstrap (ADR-108)
+
+The path from "no code" to "running search" — the ceremony that transforms design documents into a working system.
+
+### Environment Setup
+
+```
+1. Repository
+   └── pnpm create next-app@latest srf-teachings --typescript --tailwind --app
+   └── pnpm add @neondatabase/serverless @anthropic-ai/sdk openai
+   └── Copy .env.example → .env.local (see below)
+
+2. Neon Project
+   └── Create project in Neon Console (or via MCP)
+   └── Enable pgvector extension
+   └── Note: connection string (pooled), direct connection string
+   └── Create dev branch for local development
+
+3. Database Schema
+   └── pnpm add -D dbmate
+   └── dbmate up  (runs /migrations/001_initial_schema.sql)
+   └── Verify: tables, indexes, hybrid_search function, tsvector trigger
+
+4. Vercel Project
+   └── Link repo → Vercel
+   └── Set environment variables (see below)
+   └── First deploy: verify /api/v1/health returns OK
+
+5. Sentry Project
+   └── Create project in Sentry
+   └── Configure NEXT_PUBLIC_SENTRY_DSN
+   └── Verify error capture with test exception
+
+6. First Content
+   └── Run ingestion script (deliverable 1.2)
+   └── Verify: pnpm run ingest -- --book autobiography
+   └── Check: book_chunks populated, embeddings present
+   └── Run: pnpm run relations -- --full
+   └── Smoke test: search "How do I overcome fear?" returns results
+```
+
+### Environment Variables (`.env.example`)
+
+```env
+# Neon PostgreSQL
+DATABASE_URL=              # Pooled connection string (for serverless)
+DATABASE_URL_DIRECT=       # Direct connection string (for dbmate migrations)
+
+# AI Services (ADR-110)
+AWS_REGION=us-east-1       # Bedrock region
+CLAUDE_MODEL_CLASSIFY=anthropic.claude-3-5-haiku-20241022-v1:0   # Intent classification
+CLAUDE_MODEL_EXPAND=anthropic.claude-3-5-haiku-20241022-v1:0     # Query expansion
+CLAUDE_MODEL_RANK=anthropic.claude-3-5-haiku-20241022-v1:0       # Passage ranking (promote to Sonnet if benchmarks warrant)
+OPENAI_API_KEY=            # text-embedding-3-small for embeddings
+
+# Observability
+NEXT_PUBLIC_SENTRY_DSN=    # Sentry error tracking
+SENTRY_AUTH_TOKEN=         # Source map uploads
+
+# Vercel (set in Vercel dashboard, not .env)
+# VERCEL_URL — auto-set by Vercel
 ```
 
 ---
@@ -2263,18 +2366,7 @@ The `[EN]` tag is a small, muted language indicator. It is honest, not apologeti
 
 **Full-text search:** PostgreSQL language dictionaries handle stemming, stop words, and normalization per language.
 
-```sql
--- Language-aware tsvector for multi-language FTS
--- Each chunk's tsvector uses the appropriate language dictionary
-ALTER TABLE book_chunks ADD COLUMN content_tsv_localized TSVECTOR;
-
--- Populated per chunk's language:
-UPDATE book_chunks SET content_tsv_localized =
-    to_tsvector(language::regconfig, content);
-
-CREATE INDEX idx_chunks_fts_localized ON book_chunks
-    USING GIN (content_tsv_localized);
-```
+> **Note:** The `content_tsv` column and its language-aware trigger (defined in § Data Model) already handle per-language full-text search. The trigger maps each chunk's `language` code to the appropriate PostgreSQL dictionary at insert/update time. No additional column or index is needed when new languages are added in Phase 11 — only new content rows with the correct `language` value.
 
 **Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Phase 1 remain valid when Spanish, German, and Japanese chunks are added in Phase 11 — no re-embedding of the English corpus. Any future embedding model migration (ADR-032) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Phase 11 (Deliverable 9.10). Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
@@ -2476,6 +2568,27 @@ Each supported locale carries cultural, typographic, and platform expectations t
 ## API Design (Next.js API Routes)
 
 All API routes use a versioned prefix (`/api/v1/`) from Phase 1 per ADR-024. Language is passed as a query parameter on API routes (`?language=hi`), not as a path prefix — language is a property of content, not a namespace for operations (ADR-091). Frontend pages use locale path prefixes (`/hi/themes/peace`) for SEO and `hreflang` linking. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
+
+### Error Response Contract
+
+All API endpoints return errors in a consistent JSON format:
+
+```typescript
+interface ErrorResponse {
+  error: string;        // Machine-readable code (e.g., "RATE_LIMITED", "NOT_FOUND", "INVALID_PARAMETER")
+  message: string;      // Human-readable description (compassionate tone per DELTA Love principle)
+  requestId: string;    // UUID for Sentry correlation and support debugging
+}
+```
+
+| Status | Code | When |
+|--------|------|------|
+| 400 | `INVALID_PARAMETER` | Missing required parameter, invalid cursor, malformed query |
+| 404 | `NOT_FOUND` | Book, chapter, chunk, theme, or place does not exist |
+| 429 | `RATE_LIMITED` | Rate limit exceeded. Response includes `Retry-After` header (seconds) |
+| 500 | `INTERNAL_ERROR` | Unexpected failure. Logged to Sentry with `requestId` |
+
+Error messages use the same compassionate, clear language as the rest of the portal. Example: `"We couldn't find that passage. It may have been moved when a new edition was added."` — never terse HTTP-speak.
 
 ### `GET /api/v1/search`
 
@@ -2808,6 +2921,31 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
 
 **The rule:** Never put business logic in a Server Component or Route Handler that doesn't delegate to a service function. If a Server Component needs data, it calls a service function directly (in-process). If a mobile app needs the same data, it calls the API route, which calls the same service function.
 
+### Database Connection Strategy
+
+```typescript
+// /lib/db.ts — Neon serverless connection
+import { neon } from '@neondatabase/serverless';
+
+// For Vercel Functions (edge and serverless):
+// - @neondatabase/serverless uses HTTP-based queries (no persistent connections)
+// - Each function invocation creates a lightweight client, no pool management needed
+// - Neon's built-in connection pooler (PgBouncer-compatible) handles concurrency server-side
+//
+// For Lambda batch workloads (Phase 5+):
+// - Use Neon's pooled connection string (port 5432 → pooler endpoint)
+// - Connection limit: Neon free tier allows 100 concurrent connections;
+//   paid tier scales with compute size
+// - Batch scripts should use connection pooling via pg Pool with max: 5
+//
+// For local development:
+// - Direct connection to Neon dev branch (non-pooled endpoint)
+// - dbmate uses direct connection string for migrations
+
+const sql = neon(process.env.DATABASE_URL!);
+export { sql };
+```
+
 ### API Conventions
 
 | Convention | Rule | Rationale |
@@ -2837,6 +2975,19 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
 | `/api/v1/magazine/articles/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Article text is effectively immutable |
 | `/api/v1/glossary` | `max-age=86400` | Glossary changes infrequently |
 | `/api/v1/seeking` | `max-age=86400` | Aggregated nightly, not real-time |
+
+### Cache Invalidation Strategy
+
+| Trigger | Mechanism | Scope |
+|---------|-----------|-------|
+| Content correction (Phase 10+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
+| Daily passage rotation | TTL-based (`max-age=3600`) | No explicit invalidation — 1-hour cache is acceptable for daily content |
+| Theme tag changes | Manual Cloudflare purge via API or dashboard | Theme pages and related API responses |
+| New book ingestion | Automated purge of `/books` catalog and search index | Book catalog, search results |
+| Static assets (JS/CSS) | Content-hashed filenames (`main.abc123.js`) | Infinite cache, new deploy = new hash |
+| Emergency content fix | Cloudflare "Purge Everything" via API | Last resort — clears entire CDN cache |
+
+**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The sync service (Phase 10+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Phases 1–9 (no Contentful), cache invalidation is manual via Cloudflare dashboard — acceptable given the low frequency of content changes.
 
 ### Deep Link Readiness
 
@@ -3433,6 +3584,15 @@ Response:
 | AI misuse | The AI cannot generate teaching content. If prompted to "ignore instructions," the constrained output format (passage IDs only) limits attack surface. |
 | User privacy | No user accounts required. Search queries logged without any user identification. |
 | Source attribution | Every displayed passage MUST include book, chapter, and page citation. No orphaned quotes. |
+
+### Two-Layer Rate Limiting (ADR-067)
+
+| Layer | Tool | Limit | Behavior on Exceed |
+|-------|------|-------|-------------------|
+| **Outer (edge)** | Cloudflare WAF | 15 search requests/min per IP | HTTP 429 with `Retry-After` header. Request never reaches application. |
+| **Inner (application)** | Custom middleware | 30 req/min anonymous, 120 req/min known crawlers (ADR-084) | Graceful degradation: search proceeds without Claude API calls (database-only hybrid search). Still returns results. |
+
+The outer layer stops abuse before it reaches the application. The inner layer provides finer-grained control and graceful degradation rather than hard blocks. A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
 
 ---
 
@@ -4630,15 +4790,7 @@ Images are stored in S3 and served via CloudFront. At ingestion, the Lambda pipe
 
 ## Open Questions
 
-1. **Embedding model selection:** OpenAI text-embedding-3-small (1536d) vs. text-embedding-3-large (3072d) vs. Cohere embed-v3. Need to benchmark retrieval quality against Yogananda's vocabulary.
-
-2. **Chunk size optimization:** 200-500 tokens is a starting range. Optimal size depends on Yogananda's writing style (long flowing paragraphs vs. short aphorisms). Needs empirical testing.
-
-3. **Cross-book search vs. per-book search:** Should the default search span all books, or should users select a book first? The announcement implies cross-library search.
-
-4. **"No results" experience:** When the corpus doesn't contain relevant passages, what does the portal show? A gentle message? Suggested related topics?
-
-5. **Contentful free tier viability:** 10,000 records and 2 locales. May be insufficient if we model at paragraph granularity. Need to evaluate whether a paid Contentful space is needed, or if Phases 1–9 uses Neon-only with Contentful deferred to production.
+See CONTEXT.md § Open Questions for the consolidated list. Technical and stakeholder questions live there so they're visible at session start and move to "Resolved" as work progresses. Architectural questions that arise during implementation should be added to CONTEXT.md and, if they require a decision, captured as an ADR in DECISIONS.md.
 
 ---
 

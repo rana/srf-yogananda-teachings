@@ -2,11 +2,11 @@
 
 ## Current State
 
-**Phase:** Design complete. Ready to begin Phase 1 implementation.
+**Phase:** Design complete. Ready to begin Phase 0 (Foundation).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (107 ADRs), ROADMAP.md (16 phases). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (110 ADRs), ROADMAP.md (17 phases, 0–16). No code yet.
 
-**What's next:** Phase 1 — Prove the Search. Ingest *Autobiography of a Yogi*, build hybrid search (vector + FTS), deliver a working search UI and basic reader. See ROADMAP.md § Phase 1 for the 12 deliverables.
+**What's next:** Phase 0 — Foundation. Repo setup, Neon provisioning, Vercel/Sentry configuration, initial schema migration, stakeholder kickoff. Then Phase 1 — Prove the Search. See ROADMAP.md § Phase 0 and § Phase 1 for deliverables.
 
 ---
 
@@ -17,6 +17,9 @@
 - [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks)
 - [ ] Embedding model benchmarking (text-embedding-3-small vs. 3-large vs. Cohere)
 - [ ] Query expansion prompt engineering (test with diverse query types)
+- [ ] Cross-book search vs. per-book search: should the default search span all books, or should seekers select a book first? The announcement implies cross-library search.
+- [ ] "No results" experience: when the corpus doesn't contain relevant passages, what does the portal show? A gentle message? Suggested related topics?
+- [ ] Contentful free tier viability: 10,000 records and 2 locales may be insufficient at paragraph granularity. Evaluate whether a paid Contentful space is needed, or whether Phases 1–9 use Neon-only with Contentful deferred to production.
 - [ ] @YoganandaSRF YouTube channel ID (needed for RSS feed URL in Phase 2)
 - [ ] YouTube playlist inventory (map existing playlists to portal categories, needed for Phase 2)
 
@@ -26,7 +29,7 @@
 - [ ] Who will manage the editorial workflow — theme tagging, daily passage curation, text QA? Monastic order, AE team, or dedicated content editor?
 - [ ] What does the philanthropist's foundation consider a successful outcome at 12 months? (Shapes analytics and reporting.)
 - [ ] Can SRF provide center location data (addresses, coordinates, schedules) for an in-portal "Meditation Near Me" feature?
-- [ ] What is SRF's copyright/licensing posture for the portal content? Read online only, or also downloadable/printable? What attribution is required?
+- [ ] What is SRF's copyright/licensing posture for the portal content? Read online only, or also downloadable/printable? What attribution is required? *All non-Lessons material is offered free of charge. The architecture supports both read-online and downloadable formats. SRF should determine specific licensing terms at their discretion.*
 - [ ] About page content: does SRF have approved biography text for Yogananda and descriptions of the line of gurus, or do we draft for their review?
 - [ ] Does SRF/YSS have **digital text** of official translated editions? If only printed books, OCR per language is a massive effort requiring fluent reviewers. (Critical for Phase 11 scoping.)
 - [ ] Which books have official translations in which languages? (Content availability matrix — determines what each language's portal experience looks like.)

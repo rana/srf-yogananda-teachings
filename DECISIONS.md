@@ -74,6 +74,7 @@ Each decision is recorded with full context so future contributors understand no
 **Architecture & Infrastructure**
 - ADR-004: Next.js + Vercel for Frontend
 - ADR-009: Phase 1 Uses Vercel, Not AWS Lambda
+- ADR-010: Removed — Original Scope Eliminated
 - ADR-011: YouTube Integration via Hybrid RSS + API
 - ADR-024: API-First Architecture
 - ADR-025: Progressive Web App
@@ -96,6 +97,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-083: PDF Generation Strategy — Resource-Anchored Exports
 - ADR-090: MCP Server Strategy — Development Tooling for AI Implementation
 - ADR-091: Language API Design — Locale Prefix on Pages, Query Parameter on API
+- ADR-108: Phase 1 Bootstrap Ceremony
+- ADR-109: Single-Database Architecture — No DynamoDB
+- ADR-110: AWS Bedrock Claude with Model Tiering
 
 **Ethics & Internationalization**
 - ADR-014: Personalization with Restraint — DELTA Boundaries
@@ -484,6 +488,16 @@ Use a **hybrid RSS + YouTube Data API** approach:
 - Playlist-to-category mapping needs initial configuration and occasional maintenance
 - RSS provides only ~15 recent videos — the API is needed for the full library
 - Future phase (8) can add video transcription for cross-media search (book passages + video segments)
+
+---
+
+## ADR-010: Removed — Original Scope Eliminated
+
+**Status:** Removed
+
+**Date:** 2026-02-19
+
+This ADR number was allocated during early design exploration and subsequently removed when its scope was eliminated from the project. The number is retired to maintain a stable, sequential ADR numbering scheme. It was not superseded or withdrawn — the topic it addressed was removed from the project scope entirely.
 
 ---
 
@@ -8005,6 +8019,146 @@ The image detail page includes a "Download" section below the image viewer:
 - Amplitude event: `image_downloaded` with properties `{size, format}` (no user identification — DELTA compliant, ADR-029)
 - **Extends ADR-086** (image content type) from 3 responsive sizes to 5 named download tiers
 - **Extends ADR-106** (digital watermarking) with per-tier watermarking rules
+
+---
+
+## ADR-108: Phase 1 Bootstrap Ceremony
+
+**Status:** Accepted
+
+**Date:** 2026-02-20
+
+### Context
+
+The portal's architecture is thoroughly documented across four design documents (CONTEXT.md, DESIGN.md, DECISIONS.md, ROADMAP.md), but the path from "no code" to "running system" was undocumented. The first developer experience — creating the repository, provisioning infrastructure, running the first migration, ingesting the first book, and verifying search works — is a critical ceremony that, if not specified, leads to inconsistent environments and wasted time.
+
+### Decision
+
+Document the Phase 1 bootstrap sequence as a reproducible, ordered ceremony in DESIGN.md § Phase 1 Bootstrap. The ceremony covers:
+
+1. **Repository creation** — Next.js + TypeScript + Tailwind + pnpm
+2. **Neon project provisioning** — PostgreSQL with pgvector, dev branch for local work
+3. **Schema migration** — dbmate applies `001_initial_schema.sql` (all tables, indexes, functions, triggers)
+4. **Vercel deployment** — Link repo, set environment variables, verify health check
+5. **Sentry configuration** — Error tracking with source maps
+6. **First content ingestion** — Autobiography of a Yogi: PDF → chunks → embeddings → relations
+7. **Smoke test** — Search "How do I overcome fear?" returns relevant passages with citations
+
+The `.env.example` file documents all required environment variables with comments explaining each.
+
+### Rationale
+
+- **Reproducibility.** Any developer (or AI assistant) should be able to go from zero to working search in a single session by following the ceremony.
+- **Environment parity.** Explicit variable documentation prevents "works on my machine" drift.
+- **10-year horizon (ADR-033).** The bootstrap ceremony is a durable artifact — it outlives any individual contributor's tribal knowledge.
+- **Design-to-implementation bridge.** The four design documents describe *what* the system does. The bootstrap ceremony describes *how to bring it into existence*.
+
+### Consequences
+
+- DESIGN.md gains a "Phase 1 Bootstrap" section with the step-by-step ceremony and `.env.example` contents
+- First-time setup is documented and reproducible
+- Onboarding new developers or AI assistants requires reading CLAUDE.md (for context) and following the bootstrap ceremony (for setup)
+
+---
+
+## ADR-109: Single-Database Architecture — No DynamoDB
+
+**Status:** Accepted
+
+**Date:** 2026-02-20
+
+### Context
+
+SRF's established technology stack includes both Neon (serverless PostgreSQL) and DynamoDB. Other SRF properties use DynamoDB for high-throughput key-value patterns such as session storage and real-time counters. The question arose whether the teachings portal should also incorporate DynamoDB for consistency with the broader SRF ecosystem.
+
+### Decision
+
+The teachings portal uses **Neon PostgreSQL exclusively** as its database layer. DynamoDB is not used.
+
+### Alternatives Considered
+
+1. **DynamoDB for search query logging** — At ~1,000 searches/day (~73 MB/year), PostgreSQL handles this trivially. DynamoDB's write throughput advantage is irrelevant at this scale.
+2. **DynamoDB for session storage** — The portal has no user sessions until Phase 15, and Auth0 handles session management. No application-level session store is needed.
+3. **DynamoDB for rate limiting counters** — Cloudflare WAF handles edge-layer rate limiting. Application-layer limits use in-memory counters in Vercel Functions (acceptable for serverless, no shared state needed).
+4. **DynamoDB for caching** — Cloudflare CDN and browser `Cache-Control` headers handle all caching needs. Adding a separate cache database adds complexity without measurable benefit.
+
+### Rationale
+
+- **The data model is fundamentally relational.** Books → chapters → chunks → topics with many-to-many relationships, cross-references, editorial threads, and chunk relations. This is PostgreSQL's strength. Shoehorning relational data into DynamoDB's key-value model would require denormalization and access pattern planning that adds complexity without benefit.
+- **pgvector eliminates the separate vector store.** Embeddings, full-text search, and relational data coexist in a single database. Adding DynamoDB would mean splitting data across two stores with consistency challenges.
+- **Single database simplifies operations.** One backup strategy (ADR-072), one connection configuration, one migration tool (dbmate), one monitoring target. Two databases means two of everything.
+- **10-year architecture horizon (ADR-033).** Every dependency is a 10-year maintenance commitment. DynamoDB would add: AWS SDK dependency, IAM configuration, separate Terraform module, separate monitoring, separate backup strategy, and cross-database consistency logic — all for zero functional gain.
+- **Scale profile doesn't warrant it.** The portal serves spiritual seekers, not e-commerce transactions. Peak load is modest. PostgreSQL with Neon's serverless autoscaling handles the portal's read-heavy, moderate-write workload comfortably.
+- **SRF ecosystem alignment is about patterns, not tools.** The portal aligns with SRF's tech stack in framework (Next.js), hosting (Vercel), database vendor (Neon), identity (Auth0), and observability (Sentry, New Relic, Amplitude). Using the same vendor (Neon/PostgreSQL) for a different access pattern (relational + vector) is good engineering, not deviation.
+
+### Consequences
+
+- All data lives in Neon PostgreSQL: content, embeddings, search indexes, analytics, configuration
+- Single backup target, single migration tool, single connection strategy
+- Terraform infrastructure is simpler (no DynamoDB module, no IAM policies for cross-service access)
+- If SRF's DynamoDB usage evolves to include a pattern the portal genuinely needs (e.g., real-time collaborative features in future phases), this decision can be revisited via a new ADR
+- Developers familiar with SRF's DynamoDB patterns should note: the portal's data model is relational by nature, and the single-database approach is an intentional architectural strength
+
+---
+
+## ADR-110: AWS Bedrock Claude with Model Tiering
+
+**Status:** Accepted
+
+**Date:** 2026-02-20
+
+### Context
+
+The portal uses Claude for three distinct search tasks: intent classification, query expansion, and passage ranking (ADR-003, ADR-049). At scale (projected 10,000+ searches/day), API costs become a significant operational concern for a free portal funded by a philanthropist. Additionally, SRF's established technology stack is AWS-centric — the question arose whether to use the Anthropic API directly or AWS Bedrock as the Claude provider.
+
+### Decision
+
+1. **Use AWS Bedrock** as the Claude API provider instead of the direct Anthropic API.
+2. **Use Claude Haiku** as the default model for all three search tasks (intent classification, query expansion, passage ranking).
+3. **Benchmark Haiku vs Sonnet** during Phase 1 using a test set of ~50 curated queries. If Haiku passage ranking quality falls below acceptable thresholds, promote passage ranking to Sonnet while keeping intent classification and query expansion on Haiku.
+
+### Model Tiering Strategy
+
+| Task | Default Model | Fallback | Quality Sensitivity | Volume |
+|------|--------------|----------|-------------------|--------|
+| Intent classification | Haiku | None (skip on failure) | Low — simple categorization | Every search |
+| Query expansion | Haiku | None (skip, use raw query) | Medium — vocabulary breadth | Every complex search |
+| Passage ranking | Haiku (promote to Sonnet if benchmarks warrant) | Skip (use RRF scores) | High — determines result quality | Every search with candidates |
+
+### Cost Projection
+
+| Scenario | Per-search cost | Monthly at 10K/day |
+|----------|-----------------|-------------------|
+| All Haiku | ~$0.001 | ~$300 |
+| Tiered (Haiku + Sonnet ranking) | ~$0.005 | ~$1,500 |
+| All Sonnet | ~$0.01 | ~$3,000 |
+
+### Alternatives Considered
+
+1. **Direct Anthropic API** — Simpler initial setup, day-one access to new model releases. Rejected because: SRF already has AWS billing, support contracts, and IAM infrastructure. A separate Anthropic contract adds vendor management overhead for zero functional gain. New model releases are irrelevant — the portal's librarian tasks are well-defined and stable.
+2. **All Sonnet** — Higher baseline quality for ranking. Rejected because: 10x cost increase over Haiku at scale. The portal's ranking task is constrained (select and order passage IDs from 20 candidates) — not open-ended reasoning. Haiku is likely sufficient; benchmark first.
+3. **All Opus** — Maximum quality. Rejected because: ~25x cost of Haiku, latency increases. Dramatically over-powered for structured classification and ranking tasks.
+4. **OpenAI GPT models** — Could reduce vendor count (already using OpenAI for embeddings). Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Switching LLM providers for cost reasons alone adds migration risk. ADR-003 established Claude; no reason to revisit.
+
+### Rationale
+
+- **AWS alignment.** SRF's stack is AWS-native (ADR-109 notes this). Bedrock means consolidated billing, VPC endpoints (API traffic stays off the public internet), IAM-based access control, and existing AWS support contracts. No separate Anthropic API key management.
+- **Committed throughput pricing.** Bedrock offers provisioned throughput for predictable costs at scale — important for a free portal with no revenue to absorb cost spikes.
+- **Operational simplicity.** One cloud provider for compute (Vercel deploys to AWS), database (Neon), and AI (Bedrock). Terraform manages Bedrock model access alongside other AWS resources.
+- **Haiku-first is prudent.** The portal's Claude tasks are tightly constrained: classify intent (enum output), expand terms (JSON array output), rank passages (ordered ID list output). These are not open-ended generation tasks. Haiku handles structured, bounded tasks well.
+- **Benchmark before promoting.** Rather than assuming Sonnet is needed for ranking, measure first. The Phase 1 test set provides empirical data. If Haiku ranks comparably, the portal saves ~$1,200/month at 10K searches/day.
+- **10-year horizon (ADR-033).** AWS Bedrock is a managed service with AWS's long-term commitment. The portal's `/lib/services/claude.ts` abstracts the provider — switching from Bedrock to direct API (or vice versa) requires changing the SDK client, not the business logic.
+- **Graceful degradation is provider-agnostic.** The four-level degradation cascade (DESIGN.md § Claude API Graceful Degradation) works identically regardless of whether Claude is accessed via Bedrock or direct API. Timeouts, errors, and budget caps trigger the same fallthrough.
+
+### Consequences
+
+- `/lib/services/claude.ts` uses `@aws-sdk/client-bedrock-runtime` instead of the Anthropic SDK
+- `.env.example` changes: replace `ANTHROPIC_API_KEY` with `AWS_REGION` + IAM role (Bedrock access managed via IAM, not API keys)
+- Terraform includes a Bedrock model access module
+- Model IDs are configured per-task in environment variables (e.g., `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK`) — defaults to Haiku for all three
+- Phase 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
+- New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
+- If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
 
 ---
 

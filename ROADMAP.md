@@ -2,7 +2,31 @@
 
 ## Phasing Philosophy
 
-Each phase delivers a working, demonstrable increment. Three monolithic phases have been decomposed into focused pairs, yielding 16 phases total: Phase 3 (engineering + reader features) splits into engineering infrastructure (3) and reader experience (4); Phase 7 (outreach + tools) splits into reader export & staff tools (8) and distribution & outreach (9); Phase 11 (all cross-media) splits into video intelligence & content hub (13) and audio, images & branding (14). The first four phases prove the search, build the complete portal, establish engineering foundations, and refine the contemplative reader. Phases 5–7 grow the library from one book to the complete corpus. Phases 8–9 extend reach through tools and distribution channels. Phases 10–12 add Contentful CMS, multi-language support, and accessibility polish. Phases 13–14 deliver cross-media intelligence across video, audio, and images. Phases 15–16 add optional user accounts and community features.
+Each phase delivers a working, demonstrable increment. Three monolithic phases have been decomposed into focused pairs, yielding 17 phases total (0–16): Phase 0 provisions the development environment and resolves blocking questions. Phase 3 (engineering + reader features) splits into engineering infrastructure (3) and reader experience (4); Phase 7 (outreach + tools) splits into reader export & staff tools (8) and distribution & outreach (9); Phase 11 (all cross-media) splits into video intelligence & content hub (13) and audio, images & branding (14). Phase 0 bootstraps the project. The first four phases prove the search, build the complete portal, establish engineering foundations, and refine the contemplative reader. Phases 5–7 grow the library from one book to the complete corpus. Phases 8–9 extend reach through tools and distribution channels. Phases 10–12 add Contentful CMS, multi-language support, and accessibility polish. Phases 13–14 deliver cross-media intelligence across video, audio, and images. Phases 15–16 add optional user accounts and community features.
+
+---
+
+## Phase 0: Foundation
+
+**Goal:** Bridge from design documentation to a working development environment. Resolve blocking questions, provision infrastructure, and establish the repository so Phase 1 can focus entirely on search quality.
+
+### Deliverables
+
+| # | Deliverable | Description |
+|---|-------------|-------------|
+| 0.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-108) |
+| 0.2 | **Neon project provisioning** | Create Neon project with pgvector extension enabled. Create dev branch for local development. Note pooled and direct connection strings. Verify connectivity from local environment. |
+| 0.3 | **Vercel project + Sentry project** | Link repository to Vercel. Configure environment variables. Deploy stub `/api/v1/health` endpoint. Create Sentry project, configure DSN, verify error capture. (ADR-029) |
+| 0.4 | **Initial schema migration** | Write `001_initial_schema.sql` covering all Phase 1 tables (books, chapters, book_chunks, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). Run via dbmate. Verify tables, indexes, hybrid_search function, and tsvector trigger. |
+| 0.5 | **Stakeholder kickoff** | Confirm with SRF AE team: GitHub acceptable for Phases 1–9? Confirm PDF source for Autobiography. Confirm portal domain (`teachings.yogananda.org` or alternative). |
+
+### Success Criteria
+
+- `pnpm dev` starts a working Next.js application locally
+- `/api/v1/health` returns `200 OK` on both local and Vercel
+- `dbmate status` shows migration 001 applied
+- Sentry test error appears in dashboard
+- `.env.example` documents all required environment variables
 
 ---
 
@@ -17,7 +41,7 @@ Each phase delivers a working, demonstrable increment. Three monolithic phases h
 | # | Deliverable | Description |
 |---|-------------|-------------|
 | 1.1 | **Neon database + schema** | PostgreSQL with pgvector enabled. Tables: books (with `bookstore_url`, `edition`, `edition_year` per ADR-069), chapters, book_chunks (with `embedding_model` versioning per ADR-032, `content_hash` for stable deep links per ADR-066), teaching_topics (with `category` and `description_embedding` per ADR-048), chunk_topics (three-state `tagged_by` per ADR-048), daily_passages, affirmations, chunk_relations, search_theme_aggregates (ADR-068), chapter_study_notes (ADR-075), book_chunks_archive (ADR-069). Hybrid search function. dbmate configured with `/migrations/` directory. Initial schema as migration 001. (ADR-027, ADR-034, ADR-048, ADR-066, ADR-068, ADR-069) |
-| 1.2 | **PDF ingestion script** | Download Autobiography PDF → convert with marker → chunk by paragraphs → generate embeddings → insert into Neon. Typographic normalization applied during ingestion (smart quotes, proper dashes, ellipsis glyphs). |
+| 1.2 | **PDF ingestion script** | Download Autobiography PDF → convert with marker → chunk by paragraphs → generate embeddings → insert into Neon. Typographic normalization applied during ingestion (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter during ingestion and store in `chapters.content_hash` (ADR-103) — the `/integrity` page and verification API ship in Phase 2, but hashes are computed here so the data exists from day one. |
 | 1.3 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-049 E4). Human reviewers make all decisions — Claude reduces the review surface area. |
 | 1.4 | **Shared service layer + API conventions** | All business logic in `/lib/services/` (not in Server Components). API routes use `/api/v1/` prefix, accept both cookie and Bearer token auth, return cursor-based pagination on list endpoints, include Cache-Control headers. (ADR-024) |
 | 1.5 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. Search intent classification routes seekers to the optimal experience (theme page, reader, empathic entry, or standard search). (ADR-024, ADR-049 E1) |
@@ -491,6 +515,38 @@ A native mobile app is not planned. The rationale:
 4. **Phase 12 is the evaluation point.** After the PWA ships, measure: Are seekers installing it? What are the limitations? Does SRF want portal features inside the existing app?
 
 If a native app is warranted post-Phase 12, React Native or Capacitor wrapping the existing codebase is the likely path. The calm design system and API layer already exist.
+
+---
+
+## Phase Gates
+
+Each phase has prerequisites that must be satisfied before work begins. Hard prerequisites block the phase entirely; soft prerequisites improve quality but aren't strictly required.
+
+| Phase | Hard Prerequisites | Soft Prerequisites |
+|-------|---|---|
+| **0** | — | SRF AE team availability for kickoff |
+| **1** | Phase 0 complete, PDF source confirmed | Embedding model benchmarks started |
+| **2** | Phase 1 all deliverables | — |
+| **3** | Phase 2 all deliverables | — |
+| **4** | Phase 2 complete | Phase 3 testing infrastructure available |
+| **5** | Phases 1–4 complete, editorial governance decided | Theme taxonomy reviewed by theological advisor |
+| **6** | Phase 5 theme tagging populated | Phase 5 editorial review portal operational |
+| **7** | Phase 6 chunk relations computed | — |
+| **8** | Phase 5 multi-book corpus available | Phase 7 observability operational |
+| **9** | Phase 5 editorial workflows operational | Phase 8 PDF generation available |
+| **10** | Contentful contract signed, content model approved | Phase 7 complete, GitLab access provisioned |
+| **11** | Phase 10 Contentful operational, embedding model benchmarked for multilingual, translation reviewers identified | Phase 2 i18n infrastructure validated against multilingual test cases |
+| **12** | Phase 11 at least one non-English language live | Third-party accessibility auditor engaged |
+| **13** | Phase 7 complete (unified search operational) | Phase 12 PWA evaluation complete |
+| **14** | Phase 13 content hub schema deployed | Audio/image source material available from SRF |
+| **15** | Phase 14 complete, SRF decision on user accounts | Auth0 configuration aligned with SRF identity standards |
+| **16** | Phase 15 account infrastructure (if applicable) | Regional SMS partner contracts negotiated |
+
+**Critical decision gates** (require SRF input before the phase begins):
+- **Phase 5:** Who owns editorial governance?
+- **Phase 10:** Contentful tier and content model granularity
+- **Phase 11:** YSS branding strategy for Hindi/Bengali locales
+- **Phase 15:** Whether to implement user accounts at all
 
 ---
 

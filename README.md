@@ -37,7 +37,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 |-------|-----------|
 | Frontend | Next.js on Vercel |
 | Database | Neon PostgreSQL + pgvector (hybrid vector + full-text search) |
-| AI | Claude API (query expansion, passage ranking, intent classification — never content generation) |
+| AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | OpenAI text-embedding-3-small (multilingual) |
 | CMS | Contentful (Phase 10+) |
 | Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
@@ -46,10 +46,11 @@ Business logic lives in `/lib/services/` (framework-agnostic TypeScript). The ar
 
 ## Phasing
 
-The project is planned across 16 phases, each delivering a working increment. Three monolithic phases were decomposed into focused pairs (3→3+4, 7→8+9, 11→13+14):
+The project is planned across 17 phases (0–16), each delivering a working increment. Three monolithic phases were decomposed into focused pairs (3→3+4, 7→8+9, 11→13+14):
 
 | Phase | Focus |
 |-------|-------|
+| **0** | Foundation — repo setup, Neon provisioning, Vercel/Sentry config, initial schema migration, stakeholder kickoff |
 | **1** | Prove the search — single book (*Autobiography of a Yogi*), search API + UI, basic reader |
 | **2** | Complete portal — all pages, SRF visual identity, accessibility, i18n infrastructure, sharing, newcomer path, content integrity |
 | **3** | Engineering infrastructure — testing, Terraform, Figma, Storybook, KaiOS CI, OpenAPI spec |
@@ -69,11 +70,11 @@ The project is planned across 16 phases, each delivering a working increment. Th
 
 ## Current Status
 
-**Design complete. Ready to begin Phase 1 implementation.**
+**Design complete. Ready to begin Phase 0 (Foundation).**
 
 This repository contains comprehensive design documentation produced using Claude Code:
 
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
 - [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 107 Architecture Decision Records with full rationale
-- [ROADMAP.md](ROADMAP.md) — 16 phases with deliverables and success criteria
+- [DECISIONS.md](DECISIONS.md) — 110 Architecture Decision Records with full rationale
+- [ROADMAP.md](ROADMAP.md) — 17 phases (0–16) with deliverables, success criteria, and phase gates

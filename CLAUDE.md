@@ -8,8 +8,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–107, excluding removed ADR-010 and withdrawn ADR-053) with full rationale for every major choice
-4. **ROADMAP.md** — 16 phases from foundation through community features, with deliverables and success criteria
+3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–110, excluding removed ADR-010 and withdrawn ADR-053) with full rationale for every major choice
+4. **ROADMAP.md** — 17 phases (0–16) from foundation through community features, with deliverables, success criteria, and phase gates
 
 ## Ignore
 
@@ -36,11 +36,11 @@ Located in `docs/reference/`:
 9. **Human review as mandatory gate.** No user-facing content reaches seekers without human verification. Auto-tagged themes, AI-drafted translations, generated social assets — all require human approval before publication. AI proposes, humans approve. (ADR-023, ADR-048, ADR-049)
 10. **Signpost, not destination.** The portal points toward deeper SRF practice (Lessons, centers, app, meditation) without tracking conversions or acting as a sales funnel. No engagement metrics that optimize for screen time. No "sign up to access" gates. All content freely available.
 11. **Content availability honesty.** The portal is transparent about what it has. No machine-translated substitutes. English fallback always marked `[EN]`. No fabricated results. If a book isn't available in a language, it isn't listed. Honest about scope, not apologetic about it.
-12. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. (ADR-033)
+12. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. Single-database architecture (Neon only, no DynamoDB) — simplicity over ecosystem conformity. (ADR-033, ADR-109)
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector, Claude API (librarian — never generates content), OpenAI text-embedding-3-small, Contentful (Phase 10+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-110), OpenAI text-embedding-3-small, Contentful (Phase 10+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
