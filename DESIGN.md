@@ -2385,9 +2385,97 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 ---
 
+## Cultural Design Considerations
+
+Each supported locale carries cultural, typographic, and platform expectations that go beyond translation. This section documents what we know, what we need to validate, and what adaptations each culture may require. It is a living reference — updated as Phase 11 implementation progresses and native-speaker reviewers provide input.
+
+### English (en) — Default
+
+- **Primary platforms:** Google, YouTube, Safari/Chrome, email
+- **Script:** Latin. All design tokens calibrated for English.
+- **Cultural notes:** The portal's warm cream + Merriweather + bibliomantic "Show me another" aesthetic was designed for English spiritual readers. This is the baseline.
+- **Open question:** Which edition of *Autobiography of a Yogi* does the portal's pagination reference? SRF study groups worldwide reference specific page numbers. Edition clarity is needed. (ADR-069 provides the `edition` column.)
+
+### Spanish (es) — Wave 11a
+
+- **Primary platforms:** WhatsApp (dominant in Latin America), Google, YouTube, Instagram
+- **Script:** Latin. Standard design tokens work. Spanish diacritics (á, é, ñ) render correctly in Merriweather.
+- **Cultural notes:** Latin American spiritual culture favors warmth, emotional directness, and relational language. "Seeking..." entry points need cultural *adaptation*, not mechanical translation — e.g., "The heart to forgive" might become "Sanar el corazón" (healing the heart) or "Aprender a soltar" (learning to let go). WhatsApp integration (Phase 9, ADR-085) is high-priority for this audience.
+- **Organizational:** SRF (not YSS) serves Latin America directly. Verify whether Latin American SRF centers have their own event calendars for the Events signpost.
+- **Open question:** Does SRF have digital text of Spanish translations?
+
+### German (de) — Wave 11a
+
+- **Primary platforms:** Google, YouTube, WhatsApp (growing), email
+- **Script:** Latin. Merriweather renders ä, ö, ü, ß correctly.
+- **Cultural notes:** German compound words ("Selbstverwirklichung," "Gottverwirklichung," "Überbewusstsein") challenge search. Embedding model must place these near English equivalents — requires explicit testing. ADR-023 glossary specifies formal "Sie" register. German privacy expectations exceed GDPR minimums — the portal's no-tracking approach (ADR-029) is a strong cultural fit, but German seekers may still expect a privacy explanation page. Older SRF Deutschland translations may use different orthography ("Krija" vs "Kriya") — search must handle both.
+- **Open question:** Does SRF Deutschland have digital text? Which translations?
+
+### French (fr) — Wave 11a
+
+- **Primary platforms:** Google, YouTube, WhatsApp (Francophone Africa), email
+- **Script:** Latin. Standard diacritics (é, è, ê, ç) work in Merriweather.
+- **Cultural notes:** Search must be diacritic-insensitive ("méditation" = "meditation"). Francophone Africa (~130M speakers) may be a larger audience than France itself — ADR-061 global equity features (KaiOS, text-only, 2G) are directly relevant. West African French has different spiritual idiom from European French; "Seeking..." entry points need validation with both.
+- **Open question:** Do SRF French translations exist in digital form? Is there a distinct Francophone African SRF/YSS community?
+
+### Italian (it) — Wave 11a
+
+- **Primary platforms:** Google, YouTube, WhatsApp, email
+- **Script:** Latin. Standard Merriweather rendering.
+- **Cultural notes:** Warm cream aesthetic and serif typography align well with Italian book culture. Few Italian SRF centers — Events signpost may feel sparse. Spiritual terminology glossary (ADR-023) is critical — Italian translations may handle Sanskrit terms differently than English.
+- **Open question:** Digital text availability from SRF Italian publications.
+
+### Portuguese (pt) — Wave 11a
+
+- **Primary platforms:** WhatsApp (dominant in Brazil), Google, YouTube, Instagram
+- **Script:** Latin. Merriweather renders Portuguese diacritics (ã, õ, ç) correctly.
+- **Cultural notes:** Brazilian Portuguese and European Portuguese differ in vocabulary, spelling, and idiom. May need `pt-BR` and `pt-PT` as distinct locales or, at minimum, distinct "Seeking..." entry points. Brazil has one of the world's largest yoga communities. WhatsApp integration is not optional for this audience. ADR-061 equity features relevant for Brazil's connectivity inequality.
+- **Open question:** Do SRF Brazilian Portuguese translations exist? Is there a Brazilian SRF organizational structure distinct from Portuguese?
+
+### Japanese (ja) — Wave 11a
+
+- **Primary platforms:** LINE (not WhatsApp), Google, YouTube, Twitter/X
+- **Script:** CJK (Hiragana, Katakana, Kanji). Requires Noto Serif JP / Noto Sans JP font loading.
+- **Typography:** 38rem line width holds ~30–35 CJK characters per line (within optimal 25–40 range). Line height should tighten from 1.8 to 1.6–1.7. Drop capitals are a Western convention — omit for Japanese. Per-language chunk size validation critical (CJK tokenization differs significantly).
+- **Cultural notes:** "Show me another" may need reframing. The cultural analogue to bibliomancy is omikuji (temple fortune slips), where the expectation is a single, definitive message — not unlimited refreshes. Consider framing as "別の教えを読む" (read a different teaching) rather than inviting endless cycling. Japanese social sharing prefers very short, aphoristic content — optimal shareable unit may be one sentence, not a full paragraph. LINE share support needed alongside WhatsApp (ADR-085). Honorific suffixes required for master names ("パラマハンサ・ヨガナンダ師").
+- **Open question:** Does SRF/YSS have digital Japanese translations? What is the Japanese SRF community structure?
+
+### Hindi (hi) — Wave 11b
+
+- **Primary platforms:** WhatsApp (dominant), Google, YouTube, JioPhone/KaiOS
+- **Script:** Devanagari (LTR). Requires Noto Serif Devanagari font loading. Base font size may need 10–15% increase vs Latin for equivalent readability.
+- **Cultural notes:** Hindi-speaking seekers know Yogananda through YSS, not SRF. Portal branding must feature YSS prominently for `/hi/` locale (ADR-079). The warm cream aesthetic works but may feel understated compared to Hindi spiritual print traditions (which tend toward more ornate visual treatment). India's device landscape is mobile-first and low-bandwidth — ADR-061 equity features (KaiOS, text-only mode, 2G optimization) are essential, not optional. Test performance specifically on JioPhone with Jio 4G in Uttar Pradesh/Bihar/Bengal network conditions.
+- **Organizational:** YSS branding, YSS bookstore links, YSS event calendar. Portal URL question: `teachings.yogananda.org/hi/` or a YSS-branded domain?
+- **Open question:** Does YSS have digital text of Hindi translations? What is YSS's digital infrastructure and approval process?
+
+### Bengali (bn) — Wave 11b
+
+- **Primary platforms:** WhatsApp, Google, YouTube, Facebook
+- **Script:** Bengali script (LTR). Requires Noto Serif Bengali font loading. Bengali conjuncts and vowel signs require careful font rendering. Base font size may need increase vs Latin.
+- **Cultural notes:** Bengali is Yogananda's mother tongue — including it sends a powerful signal about mission integrity. Bengali devotional culture has strong existing practices (daily meditation, Durga Puja season) and literary traditions (Rabindranath Tagore's influence on spiritual aesthetics). The Quiet Corner could connect to Bengali devotional sensibility — perhaps a more poetic framing. Bengali OCR accuracy is lower than Hindi if digital text is unavailable.
+- **Organizational:** Same YSS branding considerations as Hindi.
+- **Open question:** Does YSS have digital Bengali text? Bengali script rendering quality validation needed.
+
+### Future Evaluation Candidates (Wave 11c)
+
+- **Chinese (zh):** WeChat ecosystem (not WhatsApp). Simplified vs Traditional Chinese. Great Firewall considerations for mainland China hosting. Strong yoga community in urban China.
+- **Korean (ko):** KakaoTalk (not WhatsApp). Naver search (not Google-dominant). Korean Hangul is phonetic — different search characteristics.
+- **Russian (ru):** VK (VKontakte) social platform. Cyrillic script. Russian yoga community is substantial.
+- **Arabic (ar):** RTL layout (CSS logical properties ready per ADR-021). Complex typography (ligatures, contextual forms). Cultural sensitivity: yoga is sometimes viewed with suspicion in some Arabic-speaking communities. Requires careful framing.
+
+### Cross-Cultural Design Principles
+
+1. **Adapt, don't just translate.** "Seeking..." entry points, "Show me another" framing, and tone guidance are editorial content per locale, not mechanical translations.
+2. **Platform-aware distribution.** WhatsApp for Latin America, India, Africa. LINE for Japan. WeChat for China. KakaoTalk for Korea. The portal's messaging strategy must be locale-aware.
+3. **Script-aware typography.** Font size, line height, drop capitals, and line width all vary by script family. Design tokens should be locale-overridable.
+4. **Branding-aware identity.** SRF branding for Western locales. YSS branding for Indian locales. The portal's visual identity adapts to the organization the seeker knows.
+5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa), the TTS "Listen" button (Phase 12) is a critical accessibility feature. Consider prioritizing audio-first experiences for Hindi and Bengali locales.
+
+---
+
 ## API Design (Next.js API Routes)
 
-All API routes use a versioned prefix (`/api/v1/`) from Phase 1 per ADR-024. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
+All API routes use a versioned prefix (`/api/v1/`) from Phase 1 per ADR-024. Language is passed as a query parameter on API routes (`?language=hi`), not as a path prefix — language is a property of content, not a namespace for operations (ADR-091). Frontend pages use locale path prefixes (`/hi/themes/peace`) for SEO and `hreflang` linking. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
 
 ### `GET /api/v1/search`
 
@@ -4403,4 +4491,4 @@ When the shared component library begins (Phase 12), Figma Professional ($15/edi
 
 ---
 
-*Last updated: 2026-02-18*
+*Last updated: 2026-02-20*

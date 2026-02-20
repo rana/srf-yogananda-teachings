@@ -61,28 +61,7 @@ Each phase delivers a working, demonstrable increment. Three monolithic phases h
 
 ### Open Questions to Resolve
 
-**Technical:**
-- [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks)
-- [ ] Embedding model benchmarking (text-embedding-3-small vs. 3-large vs. Cohere)
-- [ ] Query expansion prompt engineering (test with diverse query types)
-- [ ] @YoganandaSRF channel ID (needed for RSS feed URL in Phase 2)
-- [ ] YouTube playlist inventory (map existing playlists to portal categories, needed for Phase 2)
-
-**Stakeholder questions (require SRF input):**
-- [ ] What is the relationship between this portal and the SRF/YSS app? Complementary or overlapping reader? Will the portal's search eventually power the app?
-- [ ] Who will manage the editorial workflow — theme tagging, daily passage curation, text QA? Monastic order, AE team, or dedicated content editor?
-- [ ] What does the philanthropist's foundation consider a successful outcome at 12 months? (Shapes analytics and reporting.)
-- [ ] Can SRF provide center location data (addresses, coordinates, schedules) for an in-portal "Meditation Near Me" feature?
-- [ ] What is SRF's copyright/licensing posture for the portal content? Read online only, or also downloadable/printable? What attribution is required?
-- [ ] About page content: does SRF have approved biography text for Yogananda and descriptions of the line of gurus, or do we draft for their review?
-- [ ] Does SRF/YSS have **digital text** of official translated editions? If only printed books, OCR per language is a massive effort requiring fluent reviewers. (Critical for Phase 11 scoping.)
-- [ ] Which books have official translations in which languages? (Content availability matrix — determines what each language's portal experience looks like.)
-- [ ] Who reviews the AI-drafted UI translations (~200–300 strings)? Claude generates drafts (ADR-023), but human review is mandatory. Does SRF have multilingual monastics or volunteers who can review for spiritual register and tone?
-- [ ] Should Hindi and Bengali be prioritized alongside the Western-language set? Yogananda's heritage, YSS's Indian audience (~millions), and the mission of global availability argue strongly for inclusion. (ADR-022)
-- [ ] For Hindi/Bengali: same portal domain (`teachings.yogananda.org/hi/`) or YSS-branded domain? Organizational question with architectural implications.
-- [ ] Does the teaching portal get its own mobile app, or do portal features (search, daily passage, reader) integrate into the existing SRF/YSS app? The API-first architecture (ADR-024) supports either path.
-- [ ] Does SRF prefer the portal repo in GitLab from day one (per SRF IDP standards), or is GitHub acceptable for Phases 1–9 with a planned Phase 10 migration? The Terraform code and CI/CD pipelines are SCM-agnostic; only the workflow files change.
-- [ ] What Sentry and New Relic configurations does SRF use across their existing properties? Aligning observability tooling enables operational consistency. (Design assumes standalone operation initially; integrate with SRF's centralized observability when patterns are known.)
+See CONTEXT.md § Open Questions for the consolidated list of technical and stakeholder questions. Questions live there so they're visible at session start and move to "Resolved" as work progresses.
 
 ---
 
@@ -203,7 +182,8 @@ Each phase delivers a working, demonstrable increment. Three monolithic phases h
 | 5.7 | **Expanded book catalog** | The Library (`/books`) and book landing pages (`/books/[slug]`) established in Phase 2 now display the full multi-book catalog. Book cards show cross-book search availability. Sort/filter by theme or publication year. |
 | 5.8 | **Calendar-aware content surfacing** | `calendar_events` and `calendar_event_passages` tables. Editorially curated date-to-passage associations for Yogananda's life events, Hindu/Christian calendar, and universal observances. Homepage "Today's Wisdom" draws from the calendar pool when a relevant date falls. (ADR-056) |
 | 5.9 | **The Quiet Index** | Combine E3 (accessibility rating) and E8 (tone classification) into browsable routes: `/quiet/contemplative`, `/quiet/practical`, `/quiet/devotional`, `/quiet/philosophical`, `/quiet/narrative`. Extends the Quiet Corner with texture-based passage browsing. (ADR-056) |
-| 5.10 | **Editorial review portal (minimal)** | Auth0-protected `/admin` route group built with the portal's calm design system. Editorial home screen with role-filtered summary. Theme tag review queue (keyboard-driven: `a` approve, `r` reject, `→` next). Daily passage curation with 7-day lookahead. Calendar event ↔ passage association management. Content preview ("preview as seeker" for themes and daily passages). Tone/accessibility spot-check workflow. Session continuity (resume where you left off). Auth0 roles: `editor`, `reviewer`. Email digest for daily review notifications via scheduled serverless function. (ADR-064) |
+| 5.10a | **Editorial review portal — foundation and theme review** | Auth0-protected `/admin` route group built with the portal's calm design system. Auth0 roles: `editor`, `reviewer`. Editorial home screen with role-filtered summary. Theme tag review queue (keyboard-driven: `a` approve, `r` reject, `→` next). Ingestion QA review (flagged passages with Claude suggestions). Content preview ("preview as seeker" for theme pages). Session continuity (resume where you left off). (ADR-064) |
+| 5.10b | **Editorial review portal — curation workflows** | Daily passage curation with 7-day lookahead and tone badge display. Calendar event ↔ passage association management. Tone/accessibility spot-check workflow. Content preview for daily passages. Email digest for daily review notifications via scheduled serverless function. (ADR-064) |
 | 5.11 | **AWS Lambda for batch workloads** | `/serverless/` directory with Serverless Framework v4. Lambda functions for book ingestion and chunk relation computation (replace manual scripts that would exceed Vercel timeouts). Terraform module for Lambda IAM roles. Aligns with SRF backend standard. (ADR-065) |
 | 5.12 | **Early impact view** | Lightweight, DELTA-compliant mission reporting in the admin portal: countries reached (Cloudflare/Vercel analytics), anonymized search themes ("What is humanity seeking?"), content served (passages, books), languages available. Not engagement tracking — mission reporting. Answers: "Are the teachings reaching the world?" Visible to `editor`, `reviewer`, and `leadership` roles. (ADR-068) |
 
@@ -211,7 +191,7 @@ Each phase delivers a working, demonstrable increment. Three monolithic phases h
 
 - **Theme tagging quality:** Semi-automated tagging (embeddings) must be validated by human reviewers. A bad theme assignment (a passage about death tagged as "Joy") would undermine trust. Only `manual` and `reviewed` tags are served to users — never unreviewed `auto` tags. (ADR-048)
 - **Theme taxonomy expansion:** Multi-category taxonomy: six quality themes on the homepage (stable); situation, practice, person, principle, scripture, and yoga_path categories added incrementally. No fixed minimum passage count — editorial judgment decides when a topic has enough depth to publish. (ADR-048, ADR-058)
-- **Editorial review portal scope:** Phase 5 delivers the minimal admin portal. Avoid over-engineering — build only the review workflows demanded by Phase 5 content features (theme tags, daily passages, calendar events). Social media, translation, and impact views come in later phases as those features create demand. (ADR-064)
+- **Editorial review portal scope:** Phase 5 delivers the admin portal in two stages: 5.10a (foundation: Auth0, home screen, theme review, ingestion QA) and 5.10b (curation: daily passages, calendar events, tone spot-checks, email digest). Social media review (9.5), translation review (11.13), and leadership impact dashboard (11.14) come in later phases as those features create demand. Avoid over-engineering — each stage delivers exactly the workflows demanded by current-phase content features. (ADR-064)
 
 ---
 

@@ -1,8 +1,51 @@
 # SRF Online Teachings Portal — Project Context
 
-## Read This First
+## Current State
 
-This document provides essential background for anyone working on or evaluating the SRF Online Teachings Portal project. It captures the project's origin, mission, constraints, and organizational context.
+**Phase:** Design complete. Ready to begin Phase 1 implementation.
+
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (90 ADRs), ROADMAP.md (16 phases). No code yet.
+
+**What's next:** Phase 1 — Prove the Search. Ingest *Autobiography of a Yogi*, build hybrid search (vector + FTS), deliver a working search UI and basic reader. See ROADMAP.md § Phase 1 for the 12 deliverables.
+
+---
+
+## Open Questions
+
+### Technical (resolve during Phase 1)
+
+- [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks)
+- [ ] Embedding model benchmarking (text-embedding-3-small vs. 3-large vs. Cohere)
+- [ ] Query expansion prompt engineering (test with diverse query types)
+- [ ] @YoganandaSRF YouTube channel ID (needed for RSS feed URL in Phase 2)
+- [ ] YouTube playlist inventory (map existing playlists to portal categories, needed for Phase 2)
+
+### Stakeholder (require SRF input)
+
+- [ ] What is the relationship between this portal and the SRF/YSS app? Complementary or overlapping reader? Will the portal's search eventually power the app?
+- [ ] Who will manage the editorial workflow — theme tagging, daily passage curation, text QA? Monastic order, AE team, or dedicated content editor?
+- [ ] What does the philanthropist's foundation consider a successful outcome at 12 months? (Shapes analytics and reporting.)
+- [ ] Can SRF provide center location data (addresses, coordinates, schedules) for an in-portal "Meditation Near Me" feature?
+- [ ] What is SRF's copyright/licensing posture for the portal content? Read online only, or also downloadable/printable? What attribution is required?
+- [ ] About page content: does SRF have approved biography text for Yogananda and descriptions of the line of gurus, or do we draft for their review?
+- [ ] Does SRF/YSS have **digital text** of official translated editions? If only printed books, OCR per language is a massive effort requiring fluent reviewers. (Critical for Phase 11 scoping.)
+- [ ] Which books have official translations in which languages? (Content availability matrix — determines what each language's portal experience looks like.)
+- [ ] Who reviews the AI-drafted UI translations (~200–300 strings)? Claude generates drafts (ADR-023), but human review is mandatory. Does SRF have multilingual monastics or volunteers who can review for spiritual register and tone?
+- [ ] Should Hindi and Bengali be prioritized alongside the Western-language set? Yogananda's heritage, YSS's Indian audience (~millions), and the mission of global availability argue strongly for inclusion. (ADR-022)
+- [ ] For Hindi/Bengali: same portal domain (`teachings.yogananda.org/hi/`) or YSS-branded domain? Organizational question with architectural implications.
+- [ ] Does the teaching portal get its own mobile app, or do portal features (search, daily passage, reader) integrate into the existing SRF/YSS app? The API-first architecture (ADR-024) supports either path.
+- [ ] Does SRF prefer the portal repo in GitLab from day one (per SRF IDP standards), or is GitHub acceptable for Phases 1–9 with a planned Phase 10 migration? The Terraform code and CI/CD pipelines are SCM-agnostic; only the workflow files change.
+- [ ] What Sentry and New Relic configurations does SRF use across their existing properties? Aligning observability tooling enables operational consistency.
+
+### Resolved Questions
+
+*None yet — project has not started implementation.*
+
+---
+
+## About This Document
+
+This document provides essential background for anyone working on or evaluating the SRF Online Teachings Portal project. It captures the project's origin, mission, constraints, and organizational context. The "Current State" and "Open Questions" sections above are living — updated as work progresses and questions are resolved.
 
 ---
 
@@ -321,4 +364,4 @@ For Phase 1 development, PDFs are available at https://spiritmaji.com/. These ar
 
 ---
 
-*Last updated: 2026-02-17*
+*Last updated: 2026-02-20*

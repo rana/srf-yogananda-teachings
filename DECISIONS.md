@@ -11,6 +11,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-007: Claude API for AI Features
 - ADR-032: Embedding Model Versioning and Migration
 - ADR-034: Related Teachings — Pre-Computed Chunk Relations
+- ADR-049: Claude AI Usage Policy — Permitted Roles and Prohibited Uses
+- ADR-052: Terminology Bridge Per-Book Evolution Lifecycle
+- ADR-068: "What Is Humanity Seeking?" — Anonymized Search Intelligence
 
 **Content Strategy**
 - ADR-002: Contentful as Editorial Source of Truth
@@ -23,7 +26,15 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-019: Social Media Strategy
 - ADR-026: Events and Sacred Places
 - ADR-035: "Seeking..." — Empathic Entry Points
+- ADR-048: Teaching Topics — Semi-Automated Tagging Pipeline
+- ADR-054: Editorial Reading Threads — "Teachings in Conversation"
+- ADR-055: Reverse Bibliography — "What Yogananda Read"
+- ADR-056: Calendar-Aware Content Surfacing and Quiet Index
+- ADR-058: Exploration Theme Categories — Persons, Principles, Scriptures, Practices
 - ADR-059: Sharing Formats — Email, PDF, and Download
+- ADR-069: Edition-Aware Content Model
+- ADR-086: Image Content Type — Photographs as First-Class Content
+- ADR-092: People Library — Spiritual Figures as First-Class Entities
 
 **Reader Experience**
 - ADR-036: Book Reader Typography
@@ -34,9 +45,14 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-041: Lotus Bookmarks
 - ADR-042: Keyboard-First Reading Navigation
 - ADR-046: "Show Me Another" — Infinite Wisdom
+- ADR-050: Reading Time Estimate, Scroll Position, Reader Settings
 - ADR-060: Dwell Discoverability — Hover-to-Reveal Activation Button
 - ADR-062: Related Teachings — Reading Focus Detection and Progressive Loading
 - ADR-063: Reading Session — Proactive Chapter Caching and Prefetch
+- ADR-073: Ephemeral Reading Highlights
+- ADR-074: Side-by-Side Commentary View
+- ADR-075: Study Guide View for Group Reading
+- ADR-076: Audio-Visual Ambiance Toggle
 
 **Visual Identity**
 - ADR-008: SRF-Derived Design System
@@ -57,6 +73,18 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-031: Infrastructure as Code (Terraform)
 - ADR-033: Architecture Longevity — 10-Year Horizon
 - ADR-047: Street View Links (No Embedded Maps)
+- ADR-051: Bookstore URL Simplification
+- ADR-065: AWS Lambda for Batch and Background Workloads
+- ADR-066: Content-Addressable Passage Deep Links
+- ADR-067: Search API Rate Limiting and Abuse Prevention
+- ADR-070: CI-Agnostic Deployment Scripts
+- ADR-071: Native Share API as Primary Mobile Sharing
+- ADR-072: Database Backup to S3
+- ADR-080: Multi-Tenant Infrastructure Design
+- ADR-082: Redundancy, Failover, and Regional Distribution Strategy
+- ADR-083: PDF Generation Strategy — Resource-Anchored Exports
+- ADR-090: MCP Server Strategy — Development Tooling for AI Implementation
+- ADR-091: Language API Design — Locale Prefix on Pages, Query Parameter on API
 
 **Ethics & Internationalization**
 - ADR-014: Personalization with Restraint — DELTA Boundaries
@@ -66,9 +94,26 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-022: Hindi and Bengali in Locale Roadmap
 - ADR-023: AI-Assisted Translation Workflow
 - ADR-061: Global Equity — Serving Earth's Underserved Seekers
+- ADR-079: YSS Organizational Branding and Locale Strategy
+- ADR-084: Machine-Readable Content and AI Citation Strategy
+- ADR-085: Low-Tech and Messaging Channel Strategy
+
+**Cross-Media**
+- ADR-057: Video Transcript Time-Synced Architecture
+- ADR-078: Audio Library and Cross-Media Audio Search
+- ADR-087: Unified Content Hub — Cross-Media Relations, Search, and Theming
+- ADR-088: Platform-Agnostic Video Model and Documentary Integration
+- ADR-089: Multi-Media Editorial Threads and Continue the Thread
 
 **Staff & Editorial Workflows**
 - ADR-064: Staff Experience Architecture — Five-Layer Editorial System
+- ADR-077: Talk Preparation Workspace
+
+**Community & Future Readiness**
+- ADR-081: Lessons Integration Readiness
+
+**Withdrawn**
+- ~~ADR-053: Search Query Retention and Aggregation Strategy~~ (deliberately withdrawn — raw table is sufficient)
 
 ---
 
@@ -583,10 +628,10 @@ Classify personalization features into three tiers:
 
 | Feature | Rationale | Phase |
 |---------|-----------|-------|
-| Language preference | Fundamental accessibility. Stored in cookie or account. | 6 |
-| Font size / reading preferences | Accessibility. Local storage, no account needed. | 7 |
-| Bookmarks ("My Passages") | Lets seekers curate a personal anthology of passages that moved them. | 9 |
-| Reading position | Saves your place in a book. Basic reader functionality. | 9 |
+| Language preference | Fundamental accessibility. Stored in cookie or account. | 11 |
+| Font size / reading preferences | Accessibility. Local storage, no account needed. | 4 |
+| Bookmarks ("My Passages") | Lets seekers curate a personal anthology of passages that moved them. | 4 (localStorage), 15 (server sync) |
+| Reading position | Saves your place in a book. Basic reader functionality. | 15 |
 
 **Build with caution:**
 
@@ -1058,9 +1103,9 @@ Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave
 
 | Wave | Languages | Rationale |
 |------|-----------|-----------|
-| **6a** | es, de, fr, it, pt, ja | Matches convocation site. Western audience. SRF's existing translation infrastructure. |
-| **6b** | hi, bn | YSS audience. Yogananda's heritage languages. Massive population reach. |
-| **6c** | Evaluate further | Based on demand data, available translations, and SRF/YSS input. Candidates: Chinese, Korean, Russian, Arabic. |
+| **11a (Western)** | es, de, fr, it, pt, ja | Matches convocation site. Western audience. SRF's existing translation infrastructure. |
+| **11b (Indian)** | hi, bn | YSS audience. Yogananda's heritage languages. Massive population reach. |
+| **11c (Evaluation)** | Evaluate further | Based on demand data, available translations, and SRF/YSS input. Candidates: Chinese, Korean, Russian, Arabic. |
 
 ### Rationale
 
@@ -1071,7 +1116,7 @@ Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave
 
 ### Consequences
 
-- Phase 11 is split into waves (9a Western, 9b Indian, 9c evaluation)
+- Phase 11 is split into waves (11a Western, 11b Indian, 11c Evaluation)
 - Need to confirm YSS has digital text of Hindi/Bengali translations (stakeholder question)
 - May need YSS-specific UI adaptations (organizational branding differences between SRF and YSS)
 - Google Fonts Noto Sans Devanagari and Noto Sans Bengali added to the font stack for Phase 11 Indian wave
@@ -6818,4 +6863,195 @@ The **SRF Corpus MCP** server (planned since the original design) gives the AI d
 
 ---
 
-*Last updated: 2026-02-19*
+## ADR-091: Language API Design — Locale Prefix on Pages, Query Parameter on API
+
+**Status:** Accepted | **Date:** 2026-02-20
+
+### Context
+
+The portal serves content in multiple languages (Phase 11+). Two independent systems need language awareness: the frontend pages (rendered by Next.js for seekers) and the API routes (consumed by the web frontend, mobile apps, WhatsApp bots, and future integrations). The question is how language is expressed in URLs.
+
+Three approaches were considered:
+
+| Approach | Frontend URL | API URL | Pros | Cons |
+|----------|-------------|---------|------|------|
+| **Locale prefix everywhere** | `/hi/themes/peace` | `/api/v1/hi/themes/peace/passages` | Consistent URL pattern | Conflates locale and API versioning; not every API endpoint is language-scoped (`/health`, passage-by-id); awkward for mobile apps that manage locale in their own state |
+| **Query parameter everywhere** | `/themes/peace?language=hi` | `/api/v1/themes/peace/passages?language=hi` | Clean API contract; single endpoint surface | Loses SEO benefits for frontend pages; no `hreflang` linking; no `lang` attribute signal from URL |
+| **Hybrid: prefix on pages, parameter on API** | `/hi/themes/peace` | `/api/v1/themes/peace/passages?language=hi` | SEO-friendly pages; clean API contract; each system uses the pattern natural to its consumers | Two patterns to understand (but each is standard in its domain) |
+
+### Decision
+
+Adopt the **hybrid approach**: locale path prefix on frontend pages, query parameter on API routes.
+
+**Frontend pages:** `/{locale}/path` — standard Next.js i18n routing via `next-intl`.
+
+```
+/hi/themes/peace          ← Hindi theme page
+/hi/books/autobiography   ← Hindi book page
+/hi/search?q=...          ← Hindi search
+/hi/quiet                 ← Hindi Quiet Corner
+/themes/peace             ← English (default, no prefix)
+```
+
+**API routes:** `/api/v1/path?language={locale}` — language as query parameter.
+
+```
+/api/v1/themes/peace/passages?language=hi     ← Hindi passages for theme
+/api/v1/search?q=...&language=hi              ← Hindi search
+/api/v1/daily-passage?language=hi             ← Hindi daily passage
+/api/v1/passages/[chunk-id]                   ← Language inherent to chunk
+/api/v1/passages/[chunk-id]?language=hi       ← Cross-language: find Hindi equivalent via canonical_chunk_id
+/api/v1/health                                ← No language parameter needed
+```
+
+**Server Components** call service functions with language as a function parameter: `findPassages(query, 'hi', options)`. The locale is extracted from the URL prefix by the Next.js middleware and passed down. The service layer never reads the URL — it receives language as a plain argument.
+
+### Rationale
+
+- **Language is a property of content, not a namespace for operations.** "Search" is the same operation regardless of language. The `?language=` parameter modifies what content is returned, not what operation is performed. This is the fundamental insight.
+- **API consumers vary.** The web frontend handles locale via URL prefix (standard i18n SEO). A mobile app manages locale in its own state. A WhatsApp bot receives locale from the user's profile. A third-party scholar tool may request multiple languages in sequence. The API should serve all with a single, clean contract.
+- **Not every endpoint is language-scoped.** `/api/v1/health`, `/api/v1/passages/[chunk-id]` (the passage already *is* in a language), `/api/v1/books` (returns all books with their `language` field) — forcing a locale prefix on these creates semantic confusion.
+- **CDN caching works with query parameters.** Vercel and Cloudflare cache based on full URL including query string. `?language=hi` produces a distinct cache entry.
+- **Versioning and locale are orthogonal.** `/api/v1/` is the version namespace. Locale is content filtering. Mixing them (`/api/v1/hi/`) conflates two independent axes of variation.
+- **10-year horizon.** New languages are added by supporting a new `language` parameter value — no new route structure, no new endpoints. The API contract is stable across all future languages.
+
+### Consequences
+
+- Frontend i18n uses `next-intl` with URL-based locale prefixes from Phase 2 (consistent with ADR-020)
+- All API endpoints accept an optional `language` query parameter (default: `en`)
+- The `language` parameter triggers locale-first search and English fallback at the service layer (ADR-020)
+- Mobile apps and other consumers pin to the API and pass language as a parameter
+- Server Components extract locale from the URL prefix and pass it to service functions — business logic never reads URLs
+- `hreflang` tags on frontend pages enable cross-locale SEO linking
+- The OG meta tags on passage share URLs include the language, so shared links render in the correct locale
+- **Extends ADR-020** (multi-language architecture) and **ADR-024** (API-first architecture)
+
+---
+
+## ADR-092: People Library — Spiritual Figures as First-Class Entities
+
+**Status:** Accepted | **Date:** 2026-02-20
+
+### Context
+
+The portal currently models spiritual figures (Krishna, Christ, Sri Yukteswar, Lahiri Mahasaya, etc.) as teaching topics with `category = 'person'` in the `teaching_topics` table. This serves the question "What did Yogananda teach about Krishna?" — it's a collection of tagged passages.
+
+But seekers who encounter a spiritual figure in the Autobiography often want something different: "Who *is* Krishna in the context of Yogananda's teachings?" This requires biographical context, lineage position, associated places, relationships to other figures, and *then* the relevant passages. The theme page answers a search question; the person page answers a reference question.
+
+Three approaches were considered:
+
+| Approach | Data Model | Pros | Cons |
+|----------|-----------|------|------|
+| **Person as theme only** | `teaching_topics` with `category = 'person'` | Simple; already built | No biographical metadata; no lineage structure; no place associations; every figure is "just a tag" |
+| **Rich metadata on teaching_topics** | Add biographical columns to `teaching_topics` | Single table; reuses existing infrastructure | teaching_topics becomes overloaded (most topics don't have birth years or lineage positions); mixes concerns |
+| **Separate people table linked to themes** | `people` table with FK to `teaching_topics` for tagging | Clean separation of entity metadata and passage tagging; each table does one thing | Additional table and API endpoint |
+
+The same pattern applies to Places, which already have a dedicated `places` table with rich metadata (ADR-026). People deserve the same treatment.
+
+### Decision
+
+Add a **`people`** table as a first-class content type, linked to the existing `teaching_topics` system for passage tagging. Create a People Library (`/people`) parallel to the Books library (`/books`) and Sacred Places (`/places`).
+
+#### Schema
+
+```sql
+CREATE TABLE people (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            TEXT NOT NULL,
+    slug            TEXT NOT NULL UNIQUE,
+    title           TEXT,                       -- e.g., "Paramguru," "Avatar," "Yogiraj"
+    lineage_position TEXT,                      -- e.g., "Guru of Paramahansa Yogananda"
+    birth_year      INTEGER,
+    death_year      INTEGER,                    -- NULL for avatars (Krishna) or living figures
+    biography_short TEXT NOT NULL,              -- 2–3 sentences, editorial
+    biography_long  TEXT,                       -- full detail page content, editorial
+    image_id        UUID,                       -- FK to images table (Phase 14, ADR-086)
+    topic_id        UUID REFERENCES teaching_topics(id), -- links to theme tagging system
+    language        TEXT NOT NULL DEFAULT 'en',
+    canonical_person_id UUID REFERENCES people(id), -- cross-language linking
+    is_published    BOOLEAN NOT NULL DEFAULT false,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_people_slug ON people(slug);
+CREATE INDEX idx_people_published ON people(is_published) WHERE is_published = true;
+```
+
+#### Junction tables
+
+```sql
+-- People ↔ Places (e.g., Sri Yukteswar ↔ Serampore, Puri)
+CREATE TABLE person_places (
+    person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    place_id  UUID NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+    role      TEXT,           -- 'birthplace', 'ashram', 'teaching_center', 'burial'
+    PRIMARY KEY (person_id, place_id)
+);
+
+-- People ↔ People (lineage and relationships)
+CREATE TABLE person_relations (
+    source_person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    target_person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    relation_type    TEXT NOT NULL, -- 'guru_of', 'disciple_of', 'contemporary', 'referenced_by'
+    PRIMARY KEY (source_person_id, target_person_id)
+);
+```
+
+#### API
+
+```
+GET /api/v1/people                          → List all published people
+    ?language=en                            → Filter by language
+    ?lineage=true                           → Filter to guru lineage only
+
+GET /api/v1/people/[slug]                   → Person detail with metadata
+    Response includes: biographical info, lineage position,
+    associated places, related people, link to theme page
+
+GET /api/v1/people/[slug]/passages          → Passages tagged with this person
+    (Delegates to the existing theme tagging system via topic_id)
+    ?language=en&limit=10&cursor=...
+```
+
+#### Frontend
+
+| Route | Purpose |
+|-------|---------|
+| `/people` | People Library — spiritual figures organized by category (guru lineage, avatars, saints, referenced figures) |
+| `/people/[slug]` | Person detail — biography, lineage, places, passages |
+
+The People Library links bidirectionally with:
+- **Theme pages:** `/people/krishna` links to `/themes/krishna` (tagged passages) and vice versa
+- **Sacred Places:** `/people/sri-yukteswar` links to `/places/serampore` and `/places/puri`
+- **Book reader:** Inline references to a person in the text can link to their People Library entry
+- **Reverse Bibliography:** `/references/bhagavad-gita` links to `/people/krishna`
+
+#### Relationship to existing theme system
+
+The theme page (`/themes/krishna`) continues to serve the question "What did Yogananda teach about Krishna?" The person page (`/people/krishna`) serves "Who is Krishna?" The person page includes a prominent link to the theme page ("Read what Yogananda taught about Krishna →"). The `topic_id` FK on `people` connects the two systems.
+
+### Rationale
+
+- **Seekers ask two kinds of questions about spiritual figures.** "What did Yogananda say about X?" (theme page) and "Who is X?" (person page). Both are natural; each deserves its own answer.
+- **Avatars are constant.** Krishna, Christ, and the guru lineage do not change. Their biographical entries are stable reference content — a different kind of value than the growing, curated passage collection on theme pages.
+- **Monastics and living teachers.** As new monastics lead SRF, the People Library preserves their biographical context. This is a respectful, mission-aligned record.
+- **Cross-referencing is the unique value.** The People Library connects people to places, to books, to passages, and to each other. No other digital resource provides this integrated view of the spiritual figures in Yogananda's world.
+- **Parallel to Places and Books.** The portal already has a Books library (entities with metadata + linked passages) and a Places library (entities with metadata + linked passages). People is the natural third pillar.
+- **Low schema cost, high editorial value.** One table, two junction tables. The biographical content is editorial — written once, updated rarely.
+
+### Consequences
+
+- `people` table added to Neon schema (Phase 6 migration, when person-category themes activate)
+- `person_places` and `person_relations` junction tables added alongside
+- `/people` and `/people/[slug]` routes added to the frontend (Phase 6)
+- API endpoints `GET /api/v1/people` and `GET /api/v1/people/[slug]` added (Phase 6)
+- People Library entries require SRF editorial review and approval before publication (`is_published` gate)
+- Guru photographs on person pages follow ADR-016 sacred image guidelines
+- Cross-language person entries linked via `canonical_person_id` (Phase 11)
+- Theme pages for person-category topics gain a "Learn about [person] →" link to the People Library
+- Reader inline references to named figures can link to People Library entries (Phase 6+)
+- **Extends ADR-013** (teaching topics), **ADR-026** (Sacred Places), **ADR-058** (exploration categories)
+
+---
+
+*Last updated: 2026-02-20*

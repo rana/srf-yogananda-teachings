@@ -159,6 +159,16 @@ Remember you have vast capability, intelligence and agency.
 You have complete design autonomy.
 
 ---
+How coherent and resonant are our markdown documents? Look at another projects markdown documents (`/home/rana/prj/mercury/`) for comparison and ideas.
+
+Look at the current project's markdown documents from a lense of a greenfield project. Would you adjust anything? No adjustments is just fine too.
+
+Be pro-active (that's why OpenClaw may work well).
+Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.
+
+---
 
 1. Look at the whole project from an operational point fo view. Are there gaps in our design? What are the operational costs? What am I not asking? You have complete design autonomy.
 
@@ -177,7 +187,7 @@ You have complete design autonomy.
 
 What other REST endpoints might be helpful?
 
-And, what value or convenience, if any, would each endpoint provide?
+And, what value or convenience, if any, would each endpoint provide? Is this a solution looking for a problem? Or an elegant expansion serving the mission?
 
 What am I not asking? You have complete design autonomy.
 
