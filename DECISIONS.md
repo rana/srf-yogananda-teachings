@@ -8119,26 +8119,52 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 
 ### Model Tiering Strategy
 
-| Task | Default Model | Fallback | Quality Sensitivity | Volume |
-|------|--------------|----------|-------------------|--------|
+**Per-search tasks (real-time, cost-sensitive):**
+
+| Task | Model | Fallback | Quality Sensitivity | Volume |
+|------|-------|----------|-------------------|--------|
 | Intent classification | Haiku | None (skip on failure) | Low — simple categorization | Every search |
 | Query expansion | Haiku | None (skip, use raw query) | Medium — vocabulary breadth | Every complex search |
 | Passage ranking | Haiku (promote to Sonnet if benchmarks warrant) | Skip (use RRF scores) | High — determines result quality | Every search with candidates |
 
+**Offline batch tasks (run once per content, quality over cost):**
+
+| Task | Model | Rationale | Phase |
+|------|-------|-----------|-------|
+| Theme taxonomy classification | Opus | Classifying chunks across multi-category spiritual taxonomy requires deep comprehension of Yogananda's teachings | 5 |
+| Ambiguous chunk classification | Opus | Edge cases near classification thresholds benefit from nuanced reasoning | 1+ (ingestion) |
+| Reference extraction (scriptures, persons, places) | Opus | Identifying cross-tradition references (Bible, Bhagavad Gita, scientific texts) across Yogananda's writing requires broad knowledge | 7 |
+| UI translation drafting | Opus | Devotional register in 8+ languages requires precise tone; human review follows (ADR-023) | 11 |
+| Cross-book relationship mapping | Opus | Identifying thematic connections across the full library requires deep reading comprehension | 6–7 |
+
+Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaults to Opus). Cost is negligible: ~$2–5 per full book processed, run once per content change.
+
 ### Cost Projection
+
+**Per-search (recurring, scales with traffic):**
 
 | Scenario | Per-search cost | Monthly at 10K/day |
 |----------|-----------------|-------------------|
 | All Haiku | ~$0.001 | ~$300 |
 | Tiered (Haiku + Sonnet ranking) | ~$0.005 | ~$1,500 |
 | All Sonnet | ~$0.01 | ~$3,000 |
+| Opus ranking (rejected) | ~$0.025 | ~$7,500 |
+
+**Offline batch (one-time per content, negligible ongoing cost):**
+
+| Task | Cost per book | When |
+|------|--------------|------|
+| Theme classification (Opus) | ~$2–5 | Once per book ingestion |
+| Reference extraction (Opus) | ~$1–3 | Once per book ingestion |
+| UI translation drafting (Opus) | ~$0.50 per locale | Once per locale addition |
 
 ### Alternatives Considered
 
 1. **Direct Anthropic API** — Simpler initial setup, day-one access to new model releases. Rejected because: SRF already has AWS billing, support contracts, and IAM infrastructure. A separate Anthropic contract adds vendor management overhead for zero functional gain. New model releases are irrelevant — the portal's librarian tasks are well-defined and stable.
 2. **All Sonnet** — Higher baseline quality for ranking. Rejected because: 10x cost increase over Haiku at scale. The portal's ranking task is constrained (select and order passage IDs from 20 candidates) — not open-ended reasoning. Haiku is likely sufficient; benchmark first.
-3. **All Opus** — Maximum quality. Rejected because: ~25x cost of Haiku, latency increases. Dramatically over-powered for structured classification and ranking tasks.
-4. **OpenAI GPT models** — Could reduce vendor count (already using OpenAI for embeddings). Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Switching LLM providers for cost reasons alone adds migration risk. ADR-003 established Claude; no reason to revisit.
+3. **Opus for intent classification** — Considered whether Opus's deeper reasoning would improve classification accuracy. Rejected because: intent classification is bounded enum categorization (~7 types). The input is a short user query, the output is structured JSON. Haiku reaches the quality ceiling for this task; additional model capability has nowhere to go.
+4. **Opus for passage ranking** — Considered whether Opus would better understand subtle spiritual nuance when ordering passages (e.g., distinguishing "divine fulfillment" from "renunciation" for "I feel empty inside"). Rejected because: the ranker receives 20 pre-retrieved passages already filtered by vector similarity + FTS relevance. It selects the top 5 and outputs ordered passage IDs — a constrained selection task, not open-ended reasoning. The heavy semantic lifting is done by the hybrid search layer, the spiritual-terms.json vocabulary bridge, and well-crafted system prompts with explicit ranking criteria (spiritual depth, directness of address, emotional resonance). The quality difference between models narrows significantly when the task is structured, the output format is constrained, and the candidate pool is pre-filtered. At ~$7,500/month for ranking alone (10K searches/day), the cost is unjustifiable for a free portal when architecture already ensures relevant results. **Opus is appropriate for offline batch work** (editorial analysis, theme taxonomy construction, cross-book relationship mapping) — low-volume, high-reasoning tasks — but not per-search costs.
+5. **OpenAI GPT models** — Could reduce vendor count (already using OpenAI for embeddings). Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Switching LLM providers for cost reasons alone adds migration risk. ADR-003 established Claude; no reason to revisit.
 
 ### Rationale
 
@@ -8155,7 +8181,8 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 - `/lib/services/claude.ts` uses `@aws-sdk/client-bedrock-runtime` instead of the Anthropic SDK
 - `.env.example` changes: replace `ANTHROPIC_API_KEY` with `AWS_REGION` + IAM role (Bedrock access managed via IAM, not API keys)
 - Terraform includes a Bedrock model access module
-- Model IDs are configured per-task in environment variables (e.g., `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK`) — defaults to Haiku for all three
+- Per-search model IDs configured via `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku)
+- Batch model ID configured via `CLAUDE_MODEL_BATCH` (default: Opus) — used by theme classification, reference extraction, translation drafting, and cross-book relationship mapping
 - Phase 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected

@@ -224,7 +224,7 @@ The terminology bridge is not a static artifact — it deepens with each book in
 ```
 Book ingestion pipeline (new step after chunking, before embedding):
   1. VOCABULARY EXTRACTION
-     Claude scans the book's full chunk set (Classifying category, JSON output)
+     Claude Opus scans the book's full chunk set (Classifying category, JSON output; ADR-110 batch tier)
      → Extracts distinctive terms, phrases, and metaphors specific to this book
      → Output: vocabulary inventory for the new book
 
@@ -657,7 +657,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
 --   2. Embed the description → store in description_embedding
 --   3. Run cosine similarity: compare description_embedding against all book_chunks.embedding
 --   4. Chunks above threshold (e.g., 0.45) get INSERT into chunk_topics with tagged_by='auto'
---   5. Optional: Claude classifies ambiguous chunks near the threshold (librarian role — classifying, not generating)
+--   5. Optional: Claude Opus classifies ambiguous chunks near the threshold (ADR-110 batch tier — classifying, not generating)
 --   6. Human reviews candidate list, approves/rejects → tagged_by updated to 'reviewed' or row deleted
 --   7. Topic page goes live when an editor decides the tagged passages have sufficient depth (no fixed minimum)
 --
@@ -1045,6 +1045,7 @@ AWS_REGION=us-east-1       # Bedrock region
 CLAUDE_MODEL_CLASSIFY=anthropic.claude-3-5-haiku-20241022-v1:0   # Intent classification
 CLAUDE_MODEL_EXPAND=anthropic.claude-3-5-haiku-20241022-v1:0     # Query expansion
 CLAUDE_MODEL_RANK=anthropic.claude-3-5-haiku-20241022-v1:0       # Passage ranking (promote to Sonnet if benchmarks warrant)
+CLAUDE_MODEL_BATCH=anthropic.claude-opus-4-6-v1                  # Offline batch: theme tagging, reference extraction, translation drafting
 OPENAI_API_KEY=            # text-embedding-3-small for embeddings
 
 # Observability
@@ -3751,7 +3752,7 @@ Yogananda frequently references the Bhagavad Gita, the Bible, Kabir, Mirabai, Ru
 
 ### Implementation
 
-At ingestion time (or as a batch pass over existing chunks), Claude scans each chunk and extracts external references:
+At ingestion time (or as a batch pass over existing chunks), Claude Opus (ADR-110 batch tier) scans each chunk and extracts external references:
 
 ```
 Claude input: chunk text
