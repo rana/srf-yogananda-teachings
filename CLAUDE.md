@@ -11,7 +11,13 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–090, excluding removed ADR-010) with full rationale for every major choice
 4. **ROADMAP.md** — 16 phases from foundation through community features, with deliverables and success criteria
 
+## Ignore
+
+- **scratch.md** — Personal scratchpad. Not project documentation. Do not read.
+
 ## Reference Documents (Background Research)
+
+Located in `docs/reference/`:
 
 - **overview-youtube.md** — Brother Chidananda's announcement of the portal (YouTube transcript)
 - **SRF Teaching Portal Research & Design (Gemini 3 Pro).md** — Comprehensive theological, pedagogical, and technical analysis
@@ -78,6 +84,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 /app/prepare/        — Talk Preparation Workspace (Auth0-protected, Phase 8+)
 /app/audio/          — Audio library and player (Phase 14+)
 /app/images/         — Image gallery and detail pages (Phase 14+)
+/docs/reference/     — Background research documents (not active project docs)
 /messages/           — Locale JSON files (next-intl)
 /migrations/         — Numbered SQL migrations (dbmate)
 /terraform/          — Infrastructure as Code (Neon, Vercel, Sentry, backup modules)
