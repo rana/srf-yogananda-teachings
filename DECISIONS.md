@@ -41,6 +41,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-069: Edition-Aware Content Model
 - ADR-086: Image Content Type — Photographs as First-Class Content
 - ADR-092: People Library — Spiritual Figures as First-Class Entities
+- ADR-142: Monastic & Presidential Lineage in the People Library
 - ADR-093: Living Glossary — Spiritual Terminology as User-Facing Feature
 - ADR-096: "Start Here" — Newcomer Path
 - ADR-100: Calendar Reading Journeys — Structured Multi-Day Experiences
@@ -79,6 +80,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-130: Non-Search Seeker Journeys — Equal Excellence for Every Path
 - ADR-132: Lectio Divina Mode — Structured Sacred Reading Practice
 - ADR-133: The Anti-Collection — Passage Internalization
+- ADR-139: Chant Reader — Devotional Poetry with Deterministic Cross-Media Linking
 
 **Visual Identity**
 - ADR-008: SRF-Derived Design System
@@ -133,6 +135,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-124: Micro-Copy as Ministry — Editorial Voice for UI Text
 - ADR-127: Cognitive Accessibility — Reducing Complexity for All Seekers
 - ADR-129: Screen Reader Emotional Quality — Warmth in Spoken Interface
+- ADR-141: Sanskrit Display and Search Normalization Policy
 
 **Cross-Media**
 - ADR-057: Video Transcript Time-Synced Architecture
@@ -156,6 +159,9 @@ Each decision is recorded with full context so future contributors understand no
 **Brand & Communications**
 - ADR-112: "The Librarian" — AI Search Brand Identity
 - ADR-113: "What Is Humanity Seeking?" as Strategic Communications Asset
+
+**Fidelity & Content Governance**
+- ADR-140: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
 
 **Documentation & Process**
 - ADR-119: Documentation Architecture — Five-Document System with AI-First Navigation
@@ -3471,12 +3477,23 @@ The glossary carries source provenance — which book introduced which mapping �
 3. **Review:** SRF-aware editor approves/modifies/rejects each proposed addition (AI proposes, humans approve)
 4. **Merge:** Approved additions committed to `spiritual-terms.json` with provenance metadata
 
+### Extraction Categories
+
+The vocabulary extraction step scans for three categories of terms:
+
+1. **Modern-to-Yogananda mappings** (original scope): Identifies modern, clinical, or cross-tradition terms that seekers might use and maps them to Yogananda's specific vocabulary (e.g., "mindfulness" → "concentration").
+
+2. **Sanskrit inline definitions** (ADR-141): Identifies passages where Yogananda provides his own definition of a Sanskrit term — "Samadhi, the superconscious state of union with God." These are flagged as glossary source candidates (ADR-093) and added to the bridge as Sanskrit-to-English mappings.
+
+3. **Cross-tradition and Indic variant terms** (ADR-141): Identifies Pali, Bengali, and Hindi terms Yogananda uses or that seekers from other traditions might search. The bridge accepts these as keys mapping to Yogananda's vocabulary (e.g., Pali "nibbāna" → "final liberation"; Vedantic "viveka" → "discrimination, spiritual discernment"). Also captures alternate romanizations of the same term across editions.
+
 ### Consequences
 
 - The terminology bridge becomes a living glossary that deepens with each book, not a one-time artifact
 - Each book ingestion generates a vocabulary review task for the editorial workflow
 - No schema migration needed — the bridge is a file-based artifact in git, read by the ingestion pipeline and query expansion prompt
 - **Extends ADR-049 E2** with the evolution lifecycle
+- **Extended by ADR-141** with Sanskrit inline definition extraction and cross-tradition term categories
 
 ---
 
@@ -8468,6 +8485,7 @@ Document the chunking strategy as a formal specification. The strategy has two t
 - **Unit:** Verse-commentary pair. Each scripture verse and its associated commentary form a single chunk, maintaining the interpretive relationship.
 - **Long commentaries:** If a verse's commentary exceeds 500 tokens, split at paragraph boundaries within the commentary. Each sub-chunk retains the verse text as a prefix (ensuring the verse context travels with every fragment of commentary).
 - **Cross-reference:** Each verse-commentary chunk stores the verse reference (e.g., "Bhagavad Gita IV:7") as structured metadata for the side-by-side commentary view (ADR-074).
+- **Devanāgarī script handling (ADR-141):** *God Talks With Arjuna* includes original Bhagavad Gita verses in Devanāgarī script alongside romanized transliteration and English commentary. Devanāgarī verse text is preserved in `chunk_content` for display but excluded from the embedding input via a script-detection preprocessing step (`/[\u0900-\u097F]/` Unicode block). The romanized transliteration is included in both chunk content and embedding input. Devanāgarī text is excluded from the token count that determines chunk splitting — only the English commentary and romanized transliteration count toward the 500-token maximum.
 
 **Per-language validation (Phase 11):**
 - English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary.
@@ -10218,6 +10236,361 @@ Neither page replaces existing routes. They provide complementary *modes of navi
 - Auto-generation of `/browse` requires a build-time database query aggregating all content types — adds to ISR complexity but no runtime cost
 - Two new routes to maintain, but `/browse` is zero-maintenance (auto-generated) and `/guide` follows the same editorial workflow as reading threads
 - The librarian metaphor is now complete: search (ask the librarian), browse (card catalog), guide (reference desk)
+
+---
+
+## ADR-139: Chant Reader — Devotional Poetry with Deterministic Cross-Media Linking
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-062, ADR-078, ADR-087, ADR-089, ADR-137
+
+### Context
+
+*Cosmic Chants* (1938) and other devotional chant collections by Paramahansa Yogananda are structurally different from prose works like *Autobiography of a Yogi*. A chant is a complete, discrete unit — closer to a hymn or poem than a paragraph in a chapter. The existing book reader (ADR-036, ADR-037) is optimized for continuous prose: paragraph-level chunking, "read more" continuation, scroll-based navigation. This works poorly for chants, where the entire text is the meaningful unit.
+
+More importantly, the relationship between a written chant and its audio/video recording is not semantic similarity — it is **identity**. "Door of My Heart" on page 14 and a monastic recording of "Door of My Heart" are the same work in different media. The existing cross-media architecture (ADR-062 Related Teachings, ADR-087 Unified Content Hub) discovers relationships via embedding vector proximity, which is probabilistic. For chants, this may surface the wrong recording or miss the correct one entirely. The connection must be deterministic and editorial, not vector-derived.
+
+A single chant may also have multiple performance recordings: Yogananda's own voice (sacred artifact), a monastic group chanting, a devotee recording, a How-to-Live chant session on YouTube. These need curated presentation with clear provenance, not interchangeable search results.
+
+### Decision
+
+1. **Chant-as-whole-unit rendering.** When a book's content type is devotional poetry (flagged via a `content_format` column on the `books` table: `'prose'` default, `'chant'`, `'poetry'`), the reader renders each chant as a self-contained page rather than a continuous scroll. Navigation is chant-to-chant (previous/next), not paragraph-to-paragraph.
+
+2. **Deterministic cross-media link.** Extend `chunk_relations.relation_type` with a new value: `'performance_of'` — a deterministic, editorially curated link meaning "this audio/video segment IS a performance of this written chant." This relation is not derived from embeddings; it is created by editorial staff during audio/video ingestion (Phase 14). The `similarity` column is set to `1.0` for identity relations. The `rank` column orders multiple performances (1 = primary/recommended).
+
+3. **Inline media panel.** For chants with `performance_of` relations, the audio/video appears in the **primary content area** (below or beside the chant text), not in the Related Teachings side panel. This is the chant's companion experience, not a tangential discovery. Related Teachings from *other* works still appear in the side panel as usual.
+
+4. **Performance provenance ordering.** Multiple recordings of the same chant are presented in a curated list:
+   - Yogananda's own voice first (sacred artifact treatment — golden ring, provenance indicator per ADR-078)
+   - Monastic recordings second
+   - Other recordings third
+   - Within each tier, ordered by editorial `rank`
+
+5. **Chant-specific metadata.** The `book_chunks.metadata` JSONB field carries chant-specific properties when `content_format = 'chant'`: `chant_instructions` (Yogananda's guidance on how to practice the chant), `chant_mood` (devotional, joyful, meditative, longing — editorial classification), `has_refrain` (boolean). These are displayed as distinct UI elements alongside the chant text, visually separated from the sacred words themselves.
+
+6. **Knowledge graph integration.** `performance_of` edges appear in the Knowledge Graph (ADR-137) as a distinct edge type with a unique visual treatment (solid line vs. the dashed line used for similarity edges). This makes the identity relationship visually distinguishable from "related" relationships.
+
+### Alternatives Considered
+
+1. **Rely on embedding similarity alone.** The existing Related Teachings panel might surface the correct audio for a chant via vector proximity. However, short, repetitive, metaphor-dense devotional poetry embeds differently from expository prose. Testing would be required, and even high accuracy is insufficient — a seeker pressing play expects to hear *this* chant, not a similar one. The consequence of a wrong match (hearing a different chant than the one displayed) is jarring in a way that a wrong prose-to-prose suggestion is not.
+
+2. **Create a separate `chant_performances` junction table.** A dedicated table would be cleaner relationally but fragments the cross-media linking system. Extending `chunk_relations` with a new `relation_type` keeps all content relationships in one place and allows the existing Related Teachings query path to surface chant performances without a separate code path.
+
+3. **Treat chants identically to prose with a different CSS layout.** This preserves the single reader component but forces chant-specific behavior into conditional branches. A variant reader component (sharing the design system but with chant-appropriate navigation and inline media) is more maintainable than a prose reader with growing special cases.
+
+### Consequences
+
+- The `books` table gains a `content_format` column (`TEXT DEFAULT 'prose'`, CHECK: `'prose'`, `'chant'`, `'poetry'`). No existing data changes — all current books default to `'prose'`.
+- `chunk_relations.relation_type` gains `'performance_of'` as a new value. Requires no migration — the column is already `TEXT` with no CHECK constraint.
+- The book reader route (`/books/[slug]/[chapter]`) needs a variant rendering path for `content_format != 'prose'`. Implementation deferred to the phase when *Cosmic Chants* is ingested.
+- Audio/video ingestion pipeline (Phase 14) must include a step where editorial staff map recordings to specific chants. This is a curation task, not an automated pipeline step.
+- The chant reader UX extends naturally to other poetry collections (e.g., *Songs of the Soul*, *Whispers from Eternity*) — the `'poetry'` content format uses the same whole-unit rendering without the inline media panel unless `performance_of` relations exist.
+- Embedding quality for short devotional poetry should be evaluated during ingestion. If chants embed poorly with text-embedding-3-small, consider concatenating the chant title + instructions + text as the embedding input to provide richer context.
+
+---
+
+## ADR-140: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-003, ADR-019, ADR-046, ADR-048, ADR-049, ADR-054, ADR-056, ADR-059, ADR-111, ADR-121, ADR-122, ADR-135, ADR-138, ADR-139
+
+### Context
+
+ADR-003 established the foundational constraint: the portal displays only Yogananda's verbatim words and never generates, paraphrases, or synthesizes content. This constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across 139 subsequent ADRs.
+
+However, as the portal's feature surface has grown — editorial reading threads (ADR-054), theme classification (ADR-048), daily passage selection (ADR-046), calendar-aware surfacing (ADR-056), search suggestions with vocabulary bridging (ADR-121), community collections (ADR-135), the `/guide` page (ADR-138), and chant metadata (ADR-139) — two gaps have emerged:
+
+1. **Curation as interpretation.** Every act of selecting, ranking, grouping, or sequencing passages is an interpretive act, even when the passages themselves are verbatim. The design mitigates this per-feature but has never named the tension explicitly as an architectural principle. Without a named principle, each new feature re-invents its own fidelity boundary rather than inheriting a shared standard.
+
+2. **Editorial proximity.** Multiple features place portal-authored prose (editorial notes, glossary definitions, search hints, crisis resources, social captions, magazine articles, chant instructions) within visual proximity of sacred text. Each feature's ADR specifies its own separation rules, but no unified standard governs the shared boundary between Yogananda's words and the portal's voice. This risks inconsistency as features accumulate.
+
+### Decision
+
+1. **Name the tension.** The portal formally recognizes that **curation is a form of interpretation** — selection, ranking, theming, and sequencing shape how seekers encounter the teachings, even when the text is unaltered. This is a permanent and productive tension, not a problem to eliminate. The discipline is to curate *honestly*: selecting without distorting, arranging without editorializing, surfacing without implying that the unsurfaced is less important.
+
+2. **Establish curation mitigations as a named pattern.** All curatorial features must satisfy four conditions:
+   - **Corpus-derived, not behavior-derived.** Curation algorithms draw from the text itself (embeddings, extracted vocabulary, editorial taxonomy), never from user engagement patterns.
+   - **Human review at every gate.** No curatorial decision reaches seekers without human verification.
+   - **Transparent framing.** The selection mechanism (a theme label, a date, a search query, a curator name) is visible to the seeker, not hidden behind an opaque algorithm.
+   - **Context always available.** Every curated passage links to its full chapter context via "Read in context."
+
+3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how all non-Yogananda prose behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for sacred text, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements, accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
+
+### Alternatives Considered
+
+1. **Continue per-feature fidelity rules.** Each ADR already specifies its own boundary mechanisms. This works but creates drift risk as the feature count grows. A maintainer adding a new feature in year 5 would need to survey a dozen ADRs to understand the pattern, rather than inheriting a single standard.
+
+2. **Prohibit all non-Yogananda prose near sacred text.** This would eliminate the proximity problem entirely but would also eliminate editorial reading threads, glossary definitions, the `/guide` page, and crisis resources — features that serve seekers by providing context without altering content.
+
+3. **Create a runtime content-type enforcement layer.** A technical system that tags every rendered element as "sacred" or "editorial" and enforces separation rules via CSS/HTML validation. Architecturally sound but premature for Phase 1 — the standard should be a design principle first and a technical enforcement later if drift is observed.
+
+### Consequences
+
+- New subsection "Curation as Interpretation: The Fidelity Boundary" added to CONTEXT.md § Theological and Ethical Constraints. This elevates an implicit understanding to an explicit design principle.
+- New cross-cutting section "Editorial Proximity Standard" added to DESIGN.md, governing all features that place portal prose near sacred text. Component developers implementing any governed feature (search results, reading threads, glossary, daily email, social media, magazine, `/guide`, crisis resources, study workspace, chant reader, community collections) must follow the standard.
+- Three new open questions added to CONTEXT.md: edition variance policy, spiritual terminology bridge governance, and fidelity re-validation cadence.
+- Future ADRs introducing features that curate or frame sacred text must reference this ADR and specify which Editorial Proximity Standard rules apply.
+- The CLAUDE.md maintenance table should include "editorial proximity" alongside multilingual, accessibility, and DELTA as a cross-cutting concern.
+
+---
+
+## ADR-141: Sanskrit Display and Search Normalization Policy
+
+**Status:** Accepted | **Date:** 2026-02-21
+
+### Context
+
+Yogananda's published works contain Sanskrit in four distinct modes: (1) transliterated terms embedded in English prose ("samadhi"), (2) scholarly transliteration with IAST diacritics ("prāṇāyāma"), (3) Devanāgarī script quotations (original Bhagavad Gita verses in *God Talks with Arjuna*), and (4) phonetic/chanted forms ("Om Tat Sat"). SRF publications use house romanizations that sometimes diverge from academic IAST — "Babaji" rather than "Bābājī," "Kriya Yoga" rather than "Kriyā Yoga," "pranayama" in some books and "prāṇāyāma" in others.
+
+This creates three technical challenges: (a) seekers searching for a term in any variant spelling must find matching passages regardless of which form the published text uses, (b) display must faithfully preserve whatever form appears in the SRF publication, and (c) certain terms — most notably Aum vs. Om — carry theological distinctions that search normalization must not collapse.
+
+Sanskrit is not a Phase 11 problem. It is embedded in the Phase 1 English corpus. *God Talks with Arjuna* contains Devanāgarī verses. The *Autobiography* and *Holy Science* contain heavy IAST transliteration. The ingestion pipeline, search index, font stack, and glossary must handle Sanskrit from Phase 1.
+
+### Decision
+
+Establish a four-part policy governing Sanskrit text throughout the portal:
+
+**1. Display fidelity: SRF published text is canonical.**
+
+The portal displays exactly what appears in SRF's published edition. If the book prints "pranayama" without diacritics, the portal displays "pranayama." If *God Talks with Arjuna* uses "prāṇāyāma" with full IAST, the portal displays that. The ingestion pipeline must not "correct" SRF spellings to academic IAST, nor strip diacritics from texts that include them.
+
+**2. Search normalization: collapse orthographic variants, preserve semantic distinctions.**
+
+The search index collapses purely orthographic variants so that all of the following resolve to the same search results:
+- `pranayama`, `prāṇāyāma`, `PRANAYAMA`, `Pranayama`, `prana-yama`
+
+Implementation:
+- **Unicode NFC normalization** is a mandatory preprocessing step in the ingestion pipeline, applied before any text comparison, deduplication, embedding, or indexing. OCR output is unpredictable about precomposed vs. decomposed Unicode forms for IAST combining characters (ā, ṇ, ś, ṣ). NFC ensures consistent representation.
+- **`unaccent` extension** applied to the full-text search index (the `content_tsv` column) so that diacritical variants collapse for search. The `unaccent` dictionary is added to the text search configuration used by `book_chunks_tsvector_trigger()`.
+- **Display text is never modified.** The `content` column stores the original text with diacritics preserved. Only the search index (`content_tsv`) and embedding input are normalized.
+
+**Exception — Aum/Om:** Yogananda used "Aum" (three-syllable cosmic vibration) deliberately, distinguishing it from the single-syllable "Om." This distinction is theological, not orthographic. Search normalization must not collapse "Aum" to "Om." Instead, the terminology bridge (ADR-052) maps "Om" → ["Aum", "cosmic vibration", "Holy Ghost", "Amen"] for query expansion, preserving the distinction while ensuring seekers who search "Om" find Aum passages.
+
+**General principle:** Where Yogananda's usage intentionally diverges from common usage and the divergence itself constitutes a teaching, the search system preserves the distinction via the terminology bridge (query expansion) rather than collapsing it in the index. Other examples: "meditation" (Yogananda's technique-specific meaning), "Christ" (Christ Consciousness / Kutastha Chaitanya), "Self-realization" (capitalized, specific metaphysical attainment).
+
+**3. Devanāgarī handling in the English corpus.**
+
+*God Talks with Arjuna* contains original Bhagavad Gita verses in Devanāgarī alongside romanized transliteration and English commentary. Each chapter typically includes: (a) Devanāgarī verse, (b) romanized transliteration, (c) word-by-word translation, (d) Yogananda's full commentary.
+
+- **Display:** Devanāgarī verses are preserved in `chunk_content` and rendered using Noto Sans Devanagari in the font stack. The Devanāgarī font loads from Phase 1 (not Phase 11) because the English-language Gita commentary contains Devanāgarī.
+- **Search indexing:** Devanāgarī script passages are excluded from the embedding input via a script-detection preprocessing step. The English commentary and romanized transliteration are embedded. Rationale: `text-embedding-3-small` is trained primarily on Latin-script text; Devanāgarī content would degrade embedding quality for the surrounding English content without improving retrieval (seekers search the commentary, not the original verses).
+- **Chunking (extends ADR-115):** For verse-aware chunking, the Devanāgarī verse text is preserved as metadata on the verse-commentary chunk but excluded from the token count that determines chunk splitting. The romanized transliteration is included in both the chunk content and the embedding input.
+
+**4. Terminology bridge extensions for Sanskrit and cross-tradition terms.**
+
+The terminology bridge (ADR-052) is extended with two additional extraction categories:
+
+- **Sanskrit-to-English inline definitions:** Yogananda frequently defines Sanskrit terms inline — "Samadhi, the superconscious state of union with God." The ingestion QA step (ADR-049 E4) flags these as glossary source candidates. Claude identifies passages where Yogananda provides his own definition of a Sanskrit term, creating a machine-assisted but human-verified bridge built from Yogananda's own words.
+- **Cross-tradition terms:** The bridge accepts Pali, Bengali, and Hindi variant spellings as keys mapping to Yogananda's vocabulary (e.g., "nibbāna" → ["final liberation", "God-union"], "dhyāna" → ["meditation"]). The vocabulary extraction step (ADR-052 lifecycle) explicitly seeks non-Sanskrit Indic terms Yogananda uses or that seekers from other traditions might search.
+
+### Glossary enrichment (extends ADR-093)
+
+The `glossary_terms` schema gains three optional columns:
+
+```sql
+ALTER TABLE glossary_terms ADD COLUMN phonetic_guide TEXT;        -- "PRAH-nah-YAH-mah"
+ALTER TABLE glossary_terms ADD COLUMN pronunciation_url TEXT;      -- Future: URL to audio (Phase 11+)
+ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL DEFAULT false;
+    -- True when Yogananda's usage intentionally differs from common usage
+    -- and the difference itself is part of the teaching (e.g., Aum vs. Om,
+    -- meditation, Self-realization). The glossary entry for these terms
+    -- should explicitly address the distinction.
+```
+
+### Rationale
+
+- **SRF published text as canonical** follows the direct-quotes-only principle (ADR-003). The portal is a faithful librarian, not an editor.
+- **Unicode NFC normalization** is standard practice for text processing pipelines that handle combining characters. Without it, identical-looking strings can fail equality checks, deduplication, and search matching.
+- **`unaccent` in search** is the established PostgreSQL pattern for diacritics-insensitive search. It normalizes the index without altering stored data.
+- **The Aum/Om exception** reflects a general principle: search normalization handles orthography; the terminology bridge handles semantics. Collapsing semantically distinct terms in the index would lose information that cannot be recovered.
+- **Devanāgarī font in Phase 1** because the content is present in Phase 1. Deferring font support to Phase 11 creates a rendering gap for the Gita commentary — Devanāgarī would fall back to system fonts, breaking the visual coherence of the sacred reading experience.
+- **Pronunciation in the glossary** serves seekers who encounter Sanskrit for the first time. Phonetic guides are a minimal editorial effort with high impact for newcomers. Audio pronunciation is deferred until SRF can provide approved recordings.
+- **`has_teaching_distinction`** enables the glossary UI to highlight terms where the gap between common and Yogananda-specific usage is pedagogically important — inviting seekers into the teaching through the vocabulary itself.
+
+### Consequences
+
+- **Ingestion pipeline:** Unicode NFC normalization added as a mandatory preprocessing step (Step 2.5 in DESIGN.md § Content Ingestion Pipeline)
+- **Search index:** `unaccent` extension added to the tsvector trigger configuration. Existing `book_chunks_tsvector_trigger()` updated to apply `unaccent` before `to_tsvector`
+- **Font stack:** `'Noto Sans Devanagari'` added to the serif font stack for Phase 1. Loaded conditionally (only when Devanāgarī characters are present on the page) to avoid unnecessary font downloads on pages that don't need it
+- **Glossary schema:** Three new nullable columns (`phonetic_guide`, `pronunciation_url`, `has_teaching_distinction`) on `glossary_terms`
+- **Terminology bridge:** Two new extraction categories (inline Sanskrit definitions, cross-tradition terms) added to the ADR-052 vocabulary extraction lifecycle
+- **ADR-115:** Verse-aware chunking for *God Talks with Arjuna* extended with Devanāgarī script handling
+- **Extends:** ADR-052, ADR-049 E4, ADR-093, ADR-115
+- **New stakeholder questions:** SRF editorial policy on contested transliterations; pronunciation recording availability; *God Talks with Arjuna* Devanāgarī display confirmation
+- **New technical questions:** IAST diacritics rendering verification in Merriweather/Lora at small sizes
+
+---
+
+## ADR-142: Monastic & Presidential Lineage in the People Library
+
+**Status:** Accepted | **Date:** 2026-02-21
+
+### Context
+
+ADR-092 established the People Library as a first-class content type with a `people` table, `person_relations` junction table, and five editorial categories on the `/people` index: guru lineage, avatars, saints and sages, referenced figures, and SRF/YSS leadership. The schema includes `birth_year`, `death_year`, `lineage_position`, and `person_relations` with relation types `guru_of`, `disciple_of`, `contemporary`, `referenced_by`.
+
+This foundation handles "Who is Krishna?" and the guru lineage (Babaji → Lahiri Mahasaya → Sri Yukteswar → Yogananda) well. But three distinct monastic and organizational use cases expose gaps:
+
+1. **Presidential succession.** The organizational lineage of SRF presidents (Yogananda → Rajarsi Janakananda → Daya Mata → Mrinalini Mata → Brother Chidananda) is distinct from the guru lineage. The current `person_relations` table has no `succeeded_by` relation type and no way to record the *period* of a relationship (e.g., "President from 1955 to 2010").
+
+2. **Monastic roles and contributions.** SRF monastics serve in distinct roles — convocation speakers, editors of Yogananda's posthumous works, center leaders, board members. The current schema treats all people identically: a spiritual figure Yogananda wrote about and a monastic who edited his books share the same flat structure with no role or contribution metadata.
+
+3. **In Memoriam and commemorative context.** The `birth_year` and `death_year` columns exist but are bare integers. There is no presentation pattern for commemorative display — a respectful "In Memoriam" treatment for monastics who have passed, or a visual timeline showing the succession of SRF leadership.
+
+The Santa Rosa SRF Meditation Group displays a lineage of SRF presidents as an ordered visual display — photos, dates of service, a clear sense of succession. This is a natural fit for the portal, which can cross-reference each president with the teachings, places, and events of their era.
+
+### Decision
+
+Extend ADR-092's People Library with structured monastic and organizational metadata, temporal relationship tracking, and presentation patterns for lineage and commemoration.
+
+#### Schema extensions to `people` table
+
+```sql
+ALTER TABLE people ADD COLUMN person_type TEXT NOT NULL DEFAULT 'spiritual_figure';
+    -- 'spiritual_figure' (default): figures Yogananda wrote about (Krishna, Christ, Kabir)
+    -- 'guru_lineage':              Babaji, Lahiri Mahasaya, Sri Yukteswar, Yogananda
+    -- 'monastic':                  SRF/YSS monastics (current and historical)
+    -- 'historical':                other historical figures referenced by Yogananda
+    -- CHECK (person_type IN ('spiritual_figure', 'guru_lineage', 'monastic', 'historical'))
+
+ALTER TABLE people ADD COLUMN honorific TEXT;
+    -- SRF-specific honorific: 'Brother', 'Sister', 'Swami', 'Sri', 'Daya Ma', etc.
+    -- Distinct from `title` (which holds spiritual titles like 'Paramguru', 'Avatar')
+
+ALTER TABLE people ADD COLUMN is_living BOOLEAN;
+    -- NULL = unknown or not applicable (avatars, ancient figures)
+    -- true = living monastic or figure (editorial sensitivity applies)
+    -- false = historical/passed
+
+CREATE INDEX idx_people_type ON people(person_type) WHERE is_published = true;
+```
+
+#### Schema extensions to `person_relations` table
+
+```sql
+ALTER TABLE person_relations ADD COLUMN description TEXT;
+    -- Freetext editorial context for the relationship
+    -- e.g., "Served as SRF president during a period of global expansion"
+
+ALTER TABLE person_relations ADD COLUMN start_year INTEGER;
+ALTER TABLE person_relations ADD COLUMN end_year INTEGER;
+    -- For temporal relationships: "President from 1955 to 2010"
+    -- NULL start/end means open-ended or undated
+
+ALTER TABLE person_relations ADD COLUMN display_order INTEGER;
+    -- For ordered sequences like presidential succession
+    -- NULL for unordered relationships
+```
+
+New `relation_type` values added to the existing set:
+
+| Relation Type | Meaning | Example |
+|--------------|---------|---------|
+| `guru_of` | (existing) Spiritual teacher → student | Sri Yukteswar → Yogananda |
+| `disciple_of` | (existing) Student → teacher | Yogananda → Sri Yukteswar |
+| `contemporary` | (existing) Lived in same era | Yogananda ↔ Anandamayi Ma |
+| `referenced_by` | (existing) Discussed in teachings | Krishna ← Yogananda |
+| `succeeded_by` | (new) Organizational succession | Daya Mata → Mrinalini Mata |
+| `preceded_by` | (new) Inverse of succeeded_by | Mrinalini Mata → Daya Mata |
+| `mentored_by` | (new) Spiritual mentorship within SRF | Brother Anandamoy → Yogananda |
+| `edited_works_of` | (new) Edited posthumous publications | Tara Mata → Yogananda |
+| `collaborated_with` | (new) Worked together on SRF mission | Rajarsi Janakananda ↔ Daya Mata |
+
+#### API extensions
+
+```
+GET /api/v1/people?person_type=monastic      → Filter by person type
+GET /api/v1/people?person_type=guru_lineage   → Guru lineage only
+GET /api/v1/people/lineage                    → Presidential succession
+    Response: ordered array of people with service periods,
+    structured for timeline rendering
+
+GET /api/v1/people/[slug]
+    Response now includes: person_type, honorific, is_living,
+    relations with start_year/end_year/description
+```
+
+The `/api/v1/people/lineage` endpoint returns the presidential succession as an ordered list with service periods, suitable for rendering as a vertical timeline. It queries `person_relations` where `relation_type = 'succeeded_by'`, ordered by `display_order`.
+
+#### Presentation patterns
+
+**In Memoriam on person cards and detail pages:**
+
+Person cards for figures with `death_year IS NOT NULL AND person_type IN ('monastic', 'guru_lineage')` display birth and passing years in a respectful format:
+
+```
+┌─────────────────────────────┐
+│  ○  Daya Mata               │
+│     SRF President           │
+│     1914 – 2010             │
+│                             │
+│     "A life of selfless     │
+│      service to God..."     │
+│                             │
+│     Read biography →        │
+└─────────────────────────────┘
+```
+
+This is a *presentation pattern* — a tasteful rendering of existing data (`birth_year`, `death_year`) — not a separate feature or standalone page. The person detail page (`/people/[slug]`) renders the full biography with dates prominently but not morbidly.
+
+**Presidential lineage as a navigable timeline on `/people`:**
+
+The `/people` index gains a "Lineage of SRF Presidents" section rendered as a vertical timeline — a compact, ordered display showing succession with service dates and links to each president's person page. This uses the `succeeded_by` relations with `start_year`/`end_year` from `person_relations`.
+
+```
+┌──────────────────────────────────────────────┐
+│                                               │
+│  Lineage of SRF Presidents                    │
+│                                               │
+│  ●  Paramahansa Yogananda     1920 – 1952    │
+│  │  Founder and first president               │
+│  │                                            │
+│  ●  Rajarsi Janakananda       1952 – 1955    │
+│  │                                            │
+│  ●  Sri Daya Mata             1955 – 2010    │
+│  │                                            │
+│  ●  Sri Mrinalini Mata        2011 – 2017    │
+│  │                                            │
+│  ●  Brother Chidananda        2017 – present │
+│                                               │
+└──────────────────────────────────────────────┘
+```
+
+**Knowledge graph lineage filter (Phase 7):**
+
+The `/explore` graph gains a "Lineage" filter mode (extends ADR-137 view modes). When active, it shows only person nodes connected by `guru_of`, `disciple_of`, `succeeded_by`, and `preceded_by` edges, rendered as a directed vertical layout rather than a force-directed graph. This provides an alternate visualization of both the spiritual lineage and the presidential succession without building a one-off component.
+
+#### Editorial governance
+
+- All monastic biographical content requires SRF editorial review before publication (`is_published` gate, same as ADR-092).
+- Living monastics (`is_living = true`) carry heightened editorial sensitivity. Biographical detail, photographs, and role descriptions must be explicitly approved by SRF. No biographical content about living monastics is auto-generated or seeded without SRF input.
+- Presidential succession dates and service periods are factual public record, but the editorial framing (the `description` on each relation, the biography text) requires SRF review.
+- The honorific field follows SRF's own usage — the portal does not assign or interpret monastic titles.
+
+### Rationale
+
+- **Three distinct lineages, one schema.** The guru lineage (spiritual transmission), presidential succession (organizational stewardship), and broader monastic community serve different seeker questions but share the same entity model. `person_type` and temporal `person_relations` handle all three without separate tables.
+- **Temporal relations are essential.** "Daya Mata was SRF president" is incomplete without "from 1955 to 2010." The current `person_relations` is snapshot-oriented; adding `start_year`/`end_year` makes it timeline-capable.
+- **In Memoriam is a presentation pattern, not a feature.** The data already exists (`birth_year`, `death_year`). The ADR formalizes how the portal respectfully renders it rather than building a separate commemorative system.
+- **The knowledge graph is the lineage visualization.** Rather than building a standalone timeline component, the lineage filter on `/explore` reuses the graph infrastructure. The `/people` page timeline is a lightweight, text-based complement for quick reference.
+- **Cross-referencing is the unique value.** SRF.org can list presidents. Wikipedia can list presidents. Only this portal can connect each president to the teachings, places, and passages of their era — "During Daya Mata's presidency, these passages about spiritual leadership were among the most shared."
+- **Living monastic sensitivity.** Explicit `is_living` flag and editorial governance acknowledge that biographical content about current monastics carries different responsibilities than historical figures.
+
+### Consequences
+
+- `people` table gains three columns: `person_type` (with CHECK constraint), `honorific`, `is_living`
+- `person_relations` table gains four columns: `description`, `start_year`, `end_year`, `display_order`
+- Five new `relation_type` values: `succeeded_by`, `preceded_by`, `mentored_by`, `edited_works_of`, `collaborated_with`
+- New API endpoint: `GET /api/v1/people/lineage` (presidential succession)
+- Existing `GET /api/v1/people` gains `?person_type=` filter
+- `/people` index gains "Lineage of SRF Presidents" timeline section (Phase 6)
+- `/explore` gains "Lineage" graph filter mode (Phase 7, extends ADR-137)
+- Person cards render In Memoriam presentation for applicable figures (Phase 6)
+- Phase 6 seed data expanded: presidential succession entries with service dates alongside existing spiritual figure seeds
+- **Extends:** ADR-092, ADR-098, ADR-137
+- **New stakeholder questions:** SRF editorial policy on living monastic biographical content; monastic content scope (content *by* vs. *about* monastics); preferred depth of presidential succession editorial framing
 
 ---
 

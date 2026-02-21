@@ -34,6 +34,7 @@
 | [Content Management Strategy](#content-management-strategy) | 10+ |
 | [Staff Experience Architecture (ADR-064)](#staff-experience-architecture-adr-064) | 5+ |
 | [Migration, Evolution, and Longevity](#migration-evolution-and-longevity) | — |
+| [Editorial Proximity Standard (ADR-140)](#editorial-proximity-standard-adr-140) | — |
 | [Observability](#observability) | 1+ |
 | [Testing Strategy](#testing-strategy) | 1+ |
 | [Infrastructure and Deployment](#infrastructure-and-deployment) | 0–1 |
@@ -671,6 +672,7 @@ When a seeker selects a suggestion, intent classification still runs on the sele
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS vector;      -- pgvector
 CREATE EXTENSION IF NOT EXISTS pg_trgm;     -- trigram similarity (fuzzy matching)
+CREATE EXTENSION IF NOT EXISTS unaccent;    -- diacritics-insensitive search (ADR-141)
 
 -- ============================================================
 -- BOOKS
@@ -695,6 +697,12 @@ CREATE TABLE books (
     canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
                                                  -- NULL for originals. Enables "Available in 6 languages"
                                                  -- on library page and cross-language navigation.
+    content_format  TEXT NOT NULL DEFAULT 'prose' -- 'prose' (default), 'chant', 'poetry' (ADR-139).
+                    CHECK (content_format IN ('prose', 'chant', 'poetry')),
+                                                 -- Controls reader rendering: prose = continuous scroll,
+                                                 -- chant/poetry = whole-unit pages with chant-to-chant nav.
+                                                 -- Chant format enables inline media panel for
+                                                 -- performance_of relations (deterministic audio/video links).
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -810,7 +818,7 @@ CREATE INDEX idx_chunks_contentful ON book_chunks(contentful_id) WHERE contentfu
 CREATE INDEX idx_chunks_language ON book_chunks(language);
 
 -- ============================================================
--- LANGUAGE-AWARE TSVECTOR TRIGGER
+-- LANGUAGE-AWARE TSVECTOR TRIGGER (with unaccent — ADR-141)
 -- ============================================================
 -- Uses each chunk's language column to select the correct PostgreSQL
 -- text search dictionary (stemming, stop words). A GENERATED ALWAYS
@@ -818,6 +826,11 @@ CREATE INDEX idx_chunks_language ON book_chunks(language);
 -- a trigger instead. Phase 1 has only 'english'; Phase 11 adds
 -- 'spanish', 'german', 'french', 'italian', 'portuguese', etc.
 -- Languages without a built-in PG dictionary (ja, hi, bn) use 'simple'.
+--
+-- The unaccent() call strips IAST diacritics (ā→a, ṇ→n, ś→s, etc.)
+-- from the search index so that "pranayama" and "prāṇāyāma" match.
+-- The original text with diacritics is preserved in the content column.
+-- Requires: CREATE EXTENSION IF NOT EXISTS unaccent;
 
 CREATE OR REPLACE FUNCTION book_chunks_tsvector_trigger() RETURNS trigger AS $$
 DECLARE
@@ -835,7 +848,8 @@ BEGIN
         WHEN 'pt' THEN 'portuguese'::regconfig
         ELSE 'simple'::regconfig  -- ja, hi, bn, and others
     END;
-    NEW.content_tsv := to_tsvector(pg_lang, NEW.content);
+    -- unaccent() strips diacritics for search; content column preserves originals
+    NEW.content_tsv := to_tsvector(pg_lang, unaccent(NEW.content));
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -1089,7 +1103,12 @@ CREATE TABLE chunk_relations (
                                         -- 'develops_further'— target develops the source idea at greater length
                                         -- 'personal_story' — target is a personal illustration of the source teaching
                                         -- 'practical'      — target is a practical application or affirmation
+                                        -- 'performance_of' — target audio/video is a performance of source chant
+                                        --                    (deterministic editorial link, not vector-derived;
+                                        --                     similarity=1.0, rank orders multiple performances;
+                                        --                     ADR-139)
                                         -- Classified by Claude for top 10 cross-book relations per chunk. Spot-checked.
+                                        -- performance_of relations are editorially curated, not AI-classified.
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (source_chunk_id, target_chunk_id)
 );
@@ -1295,10 +1314,24 @@ Step 2: Convert PDF → Structured Markdown
         └── Output: chapters as separate .md files
             with headings, paragraphs preserved
 
+Step 2.5: Unicode NFC Normalization (ADR-141)
+        └── Apply Unicode NFC normalization to all extracted text
+        └── IAST diacritical marks (ā, ṇ, ś, ṣ) have precomposed
+            and decomposed representations — OCR output is
+            unpredictable about which form it produces
+        └── NFC ensures identical-looking strings are byte-identical
+        └── Must run BEFORE any text comparison, deduplication,
+            embedding, or indexing
+        └── Also: detect Devanāgarī script blocks (/[\u0900-\u097F]/)
+            in God Talks with Arjuna — flag for display preservation
+            but exclude from embedding input
+
 Step 3: Human Review / QA
         └── Verify OCR accuracy
         └── Correct spiritual terminology
         └── Ensure chapter/page boundaries are correct
+        └── Flag Sanskrit diacritics that may have been mangled
+            by PDF extraction (ADR-049 E4, ADR-141)
         └── This step is NON-NEGOTIABLE for sacred texts
 
 Step 4: Chunk by Natural Boundaries
@@ -2047,6 +2080,67 @@ A `@media print` stylesheet ensures passages and chapters print beautifully:
 - No background colors (saves ink, respects user paper)
 - **Non-Latin font support (Phase 11):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
 
+#### Chant Reader Variant (ADR-139)
+
+When `books.content_format` is `'chant'` or `'poetry'`, the reader route (`/books/[slug]/[chapter]`) renders a variant optimized for devotional poetry rather than continuous prose.
+
+**Structural differences from the prose reader:**
+
+| Aspect | Prose Reader | Chant Reader |
+|--------|-------------|-------------|
+| Unit of display | Paragraph stream (continuous scroll) | Whole chant (one per page) |
+| Navigation | Scroll + prev/next chapter | Prev/next chant (discrete pages) |
+| Related Teachings | Side panel (3 related passages) | Side panel (same) + **inline media panel** for `performance_of` relations |
+| Drop capitals | Yes (chapter opening) | No (chant text rendered as poetry with preserved line breaks) |
+| Chunk context | `prev_chunk_id`/`next_chunk_id` for "read more" | Each chunk is self-contained; prev/next for chant-to-chant nav only |
+
+**Inline media panel:**
+
+When a chant has `performance_of` relations in `chunk_relations`, audio/video recordings appear in the primary content area below the chant text — not in the side panel. This is the chant's companion experience, not a tangential discovery.
+
+```
+┌──────────────────────────────────────┬──────────────────────┐
+│           96px margin                 │                      │
+│  ┌──────────────────────────────┐    │  Related Teachings   │
+│  │                              │    │                      │
+│  │  Door of My Heart            │    │  ┌────────────────┐ │
+│  │                              │    │  │ "God is the     │ │
+│  │  "Door of my heart, open     │    │  │  fountain of    │ │
+│  │   wide I keep for Thee.      │    │  │  all melody..." │ │
+│  │   Wilt Thou come,            │    │  │                 │ │
+│  │   wilt Thou come?            │    │  │  — God Talks    │ │
+│  │   Just for once come         │    │  │    Vol.2, p.41  │ │
+│  │   to me..."                  │    │  └────────────────┘ │
+│  │                              │    │                      │
+│  │   — Cosmic Chants, p. 14    │    │  Explore all →       │
+│  │                              │    │                      │
+│  │  ┌────────────────────────┐  │    │                      │
+│  │  │ 🔊 Paramahansa Yogananda│  │    │                      │
+│  │  │   ◉ Sacred recording    │  │    │                      │
+│  │  │   ▶ ━━━━━━━━━━━  3:42  │  │    │                      │
+│  │  ├────────────────────────┤  │    │                      │
+│  │  │ 🔊 SRF Monastics       │  │    │                      │
+│  │  │   ▶ ━━━━━━━━━━━  4:15  │  │    │                      │
+│  │  ├────────────────────────┤  │    │                      │
+│  │  │ ▶ How-to-Live Chant    │  │    │                      │
+│  │  │   Session (YouTube)     │  │    │                      │
+│  │  └────────────────────────┘  │    │                      │
+│  │                              │    │                      │
+│  │  ← Previous chant  Next →   │    │                      │
+│  └──────────────────────────────┘    │                      │
+└──────────────────────────────────────┴──────────────────────┘
+```
+
+**Performance provenance ordering:** Yogananda's own voice first (sacred artifact golden ring per ADR-078), monastic recordings second, other recordings third. Within each tier, ordered by editorial `rank` in `chunk_relations`.
+
+**Chant metadata display:** When `book_chunks.metadata` contains chant-specific fields (`chant_instructions`, `chant_mood`, `has_refrain`), these render as distinct UI elements:
+- **Instructions** appear above the chant text in a quieter typographic treatment (Open Sans, `--text-sm`, `--portal-text-muted`) — visually distinct from the sacred words themselves
+- **Mood** contributes to search filtering and daily passage tone matching, but does not display as a label in the reader
+
+**Poetry format (`content_format = 'poetry'`):** Uses the same whole-unit rendering and discrete navigation as `'chant'`, but without the inline media panel (unless `performance_of` relations exist). Suitable for *Songs of the Soul*, *Whispers from Eternity*, and similar collections.
+
+*Section added: 2026-02-21, ADR-139*
+
 #### Reader Typography Refinements (ADR-037)
 
 The reader's typographic details signal care and reverence for the words. These are the micro-details that distinguish a sacred text presentation from a blog post:
@@ -2664,6 +2758,14 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
   --font-serif-alt:     'Lora', Georgia, serif;
   --font-sans:          'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
+  /* === Indic Script Fonts (ADR-141) === */
+  /* Noto Sans Devanagari loaded from Phase 1 — God Talks with Arjuna
+     contains original Bhagavad Gita verses in Devanāgarī script.
+     Loaded conditionally: only on pages containing Devanāgarī characters.
+     Phase 11 adds Noto Sans Bengali for Bengali content. */
+  --font-devanagari:    'Noto Sans Devanagari', 'Noto Serif Devanagari', sans-serif;
+  --font-bengali:       'Noto Sans Bengali', sans-serif;  /* Phase 11 */
+
   /* === Font Scale === */
   --text-xs:            0.75rem;   /* 12px — labels, fine print */
   --text-sm:            0.9375rem; /* 15px — captions, metadata */
@@ -2699,6 +2801,9 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
 | UI chrome (nav, buttons, labels) | Open Sans | 400/600 | `--text-sm` (15px) | `--leading-normal` (1.6) |
 | Citations below quotes | Open Sans | 400 | `--text-sm` | `--leading-normal` |
 | Chapter titles in reader | Lora | 400 | `--text-xl` | `--leading-tight` |
+| Devanāgarī verses (Gita) | Noto Sans Devanagari | 400 | `--text-base` (18px) | `--leading-relaxed` (1.8) |
+
+**IAST diacritics note (ADR-141):** Merriweather and Lora must render IAST combining characters (ā, ī, ū, ṛ, ṃ, ḥ, ñ, ṅ, ṭ, ḍ, ṇ, ś, ṣ) correctly at all sizes. Verify during Phase 2 design QA — particularly at `--text-sm` (15px) where combining marks are most likely to collide or render incorrectly.
 
 #### Spacing, Borders, and Radii
 
@@ -5028,6 +5133,62 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 
 ---
 
+## Editorial Proximity Standard (ADR-140)
+
+> **Phase:** — (cross-cutting, applies to all phases that place non-Yogananda prose near sacred text)
+
+Multiple features place portal-authored prose within visual proximity of Yogananda's verbatim text: editorial reading threads (ADR-054), glossary definitions, search suggestion hints (ADR-121), crisis resource text (ADR-122), social media captions (ADR-019), magazine articles, the `/guide` page (ADR-138), and chant instructions metadata (ADR-139). Each feature has its own ADR, but no single standard governs the shared boundary. This section establishes one.
+
+### The Principle
+
+Yogananda's verbatim words and portal-authored prose occupy **distinct visual and structural layers**. A seeker should never need to wonder whether they are reading Yogananda or the portal. The distinction must be evident to sighted users, screen reader users, and users of any assistive technology.
+
+### Visual Rules
+
+| Element | Treatment |
+|---------|-----------|
+| **Yogananda's verbatim text** | Merriweather serif, standard body size, warm cream background. The default. |
+| **Citations** (book, chapter, page) | Lora italic, smaller size, SRF Navy. Visually subordinate, never omitted. |
+| **Editorial prose** (thread notes, glossary definitions, `/guide` introductions, magazine articles) | Open Sans, slightly smaller size, left border accent (SRF Gold, 2px). Clearly portal voice. |
+| **Functional prose** (search hints, UI chrome, empty states, ARIA labels) | Open Sans, system-appropriate size. No border accent — it is part of the interface, not content. |
+| **Crisis resources** | Open Sans, muted tone, bottom-positioned. Present but never competing with the passage. |
+| **User-authored notes** (study workspace) | Distinct background tint, user's own font choice where supported, labeled "Your note." Never adjacent to sacred text without a visual separator. |
+
+### Structural Rules
+
+1. **Sacred text is never inline with editorial prose.** Passages and editorial notes occupy separate `<article>` or `<section>` elements. Screen readers announce them as distinct regions.
+2. **Attribution is structural, not decorative.** Citations are in `<cite>` elements, linked to the source. They are not CSS flourishes that disappear on mobile.
+3. **Editorial notes identify their author class.** Thread notes carry "Portal editorial" attribution. Magazine articles carry author bylines. Community collections carry "Curated by [name/anonymous]." Yogananda's text carries no attribution beyond the citation — it needs no introduction.
+4. **Glossary definitions link to source passages.** Every definition of a spiritual term must cite at least one passage where Yogananda himself defines or uses the term. Definitions are *derived from* the corpus, not *imposed on* it.
+5. **Social media captions never paraphrase.** Captions provide context ("From Chapter 26 of Autobiography of a Yogi") or an editorial framing question ("What does it mean to be still?") — never a restatement of what Yogananda said. The quote image contains the verbatim text; the caption exists in a separate field.
+6. **Maximum editorial proximity ratio.** On any page where editorial prose appears alongside sacred text, the sacred text must be the dominant visual element. Editorial framing should not exceed approximately one-third of the visible content area when a passage is displayed.
+
+### Accessibility Implications
+
+- Screen readers must announce the transition between sacred text and editorial prose. Use `aria-label` or `role="note"` on editorial elements.
+- The visual distinction (serif vs. sans-serif, border accent) must have a non-visual equivalent. Color alone is insufficient (WCAG 1.4.1).
+- Focus order places the sacred text first in the reading sequence. Editorial framing follows, not precedes.
+
+### Features Governed
+
+| Feature | Sacred Text | Adjacent Prose | Boundary Mechanism |
+|---------|------------|----------------|-------------------|
+| Search results | Verbatim passage + highlight | None (UI chrome only) | N/A — pure sacred text |
+| Editorial reading threads (ADR-054) | Verbatim passages | Transition notes between passages | Left-border accent, "Portal editorial" label |
+| Glossary (ADR-049 E2) | Linked source passages | Term definitions | Definition in Open Sans; passage quotes in Merriweather |
+| Daily email (ADR-046) | Verbatim passage | Citation + "Read in context" link | Email template structure |
+| Social media (ADR-019) | Quote image (verbatim) | Caption (separate field) | Image/text separation, human review |
+| Magazine articles | Embedded block quotes | Monastic commentary | Block quote with citation, author byline on article |
+| `/guide` page (ADR-138) | Linked passages | Editorial introductions | Section headers + visual separation |
+| Crisis resources (ADR-122) | Passage about death/suffering | Helpline information | Bottom-positioned, muted treatment |
+| Study workspace (ADR-111) | Collected passages | User's personal notes | Distinct background tint, "Your note" label |
+| Chant reader (ADR-139) | Chant text | Practice instructions, mood classification | Instructions in metadata panel; text in main area |
+| Community collections (ADR-135) | Curated passages | Curator's description | "Curated by [name]" label, Open Sans for description |
+
+*Section added: 2026-02-21, ADR-140*
+
+---
+
 ## Observability
 
 The portal uses the SRF-standard observability stack with DELTA-compliant configuration. See ADR-029.
@@ -5387,7 +5548,15 @@ The `hybrid_search` function queries `magazine_chunks` alongside `book_chunks`. 
 
 ## Glossary Architecture
 
-The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-052) is surfaced as a user-facing glossary. See ADR-093.
+The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-052) is surfaced as a user-facing glossary. See ADR-093. Sanskrit display and search normalization policy in ADR-141.
+
+### Glossary Schema Extensions (ADR-141)
+
+The `glossary_terms` table (defined in ADR-093) gains three optional columns for Sanskrit and spiritual terminology support:
+
+- **`phonetic_guide`** — Simplified pronunciation guide (e.g., "PRAH-nah-YAH-mah" for prāṇāyāma). Editorially written, based on standard Sanskrit phonology. Ships with Phase 5 glossary.
+- **`pronunciation_url`** — URL to an SRF-approved audio pronunciation recording. Nullable; populated when SRF provides recordings (Phase 11+). Stakeholder question pending.
+- **`has_teaching_distinction`** — Boolean flag for terms where Yogananda's usage intentionally differs from common usage and the difference itself is part of the teaching (e.g., Aum vs. Om, "meditation," "Self-realization"). When true, the glossary UI highlights the distinction as pedagogically significant.
 
 ### Glossary API Endpoints
 
@@ -5396,8 +5565,10 @@ GET /api/v1/glossary                     → All glossary terms (paginated, curs
     ?language=en                         — Filter by language
     ?category=sanskrit                   — Filter by category
     ?q=samadhi                           — Search within glossary (trigram fuzzy)
+    ?has_teaching_distinction=true        — Filter to terms with teaching distinctions
 
-GET /api/v1/glossary/{slug}              → Single term with definition and Yogananda's explanation passage
+GET /api/v1/glossary/{slug}              → Single term with definition, Yogananda's explanation passage,
+                                           phonetic guide, and pronunciation URL (if available)
 ```
 
 ### Glossary Page Layout
@@ -5407,8 +5578,11 @@ GET /api/v1/glossary/{slug}              → Single term with definition and Yog
 ├── Search bar ("Find a term...")
 ├── Category filter (Sanskrit, Yogic Concepts, Spiritual States, Scriptural, Cosmological, Practice)
 ├── Alphabetical term list
-│   ├── Term + brief definition (1-2 sentences)
+│   ├── Term + phonetic guide (if available) + brief definition (1-2 sentences)
+│   ├── 🔊 Pronunciation (if audio available — Phase 11+)
 │   ├── "Yogananda's explanation →" link to source passage
+│   ├── ⚡ Teaching distinction callout (if has_teaching_distinction)
+│   │   └── "Yogananda's usage differs from common usage..." with explanation
 │   └── Related theme links
 └── Inline reader integration (opt-in via reader settings: "Show glossary terms")
     └── Dotted underline on recognized terms → tooltip with definition
@@ -5717,6 +5891,8 @@ Yogananda's own voice recordings and photographs receive the sacred artifact tre
 | Theme membership | Content → theme | Medium, fixed | 7 |
 | References scripture | Passage → external reference | Medium, dashed | 7 |
 | Mentions person | Passage → person | Medium, fixed | 7 |
+| Succeeded by | Person → person | Golden, directional | 7 |
+| Preceded by | Person → person | Golden, directional | 7 |
 | Mentions place | Content → sacred place | Medium, fixed | 13 |
 | Depicted at | Image → sacred place | Medium, fixed | 14 |
 | Photographed | Image → person | Medium, fixed | 14 |
@@ -5735,6 +5911,7 @@ Yogananda's own voice recordings and photographs receive the sacred artifact tre
 | **Single book** | Any | One book's passages, themes, connections |
 | **Single theme** | Any | One theme's passages across all media |
 | **Single person** | Any | One person's passages, images, videos, places |
+| **Lineage** | 7+ | Person nodes only, connected by guru/succession edges, vertical directed layout (ADR-142) |
 
 Media type toggles: show/hide books, magazine, video, audio, images independently. The filter bar appears at the top of the graph view.
 
@@ -5765,7 +5942,7 @@ The nightly Lambda pre-computes positions server-side. The client renders — no
   "generated_at": "2027-03-15T02:00:00Z",
   "schema_version": 2,
   "node_types": ["book", "passage", "theme", "person", "reference"],
-  "edge_types": ["similarity", "contains", "theme_tag", "references", "mentions_person"],
+  "edge_types": ["similarity", "contains", "theme_tag", "references", "mentions_person", "performance_of"],
   "nodes": [
     {
       "id": "uuid",

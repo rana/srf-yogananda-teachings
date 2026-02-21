@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 0 (Foundation).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (124 ADRs), ROADMAP.md (18 phases, 0–17). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture), DECISIONS.md (138 active ADRs, numbered 001–141), ROADMAP.md (18 phases, 0–17). No code yet.
 
 **What's next:** Phase 0 — Foundation. Repo setup, Neon provisioning, Vercel/Sentry configuration, initial schema migration, stakeholder kickoff. Then Phase 1 — Prove the Search. See ROADMAP.md § Phase 0 and § Phase 1 for deliverables.
 
@@ -41,6 +41,17 @@
 - [ ] Knowledge Graph mobile strategy: at cross-media scale (30,000–50,000 nodes), a force-directed graph on a 3G mobile connection in rural India is not viable. The 2-hop subgraph approach (max ~500 nodes) serves mobile, but is it sufficient for the "wandering exploration" experience the graph is meant to provide? Should mobile get a qualitatively different exploration UI? (Relates to ADR-137, ADR-061)
 - [ ] Knowledge Graph as API: scholars and other SRF properties may want to query the teaching graph programmatically. The JSON-LD ontology export (ADR-134) serves concepts, and the graph JSON is publicly available, but should there be a formal graph query API (e.g., subgraph extraction, shortest-path between concepts)? What is the scholarly use case that justifies the API investment? (Relates to ADR-137, ADR-134)
 - [ ] `/guide` visual design density: the portal's design language is warm cream, generous whitespace, serif typography. The `/browse` page has fundamentally different density requirements — maximum information, minimum ceremony. Should `/browse` adopt a slightly different style (tighter line-height, more compact spacing) while remaining within the design system, or should it maintain the same generous whitespace? What about `/guide` — does editorial framing require the full warm aesthetic, or benefit from the compact treatment? (Relates to ADR-138, ADR-036)
+- [ ] Chant text chunking and embedding quality: short, repetitive, metaphor-dense devotional poetry (e.g., *Cosmic Chants*) may embed poorly compared to expository prose using text-embedding-3-small. Should chant embeddings concatenate title + instructions + text for richer context? Does search quality for "find chants about divine love" need a different retrieval strategy than prose search? Evaluate during *Cosmic Chants* ingestion. (Relates to ADR-139, ADR-032)
+- [ ] Chant structural metadata: does SRF annotate chants with musical/devotional structure (verses, refrains, call-and-response markers, raga associations)? If so, the chant reader should render this structure rather than treating the text as undifferentiated lines. If not, should the portal introduce structural markup, or preserve the book's original formatting? (Relates to ADR-139)
+- [ ] Chant-to-recording catalog: does SRF maintain an existing mapping between specific chants and their audio/video recordings? If yes, the `performance_of` editorial linking (ADR-139) is a data import. If no, this is a curation task that must be scoped into Phase 14 editorial workload. (Relates to ADR-139, ADR-078)
+- [ ] Edition variance policy: when multiple editions of a book exist with textual variants (e.g., 1946 first edition vs. current printing of *Autobiography of a Yogi*), which edition is canonical for the portal's verbatim text? Does the portal serve a single authoritative edition per book, or acknowledge variants? This affects content integrity hashing (ADR-103), citation page numbers, and the meaning of "verbatim." (Relates to ADR-003, ADR-069, ADR-103, ADR-140)
+- [ ] Spiritual terminology bridge governance: the vocabulary mapping between modern/secular terms and Yogananda's terminology (ADR-121 "bridge-powered suggestions") is arguably the most theologically sensitive component in the search system — it asserts semantic equivalence between concepts (e.g., "mindfulness" → "concentration"). Who reviews and approves this mapping? Monastic theological review, the same editorial team as theme tags, or a dedicated process? How often is the bridge audited for accuracy? (Relates to ADR-121, ADR-049, ADR-140)
+- [ ] Fidelity re-validation cadence: chunk boundaries, theme classifications, and highlight-boundary selections (ADR-049 C3) are set at ingestion time. As the corpus grows and search patterns evolve, these could become semantically stale — a chunk that was coherent in isolation may need different boundaries once related passages exist, or a theme tag may be too narrow. Is there a periodic re-validation process, or are ingestion-time decisions permanent? What triggers re-evaluation? (Relates to ADR-115, ADR-048, ADR-049, ADR-140)
+- [ ] Unicode NFC normalization as mandatory ingestion step: IAST diacritical marks (ā, ṇ, ś, ṣ) can be represented as precomposed (NFC) or decomposed (NFD) Unicode. OCR output is unpredictable about which form it produces. NFC normalization must be applied before text comparison, deduplication, embedding, or indexing. Validate during Phase 1 ingestion of *Autobiography*. (ADR-141)
+- [ ] Devanāgarī font timing: the Phase 1 English corpus contains Devanāgarī script in *God Talks with Arjuna* (original Bhagavad Gita verses). Noto Sans Devanagari is currently scheduled for Phase 11 (ROADMAP.md). ADR-141 moves it to Phase 1. Confirm during Gita ingestion whether Devanāgarī is also present in *The Holy Science*. (ADR-141, ADR-115)
+- [ ] IAST diacritics rendering verification: Merriweather and Lora must render IAST combining characters (ā, ī, ū, ṛ, ṝ, ḷ, ṃ, ḥ, ñ, ṅ, ṭ, ḍ, ṇ, ś, ṣ) correctly at all font sizes, particularly `--text-sm` (15px). Include in Phase 2 design QA and accessibility audit. (ADR-141, ADR-017)
+- [ ] Mixed-script embedding quality for Gita commentary: validate during *God Talks with Arjuna* ingestion that excluding Devanāgarī from the embedding input (while including romanized transliteration and English commentary) does not degrade retrieval quality for verse-specific queries like "Bhagavad Gita IV:7." (ADR-141, ADR-115, ADR-032)
+- [ ] Presidential lineage timeline as graph filter vs. standalone component: the `/explore` knowledge graph gains a "Lineage" filter mode (ADR-142) that renders succession and guru lineage as a directed vertical layout. Is this sufficient for the lineage visualization, or should the `/people` page timeline be a richer standalone component with photographs, service period details, and editorial narrative? (ADR-142, ADR-098, ADR-137)
 
 ### Stakeholder (require SRF input)
 
@@ -57,6 +68,7 @@
 - [ ] For Hindi/Bengali: same portal domain (`teachings.yogananda.org/hi/`) or YSS-branded domain? Organizational question with architectural implications.
 - [ ] Do translated editions preserve paragraph structure? If yes, `canonical_chunk_id` alignment during ingestion is straightforward (match by chapter_number + paragraph_index). If translations reorganize content, alignment requires semantic matching. (Critical for Phase 11 cross-language linking.)
 - [ ] Does the teaching portal get its own mobile app, or do portal features (search, daily passage, reader) integrate into the existing SRF/YSS app? The API-first architecture (ADR-024) supports either path.
+- [ ] Is *Cosmic Chants* one canonical volume or a family of editions/compilations? Are there distinct collections (e.g., *Cosmic Chants* vs. devotional songs within other books) that need separate modeling? Should the SRF app's chant practice feature (if it exists) be linked from the portal as a "signpost"? (Relates to ADR-139)
 - [ ] Does SRF prefer the portal repo in GitLab from day one (per SRF IDP standards), or is GitHub acceptable for Phases 1–9 with a planned Phase 10 migration? The Terraform code and CI/CD pipelines are SCM-agnostic; only the workflow files change.
 - [ ] What Sentry and New Relic configurations does SRF use across their existing properties? Aligning observability tooling enables operational consistency.
 - [ ] What are the content licensing terms for portal-served content — read-online only, or also downloadable/redistributable? Does the permissive `robots.txt` extend to AI training crawlers ingesting full book text? (Relates to ADR-084)
@@ -73,6 +85,12 @@
 - [ ] Community collection attribution and ego: spiritual communities have tensions around recognition. Should published community collections carry curator names, or be anonymous by default? Does SRF prefer "Curated by [Name]" or "Curated by a devotee"? Is attribution important for accountability, or does it create unwanted ego dynamics? (Relates to ADR-135)
 - [ ] Relationship between community curation and official SRF publications: SRF already publishes reading guides and study materials through its own channels. Does community curation complement or compete with official publications? Should community collections be visually distinct from staff-curated Editorial Reading Threads (ADR-054)? (Relates to ADR-135, ADR-054)
 - [ ] `/guide` alignment with SRF reading recommendations: SRF may already publish recommended reading orders or topical reading guides through its own channels. The `/guide` page (ADR-138) should align with, not compete with, SRF's pastoral voice. Does SRF have existing reading recommendation materials that should inform the `/guide` page content? Should `/guide` be reviewed by the same theological reviewers as editorial reading threads? (Relates to ADR-138, ADR-054)
+- [ ] SRF editorial policy on contested transliterations: SRF publications use house romanizations that sometimes diverge from academic IAST — "Babaji" vs. "Bābājī," "Kriya Yoga" vs. "Kriyā Yoga." The portal follows SRF's published spellings for display (ADR-141). Does SRF confirm that their house style is the canonical form for all portal display text? Are there plans to standardize diacritics usage across future editions? (Relates to ADR-141, ADR-069)
+- [ ] Sanskrit term pronunciation recordings: does SRF have, or want to create, approved audio pronunciation recordings for key Sanskrit terms used in Yogananda's writings (samadhi, pranayama, Kriya Yoga, Aum, etc.)? If monastic recordings are desirable, when would they be available? The glossary schema (ADR-093, ADR-141) reserves a `pronunciation_url` column for this purpose. (Relates to ADR-141, ADR-093)
+- [ ] *God Talks with Arjuna* Devanāgarī content: confirm that the portal should display original Devanāgarī Bhagavad Gita verses alongside Yogananda's English commentary, and that these verses should be rendered (not omitted or replaced with romanization only). Does SRF have a preferred Devanāgarī typeface, or is Noto Sans Devanagari acceptable? (Relates to ADR-141, ADR-115)
+- [ ] Monastic content scope — content *by* vs. *about*: the People Library preserves biographical context about monastics (ADR-092, ADR-142). But should the portal host content *by* monastics — convocation talks, published articles, editorial contributions? If so, this requires an `authored_by` or `presented_by` relation linking content to person entries, and raises questions about how monastic-authored content relates to Yogananda's verbatim teachings in search ranking and display hierarchy. (Relates to ADR-142, ADR-092, ADR-003)
+- [ ] Living monastic editorial sensitivity: the People Library includes `is_living` tracking (ADR-142). What level of biographical detail does SRF approve for current monastics — name and role only, or full biography with service history? Are there specific monastics SRF wants featured at launch? Who reviews and updates monastic entries as roles change? (Relates to ADR-142, ADR-092)
+- [ ] Presidential succession editorial framing: the portal can display factual succession data (names, service dates). Does SRF want editorial narrative accompanying each president's entry — a description of their contribution to the SRF mission? If so, does SRF provide this text, or does the portal team draft it for SRF review? (Relates to ADR-142)
 
 ### Resolved Questions
 
@@ -306,6 +324,30 @@ What this means in practice:
 - **Dependencies are commitments.** Every npm package, every API integration, every SaaS tool is a maintenance obligation for 10 years. Choose fewer, more durable dependencies.
 - **Components are tiered by replaceability.** Tier 1 (permanent): PostgreSQL, the service layer, the data model. Tier 2 (stable): Next.js, Vercel, Contentful. Tier 3 (replaceable): specific npm packages, Claude model versions, embedding model versions.
 - **Documentation is a permanent artifact.** CLAUDE.md, CONTEXT.md, DESIGN.md, DECISIONS.md, ROADMAP.md — these files are as important as the code. New maintainers in year 7 should understand every decision.
+
+### Curation as Interpretation: The Fidelity Boundary
+
+The verbatim constraint (ADR-003) guarantees that Yogananda's text is never altered, paraphrased, or synthesized. But fidelity has a subtler dimension: **every act of selection is an act of interpretation**, even when the selected text is verbatim.
+
+The portal curates at multiple levels:
+
+- **Search ranking** decides which passage answers a question *best* (ADR-049 C2)
+- **Highlight boundaries** decide which sentences within a passage are *most relevant* (ADR-049 C3)
+- **Theme classification** decides what a passage is *about* (ADR-048)
+- **Daily passage selection** decides what a seeker encounters *today* (ADR-046)
+- **Calendar-aware surfacing** decides which teachings belong to a *moment* (ADR-056)
+- **Editorial reading threads** decide how passages *relate to each other* (ADR-054)
+- **Query expansion** decides which of Yogananda's terms map to modern vocabulary (ADR-121)
+- **Community collections** decide which groupings reflect *meaningful* paths (ADR-135)
+
+None of these alter the text. All of them shape its reception. The portal's mitigations are layered:
+
+1. **Corpus-derived, not behavior-derived.** Curation algorithms draw from the text itself (embeddings, extracted vocabulary, editorial taxonomy), never from user behavior patterns. (ADR-029, ADR-121)
+2. **Human review at every gate.** Theme tags, reading threads, daily pools, community collections, and social captions all require human approval before publication. (ADR-048, ADR-049, ADR-135)
+3. **Transparent framing.** When the portal selects, the selection mechanism is visible — a theme label, a date, a search query — not hidden behind an opaque algorithm.
+4. **Context always available.** Every curated passage links to its full chapter context via "Read in context," enabling the seeker to evaluate the selection against its original setting. (ADR-003, ADR-059)
+
+This tension is permanent and productive. The portal cannot present all passages simultaneously with equal weight — that would be a database dump, not a library. Curation is the library's essential act. The discipline is to curate *honestly*: selecting without distorting, arranging without editorializing, surfacing without implying that the unsurfaced is less important. (ADR-140)
 
 ### Spiritual Design Principles
 
