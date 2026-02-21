@@ -41,7 +41,9 @@
 | [Magazine Section Architecture](#magazine-section-architecture) | 7+ |
 | [Glossary Architecture](#glossary-architecture) | 5+ |
 | ["What Is Humanity Seeking?" Dashboard](#what-is-humanity-seeking-dashboard-architecture) | 7+ |
-| [Additional New UI Pages](#additional-new-ui-pages) | 7+ |
+| [Additional New UI Pages](#additional-new-ui-pages) | 2+ |
+| &emsp;[`/browse` — The Complete Index (ADR-138)](#browse--the-complete-index-adr-138) | 2+ |
+| &emsp;[`/guide` — The Spiritual Guide (ADR-138)](#guide--the-spiritual-guide-adr-138) | 5+ |
 | [Image Serving Architecture](#image-serving-architecture-adr-086-adr-106-adr-107) | 7+ |
 
 ---
@@ -4241,7 +4243,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 | Initial page load | < 100KB JavaScript for the full app shell (compressed). Homepage stricter: < 50KB initial payload (HTML + critical CSS + inline JS) per ADR-061. Target: First Contentful Paint < 1.5s on 3G. |
 | Core Web Vitals | LCP < 2.5s, FID < 100ms, CLS < 0.1. |
 | Progressive enhancement | Core reading and search functionality works without JavaScript (server-rendered HTML). JS enhances: "Show me another", infinite scroll, timer. |
-| Low-bandwidth support | All images lazy-loaded. Responsive images via `srcset`. No autoplay video. Homepage functional as text-only. |
+| Low-bandwidth support | All images lazy-loaded. Responsive images via `srcset`. No autoplay video. Homepage functional as text-only. `/browse` page (ADR-138) designed text-first as < 20KB offline-cacheable portal index — the universal fallback for 2G, feature phones, and screen readers. |
 | Offline resilience | Phase 2: service worker caches the Quiet Corner page and current reading position. Full PWA in Phase 12 (ADR-025). |
 
 ### Accessibility Testing Strategy
@@ -4920,6 +4922,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-024). The admin ro
 - `/lib/services/translation.ts` — translation review, locale progress tracking
 - `/lib/services/impact.ts` — aggregated metrics for leadership dashboard
 - `/lib/services/collections.ts` — community collections, visibility management, submission pipeline (ADR-135)
+- `/lib/services/graph.ts` — knowledge graph queries, subgraph extraction, cluster resolution (ADR-137)
 
 ### Phase Delivery
 
@@ -5446,9 +5449,9 @@ GET /api/v1/seeking/themes               → Theme trends over time
 
 Browse available time-bound reading experiences. Lists evergreen, seasonal, and annual journeys with descriptions, durations, and "Subscribe" buttons. Active seasonal journeys highlighted.
 
-### `/explore` — Knowledge Graph Visualization (ADR-098)
+### `/explore` — Knowledge Graph Visualization (ADR-098, ADR-137)
 
-Interactive visual map of the teaching corpus. Pre-computed graph JSON, client-side rendering. Linked from Library and themes pages (not primary nav).
+Interactive visual map of the entire teaching corpus — every content type, every relationship. The graph evolves through phases, gaining new node and edge types as content types are added. See the consolidated `/explore` specification below for the full cross-media design.
 
 ### `/integrity` — Content Integrity Verification (ADR-103)
 
@@ -5501,54 +5504,315 @@ The search suggestion system (ADR-121) maps modern terms ("mindfulness") to Yoga
 
 **Phase:** Phase 5 (alongside Glossary, ADR-093). Content is editorial — the mapping between modern and Yogananda-specific vocabulary requires human curation.
 
-### `/explore` — Knowledge Graph and Passage Constellation (ADR-098, ADR-134)
+### `/browse` — The Complete Index (ADR-138)
 
-Interactive visual map of the teaching corpus. Two visualization modes:
+A single, high-density text page listing every navigable content item in the portal, organized by category and subcategory. Designed text-first — not a degraded rich page, but a page whose primary form IS text. The card catalog that completes the librarian metaphor.
 
-**Mode 1: Knowledge Graph** (ADR-098) — Traditional node-edge visualization showing relationships between passages, themes, people, and books. Pre-computed graph JSON, client-side rendering.
+**Purpose:** Provide a bird's-eye view of the entire teaching corpus. Serve the pre-seeking browser who wants to see the shape of the teachings before committing to a path. Function as the portal's universal fallback — the best page for screen readers, feature phones, terminal browsers, offline caching, and SEO crawlers.
+
+**Layout:**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                               │
+│   Browse All Teachings                                        │
+│                                                               │
+│   BOOKS                                                       │
+│   ─────                                                       │
+│   Spiritual Classics                                          │
+│     Autobiography of a Yogi — 48 chapters                     │
+│     Man's Eternal Quest — 57 talks                            │
+│     The Divine Romance — 54 talks                             │
+│   Scripture Commentary                                        │
+│     God Talks With Arjuna — Bhagavad Gita commentary          │
+│     The Second Coming of Christ — Gospel commentary           │
+│   Daily Practice                                              │
+│     Scientific Healing Affirmations                           │
+│     Metaphysical Meditations                                  │
+│                                                               │
+│   THEMES                                                      │
+│   ──────                                                      │
+│   Qualities: Peace · Courage · Healing · Joy · Purpose · Love │
+│   Life Situations: Loss & Grief · Relationships · Parenting   │
+│     · Work · Loneliness · Aging                               │
+│   Spiritual Figures: Christ · Krishna · Sri Yukteswar · ...   │
+│   Yoga Paths: Kriya · Raja · Bhakti · Karma · Jnana · ...    │
+│   Practices: Meditation · Concentration · Pranayama · ...     │
+│   Principles: Ahimsa · Satya · Asteya · ...                  │
+│   Scriptures: Yoga Sutras · Bhagavad Gita · Bible · Rubaiyat │
+│                                                               │
+│   READING THREADS                                             │
+│   ────────────────                                            │
+│   Yogananda on Fear — 8 passages from 4 books                │
+│   The Inner Science of Meditation — ...                       │
+│                                                               │
+│   GLOSSARY (A–Z)                                              │
+│   ──────────────                                              │
+│   Astral body · Chakra · Dharma · Guru · Karma · ...          │
+│                                                               │
+│   PEOPLE                                                      │
+│   ──────                                                      │
+│   Sri Yukteswar · Lahiri Mahasaya · Krishna · Christ · ...    │
+│                                                               │
+│   REFERENCES                                                  │
+│   ──────────                                                  │
+│   Bhagavad Gita · Bible · Yoga Sutras · Kabir · Rumi · ...   │
+│                                                               │
+│   THE QUIET CORNER                                            │
+│   ────────────────                                            │
+│   Contemplative · Practical · Devotional · Philosophical      │
+│                                                               │
+│   See these relationships visually → Knowledge Graph          │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Data source:** Auto-generated from the database at build time (ISR). Zero editorial overhead. The page grows automatically as content is added across phases.
+
+**Performance:** < 20KB HTML. Zero JavaScript required. Zero images. Cacheable by Service Worker as a single offline artifact — the one page that remains fully useful with no network after initial load.
+
+**Semantic structure:** `h2` for top-level categories (Books, Themes, etc.), `h3` for subcategories (Spiritual Classics, Scripture Commentary, etc.), links for individual items. This heading hierarchy makes the page ideal for screen reader navigation — VoiceOver/NVDA users browse by heading level. ARIA labels follow ADR-129 warm speech conventions: "Browse all teachings — a complete index of the portal's contents."
+
+**Multilingual:** Shows content filtered by seeker's language preference. When a book is available in multiple languages, indicates availability ("Also in: हिन्दी, Español"). Language filtering via the same `language` parameter used by all content APIs.
+
+**Phased growth:**
+| Phase | Content shown |
+|-------|---------------|
+| 2 | Books only (with chapter counts) |
+| 5 | + Themes (all active categories), Glossary terms, Quiet Corner textures |
+| 6 | + People, External References, Reading Threads |
+| 7+ | + Knowledge Graph link, Calendar Journeys |
+| 8+ | + Magazine archives, Ontology concepts |
+
+**Phase:** Phase 2 (initial, books-only version). Grows automatically with each subsequent phase.
+
+### `/guide` — The Spiritual Guide (ADR-138)
+
+A curated recommendation page organized by spiritual need. Where `/browse` answers "what's here?", `/guide` answers "where should I go?" Expands the homepage's 5 empathic entry points (ADR-035) to 20–30+ organized pathways with editorial framing.
+
+**Purpose:** Serve the seeker who has a specific need but doesn't know which book, theme, or reading thread addresses it. The reference librarian's recommendation list — not "what exists?" but "what should I read, given where I am?"
+
+**Layout:**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                               │
+│   Where to Begin                                              │
+│                                                               │
+│   ─────────────────────────────────────────────────────────  │
+│                                                               │
+│   IF YOU ARE NEW TO YOGANANDA'S TEACHINGS                     │
+│                                                               │
+│   Start with Autobiography of a Yogi — Yogananda's           │
+│   own account of his spiritual journey. Then explore          │
+│   the theme of Joy for a taste of his practical wisdom.       │
+│                                                               │
+│   ─────────────────────────────────────────────────────────  │
+│                                                               │
+│   IF YOU ARE EXPLORING MEDITATION                             │
+│                                                               │
+│   The "Meditation" theme gathers Yogananda's most direct      │
+│   teachings on the practice. Scientific Healing               │
+│   Affirmations offers practical technique. The reading        │
+│   thread "The Inner Science of Meditation" traces the         │
+│   theme across four books.                                    │
+│                                                               │
+│   ─────────────────────────────────────────────────────────  │
+│                                                               │
+│   IF YOU ARE DEALING WITH LOSS                                │
+│                                                               │
+│   The Grief & Loss theme gathers Yogananda's most             │
+│   consoling words for the bereaved. The Quiet Corner          │
+│   offers a space for stillness. Chapter 43 of the             │
+│   Autobiography addresses what happens after death.           │
+│                                                               │
+│   ─────────────────────────────────────────────────────────  │
+│                                                               │
+│   IF YOU ARE A STUDENT OF THE BHAGAVAD GITA                   │
+│                                                               │
+│   God Talks With Arjuna is Yogananda's verse-by-verse         │
+│   commentary. The reverse bibliography shows every            │
+│   passage referencing the Gita. See Krishna in the            │
+│   People Library.                                             │
+│                                                               │
+│   ...                                                         │
+│                                                               │
+│   Browse the full index of all teachings →                    │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Editorial voice:** Framing text follows ADR-124 micro-copy standards. Never paraphrases Yogananda — only provides navigational context ("In this collection of talks, Yogananda addresses..."). Each section provides 2–3 specific recommendations (a book, a theme, a reading thread, a passage) with brief editorial framing.
+
+**Provenance:** Same three-state model as editorial threads (ADR-054). Claude can draft initial recommendation text (`auto`), but all user-facing content requires human review (`reviewed`) or human authorship (`manual`).
+
+**Cultural adaptation:** Per-locale guide variants in Phase 11+ (stored in `messages/{locale}.json`). Different cultures have different spiritual entry points — an Indian seeker may start with karma and dharma; a Western seeker may start with meditation and self-improvement.
+
+**Navigation:** Linked from site footer ("Where to begin"), from the "Start Here" newcomer path (Phase 2.13), and from `/browse` (bidirectional link). Each recommendation section links to the relevant destination page.
+
+**Phase:** Phase 5 (requires theme system, glossary, and editorial infrastructure). Grows editorially through Phase 6+ as reading threads, people, and references become available.
+
+### `/explore` — Knowledge Graph and Passage Constellation (ADR-098, ADR-134, ADR-137)
+
+Interactive visual map of the entire teaching corpus. Three visualization modes, evolving across phases. The graph is the portal's universal navigation layer — every node is clickable, navigating to the corresponding page.
+
+**Mode 1: Knowledge Graph** (ADR-098, ADR-137) — Node-edge visualization showing relationships between all content types: passages, themes, people, places, concepts, and every media format. Pre-computed graph JSON, client-side rendering. Evolves from book-only (Phase 7) to full cross-media (Phase 13+).
 
 **Mode 2: Passage Constellation** — A 2D spatial exploration where passages are positioned by semantic similarity, derived from embedding vectors reduced to two dimensions (UMAP or t-SNE, pre-computed at build time).
+
+**Mode 3: Concept Map** (ADR-134) — The ontology layer: spiritual concepts and their structural relationships (prerequisite, component, leads_to). Available from Phase 8+.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                                                               │
 │   Explore the Teachings                                       │
 │                                                               │
-│     [Graph]    [Constellation]                                │
+│   [Graph]  [Constellation]  [Concepts]                        │
 │                                                               │
-│         ·                                                     │
-│       · · ·        ·                                          │
-│     · · · · ·    · · ·         ·                              │
-│       · · · ·      · ·       · ·                              │
-│         · ·          ·     · · · ·                            │
-│           ·                  · · ·                            │
-│                                ·          · ·                 │
-│                     ·                    · · ·                │
-│                   · ·                      ·                  │
-│                     ·                                         │
+│   Filter: [Books] [Magazine] [Video] [Audio] [Images]         │
+│   Focus:  [All] [Single book ▾] [Theme ▾] [Person ▾]         │
 │                                                               │
-│   Dense clusters reveal where themes converge.                │
-│   Outlier passages sit between worlds.                        │
-│   Click any point to read.                                    │
+│         📖──────📖                                            │
+│        / │ \      \          🎥                               │
+│      ⬡   ⬡  ⬡     📖───────│                                │
+│     / \ / \  │       \      │                                │
+│   📖  📖  📖 📖      ◇───🔊                                 │
+│    │       │  │            │                                  │
+│    ◆       👤──────📍────📷                                   │
+│                                                               │
+│   📖 Book passage  ⬡ Theme    ◆ Concept                     │
+│   🎥 Video clip    🔊 Audio    📷 Image                      │
+│   👤 Person        📍 Place    ◇ Reference                   │
 │                                                               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Constellation behavior:**
-- Each dot represents a passage (chunk). Color-coded by book (using the book's assigned palette color) at low opacity
+#### Knowledge Graph Node Types (ADR-137)
+
+| Node Type | Shape | Color | Size | Click Target | Phase |
+|-----------|-------|-------|------|-------------|-------|
+| Book | Rectangle | SRF Navy | Large (fixed) | `/books/[slug]` | 7 |
+| Book passage | Circle | SRF Navy (30%) | Small (density-scaled) | `/books/[slug]/[ch]#p[n]` | 7 |
+| Theme | Hexagon | SRF Gold | Medium (passage count) | `/themes/[slug]` | 7 |
+| Person | Portrait circle | Warm Cream border | Medium (fixed) | `/people/[slug]` | 7 |
+| Scripture/reference | Diamond | Earth tone | Medium (fixed) | `/references/[slug]` | 7 |
+| Magazine issue | Rectangle | Warm accent | Medium (fixed) | `/magazine/[year]/[season]` | 8 |
+| Magazine chunk | Circle | Warm accent (30%) | Small | `/magazine/[year]/[season]/[slug]` | 8 |
+| Ontology concept | Rounded rectangle | SRF Gold (dark) | Medium (relation count) | `/ontology/[slug]` | 8+ |
+| Sacred place | Map pin | Earth green | Medium (fixed) | `/places/[slug]` | 13 |
+| Video | Play-button circle | Teal accent | Medium (fixed) | `/videos/[slug]` | 13 |
+| Video chunk | Circle | Teal (30%) | Small | `/videos/[slug]?t=[ms]` | 13 |
+| Audio recording | Waveform circle | Amber accent | Medium (fixed) | `/audio/[slug]` | 14 |
+| Audio segment | Circle | Amber (30%) | Small | `/audio/[slug]?t=[ms]` | 14 |
+| Image | Rounded square | Neutral | Small (thumbnail) | `/images/[slug]` | 14 |
+
+Yogananda's own voice recordings and photographs receive the sacred artifact treatment — a subtle golden ring distinguishing them from other audio/images (`is_yogananda_voice`, `is_yogananda_subject` flags).
+
+#### Knowledge Graph Edge Types (ADR-137)
+
+| Edge | Source → Target | Width/Opacity | Phase |
+|------|----------------|---------------|-------|
+| Semantic similarity | Any content ↔ any content | Proportional to score | 7 (books), 13 (cross-media) |
+| Contains | Book/issue/video/recording → chunk/segment | Thin, fixed | 7+ |
+| Theme membership | Content → theme | Medium, fixed | 7 |
+| References scripture | Passage → external reference | Medium, dashed | 7 |
+| Mentions person | Passage → person | Medium, fixed | 7 |
+| Mentions place | Content → sacred place | Medium, fixed | 13 |
+| Depicted at | Image → sacred place | Medium, fixed | 14 |
+| Photographed | Image → person | Medium, fixed | 14 |
+| Ontological relation | Concept → concept | Labeled (prerequisite, component, etc.) | 8+ |
+| Primary source | Passage → ontology concept | Thin, dashed | 8+ |
+| Editorial thread | Content → content (sequence) | Golden, directional | 7 (books), 14 (cross-media) |
+| Community collection | Content → content (curated) | Silver, directional | 16 |
+
+#### Graph View Modes and Filtering
+
+| Mode | Default phase | What's visible |
+|------|--------------|----------------|
+| **Book map** | 7 (default) | Books, passages, themes, people, references |
+| **Concept map** | 8+ | Ontology concepts, relations, linked passages |
+| **All media** | 13+ (new default) | Everything — full cross-media fabric |
+| **Single book** | Any | One book's passages, themes, connections |
+| **Single theme** | Any | One theme's passages across all media |
+| **Single person** | Any | One person's passages, images, videos, places |
+
+Media type toggles: show/hide books, magazine, video, audio, images independently. The filter bar appears at the top of the graph view.
+
+#### Phased Graph Evolution
+
+| Phase | Additions | Approximate Node Count |
+|-------|-----------|----------------------|
+| **7** | Books, passages, themes, people, references. Editorial thread paths. | ~5,000–10,000 |
+| **8** | + Magazine issues/chunks, ontology concepts. Constellation mode. | ~12,000–18,000 |
+| **13** | + Videos/chunks, sacred places. Content hub cross-media edges. | ~20,000–35,000 |
+| **14** | + Audio recordings/segments, images. Sacred artifact styling. | ~30,000–50,000 |
+| **16** | + Community collection paths, editorial multi-media threads. | Same nodes, new paths |
+
+#### Performance Strategy
+
+| Scale | Rendering | Layout |
+|-------|-----------|--------|
+| < 10,000 nodes | d3-force with Canvas | Pre-computed positions in JSON (nightly Lambda) |
+| 10,000–50,000 nodes | WebGL (deck.gl or custom) | Level-of-detail: clusters when zoomed out, nodes when zoomed in |
+| Mobile / low-bandwidth | Subset graph: 2-hop neighborhood of current node, max ~500 nodes | Progressive loading: clusters first, expand on interaction |
+
+The nightly Lambda pre-computes positions server-side. The client renders — no layout computation at runtime.
+
+#### Pre-Computed Graph JSON Schema
+
+```jsonc
+{
+  "generated_at": "2027-03-15T02:00:00Z",
+  "schema_version": 2,
+  "node_types": ["book", "passage", "theme", "person", "reference"],
+  "edge_types": ["similarity", "contains", "theme_tag", "references", "mentions_person"],
+  "nodes": [
+    {
+      "id": "uuid",
+      "type": "passage",
+      "media_type": "book",
+      "label": "Chapter 12, ¶3",
+      "parent_id": "book-uuid",
+      "url": "/books/autobiography/12#p3",
+      "x": 0.0, "y": 0.0
+    }
+  ],
+  "edges": [
+    { "source": "uuid-a", "target": "uuid-b", "type": "similarity", "weight": 0.87 }
+  ],
+  "paths": [
+    { "id": "thread-uuid", "type": "editorial", "label": "Divine Friendship", "node_ids": ["a", "b", "c"] }
+  ]
+}
+```
+
+New content types extend `node_types` and `edge_types` arrays — the visualization code renders unknown types with sensible defaults. Schema version increments when structural changes occur.
+
+#### Graph Data API
+
+```
+GET /api/v1/graph                              → Graph metadata (node/edge type counts, last generated)
+GET /api/v1/graph/subgraph?node={id}&depth=2   → 2-hop neighborhood (for embeddable mini-graphs)
+GET /api/v1/graph/cluster?theme={slug}          → All nodes in a theme cluster
+GET /api/v1/graph.json                          → Full pre-computed graph (S3-served, CDN-cached)
+```
+
+The subgraph endpoint powers embeddable mini-graphs in other pages: the reader's Related Teachings panel can show a small visual graph of the current passage's neighbors.
+
+**Service file:** `/lib/services/graph.ts` — graph queries, subgraph extraction, cluster resolution.
+
+#### Constellation Mode
+
+- Each dot represents a content item. Color-coded by media type (book passages by book palette, video by teal, audio by amber, images by neutral)
 - Dense clusters become visually apparent — 40 passages about "divine love" form a neighborhood
-- Outlier passages — teachings that bridge two themes — sit in the sparse space between clusters and are often the most interesting discoveries
-- Hover reveals the first line of the passage + citation
-- Click navigates to the passage in the reader
-- Zoom in/out with scroll or pinch. Pan with drag.
-- Cluster labels appear when zoomed out (derived from the dominant theme tag for passages in that region)
-- No lines, no arrows. Just points of light on warm cream. The spatial layout reveals relationships that lists and hierarchies hide.
+- Outlier passages sit in the sparse space between clusters — often the most interesting discoveries
+- Hover reveals the first line + citation. Click navigates to the content page.
+- Zoom, pan, pinch. Cluster labels appear when zoomed out (dominant theme tag).
+- No lines, no arrows. Points of light on warm cream. Spatial layout reveals relationships that lists hide.
 
-**Implementation:** UMAP dimensionality reduction from the 1536-dimensional embedding vectors to 2D coordinates. Pre-computed at build time or nightly batch (not real-time). Stored as a static JSON file (~500KB for ~10,000 passages with coordinates and minimal metadata). Client-side rendering with Canvas or WebGL for performance.
+**Implementation:** UMAP dimensionality reduction from 1536-dim embeddings to 2D. Pre-computed nightly. Static JSON (~500KB for ~10,000 items). Canvas or WebGL rendering.
 
-**Who this serves:** Seekers who don't know what to search for. Scholars who want to see the corpus's *shape*. The visually oriented. The curious. The constellation answers: "What does the totality of Yogananda's teaching look like?"
-
-**Phase:** Phase 8+ (alongside Knowledge Graph, ADR-098). The constellation uses existing embedding data; the only new computation is the UMAP reduction.
+**Phase:** Phase 8+ (constellation). Phase 7 delivers Knowledge Graph mode only.
 
 Linked from Library and themes pages (not primary nav).
 

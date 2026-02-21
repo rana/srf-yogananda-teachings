@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–136, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
+3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–138, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
 4. **ROADMAP.md** — 18 phases (0–17) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -74,7 +74,7 @@ Six documents. Keep them accurate as you work — drift compounds across session
 | New technology adopted | Update DESIGN.md tech stack table |
 | Code directory added | Update DESIGN.md code organization section |
 | Cross-cutting concern changed (multilingual, accessibility, DELTA) | Update CONTEXT.md principle statement, affected DESIGN.md sections, and relevant ADRs |
-| New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR |
+| New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR. **Also:** update DESIGN.md § Knowledge Graph node/edge types, add graph evolution deliverable to relevant ROADMAP phase, and address the ADR-137 content-type integration checklist (node shape/color, edge types, JSON schema, Lambda update, phase timing). |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Reference document added or obsoleted | Update this file's § Reference Documents list |
 

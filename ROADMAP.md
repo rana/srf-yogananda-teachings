@@ -148,10 +148,11 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 2.15 | **Content integrity hashes** | SHA-256 per chapter computed at ingestion time, stored in `chapters.content_hash`. `/integrity` page listing all books and chapter hashes with verification instructions. API endpoint: `GET /api/v1/books/{slug}/integrity`. (ADR-103) |
 | 2.16 | **EXIF/XMP metadata on served images** | All portal-served images carry Copyright ("© Self-Realization Fellowship"), Source ("teachings.yogananda.org"), and Description metadata. Applied server-side during image processing. Baseline provenance layer. (ADR-106 Tier 1) |
 | 2.17 | **Language-aware URL conventions** | Implement the hybrid language routing design: locale path prefix on frontend pages (`/{locale}/books/...`, default English omits prefix), `language` query parameter on API routes (`/api/v1/search?language=hi`). `next-intl` middleware detects locale from URL, `Accept-Language` header, or stored preference. Theme slugs remain in English for URL stability; display names localized via `topic_translations`. Each system uses the pattern natural to its consumers — SEO-friendly pages, clean API contract. (ADR-091) |
+| 2.18 | **`/browse` — The Complete Index (initial)** | High-density text page listing all navigable content, organized by category. Phase 2 version: books only (by editorial category, with chapter counts). Designed text-first — semantic HTML heading hierarchy, zero JavaScript, zero images, < 20KB. Auto-generated from database at build time (ISR). Cacheable by Service Worker as offline artifact. Ideal screen reader experience (heading-level navigation). ARIA label: "Browse all teachings — a complete index of the portal's contents." Linked from site footer ("Browse all teachings"). Grows automatically as content types are added in later phases. (ADR-138) |
 
 ### Success Criteria
 
-- All pages exist and are navigable: homepage, search, reader, library, book landing, Quiet Corner, about, passage share
+- All pages exist and are navigable: homepage, search, reader, library, book landing, Quiet Corner, about, passage share, browse
 - Homepage has all sections: Today's Wisdom with cross-fade "Show me another", thematic doors, "Seeking..." entry points, YouTube videos
 - The Quiet Corner displays an affirmation with a working gentle timer and chime
 - About page shows Yogananda biography, line of gurus, "Go Deeper" links
@@ -266,6 +267,8 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 5.16 | **"What's New in the Library" indicator** | Subtle `--srf-gold` dot (6px) beside "Books" in navigation when new books exist since last Library visit. On the Library page, new books show a "New" label. `localStorage`-based, disappears after seeker visits Library. No tracking. (ADR-104) |
 | 5.17 | **Seeker feedback mechanism** | "Report a citation error" link on every passage. "I didn't find what I needed" option on empty/sparse search results. `/feedback` page linked from footer. `seeker_feedback` table. All DELTA-compliant — no user identifiers stored. Feedback review queue added to editorial portal. (ADR-116) |
 | 5.18 | **Search suggestions — multi-book + bridge + curated** | Expand suggestion index across all ingested books. Activate bridge-powered suggestions: when prefix matches a `spiritual-terms.json` key, response includes Yogananda's vocabulary for that concept (e.g., "mindful" → "concentration, one-pointed attention"). Add theme names from `teaching_topics` to suggestion index. Expand curated query suggestions editorially. Suggestion index extraction becomes a standard step in the book ingestion pipeline (ADR-052 lifecycle extension). `/lib/data/curated-queries.json` maintained by SRF-aware editors. (ADR-121) |
+| 5.19 | **`/browse` grows — themes, glossary, Quiet textures** | Auto-generated `/browse` page expands to include active teaching topics (all categories), glossary terms (A–Z), and Quiet Corner texture categories. Still zero editorial overhead — all sections generated from database queries at build time. (ADR-138) |
+| 5.20 | **`/guide` — The Spiritual Guide** | Editorially curated recommendation page organized by seeker context: "If you are new to Yogananda's teachings," "If you are exploring meditation," "If you are dealing with loss," etc. 20–30 pathways, each with 2–3 specific recommendations and brief editorial framing (never paraphrasing Yogananda). Three-state provenance: Claude drafts initial text (`auto`), human review required (`reviewed`/`manual`). Linked from footer ("Where to begin") and "Start Here" newcomer path. Cultural adaptation deferred to Phase 11. (ADR-138, ADR-035, ADR-124) |
 
 ### Key Challenges
 
@@ -295,6 +298,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 6.10 | **Reading session — proactive chapter caching** | Service Worker detects sequential chapter reading (2+ chapters from same book). Proactively caches next 2 chapters (HTML + relations data for batch tier). LRU eviction: current + 2 ahead + 2 behind. Offline chapter transitions serve from cache with offline banner. Uncached chapters show gentle redirect to nearest cached chapter. No reading history stored — ephemeral SW state only. (ADR-063) |
 | 6.11 | **Calendar reading journey schema** | Extend `editorial_threads` with journey columns: `journey_type` (evergreen/seasonal/annual), `journey_duration_days`, `journey_start_month`, `journey_start_day`. Foundation for time-bound reading experiences delivered via daily email in Phase 9. (ADR-100) |
 | 6.12 | **People Library — spiritual figures as entities** | `people` table with biographical metadata (name, slug, role, era, description, image). `chunk_people` junction table linking passages to persons mentioned or quoted. Person pages at `/people/[slug]` showing biography, all referencing passages, and cross-links to themes and external references. Seed entities: Sri Yukteswar, Lahiri Mahasaya, Krishna, Christ, Divine Mother, Babaji, Anandamayi Ma. Same three-state tagging pipeline as themes (auto → reviewed → manual). Linked from exploration theme categories (person type). (ADR-092) |
+| 6.13 | **`/browse` grows — people, references, threads** | Auto-generated `/browse` page expands to include People library entries, External References (reverse bibliography), and Editorial Reading Threads. All auto-generated from database. `/browse` now covers the full content space and serves as the text-mode alternative to the Knowledge Graph (ADR-098). Bidirectional link between `/browse` and `/explore`. (ADR-138) |
 
 ### Key Challenges
 
@@ -319,7 +323,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 7.6 | **New Relic APM integration** | New Relic agent for API route performance, database query timing, Claude API call monitoring. Synthetic uptime checks on key endpoints. (ADR-029) |
 | 7.7 | **Edge latency audit** | Measure portal latency from Global South regions (India, Brazil, Nigeria) via New Relic Synthetics or WebPageTest. Verify Vercel and Cloudflare serve from nearby edge PoPs. Validate per-region Core Web Vitals. Remediate if FCP exceeds 1.5s on 3G from target regions. |
 | 7.8 | **Side-by-side commentary view** | Split-pane reader for verse-commentary books (*Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*). Wide screens: scripture verse pinned left, commentary scrolls right. Narrow screens: verse as highlighted block above commentary. Verse navigation: up/down arrows cycle through verses. Depends on verse-aware chunking (7.2). (ADR-074) |
-| 7.9 | **Knowledge graph visualization** | Interactive visual map of the teaching corpus at `/explore`. Nodes: books, passages, themes, persons, scriptures. Edges: chunk relations, theme memberships, external references. Client-side rendering (`d3-force`) from pre-computed graph JSON (nightly Lambda, served from S3). Warm tones, contemplative animation, `prefers-reduced-motion` static layout. ~50-80KB JS, loaded only on `/explore`. Linked from Library and themes pages. (ADR-098) |
+| 7.9 | **Knowledge graph visualization** | Interactive visual map of the teaching corpus at `/explore`. Phase 7 nodes: books, passages, themes, persons, scriptures. Edges: chunk relations, theme memberships, external references. Client-side rendering (`d3-force` with Canvas) from pre-computed graph JSON (nightly Lambda, served from S3). **Extensible JSON schema** with `schema_version`, `node_types`, and `edge_types` arrays — designed to accommodate magazine, video, audio, and image nodes in later phases without visualization code changes (ADR-137). Warm tones, contemplative animation, `prefers-reduced-motion` static layout. ~50-80KB JS, loaded only on `/explore`. Graph Data API: `GET /api/v1/graph`, `/graph/subgraph`, `/graph/cluster`, `/graph.json`. Linked from Library and themes pages. (ADR-098, ADR-137) |
 
 ### Key Challenges
 
@@ -342,6 +346,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 8.5 | **Study circle sharing** | "Share with your circle" button on Study Guide view. Generates a shareable URL (`/study/[book-slug]/[chapter]/share/[hash]`) with key passages, discussion prompts, and cross-book connections. < 30KB HTML, edge-cached, optimized for WhatsApp/SMS preview and OG cards. No authentication, no tracking. (ADR-099) |
 | 8.6 | **Magazine integration** | `magazine_issues`, `magazine_articles`, `magazine_chunks` tables. Magazine ingestion pipeline (PDF → chunk → embed → QA, mirroring book ingestion). Yogananda's articles enter full search/theme pipeline. Monastic articles searchable via `include_commentary` filter. `/magazine` landing, `/magazine/{year}/{season}` issue view, `/magazine/{year}/{season}/{slug}` article reader. "Magazine" added to primary navigation. API: `GET /api/v1/magazine/issues`, `/issues/{year}/{season}`, `/articles/{slug}`. Pre-rendered issue and article PDFs via `@react-pdf/renderer`. (ADR-105) |
 | 8.7 | **Shared-link collections** | "Share" button in Study Workspace generates a shareable URL (`/collections/[share-hash]`) for any collection. No account required — works with localStorage collections via a one-time server upload at share time. < 30KB HTML, edge-cached. Visible note: *"This collection was curated by a community member, not by SRF."* No staff review needed for shared-link tier — content is already-public SRF text. Lays the foundation for community curation in Phase 16–17. (ADR-135) |
+| 8.8 | **Knowledge graph evolution: magazine + constellation + concepts** | Add magazine_issue and magazine_chunk nodes to the Knowledge Graph. Add ontology_concept nodes and ontological relation edges. Add Passage Constellation mode (UMAP 2D reduction of embeddings). Update nightly graph Lambda to query `magazine_chunks` and `ontology_concepts`. Magazine passages cluster near related book passages. Concept map mode available. (ADR-137, ADR-134) |
 
 ### Success Criteria
 
@@ -351,6 +356,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 - Study Workspace allows any visitor to collect, sequence, and export passages without authentication (ADR-111)
 - Shared-link collections generate stable URLs that render correctly with full citations and community disclaimer
 - Magazine articles by Yogananda appear in search results alongside book passages
+- Knowledge graph shows magazine nodes clustered near related book passages; Passage Constellation renders all embedded content
 
 ---
 
@@ -526,6 +532,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 13.6 | **Video player with book links** | When a monastic mentions a book, the video player sidebar links directly to those books in the reader. Related Teachings panel in the video player shows book passages related to the current video segment. |
 | 13.7 | **"Wisdom bites"** | Admin tool (Retool) to clip 2-5 minute segments from talks. Serve as daily inspiration on the homepage. |
 | 13.8 | **Unified content hub** | Migrate from per-media-type relation tables to the polymorphic `content_items` registry linking book_chunks, video_chunks, audio_segments, and images. `content_relations` replaces pairwise tables with a single cross-media relation store. `content_topics` and `content_places` provide unified theming and spatial connections across all media. Phases 1–7 use `chunk_relations` directly — this phase introduces the hub as a deliberate migration, not premature abstraction. (ADR-087) |
+| 13.9 | **Knowledge graph evolution: video + places + cross-media** | Add video, video_chunk, and sacred_place nodes to the Knowledge Graph. Add cross-media similarity edges (book ↔ video) via content hub. Add mentions_place and depicts_place edges. "All media" becomes the default graph view mode. Update nightly graph Lambda to consume `content_items` and `content_relations`. Level-of-detail rendering (WebGL) for 20,000–35,000 node scale. (ADR-137) |
 
 ### Success Criteria
 
@@ -533,6 +540,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 - Synchronized transcript scrolls in sync with video playback; click-to-jump works within 1-second accuracy
 - Video chunks appear in Related Teachings panel alongside book passages
 - Unified content hub migration preserves all existing `chunk_relations` data with zero loss
+- Knowledge graph shows video and place nodes; cross-media similarity edges connect book passages to related video segments
 
 ---
 
@@ -556,6 +564,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 14.8 | **Transcript PDFs** | Pre-rendered PDF transcripts for audio recordings and video talks. Generated when transcript reaches `approved` status. Resource-anchored routes: `GET /api/v1/audio/{slug}/transcript/pdf`, `GET /api/v1/videos/{id}/transcript/pdf`. Served from S3 via CloudFront. Same `@react-pdf/renderer` pipeline as book PDFs. (ADR-083) |
 | 14.9 | **Digital watermarking (Tiers 2 & 3)** | C2PA Content Credentials on all guru photographs and archival images (cryptographically signed provenance chain). Steganographic watermark on sacred images (`is_yogananda_subject = true`) — invisible bit pattern in DCT frequency domain encoding image ID and portal URL. Verification script: `/scripts/watermark-verify.py`. Both applied during image ingestion Lambda. (ADR-106) |
 | 14.10 | **Multi-size image downloads** | Five named size tiers (thumb 300px, small 640px, medium 1200px, large 2400px, original) generated at ingestion in WebP + JPEG dual format. Download endpoint: `GET /api/v1/images/{slug}/download?size=medium&format=webp`. Image detail page gains download section with size selector, dimensions, and file sizes. Attribution line (not a gate). Per-tier watermarking rules integrated with ADR-106. (ADR-107) |
+| 14.11 | **Knowledge graph evolution: audio + images** | Add audio_recording, audio_segment, and image nodes to the Knowledge Graph. Add photographed_person and photographed_place edges. Sacred artifact styling (golden ring) for Yogananda's own voice recordings and photographs. Full cross-media constellation (all embedded content types in UMAP view). Graph reaches 30,000–50,000 node scale. (ADR-137) |
 
 ### Success Criteria
 
@@ -563,6 +572,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 - Audio search results interleave with book and video results in cross-media search
 - Yogananda's own voice recordings display sacred artifact treatment (visual provenance indicator)
 - Image gallery renders all five size tiers; WebP served to supporting browsers, JPEG fallback works
+- Knowledge graph displays all five content types (book, magazine, video, audio, image) with distinct node styling; sacred artifact golden ring visible on Yogananda's voice recordings and photographs
 - YSS branding activates correctly for Hindi/Bengali locales (logo, footer text, OG images)
 - C2PA Content Credentials verify successfully on watermarked guru photographs
 

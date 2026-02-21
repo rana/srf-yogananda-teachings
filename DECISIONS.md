@@ -51,6 +51,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-118: "Teachings Through Time" — Temporal Dimension of the Corpus
 
 **Reader Experience**
+- ADR-138: High-Density Text Portal Pages — `/browse` and `/guide`
 - ADR-036: Book Reader Typography
 - ADR-037: Reader Typography Refinements
 - ADR-038: "Dwell" — Passage Contemplation Mode
@@ -139,6 +140,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-087: Unified Content Hub — Cross-Media Relations, Search, and Theming
 - ADR-088: Platform-Agnostic Video Model and Documentary Integration
 - ADR-089: Multi-Media Editorial Threads and Continue the Thread
+- ADR-137: Knowledge Graph Cross-Media Evolution — All Content Types as Graph Nodes
 
 **Staff & Editorial Workflows**
 - ADR-064: Staff Experience Architecture — Five-Layer Editorial System
@@ -9962,6 +9964,260 @@ This extends the role structure from ADR-064 (Staff Experience Architecture):
 - VLD member onboarding requires SRF coordination — SRF maintains the VLD roster; portal integrates via Auth0 role assignment
 - Future consideration: could extend beyond curation to translation review, theme tag review, or other editorial tasks where VLD members have relevant skills
 - **Extends ADR-135** (Community Collections) with organizational delegation; **extends ADR-064** (Staff Experience) with volunteer roles
+
+---
+
+## ADR-137: Knowledge Graph Cross-Media Evolution — All Content Types as Graph Nodes
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Supersedes aspects of:** ADR-098 (original Knowledge Graph visualization — now the Phase 7 baseline, not the final form)
+- **Relates to:** ADR-087 (Unified Content Hub), ADR-057 (Video Transcripts), ADR-078 (Audio Library), ADR-086 (Images), ADR-088 (Platform-Agnostic Video), ADR-089 (Multi-Media Threads), ADR-092 (People Library), ADR-105 (Magazine), ADR-134 (Spiritual Ontology)
+
+### Context
+
+ADR-098 designed the Knowledge Graph at `/explore` when the portal had only book content. It specifies nodes as "books, passages, themes, people, scriptures" and edges as `chunk_relations` — book-only. Since ADR-098 was accepted, the following content types were added to the portal architecture without updating the graph:
+
+- **Magazine articles** (ADR-105, Phase 8) — embedded, searchable, themed
+- **Video transcripts** (ADR-057/088, Phase 13) — time-synced, embedded, cross-searchable
+- **Audio recordings** (ADR-078, Phase 14) — transcribed, embedded, Yogananda's own voice
+- **Images/photographs** (ADR-086, Phase 14) — description-embedded, place-linked, sacred artifacts
+- **Ontology concepts** (ADR-134, Phase 8+) — structural relationships between teachings
+- **Sacred places** (Phase 13) — geographical entities linked to passages and images
+- **Community collections** (ADR-135, Phase 16) — curated paths through content
+
+The Unified Content Hub (ADR-087, Phase 13) solves the data layer — `content_items` + `content_relations` unify all media. But the visualization layer was never updated to consume this unified fabric.
+
+This gap is systemic: ADR-098 was designed early, content types were added later, and no governance mechanism ensured graph integration was considered with each new content type.
+
+### Decision
+
+**1. The Knowledge Graph evolves through phases, matching the content it visualizes.**
+
+ADR-098's Phase 7 delivery becomes the graph's *first version*, not its final form. Each subsequent content phase extends the graph with new node and edge types. The graph is a living visualization of the portal's entire teaching ecosystem.
+
+**2. The pre-computed graph JSON uses an extensible schema from day one.**
+
+Phase 7's nightly Lambda generates graph JSON with a `node_types` and `edge_types` registry. Adding magazine nodes in Phase 8 requires a Lambda update and JSON regeneration — zero visualization code changes.
+
+```jsonc
+{
+  "generated_at": "2027-03-15T02:00:00Z",
+  "schema_version": 2,
+  "node_types": ["book", "passage", "theme", "person", "reference", "place"],
+  "edge_types": ["similarity", "contains", "theme_tag", "references", "mentions_person"],
+  "nodes": [
+    {
+      "id": "uuid",
+      "type": "passage",
+      "media_type": "book",
+      "label": "Chapter 12, ¶3",
+      "parent_id": "book-uuid",
+      "url": "/books/autobiography/12#p3"
+    }
+  ],
+  "edges": [
+    {
+      "source": "uuid-a",
+      "target": "uuid-b",
+      "type": "similarity",
+      "weight": 0.87
+    }
+  ]
+}
+```
+
+The visualization code reads `node.type` dynamically to determine shape, color, and click behavior. New node types render with a sensible default without code changes — explicit styling is added as a refinement.
+
+**3. The graph supports filtering and focus modes.**
+
+At cross-media scale (30,000–50,000 nodes), the full graph is unusable without filtering:
+
+| Mode | Default? | What's visible |
+|------|----------|----------------|
+| **Book map** | Yes (Phase 7) | Books, passages, themes, people, references |
+| **Concept map** | Phase 8+ | Ontology concepts, relations, linked passages |
+| **All media** | Phase 13+ | Everything — full cross-media fabric |
+| **Single book** | Any phase | One book's passages, themes, connections |
+| **Single theme** | Any phase | One theme's passages across all media |
+
+Plus a media type toggle: show/hide books, magazine, video, audio, images independently. Passage Constellation mode (DESIGN.md) already provides an alternative spatial view — the Knowledge Graph mode handles the relational/structural view.
+
+**4. Editorial threads and community collections appear as highlighted paths.**
+
+Editorial Reading Threads (ADR-054, ADR-089) are curated journeys through the graph — golden paths connecting specific nodes. Community collections (ADR-135) appear as community-contributed paths with distinct visual treatment. Seekers can "follow the thread" through the graph.
+
+**5. The graph is the portal's universal navigation layer.**
+
+Every node is clickable — navigates to the corresponding page (book reader, video player, audio player, image detail, theme page, person page, place page). The graph is not just a visualization but an alternative to search: seekers who don't know what they're looking for can wander the graph and discover connections that search can't surface.
+
+### Phased Node/Edge Evolution
+
+| Phase | New Node Types | New Edge Types | Approximate Scale |
+|-------|---------------|----------------|-------------------|
+| **7** | book, passage, theme, person, reference | similarity, contains, theme_tag, references, mentions_person | ~5,000–10,000 nodes |
+| **8** | magazine_issue, magazine_chunk, ontology_concept | magazine_similarity, ontology_relation, concept_source | ~12,000–18,000 nodes |
+| **13** | video, video_chunk, place | video_similarity, cross_media_similarity (via content hub), mentions_place, depicts_place | ~20,000–35,000 nodes |
+| **14** | audio_recording, audio_segment, image | audio_similarity, photographed_person, photographed_place | ~30,000–50,000 nodes |
+| **16** | community_collection (optional) | collection_path, editorial_thread | Same node count, new path overlays |
+
+### Visual Vocabulary
+
+Each node type has a distinct visual representation for immediate recognition:
+
+| Node Type | Shape | Color Family | Size Rule |
+|-----------|-------|-------------|-----------|
+| Book | Rectangle | SRF Navy | Fixed large |
+| Book passage | Circle | SRF Navy (30% opacity) | Density-scaled (connection count) |
+| Theme | Hexagon | SRF Gold | Passage count |
+| Person | Portrait circle | Warm Cream border | Fixed medium |
+| Scripture/reference | Diamond | Earth tone | Fixed medium |
+| Magazine issue | Rectangle | Warm Cream with accent | Fixed medium |
+| Magazine chunk | Circle | Warm accent (30% opacity) | Small |
+| Ontology concept | Rounded rectangle | SRF Gold (darker) | Relation count |
+| Sacred place | Map pin | Earth green | Fixed medium |
+| Video | Play-button circle | Teal accent | Fixed medium |
+| Video chunk | Circle | Teal (30% opacity) | Small |
+| Audio recording | Waveform circle | Amber accent | Fixed medium |
+| Audio segment | Circle | Amber (30% opacity) | Small |
+| Image | Rounded square | Neutral | Small thumbnail |
+
+Yogananda's own voice recordings and photographs receive the sacred artifact treatment — a subtle golden ring distinguishing them from other audio/images.
+
+### Performance Strategy
+
+| Scale | Strategy |
+|-------|----------|
+| < 10,000 nodes | d3-force with Canvas rendering. Pre-computed positions in JSON. Interactive pan/zoom/click. |
+| 10,000–50,000 nodes | WebGL rendering (via deck.gl or custom Canvas). Level-of-detail: zoomed out shows clusters with labels, zoomed in reveals individual nodes. Pre-computed cluster centroids. |
+| Mobile / low-bandwidth | Subset graph: show only the neighborhood of the current node (2-hop subgraph, max ~500 nodes). Progressive loading: clusters first, expand on interaction. |
+
+The nightly Lambda pre-computes node positions using a force-directed algorithm (server-side, no runtime cost). The client renders pre-positioned nodes — no layout computation on the client.
+
+### Graph Data API
+
+```
+GET /api/v1/graph                     → Full graph metadata (node/edge type counts, last generated)
+GET /api/v1/graph/subgraph?node={id}&depth=2  → 2-hop neighborhood of a node
+GET /api/v1/graph/cluster?theme={slug}        → All nodes in a theme cluster
+GET /api/v1/graph.json                → Full pre-computed graph (S3-served, CDN-cached)
+```
+
+The subgraph endpoint powers embeddable mini-graphs in other pages: the reader's Related Teachings panel can show a small visual graph of the current passage's neighbors. Theme pages can embed their cluster.
+
+### Governance: Content-Type Integration Checklist
+
+To prevent the drift that created this ADR, every future ADR that introduces a new content type must address:
+
+1. **Graph node type:** What shape, color, size, and click target?
+2. **Graph edge types:** What relationships does this content have with existing nodes?
+3. **Graph JSON schema:** What `node_type` and `edge_type` values are added?
+4. **Lambda update:** What data source does the nightly graph regeneration query?
+5. **Phase timing:** When does this content type enter the graph?
+
+This checklist is added to the CLAUDE.md maintenance table.
+
+### Alternatives Considered
+
+1. **Redesign the graph from scratch for cross-media from Phase 7.** Rejected. ADR-098's Phase 7 delivery is correct for that phase's content — books only. Designing for 5 content types that don't exist yet violates the "no premature abstraction" principle. The extensible JSON schema is the right compromise: the *format* accommodates future types; the *content* matches actual data.
+2. **Separate visualizations per media type.** Rejected. The portal's power is cross-media connections — a monastic talk discussing a book passage about a place where a photograph was taken. Separate visualizations hide the very connections that make the portal valuable.
+3. **Use a graph database (Neo4j, Amazon Neptune) instead of pre-computed JSON.** Rejected. The graph is read-heavy, write-rarely (nightly regeneration). PostgreSQL + pre-computed JSON is simpler, cheaper, and consistent with the single-database architecture (ADR-109). A graph database adds operational complexity for a visualization that's regenerated once per day.
+
+### Consequences
+
+- ADR-098 remains valid as the Phase 7 baseline; this ADR extends it through Phase 16
+- Nightly graph Lambda regeneration script updated with each content phase
+- Graph JSON schema is versioned (`schema_version` field); the visualization handles version differences gracefully
+- Phase 7 graph JSON accommodates future node types via extensible `type` field — no schema migration needed when new content types arrive
+- CLAUDE.md maintenance table gains a "New content type added" → "update Knowledge Graph node/edge types" row
+- DESIGN.md `/explore` section updated with full cross-media specification
+- ROADMAP.md phases 8, 13, 14 gain graph evolution deliverables
+- The Knowledge Graph becomes a flagship portal feature — the visual answer to "how does everything connect?"
+- **Extends ADR-098** (Knowledge Graph) to cross-media; **consumes ADR-087** (Content Hub) for unified relations; **visualizes ADR-134** (Ontology) as concept map; **renders ADR-089** (Multi-Media Threads) as graph paths
+
+---
+
+## ADR-138: High-Density Text Portal Pages — `/browse` and `/guide`
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-017 (Accessibility), ADR-048 (Teaching Topics), ADR-061 (Global Equity), ADR-098 (Knowledge Graph), ADR-119 (Documentation Architecture), ADR-127 (Cognitive Accessibility), ADR-129 (Screen Reader Warmth), ADR-130 (Non-Search Journeys), ADR-134 (Ontology)
+
+### Context
+
+The portal has 26+ distinct routes for content discovery — `/themes`, `/books`, `/people`, `/references`, `/glossary`, `/threads`, `/explore`, etc. Each is a separate destination with its own rich UI, pagination, and decorative elements. No single page provides a bird's-eye view of the entire teaching corpus in one glance. This creates three gaps:
+
+1. **The pre-seeking browser.** The current design assumes seekers either know what they want (search) or are ready to be guided (empathic entry points, themes). But some seekers want to wander — to see the shape of the teachings before committing to a path. They're browsing the stacks, not asking the librarian.
+
+2. **The universal access page.** Performance budgets target 3G in rural India (ADR-061). Text-only mode (Phase 2) strips images from existing pages, but existing pages are *designed rich and degraded gracefully*. No page is *designed text-first as its primary form*. For feature phones, screen readers, terminal browsers, and offline caching, a text-native page would outperform any degraded rich page.
+
+3. **The card catalog.** The portal's core identity is "librarian, not oracle" (ADR-003). Librarians answer questions (search) and maintain the card catalog (browse). The portal has search. It doesn't have a card catalog.
+
+Additionally, two complementary models serve different needs: the comprehensive directory (what exists?) and the curated recommendation (where should I go?). These are not the same page.
+
+### Decision
+
+Two new pages, complementary but distinct:
+
+**1. `/browse` — The Complete Index** (lib.rs model)
+
+A single, high-density text page listing every navigable content item in the portal, organized by category and subcategory. Every item is a link to its destination page.
+
+- **Content sections:** Books (by category), Themes (by category: quality, situation, person, principle, scripture, practice, yoga_path), Reading Threads, Glossary terms (A–Z), People, External References, Quiet Corner textures
+- **Auto-generated** from the database at build time (ISR). No editorial overhead. Always current as content is added.
+- **Designed text-first.** Not a degraded rich page. Semantic HTML heading hierarchy (`h2` for categories, `h3` for subcategories, links for items). Functional and beautiful with zero CSS, zero JavaScript, zero images.
+- **Performance target:** < 20KB HTML. Cacheable by Service Worker as a single offline artifact. The one page that remains fully useful with zero network after initial load.
+- **Grows with phases:** Phase 2 (books only), Phase 5 (+ themes, glossary), Phase 6 (+ people, references, threads), Phase 7+ (+ knowledge graph summary link, journey links)
+- **Accessibility model page:** Proper heading hierarchy makes it the ideal screen reader experience — VoiceOver/NVDA users navigate by heading level. Every section is a landmark. Screen reader labels follow ADR-129 warm speech conventions.
+- **SEO value:** A single page linking to every content endpoint with descriptive text — comprehensive internal linking, naturally keyword-rich.
+- **Multilingual:** Shows content filtered by the seeker's language preference. When a book is available in multiple languages, indicates availability (e.g., "Also in: हिन्दी, Español").
+- **Print-friendly:** A single-page overview that prints cleanly as a table of contents for the entire portal.
+
+**2. `/guide` — The Spiritual Guide** (blessed.rs model)
+
+A curated recommendation page organized by spiritual need, with editorial guidance pointing seekers to the right content for their situation.
+
+- **Organized by seeker context:** "If you are new to Yogananda's teachings," "If you are exploring meditation," "If you are dealing with loss," "If you want to understand karma," etc.
+- **Each section provides:** 2–3 specific recommendations (a book, a theme, a reading thread, a passage) with brief editorial framing. Editorial voice follows ADR-124 micro-copy standards — never paraphrases Yogananda, only frames ("In this collection of talks, Yogananda addresses...").
+- **Expands the homepage's empathic entry points** (ADR-035) from 5 situations to 20–30+ organized pathways. Not a replacement — the homepage remains the emotional entry; `/guide` is the comprehensive recommendation index.
+- **Three-state provenance:** Same as editorial threads (ADR-054). Claude can draft initial recommendations (`auto`), but all user-facing content requires human review (`reviewed`) or human authorship (`manual`).
+- **Phase timing:** Phase 5–6 (requires editorial infrastructure, theme system, and reading threads to exist).
+- **Cultural adaptation:** Per-locale guide variants in Phase 11+. Different cultures have different spiritual entry points.
+
+**3. Relationship to existing pages**
+
+| Page | `/browse` overlap | `/guide` overlap | Resolution |
+|------|-------------------|------------------|------------|
+| `/themes` | Lists same themes | Recommends specific themes | `/browse` is the index; `/themes` is the destination with rich UI |
+| `/books` | Lists same books | Recommends specific books | `/browse` is the index; `/books` has cover images and editorial descriptions |
+| `/explore` | Same content, text vs. visual | None | `/browse` is the text modality; `/explore` is the visual modality. Linked bidirectionally. |
+| Homepage "Seeking..." | None | Overlap for 5 situations | `/guide` expands from 5 to 20–30+. Homepage remains emotional entry. |
+| `/threads` | Lists same threads | Recommends specific threads | `/browse` is the index; `/guide` contextualizes |
+
+Neither page replaces existing routes. They provide complementary *modes of navigation*: the comprehensive overview and the guided recommendation.
+
+**4. Navigation placement**
+
+- `/browse` linked from site footer ("Browse all teachings") and as an option within text-only mode
+- `/guide` linked from site footer ("Where to begin") and from the "Start Here" newcomer path (Phase 2.13)
+- Both accessible from `/explore` as alternative navigation modalities
+- `/browse` serves as the accessible alternative to the Knowledge Graph (addresses CONTEXT.md open question on Knowledge Graph accessibility)
+
+### Alternatives Considered
+
+1. **Single combined page.** Merging directory and guide into one page dilutes both. The directory needs to be comprehensive and auto-generated; the guide needs to be selective and editorially curated. Different audiences, different update cadences, different design constraints.
+2. **Enhance `/themes` instead.** The themes page covers only one content type. A portal page covers books, themes, people, references, glossary, threads — the full content space.
+3. **Text-only mode is sufficient.** Text-only mode degrades existing pages. `/browse` is designed text-first. The difference matters for screen readers, feature phones, and offline caching. A page designed for text is better than a rich page stripped of images.
+4. **Sitemap.xml is sufficient for crawlers.** Sitemaps serve machines. `/browse` serves humans (and machines) — a sitemap promoted to first-class content.
+
+### Consequences
+
+- `/browse` becomes the portal's **universal fallback entry point** — the page to cache for offline use, to send to someone on 2G, to navigate by screen reader
+- `/browse` answers the Knowledge Graph accessibility question (CONTEXT.md) — it is the text-mode alternative to the visual graph
+- `/guide` requires editorial investment (20–30 curated pathways with framing text), adding to Phase 5 editorial workload
+- Auto-generation of `/browse` requires a build-time database query aggregating all content types — adds to ISR complexity but no runtime cost
+- Two new routes to maintain, but `/browse` is zero-maintenance (auto-generated) and `/guide` follows the same editorial workflow as reading threads
+- The librarian metaphor is now complete: search (ask the librarian), browse (card catalog), guide (reference desk)
 
 ---
 
