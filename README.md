@@ -16,7 +16,7 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 - **The Quiet Corner** — a micro-sanctuary with a single affirmation and optional gentle timer, for the moment of immediate need
 - **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, keyboard-first navigation, and contextual Quiet Corner for in-reader practice
 - **Living Glossary** — user-facing spiritual terminology with inline reader highlighting and Yogananda's own definitions as verbatim passages
-- **Self-Realization Magazine** — magazine archives as a first-class content type, with Yogananda's articles fully searchable alongside book passages
+- **Self-Realization Magazine** — magazine archives as a primary content type, with Yogananda's articles fully searchable alongside book passages
 - **"What Is Humanity Seeking?"** — a public-facing, contemplative dashboard visualizing anonymized global search themes ("Right now, the world is seeking peace...")
 - **Calendar reading journeys** — structured multi-day experiences ("40 Days with Yogananda") delivered via daily email
 - **Knowledge graph** — interactive visual map of the teaching corpus showing cross-book connections, themes, persons, and scriptures

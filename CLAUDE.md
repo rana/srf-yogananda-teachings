@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–141, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
+3. **DECISIONS.md** — Architecture Decision Records (ADRs 001–142, excluding removed ADR-010, withdrawn ADR-053, and superseded ADR-077) with full rationale for every major choice
 4. **ROADMAP.md** — 18 phases (0–17) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -33,10 +33,11 @@ Located in `docs/reference/`:
 6. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-029)
 7. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. The embedding model is multilingual by explicit requirement. UI strings are externalized, CSS uses logical properties, and the schema includes cross-language linking. Phase 1 is English-only but the architecture is locale-ready — adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-020, ADR-021, ADR-022, ADR-023)
 8. **Accessibility from Phase 2.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets serve seekers on 3G in rural India (< 100KB JS, FCP < 1.5s). axe-core in CI — accessibility violations block merges. Phase 12 is the audit, not the introduction. (ADR-017)
-9. **Human review as mandatory gate.** No user-facing content reaches seekers without human verification. Auto-tagged themes, AI-drafted translations, generated social assets — all require human approval before publication. AI proposes, humans approve. (ADR-023, ADR-048, ADR-049)
-10. **Signpost, not destination.** The portal points toward deeper SRF practice (Lessons, centers, app, meditation) without tracking conversions or acting as a sales funnel. No engagement metrics that optimize for screen time. No "sign up to access" gates. All content freely available.
-11. **Content availability honesty.** The portal is transparent about what it has. No machine-translated substitutes. English fallback always marked `[EN]`. No fabricated results. If a book isn't available in a language, it isn't listed. Honest about scope, not apologetic about it.
-12. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. Single-database architecture (Neon only, no DynamoDB) — simplicity over ecosystem conformity. (ADR-033, ADR-109)
+9. **Global Equity.** One product, complete at every level — Bihar to San Francisco, neither a compromised version of the other. Performance budgets, device diversity, progressive enhancement, and data-cost awareness serve this commitment. When a feature proposal seems to conflict, the response is "and how does the base experience work?" — not "we can't do that." (ADR-061)
+10. **Human review as mandatory gate.** No user-facing content reaches seekers without human verification. Auto-tagged themes, AI-drafted translations, generated social assets — all require human approval before publication. AI proposes, humans approve. (ADR-023, ADR-048, ADR-049)
+11. **Signpost, not destination.** The portal points toward deeper SRF practice (Lessons, centers, app, meditation) without tracking conversions or acting as a sales funnel. No engagement metrics that optimize for screen time. No "sign up to access" gates. All content freely available.
+12. **Content availability honesty.** The portal is transparent about what it has. No machine-translated substitutes. English fallback always marked `[EN]`. No fabricated results. If a book isn't available in a language, it isn't listed. Honest about scope, not apologetic about it.
+13. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. Single-database architecture (Neon only, no DynamoDB) — simplicity over ecosystem conformity. (ADR-033, ADR-109)
 
 ## Quick Reference
 
@@ -50,10 +51,11 @@ Located in `docs/reference/`:
 /app/api/v1/      — Versioned API routes
 /migrations/      — Numbered SQL migrations (dbmate)
 /terraform/       — Infrastructure as Code
-/serverless/      — AWS Lambda functions (Phase 5+)
+/lambda/          — AWS Lambda handlers (Phase 3+, ADR-143)
 /messages/        — Locale JSON files (next-intl)
 /scripts/         — CI-agnostic deployment scripts
 /docs/reference/  — Background research (not active project docs)
+/docs/operational/ — Operational playbook (Phase 5+: procedures for editorial, ingestion, VLD)
 ```
 
 **Design tokens:** Merriweather + Lora + Open Sans. SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
@@ -75,6 +77,9 @@ Six documents. Keep them accurate as you work — drift compounds across session
 | Code directory added | Update DESIGN.md code organization section |
 | Cross-cutting concern changed (multilingual, accessibility, DELTA, editorial proximity) | Update CONTEXT.md principle statement, affected DESIGN.md sections, and relevant ADRs |
 | New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR. **Also:** update DESIGN.md § Knowledge Graph node/edge types, add graph evolution deliverable to relevant ROADMAP phase, and address the ADR-137 content-type integration checklist (node shape/color, edge types, JSON schema, Lambda update, phase timing). |
+| New staff/organizational role identified | Update DESIGN.md § Staff & Organizational Personas, CONTEXT.md § Operational Staffing. If the role needs Auth0 access, update DESIGN.md § Auth0 Roles. |
+| New AI-assisted workflow added | Update DESIGN.md § AI-Assisted Editorial Workflows. Ensure the workflow follows the "AI proposes, humans approve" pattern. |
+| New editorial review queue type | Update DESIGN.md § Unified Review Queue Abstraction, add to Phase Delivery table, update operational playbook. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Reference document added or obsoleted | Update this file's § Reference Documents list |
 

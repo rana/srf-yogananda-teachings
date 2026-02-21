@@ -463,7 +463,7 @@ When the embedding model changes (e.g., from `text-embedding-3-small` to a succe
    Production search continues uninterrupted.
 
 2. RE-EMBED ALL CHUNKS (on branch)
-   Lambda batch job (ADR-065, ADR-110 batch tier):
+   Lambda batch job (ADR-143, ADR-110 batch tier):
    - Read all chunks where embedding_model != new_model
    - Generate new embeddings in batches of 100
    - UPDATE embedding, embedding_model, embedding_dimension, embedded_at
@@ -3054,7 +3054,7 @@ The `chunk_relations` table stores pre-computed semantic similarity. In a multil
 - Query pattern: `JOIN book_chunks target ON target.id = cr.target_chunk_id WHERE target.language = :lang` for same-language; add `OR target.language = 'en'` to include English supplemental
 - Fallback: when filtered results < 3 (rare with this strategy), fall back to real-time vector similarity with a WHERE clause
 
-This ensures every language gets first-class related teachings, not an afterthought. English supplemental relations are the multilingual equivalent of the search fallback strategy — same pattern, same `[EN]` marking.
+This ensures every language gets full related teachings, not an afterthought. English supplemental relations are the multilingual equivalent of the search fallback strategy — same pattern, same `[EN]` marking.
 
 ### Language Selector
 
@@ -3100,7 +3100,7 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 2. **Theme slugs stay in English** for URL stability (`/es/themes/peace`, not `/es/temas/paz`). Display names localized via `topic_translations` table.
 3. **Embedding model must be multilingual.** Explicit requirement (not accident). Ensures Phase 1 embeddings remain valid when Phase 11 adds new languages.
 4. **`reader_url` is locale-relative.** API returns `/books/slug/chapter#chunk`. Client prepends locale prefix. API stays presentation-agnostic.
-5. **`chunk_relations` store per-language.** Top 30 same-language + top 10 English supplemental per chunk. Ensures non-English languages get first-class related teachings with English fallback.
+5. **`chunk_relations` store per-language.** Top 30 same-language + top 10 English supplemental per chunk. Ensures non-English languages get full related teachings with English fallback.
 6. **Locale + English fallback is the multilingual model.** Arbitrary cross-language search (e.g., Japanese query finding German results) is deferred as optional — the practical need is the user's language plus English fallback, not N×N language combinations. The multilingual embedding model enables cross-language search at near-zero cost if usage data later justifies it.
 7. **Chunk size must be validated per language (Phase 11).** Token economies differ across scripts — a 300-token chunk in Japanese may hold less semantic content than 300 English tokens. Per-language chunk size benchmarking is required before ingesting non-English content. At minimum, validate that English-calibrated chunk sizes produce acceptable retrieval quality in all target languages.
 
@@ -3570,7 +3570,7 @@ import { neon } from '@neondatabase/serverless';
 // - Each function invocation creates a lightweight client, no pool management needed
 // - Neon's built-in connection pooler (PgBouncer-compatible) handles concurrency server-side
 //
-// For Lambda batch workloads (Phase 5+):
+// For Lambda batch workloads (Phase 3+, ADR-143):
 // - Use Neon's pooled connection string (port 5432 → pooler endpoint)
 // - Connection limit: Neon free tier allows 100 concurrent connections;
 //   paid tier scales with compute size
@@ -4341,7 +4341,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 
 **Testing criterion:** Phase 2 screen reader testing (VoiceOver, NVDA, TalkBack) evaluates not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
 
-#### Performance as Accessibility
+#### Performance as Accessibility (Global Equity Principle)
 
 | Requirement | Implementation |
 |-------------|---------------|
@@ -4843,22 +4843,53 @@ Contentful (editorial) ──webhook──→ Serverless function ──→ Neon
 
 ## Staff Experience Architecture (ADR-064)
 
-The portal's "human review as mandatory gate" principle creates significant staff-facing workflow requirements. Theme tags, tone classifications, accessibility ratings, calendar associations, translation drafts, social media assets, and ingestion QA flags all require human approval. The staff experience is a first-class product concern — the speed and quality of editorial review directly determines how quickly new content reaches seekers.
+The portal's "human review as mandatory gate" principle creates significant staff-facing workflow requirements. Theme tags, tone classifications, accessibility ratings, calendar associations, translation drafts, social media assets, and ingestion QA flags all require human approval. The staff experience is a primary product concern — the speed and quality of editorial review directly determines how quickly new content reaches seekers.
 
 ### Guiding Principle
 
 **Staff should think about the teachings, not the technology.** The same calm technology philosophy that governs the seeker experience applies to the staff experience. A monastic editor reviewing whether a passage about inner peace is correctly tagged should work in an environment that respects the material — not a generic data grid.
 
-### Staff Personas
+### Staff & Organizational Personas
 
-| Persona | Schedule | Technical Comfort | Primary Tool |
-|---|---|---|---|
-| **Monastic content editor** | 2–3 hour windows between meditation and services | Variable | Admin portal + Contentful |
-| **Theological reviewer** | Periodic, high-stakes | Low to moderate | Admin portal (review queue only) |
-| **AE social media staff** | Daily, 20–30 min | Moderate | Admin portal (asset inbox) |
-| **Translation reviewer** | Batch sessions, 40–100 strings | Moderate (may be volunteer) | Admin portal (translation review) |
-| **AE developer** | As needed | High | Retool + Neon console |
-| **Leadership** | Monthly or quarterly | Low | Impact dashboard (read-only) |
+The portal is maintained by a broader organizational ecosystem than just "staff." Each persona has different schedules, technical comfort, and workflow needs. The admin portal, editorial tools, and operational procedures must serve all of them.
+
+#### Core Staff Personas
+
+| Persona | Schedule | Technical Comfort | Primary Tool | Key Need |
+|---|---|---|---|---|
+| **Monastic content editor** | 2–3 hour windows between meditation and services | Variable | Admin portal + Contentful | Session resume; complete meaningful work in 30 minutes; warm UI that feels like service, not administration |
+| **Theological reviewer** | Periodic, high-stakes | Low to moderate | Admin portal (review queue only) | "Preview as seeker" with full chapter context; ability to defer decisions without blocking the queue; persistent theological notes across sessions |
+| **AE social media staff** | Daily, 20–30 min | Moderate | Admin portal (asset inbox) | Weekly lookahead with batch-approve; platform-specific captions; assets ready to post, not raw material to assemble |
+| **Translation reviewer** | Batch sessions, 40–100 strings | Moderate (may be volunteer) | Admin portal (translation review) | Screenshot context for each string; tone guidance; ability to suggest alternatives without outright rejecting |
+| **AE developer** | As needed | High | Retool + Neon console | Clear runbooks; Sentry/New Relic dashboards separated from other SRF properties; infrastructure-as-code matching SRF Terraform patterns |
+| **Leadership (monastic)** | Monthly or quarterly | Low | Impact dashboard (read-only) | Ability to express editorial priorities ("emphasize courage this quarter") without entering the admin system; pre-formatted reports for the philanthropist's foundation |
+
+#### Operational Personas (Not Yet Staffed)
+
+| Persona | Schedule | Technical Comfort | Primary Tool | Key Need |
+|---|---|---|---|---|
+| **Portal coordinator** | Regular | Moderate | Admin portal (pipeline dashboard) | Cross-queue visibility: content pipeline status (books in queue/ingestion/QA/published), editorial queue health (backlog depth across all review types), VLD activity, upcoming calendar events. Not Jira — purpose-built for editorial state. |
+| **Book ingestion operator** | Per-book (1–2 days per cycle) | Moderate to high | Ingestion CLI + admin portal | Guided ingestion workflow: upload source → automated processing → flagged review → human QA → approve-and-publish. Side-by-side source PDF and extracted text. Per-chapter re-run capability. |
+| **VLD coordinator** | Weekly | Moderate | Admin portal (VLD section) | Creates curation briefs, monitors submission quality, manages trusted submitter status, communicates with VLD members. May be the portal coordinator or a separate role. |
+
+#### Volunteer Personas
+
+| Persona | Schedule | Technical Comfort | Primary Tool | Key Need |
+|---|---|---|---|---|
+| **VLD curation volunteer** | Flexible, service-oriented | Variable (possibly low) | Admin portal (VLD dashboard) + Study Workspace | Clear, self-contained tasks with completion criteria; session save-and-resume; warm onboarding framing work as devotional service; constructive feedback on submissions |
+| **VLD translation volunteer** | Batch sessions | Variable | Admin portal (translation review) | Embedded glossary sidebar; "I'm not sure" flag without blocking progress; pairing with experienced reviewer for first batch |
+| **VLD theme tag reviewer** | Short sessions | Variable | Admin portal (theme review) | Training examples for each theme; side-by-side passage + theme descriptions; "escalate to monastic reviewer" option |
+| **VLD feedback triager** | Flexible | Variable | Admin portal (feedback queue) | Pre-categorized feedback with AI reasoning; confirm/reclassify; flag items for staff |
+| **VLD content QA reviewer** | Per-assignment | Moderate | Admin portal (QA review) | Compare portal text against physical book; report discrepancies. Requires access to physical books (many VLD members own them). |
+
+#### External Personas
+
+| Persona | Schedule | Technical Comfort | Primary Tool | Key Need |
+|---|---|---|---|---|
+| **Philanthropist's foundation** | Quarterly or annually | Low | Impact report (PDF/web) | Pre-formatted, narrative impact report they can share with their board. Generated from Impact Dashboard data, curated into a story. No work required. |
+| **Study circle leader** | Weekly preparation | Moderate | Study Workspace + community collections | Find → collect → arrange → share → present. Power user of community collections and shared links. Weekly satsanga preparation is the primary use case. |
+
+**Staffing open question:** Several operational personas (portal coordinator, book ingestion operator, VLD coordinator) are not yet assigned. SRF must determine whether these are monastic roles, AE team roles, or dedicated positions before Phase 5 begins. See CONTEXT.md § Open Questions (Stakeholder).
 
 ### The Editorial Review Portal (`/admin`)
 
@@ -5038,6 +5069,343 @@ Business logic lives in `/lib/services/` (consistent with ADR-024). The admin ro
 | **Phase 10** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. |
 | **Phase 11** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
 | **Phase 11+** | Impact dashboard for leadership. |
+| **Phase 17** | VLD dashboard, curation briefs, trusted submitter workflow. VLD expansion to translation, theme tag, feedback, and QA tiers (as VLD capacity and SRF governance allow). |
+
+---
+
+## Unified Review Queue Abstraction
+
+Every content workflow in the portal follows a common pattern: **Request → Draft/Propose → Review → Approve/Revise → Publish → Monitor.** The admin portal handles this for specific content types (theme tags, translations, social media, community collections, feedback) but benefits from a unifying UI pattern that presents all pending work consistently.
+
+### Editorial Home as Unified Queue
+
+The editorial home screen (already designed above) aggregates all review queues. This section specifies the common metadata that enables unified treatment:
+
+| Field | Description |
+|---|---|
+| **Source** | Who proposed this item: AI, community member, VLD member, seeker feedback, staff |
+| **Priority** | Type-based default: citation errors > QA flags > theme tags > community collections > feature suggestions |
+| **Age** | How long this item has been waiting for review |
+| **Assignee** | Who claimed it (or unassigned) |
+| **Session state** | Partially reviewed — resume where you left off |
+
+This is a **UI pattern, not a new data model.** Each underlying content type keeps its own schema and review logic. The editorial home screen queries across all queues and presents a unified summary:
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  SRF Teaching Portal — Editorial Home                          │
+│                                                                 │
+│  Good morning. Here's what needs your attention:               │
+│                                                                 │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
+│  │ Theme Tags         (23) │  │ Daily Passages   (3 gaps)   │  │
+│  │ ○ Peace (8 new)         │  │ Pool: 412 passages          │  │
+│  │ ○ Courage (6 new)       │  │ Next 7 days: needs review   │  │
+│  └─────────────────────────┘  └─────────────────────────────┘  │
+│                                                                 │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
+│  │ Corrections         (3) │  │ Community Submissions   (5) │  │
+│  │ ● 1 citation error      │  │ 2 new, 3 in review          │  │
+│  │   (high priority)       │  │ 1 VLD trusted               │  │
+│  └─────────────────────────┘  └─────────────────────────────┘  │
+│                                                                 │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
+│  │ Feedback            (8) │  │ VLD Briefs          (2)     │  │
+│  │ 1 citation report       │  │ 1 open, 1 submitted         │  │
+│  │ 5 suggestions           │  │                             │  │
+│  │ 2 uncategorized         │  │                             │  │
+│  └─────────────────────────┘  └─────────────────────────────┘  │
+│                                                                 │
+│  Queue Health:                                                  │
+│  Oldest unreviewed item: 4 days (Theme Tags → Healing)         │
+│  Items > 7 days: 0                                              │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### Queue Health Monitoring
+
+Review queues grow with every phase. Without monitoring, backlogs can exceed a monastic editor's 2–3 hour daily window for weeks.
+
+**Queue health indicators:**
+- **Oldest unreviewed item** — displayed on editorial home screen
+- **Items exceeding age threshold** — 7 days for standard items, 48 hours for citation errors
+- **Queue depth trend** — growing, stable, or shrinking (rolling 14-day window)
+
+**Escalation path:** If any queue exceeds its age threshold, the email digest (existing) highlights the overdue items. If a queue exceeds 2× the threshold, the portal coordinator receives a separate notification. This is operational awareness, not pressure — the goal is to surface backlogs before they compound.
+
+**Service file:** `/lib/services/queue-health.ts` — cross-queue age queries, threshold checks, escalation triggers.
+
+---
+
+## Content Lifecycle Management
+
+The portal's content — book text, theme tags, translations, editorial threads, community collections — moves through a lifecycle from creation to publication to maintenance. This section specifies the human workflows and operational procedures that complement the technical architecture.
+
+### Book Ingestion Workflow
+
+**Phase 1–9:** PDF → marker → chunk → embed → Claude QA flags → human review → publish.
+**Phase 10+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
+
+#### Pre-Ingestion Planning
+
+Before running the pipeline, the book ingestion operator completes a planning checklist:
+
+1. **Edition confirmation:** Which edition? Page-number reference? (ADR-069)
+2. **Structure assessment:** Narrative, collected talks, verse-commentary, chants, or poetry? (ADR-115, ADR-139)
+3. **Chunking strategy selection:** Standard paragraph-based, verse-aware, or chant whole-unit?
+4. **Special handling:** Devanāgarī content? IAST diacritics? Epigraphs? Poetry blocks? (ADR-141, ADR-115)
+5. **Source quality:** PDF scan quality, OCR confidence expectation, known problem areas.
+
+The admin portal surfaces this as a structured form (Phase 5+). For Phases 1–4, the checklist lives in the book's ingestion script configuration.
+
+#### Pipeline Dashboard
+
+After automated processing but before human QA, the operator sees a pipeline summary:
+
+- Chunks generated: count, size distribution (histogram against 100–500 token target range)
+- QA flags: count by type (OCR suspect, formatting, truncated, Sanskrit diacritics)
+- Chapter status: per-chapter pass/flag count
+- Glossary terms: newly identified terms for the Living Glossary
+- Theme coverage: top 5 themes represented in the new content
+
+**Service file:** `/lib/services/ingestion.ts` — pipeline status queries, per-book and per-chapter summaries.
+
+#### Staged Publication
+
+New book content is reviewable in a "preview" state before going live:
+
+- **Phases 1–9:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
+- **Phase 10+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries.
+
+The operator publishes chapter-by-chapter or the whole book at once. Publication triggers chunk relation computation for the new content.
+
+#### Post-Ingestion Verification
+
+After publication, a mini quality check:
+
+1. Run 5–10 representative queries that should return passages from the new book
+2. Verify cross-book relations are meaningful (spot-check 3–5 passages)
+3. Confirm theme tags were generated and are in the review queue
+4. Verify glossary terms were extracted and added to the suggestion index
+
+This can be partially automated as a post-publication Lambda step that reports results to the admin portal.
+
+### Content Correction Workflow
+
+Errors will be found — by staff, by seekers (via feedback, ADR-116), or during re-reading.
+
+#### Citation Error Fast Path
+
+1. Seeker or staff reports incorrect page number, chapter, or book attribution
+2. Report enters the QA queue at high priority (citation errors affect the portal's fidelity guarantee)
+3. Reviewer verifies against physical book
+4. Correction applied in Neon (Phases 1–9) or Contentful (Phase 10+)
+5. Content hash updates. Chunk relations unaffected (text unchanged). Shared links remain stable.
+
+#### Text Correction Path
+
+1. OCR error or transcription mistake discovered
+2. Staff corrects the text in the admin portal or Contentful
+3. Embedding re-generated for the affected chunk (automated on save)
+4. Chunk relations recomputed for that chunk (automated, incremental)
+5. Theme tags for the chunk are re-evaluated (enter review queue if the correction changed meaning)
+
+The admin portal presents this as a single "correct and reprocess" action, not a multi-step manual process.
+
+**Service file:** `/lib/services/corrections.ts` — correction application, cascading reprocess triggers, correction audit log.
+
+#### Chunk Boundary Revision
+
+Rarely, a chunk boundary splits a thought badly. The operator may need to split or merge chunks.
+
+This is a high-consequence operation affecting embeddings, relations, theme tags, bookmarks, and shared links. The admin portal requires:
+
+1. Preview of the proposed boundary change with before/after views
+2. Impact assessment: "This will affect 3 theme tags, 12 chunk relations, and 0 shared links"
+3. Explicit confirmation before execution
+4. Automatic cascade: re-embed, re-relate, re-queue affected theme tags for review
+5. Content-hash resolution chain (ADR-066) ensures shared links degrade gracefully
+
+### Content Retirement and Edition Updates
+
+When SRF publishes a new edition of a book, the portal's text may become outdated. ADR-069 handles the technical architecture (edition tracking, archival). The human workflow:
+
+1. **Decision:** SRF determines that a new edition should replace the portal's current text. This is a stakeholder decision, not a technical one.
+2. **Planning:** Book ingestion operator assesses the scope: How different is the new edition? Page numbers only, or text changes? Full re-ingestion or targeted corrections?
+3. **Execution:** Old edition archived (not deleted). New edition ingested through the standard pipeline. Chunk relations recomputed. Theme tags re-evaluated.
+4. **Verification:** Shared links tested against the content-hash resolution chain. Bookmarks checked for graceful degradation. Search quality verified.
+5. **Communication:** If shared links to specific passages changed, the portal's "passage may have moved" fallback (ADR-066) activates. No seeker-facing announcement needed — the resolution chain handles it silently.
+
+### Operational Playbook
+
+By year 3, the people operating the portal may be different from those who built it. The architectural documentation (this file, DECISIONS.md) captures *why* decisions were made. The **operational playbook** captures *how to do the work:*
+
+- How to add a new book (pre-ingestion checklist through post-publication verification)
+- How to handle a translation batch (reviewer onboarding, glossary setup, batch review, approval)
+- How to review community collections (evaluation criteria, feedback templates, featured promotion)
+- How to respond to a citation error (verification, correction, cascade)
+- How to create a curation brief for VLD members (brief structure, editorial guidance, deadline setting)
+- How to onboard a new staff member to the admin portal
+- How to run the quarterly backup restore drill
+
+**Location:** `/docs/operational/playbook.md` — created during Phase 5 when the editorial review portal ships. Updated as new workflows are added in subsequent phases. Referenced from the admin portal's help section.
+
+---
+
+## AI-Assisted Editorial Workflows
+
+The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. This section consolidates all AI-human collaboration patterns into a single reference. The governing principle is consistent: **AI proposes, humans approve.** Automated intelligence improves efficiency; human judgment ensures fidelity.
+
+### Existing AI-Assisted Workflows (Designed in Individual ADRs)
+
+| Task | AI Role | Human Role | Phase | ADR |
+|---|---|---|---|---|
+| Theme tag classification | Proposes tags with confidence scores | Approves/rejects per passage | 5 | ADR-048 |
+| Query expansion | Expands conceptual queries to search terms | Reviews spiritual-terms.json periodically | 1 | ADR-049 E2 |
+| Ingestion QA | Flags probable OCR errors, formatting issues | Makes every correction decision | 1 | ADR-049 E4 |
+| Tone classification | Classifies passage tone (consoling/joyful/challenging/contemplative/practical) | Spot-checks | 5 | ADR-049 E8 |
+| Accessibility rating | Classifies passage depth (universal/accessible/deep) | Spot-checks | 5 | ADR-049 E3 |
+| UI string translation | Drafts translations for all ~200–300 UI strings | Reviews every string before production | 11 | ADR-023 |
+| Alt text generation | Generates reverential alt text for photographs | Reviews before publication | 2 | ADR-049 E7 |
+| Social media captions | Generates caption text with citation | Reviews and edits before posting | 9 | ADR-019 |
+| Relation type classification | Classifies cross-book relation types | Spot-checks | 6 | ADR-049 E6 |
+| External reference extraction | Extracts Bible, Gita, Patanjali references from text | Three-state review (auto → reviewed → manual) | 6 | ADR-055 |
+| `/guide` page drafts | Drafts recommendation text for seeker pathways | Reviews before publication | 5 | ADR-138 |
+| Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search) | Implicit — classification rules are human-authored | 1 | ADR-049 E1 |
+| Search quality evaluation | Automated judge assessing search result relevance in CI | Sets expected-passage test suite | 1 | ADR-049 E5 |
+
+### Additional AI-Assisted Workflows
+
+These workflows extend the existing pattern to additional editorial tasks. Each follows the same "AI proposes, humans approve" principle.
+
+#### UI Copy Generation (Top-N Choices)
+
+For every new UI string (error messages, empty states, ARIA labels, loading text, confirmation dialogs), Claude generates 3 ranked options following the portal editorial voice guide (ADR-124). The default is the top-ranked choice. Human editor can accept, select an alternative, or edit.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  New String: search.empty_state                               │
+│  Context: Shown when search returns no results                │
+│  Tone: Warm, honest, not apologetic (ADR-124)                 │
+│                                                                │
+│  ● Option 1 (recommended):                                    │
+│    "The teachings don't have a direct answer for that —        │
+│     but exploring related themes may help."                    │
+│                                                                │
+│  ○ Option 2:                                                   │
+│    "We didn't find teachings matching your search. Try         │
+│     different words, or explore a theme below."                │
+│                                                                │
+│  ○ Option 3:                                                   │
+│    "No passages found for this search. The teachings may       │
+│     address this differently — try a related theme."           │
+│                                                                │
+│  [Accept Selected]  [Edit]  [Regenerate]                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Phase:** 2 (when UI strings are first externalized to `messages/en.json`). The AI draft workflow becomes part of the locale file creation process for every subsequent phase. Consistent with ADR-124 editorial voice guide and ADR-023 translation workflow.
+
+**Service file:** `/lib/services/copy.ts` — UI copy generation, option ranking, editorial voice prompt construction.
+
+#### Daily Passage Pre-Curation
+
+Claude reviews the next 14 days of daily passages and suggests adjustments:
+- Calendar alignment: "March 7 is Mahasamadhi — the current random selection doesn't match. Here are 3 alternatives."
+- Tonal variety: "The last 5 days are all contemplative — here's a joyful alternative for day 6."
+- Content appropriateness: "This passage references meditation technique and may be too specialized for the homepage — flagged for review."
+- Circadian fit: late-night passages should lean consoling, not challenging (ADR-123).
+
+Human editor reviews Claude's suggestions alongside the current 14-day schedule, accepts/adjusts/ignores. This runs as a weekly scheduled task surfaced in the editorial home screen.
+
+**Phase:** 5 (alongside daily passage curation workflow).
+
+#### Calendar-Aware Content Suggestions
+
+When a calendar event approaches (within 30 days), Claude scans the corpus for thematically related passages and suggests passage-event associations. For example, approaching Christmas meditation: Claude identifies passages about Christ, the Nativity, and universal spirituality from across the library. Human curator reviews, selects, and links.
+
+**Phase:** 5 (alongside calendar event management, deliverable 5.8).
+
+#### Community Collection Pre-Review
+
+Before staff sees a community collection submission, Claude provides a preliminary assessment:
+
+- Citation completeness: "All 12 passages have valid book/chapter/page citations ✓"
+- Cross-corpus coverage: "Passages span 4 books ✓"
+- Content integrity: "Personal notes are present and visually distinct from Yogananda's text ✓"
+- Theological coherence flag: "Passage #7 appears to be about meditation technique, but the collection is themed 'Friendship.' Recommend staff verify."
+- Decontextualization risk: "Passage #3 is about death and may read differently outside its chapter context — suggest staff check."
+
+This does **not** auto-approve or auto-reject. It reduces the reviewer's cognitive load by pre-screening for common issues, allowing the human reviewer to focus on theological judgment.
+
+**Phase:** 16 (alongside community collection gallery, deliverable 16.9).
+
+#### Curation Brief Drafting
+
+Staff describes a high-level need ("We need a collection about courage for autumn"), and Claude drafts a structured curation brief:
+
+- Suggested title
+- Description with editorial guidance
+- Recommended source books (based on theme tag density)
+- 3–5 seed passages as starting points
+
+Staff edits and publishes the brief. VLD members see a well-structured assignment with concrete guidance, reducing the ambiguity that makes volunteer work difficult.
+
+**Phase:** 17 (alongside VLD curation pipeline, deliverable 17.2).
+
+#### Feedback Categorization
+
+Seeker feedback (ADR-116) arrives as free text. Claude categorizes it before it enters the review queue:
+
+| Category | Priority | Routing |
+|---|---|---|
+| Citation error | High | QA queue |
+| Text error (OCR, formatting) | High | QA queue |
+| Feature suggestion | Normal | Feature request log |
+| Search quality complaint | Normal | Search quality review |
+| Praise / gratitude | Low | Archive (morale visibility in editorial home) |
+| Off-topic / spam | Low | Flag for dismissal |
+| Crisis language | Immediate | Alert per ADR-122 protocol |
+
+Human sees pre-categorized feedback with Claude's reasoning, adjusts categories as needed. The categorization itself is never shown to the seeker — it's an internal routing aid.
+
+**Phase:** 5 (alongside seeker feedback mechanism, deliverable 5.17).
+
+#### Ingestion Changelog Generation
+
+After a new book is ingested, Claude generates a human-readable summary:
+
+- "942 passages extracted across 48 chapters"
+- "12 OCR flags awaiting review"
+- "17 new glossary terms identified"
+- "Top 5 themes: Meditation (142 passages), Self-Realization (89), Divine Love (76), Devotion (63), Yoga (51)"
+- "Estimated review time: 2–3 hours for QA flags"
+
+Staff gets a concise summary without querying the database. Displayed in the admin portal's pipeline dashboard.
+
+**Phase:** 5 (alongside book ingestion workflow improvements).
+
+#### Impact Report Drafting
+
+For the annual "What Is Humanity Seeking?" report (Phase 16, deliverable 16.8), Claude drafts narrative text from aggregated data:
+
+- "In 2027, seekers from 142 countries searched the portal. The most common theme was 'peace' — reflecting a world seeking inner stillness."
+- "Grief-related searches peaked in November, suggesting a seasonal pattern of reflection around holidays and year's end."
+- "The fastest-growing theme was 'meditation' — up 40% from Q1 to Q4 — suggesting rising interest in practice, not just reading."
+
+Human curator edits the draft into the final report. The data is real; the narrative framing is AI-drafted, human-approved.
+
+**Phase:** 16 (alongside annual report, deliverable 16.8).
+
+### AI Tone in the Admin Portal
+
+The AI's voice in staff-facing interfaces should match the portal's contemplative character. Not performative enthusiasm ("AI has completed 23 tasks!") but quiet assistance:
+
+- "Here are today's suggestions for your review."
+- "This passage was flagged because the OCR confidence was low for the Sanskrit text."
+- "Claude's recommendation: approve. Confidence: high. Reasoning: strong thematic alignment with 'Peace' across 3 similar passages already tagged."
+
+The admin portal's AI-generated text follows the same editorial voice guide (ADR-124) as seeker-facing copy — warm, honest, not mechanical.
 
 ---
 
@@ -5509,7 +5877,7 @@ When the shared component library begins (Phase 12), Figma Professional ($15/edi
 
 ## Magazine Section Architecture
 
-Self-Realization Magazine (published since 1925) is a first-class content type alongside books, audio, and video. Yogananda's magazine articles enter the full search/theme/daily-passage pipeline. Monastic articles are searchable via opt-in filter. See ADR-105.
+Self-Realization Magazine (published since 1925) is a primary content type alongside books, audio, and video. Yogananda's magazine articles enter the full search/theme/daily-passage pipeline. Monastic articles are searchable via opt-in filter. See ADR-105.
 
 ### Magazine API Endpoints
 
@@ -5929,7 +6297,7 @@ Media type toggles: show/hide books, magazine, video, audio, images independentl
 
 | Scale | Rendering | Layout |
 |-------|-----------|--------|
-| < 10,000 nodes | d3-force with Canvas | Pre-computed positions in JSON (nightly Lambda) |
+| < 10,000 nodes | d3-force with Canvas | Pre-computed positions in JSON (nightly Lambda, ADR-143) |
 | 10,000–50,000 nodes | WebGL (deck.gl or custom) | Level-of-detail: clusters when zoomed out, nodes when zoomed in |
 | Mobile / low-bandwidth | Subset graph: 2-hop neighborhood of current node, max ~500 nodes | Progressive loading: clusters first, expand on interaction |
 

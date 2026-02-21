@@ -103,7 +103,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-033: Architecture Longevity — 10-Year Horizon
 - ADR-047: Street View Links (No Embedded Maps)
 - ADR-051: Bookstore URL Simplification
-- ADR-065: AWS Lambda for Batch and Background Workloads
+- ADR-065: ~~AWS Lambda for Batch and Background Workloads~~ (Superseded by ADR-143)
 - ADR-066: Content-Addressable Passage Deep Links
 - ADR-067: Search API Rate Limiting and Abuse Prevention
 - ADR-070: CI-Agnostic Deployment Scripts
@@ -118,6 +118,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-109: Single-Database Architecture — No DynamoDB
 - ADR-110: AWS Bedrock Claude with Model Tiering
 - ADR-115: Chunking Strategy Specification
+- ADR-143: Terraform-Native Lambda (Supersedes ADR-065)
 
 **Ethics & Internationalization**
 - ADR-014: Personalization with Restraint — DELTA Boundaries
@@ -1086,7 +1087,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 5. **`canonical_book_id` links translations to originals.** A new column on `books` enables "Available in 6 languages" on the library page and "Read in English →" navigation between editions. The `canonical_chunk_id` column on `book_chunks` enables passage-level cross-language links.
 
-6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get first-class related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
+6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
 7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Phase 1's English-only search quality evaluation (Deliverable 1.11) and prevents launching a language with degraded retrieval quality.
 
@@ -2356,7 +2357,7 @@ In Phase 1 (English only), this is equivalent to the original "top 30" — the E
 - **Pre-computation eliminates read-time latency.** The side panel must feel instant. A database lookup in `chunk_relations` is a simple indexed JOIN — sub-millisecond.
 - **Graph traversal is emergent, not engineered.** The semantic graph is implicit in the embedding space. Pre-computing the edges makes it navigable. No special graph database needed.
 - **Paragraph-level is the right granularity.** Sentence-level is too noisy (a sentence like "He smiled" has no semantic content). Section-level is too coarse (misses nuance). Paragraphs are complete thoughts — the natural unit of Yogananda's prose.
-- **Per-language storage ensures first-class related teachings for every language.** At 400K chunks × 40 relations = 16M rows in the fully multilingual corpus. Trivial storage. Sufficient for filtered queries across most filter combinations. Non-English languages are never second-class citizens whose related teachings depend on constant real-time fallback. English supplemental relations follow the same `[EN]` marking pattern as the search fallback — consistent multilingual UX.
+- **Per-language storage ensures full related teachings for every language.** At 400K chunks × 40 relations = 16M rows in the fully multilingual corpus. Trivial storage. Sufficient for filtered queries across most filter combinations. Non-English languages are never second-class citizens whose related teachings depend on constant real-time fallback. English supplemental relations follow the same `[EN]` marking pattern as the search fallback — consistent multilingual UX.
 - **Incremental updates are efficient.** Adding a 3,000-chunk book to a 50,000-chunk corpus requires ~150M cosine similarity comparisons — minutes with vectorized computation, not hours.
 
 ### Consequences
@@ -3517,7 +3518,7 @@ The "Seeking..." entry points on the homepage already hint at this. Threads make
 
 ### Decision
 
-Add editorially curated reading threads as a first-class content type. Each thread is a human-selected, human-sequenced arrangement of existing passages from across multiple books, tracing a single spiritual theme as a coherent reading experience.
+Add editorially curated reading threads as a primary content type. Each thread is a human-selected, human-sequenced arrangement of existing passages from across multiple books, tracing a single spiritual theme as a coherent reading experience.
 
 Threads are not AI-generated content. They are curated paths through existing verbatim passages — the same artworks in a thoughtful arrangement. Optional editorial notes between passages provide transitions ("In this next passage, written twenty years later, Yogananda returns to...") without ever paraphrasing Yogananda's words.
 
@@ -4627,7 +4628,7 @@ The editorial review portal is introduced incrementally, matching the content wo
 
 - **Staff should think about the teachings, not the technology.** The same principle that governs the seeker experience ("calm technology") should govern the staff experience. A monastic editor's tool should fade into the background, leaving focus on the passage and the decision.
 - **Three distinct audiences need three distinct experiences.** A monastic editor, an AE developer, and a leadership stakeholder have different mental models, different technical comfort levels, and different goals. One tool cannot serve all three well.
-- **Review workflows are the bottleneck.** The portal's most distinctive constraint — human review as mandatory gate — means the speed and quality of staff review directly determines how quickly new content reaches seekers. A cumbersome review process means fewer themes published, fewer passages curated, slower translation cycles. The review experience is a first-class product concern, not an afterthought.
+- **Review workflows are the bottleneck.** The portal's most distinctive constraint — human review as mandatory gate — means the speed and quality of staff review directly determines how quickly new content reaches seekers. A cumbersome review process means fewer themes published, fewer passages curated, slower translation cycles. The review experience is a primary product concern, not an afterthought.
 - **The calm design system already exists.** Building the admin portal in the same Next.js application, with the same design tokens, means zero incremental design cost. The portal's warm cream, Merriweather, and gold accents serve the staff experience as naturally as the seeker experience.
 - **Auth0 already exists in the SRF stack.** Role-based access for the admin portal uses SRF's established identity provider. No new authentication system.
 - **Incremental delivery.** Phase 5 delivers only the review workflows needed for theme tagging (the first AI-proposal workflow at scale). Each subsequent phase adds only the workflows demanded by its content features. The admin portal grows organically, never ahead of actual need.
@@ -4648,7 +4649,7 @@ The editorial review portal is introduced incrementally, matching the content wo
 
 ## ADR-065: AWS Lambda for Batch and Background Workloads
 
-**Status:** Accepted | **Date:** 2026-02-19
+**Status:** Superseded by ADR-143 | **Date:** 2026-02-19
 
 ### Context
 
@@ -5488,7 +5489,7 @@ SRF possesses audio recordings of Paramahansa Yogananda's own voice — lectures
 
 ### Decision
 
-Add audio as a first-class content type with its own data model, ingestion pipeline, browse/listen experience, and search integration. Audio recordings are hosted on S3 with CloudFront delivery. Transcriptions are generated via OpenAI Whisper, human-reviewed (ADR-023's mandatory human gate), and indexed for full-text and semantic search alongside books and video.
+Add audio as a primary content type with its own data model, ingestion pipeline, browse/listen experience, and search integration. Audio recordings are hosted on S3 with CloudFront delivery. Transcriptions are generated via OpenAI Whisper, human-reviewed (ADR-023's mandatory human gate), and indexed for full-text and semantic search alongside books and video.
 
 ### Data Model
 
@@ -5993,7 +5994,7 @@ The portal serves three classes of machine consumer: (1) traditional search engi
 
 ### Decision
 
-Implement a comprehensive machine-readability strategy spanning structured data, citation guidance, syndication feeds, and API documentation. Treat machines as first-class consumers of the portal's content — not as an afterthought.
+Implement a comprehensive machine-readability strategy spanning structured data, citation guidance, syndication feeds, and API documentation. Treat machines as full consumers of the portal's content — not as an afterthought.
 
 ### 1. Structured Data (JSON-LD)
 
@@ -6455,7 +6456,7 @@ A seeker reading Autobiography's account of Yogananda at the Ranchi school canno
 
 ### Decision
 
-Images become a first-class content type with their own data model, browse/search experience, and participation in the cross-media content fabric (Related Teachings, editorial threads, theme tagging, place connections).
+Images become a primary content type with their own data model, browse/search experience, and participation in the cross-media content fabric (Related Teachings, editorial threads, theme tagging, place connections).
 
 **Schema:**
 
@@ -7032,7 +7033,7 @@ The same pattern applies to Places, which already have a dedicated `places` tabl
 
 ### Decision
 
-Add a **`people`** table as a first-class content type, linked to the existing `teaching_topics` system for passage tagging. Create a People Library (`/people`) parallel to the Books library (`/books`) and Sacred Places (`/places`).
+Add a **`people`** table as a primary content type, linked to the existing `teaching_topics` system for passage tagging. Create a People Library (`/people`) parallel to the Books library (`/books`) and Sacred Places (`/places`).
 
 #### Schema
 
@@ -7741,7 +7742,7 @@ Additionally, the portal's "What Is Humanity Seeking?" data (ADR-094) is an idea
 
 ### Decision
 
-Integrate Self-Realization Magazine as a first-class content type with differentiated treatment by content category:
+Integrate Self-Realization Magazine as a primary content type with differentiated treatment by content category:
 
 | Category | Search Index | Theme Tags | Daily Pool | Reader Treatment |
 |----------|-------------|------------|------------|-----------------|
@@ -9983,6 +9984,22 @@ This extends the role structure from ADR-064 (Staff Experience Architecture):
 - Future consideration: could extend beyond curation to translation review, theme tag review, or other editorial tasks where VLD members have relevant skills
 - **Extends ADR-135** (Community Collections) with organizational delegation; **extends ADR-064** (Staff Experience) with volunteer roles
 
+### VLD Service Expansion Tiers (Future Scope)
+
+The curation pipeline is the first tier of VLD portal participation. As VLD capacity and SRF governance allow, additional tiers could be activated — each with appropriate Auth0 role scoping:
+
+| Tier | Service Type | Auth0 Role | Prerequisite | Staff Involvement |
+|---|---|---|---|---|
+| **1 (current)** | Collection curation | `vld` | VLD membership | Reviews every submission |
+| **2** | Translation review | `vld:translator:{locale}` | Fluency + SRF terminology familiarity | Spot-checks trusted reviewers |
+| **3** | Theme tag review | `vld:tagger` | Training module completion | VLD-reviewed tags go to "VLD-reviewed" state; monastic batch-approves |
+| **4** | Feedback triage | `vld:feedback` | Onboarding session | Categorization reviewed by staff |
+| **5** | Content QA | `vld:qa` | Access to physical books; high-trust | Discrepancy reports reviewed by staff |
+
+Each tier follows the same design principles: staff creates structured assignments, VLD members execute, staff reviews results. No tier grants editorial approval authority — VLD members submit; staff approves. Trusted submitter status (threshold of approved work) reduces but never eliminates review. All tiers respect the no-gamification principle: no leaderboards, no submission counts visible to other members.
+
+Tier expansion is a stakeholder question requiring SRF input on VLD governance. See CONTEXT.md § Open Questions (Stakeholder).
+
 ---
 
 ## ADR-137: Knowledge Graph Cross-Media Evolution — All Content Types as Graph Nodes
@@ -10226,7 +10243,7 @@ Neither page replaces existing routes. They provide complementary *modes of navi
 1. **Single combined page.** Merging directory and guide into one page dilutes both. The directory needs to be comprehensive and auto-generated; the guide needs to be selective and editorially curated. Different audiences, different update cadences, different design constraints.
 2. **Enhance `/themes` instead.** The themes page covers only one content type. A portal page covers books, themes, people, references, glossary, threads — the full content space.
 3. **Text-only mode is sufficient.** Text-only mode degrades existing pages. `/browse` is designed text-first. The difference matters for screen readers, feature phones, and offline caching. A page designed for text is better than a rich page stripped of images.
-4. **Sitemap.xml is sufficient for crawlers.** Sitemaps serve machines. `/browse` serves humans (and machines) — a sitemap promoted to first-class content.
+4. **Sitemap.xml is sufficient for crawlers.** Sitemaps serve machines. `/browse` serves humans (and machines) — a sitemap promoted to full content.
 
 ### Consequences
 
@@ -10429,7 +10446,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 
 ### Context
 
-ADR-092 established the People Library as a first-class content type with a `people` table, `person_relations` junction table, and five editorial categories on the `/people` index: guru lineage, avatars, saints and sages, referenced figures, and SRF/YSS leadership. The schema includes `birth_year`, `death_year`, `lineage_position`, and `person_relations` with relation types `guru_of`, `disciple_of`, `contemporary`, `referenced_by`.
+ADR-092 established the People Library as a primary content type with a `people` table, `person_relations` junction table, and five editorial categories on the `/people` index: guru lineage, avatars, saints and sages, referenced figures, and SRF/YSS leadership. The schema includes `birth_year`, `death_year`, `lineage_position`, and `person_relations` with relation types `guru_of`, `disciple_of`, `contemporary`, `referenced_by`.
 
 This foundation handles "Who is Krishna?" and the guru lineage (Babaji → Lahiri Mahasaya → Sri Yukteswar → Yogananda) well. But three distinct monastic and organizational use cases expose gaps:
 
@@ -10591,6 +10608,131 @@ The `/explore` graph gains a "Lineage" filter mode (extends ADR-137 view modes).
 - Phase 6 seed data expanded: presidential succession entries with service dates alongside existing spiritual figure seeds
 - **Extends:** ADR-092, ADR-098, ADR-137
 - **New stakeholder questions:** SRF editorial policy on living monastic biographical content; monastic content scope (content *by* vs. *about* monastics); preferred depth of presidential succession editorial framing
+
+---
+
+## ADR-143: Terraform-Native Lambda — Supersedes ADR-065
+
+**Status:** Accepted | **Date:** 2026-02-21
+
+**Supersedes:** ADR-065 (AWS Lambda for Batch and Background Workloads)
+
+### Context
+
+ADR-065 introduced AWS Lambda + Serverless Framework v4 for batch and background workloads starting Phase 5. The decision was sound on the runtime choice (Lambda) but introduced three problems:
+
+1. **Serverless Framework v4 licensing.** SF v4 moved to a paid license model in late 2024. The portal takes on a licensing dependency for a tool it barely needs (< 15 functions across all phases). The SRF Brief specifies SF v4 because most SRF microservices have dozens of Lambda functions — the portal does not.
+
+2. **Dual IaC tooling.** The portal uses Terraform for all infrastructure (Neon, Vercel, Sentry, Cloudflare, S3). Adding SF v4 means two IaC tools, two deployment pipelines, two state management systems. This contradicts the 10-year simplicity principle (ADR-033).
+
+3. **Phase 5 timing.** ADR-065 placed Lambda infrastructure setup in Phase 5 — already the roadmap's densest phase (multi-book ingestion, theme tagging, editorial review portal, daily passage curation). Meanwhile ADR-072 (database backup) needs Lambda in Phase 3, creating a timing gap that ADR-072 acknowledged awkwardly: "Lambda function added in Phase 3 or Phase 5 when Lambda infrastructure is first deployed."
+
+A comparative analysis of the SRF Tech Stack Brief against the portal's architectural decisions (ADR-109, ADR-033) confirmed that the portal's batch workloads are modest, rare, and well-served by Lambda — but that the deployment tool and introduction timing should match the portal's actual complexity profile, not the SRF microservices pattern.
+
+### Decision
+
+1. **Keep Lambda as the batch processing runtime.** All batch, scheduled, and event-driven workloads run on AWS Lambda. This is unchanged from ADR-065.
+
+2. **Deploy Lambda via Terraform, not Serverless Framework v4.** Lambda functions, layers, IAM roles, and EventBridge schedules are managed by the same Terraform that manages all other portal infrastructure. One IaC tool. One deployment pipeline. One state backend.
+
+3. **Use EventBridge Scheduler (not EventBridge Rules) for cron tasks.** EventBridge Scheduler is the purpose-built service for scheduled invocations, with built-in retry with exponential backoff, dead-letter queues, and one-time scheduling. All nightly/daily cron tasks use Scheduler.
+
+4. **Provision Lambda infrastructure in Phase 3, not Phase 5.** Phase 3 ("Engineering Infrastructure") is where Terraform modules are provisioned. The backup Lambda function (ADR-072) deploys immediately. Subsequent phases add functions to already-working infrastructure.
+
+5. **Replace `/serverless/` directory with `/lambda/`.** The directory name reflects the runtime, not a vendor tool.
+
+### Directory Structure
+
+```
+/lambda/
+  /handlers/
+    backup.ts              — pg_dump → S3 (Phase 3)
+    ingest.ts              — Book ingestion pipeline (Phase 5)
+    relations.ts           — Chunk relation computation (Phase 5)
+    aggregate-themes.ts    — Nightly search theme aggregation (Phase 7)
+    send-email.ts          — Daily passage email dispatch (Phase 9)
+    generate-social.ts     — Quote image generation (Phase 9)
+    webhook-contentful.ts  — Contentful sync (Phase 10)
+    ingest-transcript.ts   — YouTube transcript ingestion (Phase 13)
+    compute-graph.ts       — Knowledge graph positions (Phase 14)
+    process-image.ts       — Image tier generation (Phase 14)
+    process-audio.ts       — Audio transcription (Phase 14)
+  /layers/
+    shared/                — Shared deps (Neon client, Claude SDK)
+
+/terraform/modules/
+  /lambda/
+    main.tf                — Functions, layers, IAM roles, VPC config
+    variables.tf
+    outputs.tf
+  /eventbridge/
+    main.tf                — Scheduler rules, event patterns
+    variables.tf
+```
+
+Each Lambda handler is a thin wrapper that imports from `/lib/services/` — the framework-agnostic service layer (ADR-024). The business logic is identical whether invoked by Lambda, CLI, or a test harness.
+
+### Phase-by-Phase Introduction
+
+| Phase | Functions Added | Trigger |
+|-------|----------------|---------|
+| **3** | `backup` | EventBridge Scheduler (nightly) |
+| **5** | `ingest`, `relations` | Manual invocation (CLI/admin portal → Lambda invoke) |
+| **7** | `aggregate-themes` | EventBridge Scheduler (nightly) |
+| **9** | `send-email`, `generate-social` | Scheduler (daily) / Manual |
+| **10** | `webhook-contentful` | EventBridge Pipe (Contentful → Lambda) |
+| **13** | `ingest-transcript` | Manual + Scheduler (batch) |
+| **14** | `compute-graph`, `process-image`, `process-audio` | Scheduler (nightly) / Event-driven |
+
+Infrastructure is provisioned once in Phase 3. Each subsequent phase adds functions to already-provisioned infrastructure.
+
+### CLI Wrappers
+
+`/scripts/` retains CLI wrappers that call the same `/lib/services/` functions:
+
+```
+/scripts/
+  ingest.ts              — CLI wrapper for local development/debugging
+  backup.ts              — CLI wrapper
+  compute-relations.ts   — CLI wrapper
+  ...
+```
+
+A developer can run `pnpm run ingest --book autobiography` locally. Production runs the same logic via Lambda. The runtime is irrelevant; the business logic is identical.
+
+### Rationale
+
+- **Lambda is SCM-agnostic.** It works identically under GitHub Actions (Phases 1–9) and GitLab CI (Phase 10+). Unlike CI-based cron jobs, Lambda infrastructure doesn't change when the portal migrates from GitHub to GitLab. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
+- **The portal already has an AWS footprint.** S3 (backups, Phase 3), Bedrock (Claude API, Phase 1), CloudFront (media streaming, Phase 14), and EventBridge are all AWS services the portal uses regardless. Lambda is the natural compute layer for an AWS-invested project.
+- **Terraform-native Lambda is sufficient at this scale.** The portal has < 15 Lambda functions across all phases. SF v4's ergonomics (local invocation, plugin ecosystem, per-function configuration) serve microservice architectures with dozens of functions. For < 15 functions, `aws_lambda_function` + `aws_lambda_layer_version` in Terraform are straightforward and eliminate a tool dependency.
+- **One IaC tool, one deployment pipeline.** `terraform apply` already deploys Neon, Vercel, Sentry, Cloudflare, and S3. Adding Lambda to the same pipeline means no new deployment workflow. CI/CD gains no new steps — Lambda deploys alongside everything else.
+- **Phase 3 resolves the ADR-072 timing gap.** The backup function deploys in Phase 3 where it belongs. No more "Phase 3 or Phase 5" ambiguity.
+- **ADR-109 precedent.** The portal already diverges from SRF's DynamoDB pattern when the portal's needs don't match. The same principle applies: SRF ecosystem alignment is about patterns (Lambda for batch compute), not tools (SF v4 as the deployment mechanism).
+- **10-year horizon (ADR-033).** Terraform is Tier 1 (effectively permanent). Serverless Framework v4 is not in any durability tier — it's a deployment tool with licensing risk and competitive pressure from SST, AWS SAM, and native Terraform. Eliminating it removes a 10-year maintenance liability.
+
+### Alternatives Considered
+
+1. **Keep ADR-065 unchanged (Lambda + SF v4 in Phase 5).** Rejected: introduces dual IaC tooling, SF v4 licensing dependency, and Phase 5 overload. The benefits of Lambda are preserved without the deployment tool overhead.
+
+2. **Replace Lambda entirely with CI-scheduled scripts (GitHub Actions / GitLab CI).** Rejected: builds batch infrastructure on an SCM platform the portal is leaving at Phase 10. CI cron is ephemeral infrastructure — Lambda + EventBridge is durable infrastructure managed by Terraform.
+
+3. **AWS SAM instead of Terraform-native Lambda.** Rejected: SAM is another CLI tool alongside Terraform. For < 15 functions, native Terraform resources are simpler.
+
+4. **SST (open-source Serverless Framework alternative).** Considered but rejected: SST is well-designed but introduces another IaC paradigm. The portal should minimize tool surface area.
+
+5. **AWS Step Functions for ingestion orchestration.** Deferred, not rejected. Book ingestion is a multi-step workflow (extract → chunk → embed → insert → relate → verify), but it runs ~12 times total across the portal's lifetime. A sequential script with progress logging is sufficient. If Phase 14's audio/video pipeline needs multi-step orchestration with failure recovery, Step Functions earns its place via a new ADR.
+
+### Consequences
+
+- ADR-065 is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Phase 5) are replaced.
+- `/serverless/` directory becomes `/lambda/`. No `serverless.yml`. No SF v4 dependency.
+- Terraform gains two modules: `/terraform/modules/lambda/` and `/terraform/modules/eventbridge/`.
+- Phase 3 deliverable 3.2 gains Lambda infrastructure provisioning and the backup function.
+- Phase 5 deliverable 5.11 simplifies: deploy ingestion and relation functions into already-provisioned infrastructure. No infrastructure setup in Phase 5.
+- All downstream ADRs referencing "ADR-065 Lambda infrastructure" now reference ADR-143. The infrastructure is the same (Lambda + EventBridge); the deployment mechanism and timing differ.
+- Developers familiar with SF v4 should note: Lambda invocation, monitoring, and IAM are identical. Only the deployment tool changes (Terraform instead of `serverless deploy`).
+- **Extends ADR-031** (Terraform as sole IaC tool), **ADR-033** (10-year horizon — fewer tool dependencies), **ADR-070** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-072** (backup timing resolved — Phase 3).
+- **Deferred:** Step Functions for complex orchestration (evaluate at Phase 14 if audio/video pipeline complexity warrants it).
 
 ---
 
