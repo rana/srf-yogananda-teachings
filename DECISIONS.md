@@ -10,6 +10,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-006: Hybrid Search (Vector + Full-Text)
 - ADR-007: Claude API for AI Features
 - ADR-032: Embedding Model Versioning and Migration
+- ADR-120: Multilingual Embedding Quality Strategy
 - ADR-034: Related Teachings — Pre-Computed Chunk Relations
 - ADR-049: Claude AI Usage Policy — Permitted Roles and Prohibited Uses
 - ADR-052: Terminology Bridge Per-Book Evolution Lifecycle
@@ -17,6 +18,8 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-094: "What Is Humanity Seeking?" — Public-Facing Dashboard
 - ADR-097: Passage Resonance Signals — Content Intelligence Without Surveillance
 - ADR-098: Knowledge Graph Visualization
+- ADR-134: Structured Spiritual Ontology — Machine-Readable Teaching Structure
+- ADR-121: Search Suggestions — Corpus-Derived, Not Behavior-Derived
 
 **Content Strategy**
 - ADR-002: Contentful as Editorial Source of Truth
@@ -67,6 +70,14 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-076: Audio-Visual Ambiance Toggle
 - ADR-095: Contextual Quiet Corner — Practice Bridge in the Reader
 - ADR-101: Quiet Corner Audio from Phase 2
+- ADR-131: AI Audio Generation for Portal Audio Assets
+- ADR-123: Circadian Content Choreography — Time-Aware Passage Selection
+- ADR-125: Haptic Contemplation — Touch Feedback for Contemplative Gestures
+- ADR-126: Departure Grace — Session Closure Moments
+- ADR-128: Self-Revealing Navigation — Interface Taught Through Use
+- ADR-130: Non-Search Seeker Journeys — Equal Excellence for Every Path
+- ADR-132: Lectio Divina Mode — Structured Sacred Reading Practice
+- ADR-133: The Anti-Collection — Passage Internalization
 
 **Visual Identity**
 - ADR-008: SRF-Derived Design System
@@ -117,6 +128,10 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-084: Machine-Readable Content and AI Citation Strategy
 - ADR-085: Low-Tech and Messaging Channel Strategy
 - ADR-102: Practice Bridge After Search
+- ADR-122: Crisis Resource Presence — Gentle Safety Net on Grief and Death Content
+- ADR-124: Micro-Copy as Ministry — Editorial Voice for UI Text
+- ADR-127: Cognitive Accessibility — Reducing Complexity for All Seekers
+- ADR-129: Screen Reader Emotional Quality — Warmth in Spoken Interface
 
 **Cross-Media**
 - ADR-057: Video Transcript Time-Synced Architecture
@@ -8690,4 +8705,1062 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 
 ---
 
-*Last updated: 2026-02-20*
+## ADR-120: Multilingual Embedding Quality Strategy
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's embedding model (OpenAI text-embedding-3-small) was selected for cost, multilingual support, and quality (ADR-032). However, cost is negligible at this corpus scale — the entire multilingual corpus across all languages costs under $1 to embed. Even text-embedding-3-large at 13x the price would cost ~$9. The economics that differentiate embedding models for most products do not apply here.
+
+This raises a deeper question: is the embedding model the right place to economize for a portal whose mission is making Yogananda's teachings "freely accessible worldwide"? The embedding model is the single most leveraged component in the search experience — it determines whether the right passage surfaces for a seeker's query. Everything else (UI, typography, citation formatting) is presentation.
+
+Three dimensions of embedding quality matter for this portal:
+
+1. **Multilingual retrieval quality.** text-embedding-3-small's multilingual capability is emergent from training data diversity, not an explicit optimization target. Models like Cohere embed-v3 and BGE-M3 were designed multilingual-first. For European languages (es, de, fr, it, pt) the gap is likely small. For Hindi, Bengali, and Japanese — the languages where the English fallback strategy is load-bearing — the gap may be significant.
+
+2. **Domain specificity.** General-purpose embedding models are trained on web text, Wikipedia, and news. Yogananda's prose is spiritually dense, metaphorical, and uses vocabulary that spans traditions ("The wave forgets it is the ocean" — simultaneously about water and cosmic consciousness). General models may not capture the semantic relationships that matter for this corpus.
+
+3. **Cross-language alignment for sacred vocabulary.** Terms like "samadhi," "サマーディ," "समाधि" should occupy the same region of vector space. The spiritual terminology bridge (`spiritual-terms.json`, ADR-052) handles this at the query expansion layer, but embedding-level alignment would be more robust.
+
+### Decision
+
+1. **Start with OpenAI text-embedding-3-small** as the Phase 1 embedding model. It provides adequate multilingual support, the architecture is well-understood, and the operational model is simple (symmetric embeddings — same encoding for queries and documents).
+
+2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Phase 11). The Phase 1 English-only evaluation (Deliverable 1.11) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
+
+3. **Establish domain-adapted embeddings as a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not a Phase 1 deliverable:
+   - **Input:** The complete multilingual corpus (available after Phase 11 ingestion)
+   - **Method:** Fine-tune a strong multilingual base model (e.g., multilingual-e5-large-instruct or BGE-M3) on the corpus with retrieval-specific training objectives
+   - **Evaluation:** Per-language search quality test suites (Deliverable 11.10) provide the evaluation framework
+   - **Outcome:** An embedding model that understands Yogananda's vocabulary, metaphorical patterns, and cross-tradition spiritual concepts at a depth no general model matches
+
+4. **The architecture already supports model evolution.** ADR-032's `embedding_model` column enables per-chunk model tracking. The migration procedure (Neon branch → re-embed → validate → promote) applies to both vendor model upgrades and domain-adapted models. No architectural changes are needed to pursue any of these paths.
+
+### Alternatives Considered
+
+1. **Start with Cohere embed-v3** — Designed multilingual-first, supports query/document asymmetry (encodes queries and documents differently for better retrieval), scores higher on multilingual benchmarks (MIRACL, Mr.TyDi) for Indic languages. Rejected because: the query/document asymmetry adds operational complexity (wrong `input_type` degrades results silently), Cohere is a smaller company than OpenAI (10-year vendor risk), and the benchmark advantage is measured on Wikipedia-like content — not spiritual text. The gap may not transfer to this domain. Worth benchmarking in Phase 11 when multilingual content exists.
+
+2. **Self-hosted open-source model (BGE-M3, multilingual-e5-large)** — Eliminates API vendor dependency entirely. At this corpus scale (~150K chunks), could run on a single GPU or even CPU. Rejected for Phase 1 because: adds operational complexity (model hosting, versioning, GPU provisioning) during a phase focused on proving search works. Remains a strong candidate for the domain-adapted model research track, where self-hosting is likely necessary anyway.
+
+3. **Benchmark multilingual models before Phase 1** — Use a small sample of Autobiography of a Yogi in multiple published translations to benchmark models now. Rejected as a hard requirement because: Phase 1's priority is proving the search pipeline end-to-end. However, this remains a valuable optional activity — if time permits, a lightweight benchmark using 5-10 chapters across 3-4 languages would provide early signal on multilingual quality.
+
+4. **Per-language embedding models** — Use text-embedding-3-small for European languages and a stronger multilingual model for Indic/CJK. ADR-032's `embedding_model` column already supports this. Rejected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Phase 11 benchmarking reveals language-specific deficiencies.
+
+5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Phase 1 evaluation (Deliverable 1.11) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-032.
+
+### Rationale
+
+- **Cost is not the differentiator.** At < $1 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Starting with text-embedding-3-small is justified by simplicity and adequate quality, not by savings.
+- **Domain adaptation is the highest-ceiling option.** General models compete on benchmarks across all domains. A model fine-tuned on Yogananda's corpus would compete on one domain — the only one that matters for this portal. This is the path to world-class retrieval quality.
+- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Phase 11) and a per-language evaluation framework to validate against (Deliverable 11.10). Starting this research before those exist would produce a model trained on English-only data — missing the point.
+- **The architecture is already ready.** ADR-032's model versioning, the Neon branch migration workflow, and the per-language evaluation suites provide the complete infrastructure for model evolution. This ADR adds strategic direction, not architectural changes.
+
+### Consequences
+
+- Phase 1 proceeds with text-embedding-3-small as planned
+- Deliverable 1.11 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
+- Phase 11 Deliverable 11.3 includes formal benchmarking of multilingual-optimized models alongside the existing "may trigger first embedding model migration" language
+- Domain-adapted embeddings become a documented research track, scoped after Phase 11 corpus completion
+- CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
+- Future embedding model decisions should reference this ADR alongside ADR-032
+
+---
+
+## ADR-121: Search Suggestions — Corpus-Derived, Not Behavior-Derived
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's search architecture (ADR-006, ADR-007, ADR-049) is comprehensive: hybrid search, query expansion, intent classification, spiritual terminology bridge, passage ranking. But one common search UX pattern is absent: autocomplete suggestions as the seeker types.
+
+Google-style autocomplete is powered by billions of user queries — the suggestion intelligence comes from aggregate behavior. This portal operates under fundamentally different constraints:
+
+1. **DELTA compliance (ADR-029).** No user identification, no session tracking, no behavioral profiling. Personalized suggestions are architecturally impossible. Aggregate query-based suggestions face the ADR-068 minimum threshold problem — sparse data for months/years after launch.
+
+2. **Bounded, known corpus.** The portal contains a finite set of Yogananda's published works. Unlike web search, every term in the corpus is known in advance. This means every suggestion can *guarantee* results exist — a property Google cannot offer.
+
+3. **Calm Technology.** "Trending searches" and "popular queries" create social-media-like engagement patterns. Suggestions should reduce friction (calm), not drive browsing behavior.
+
+4. **Librarian identity (ADR-003, ADR-112).** A librarian helps you formulate your question and knows the collection. Suggestions are a natural extension of the librarian metaphor — showing the seeker what terrain the teachings cover.
+
+5. **Existing vocabulary bridge.** The spiritual terminology bridge (`spiritual-terms.json`, ADR-052) already maps seeker vocabulary to Yogananda's vocabulary. This infrastructure can power a unique suggestion type: surfacing the gap between what a seeker types and how Yogananda expressed the same concept.
+
+### Decision
+
+1. **Suggestion intelligence is corpus-derived, not behavior-derived.** All suggestion sources are extracted from the content itself, not from user query patterns. This ensures DELTA compliance, guarantees every suggestion leads to results, and aligns with the librarian identity.
+
+2. **Three suggestion types, each with distinct sources:**
+
+   - **Term completion:** Prefix matching against corpus vocabulary (extracted distinctive terms from chunks), theme names, book titles, chapter titles, and spiritual-terms.json canonical entries. User types "med" → "meditation", "Meditations on God" (chapter), "Meditation" (theme). Implementation: PostgreSQL `pg_trgm` trigram index or pre-computed suggestion lists cached at edge. Latency target: < 50ms.
+
+   - **Query suggestion:** Curated complete question forms seeded from the search quality test suite and editorially expanded. User types "How do I" → "How do I overcome fear?", "How do I meditate?" These are editorially maintained — human review required, consistent with ADR-023. Not derived from user query history.
+
+   - **Bridge-powered suggestion:** When the spiritual terminology bridge detects a mapping, surface Yogananda's vocabulary. User types "mindful" → suggestion includes a hint: "Yogananda's terms: concentration, one-pointed attention." This is the differentiator — no other search system has a sacred-text-aware vocabulary mapper as a suggestion engine.
+
+3. **New API endpoint: `GET /api/v1/search/suggest`.** Accepts `q` (partial query), `language`, and `limit` parameters. Returns typed suggestions with category metadata (term/query/bridge). No Claude API call — pure database/cache lookup for speed.
+
+4. **Zero-state experience is editorially curated.** When the search bar is focused but empty, display curated entry points (theme names, "Seeking..." prompts). This is an editorial statement — governance follows the same human-review principle as all user-facing content.
+
+5. **Phase progression:** Basic prefix matching in Phase 1 (single-book vocabulary). Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices in Phase 11. Optional personal "recent searches" (client-side only, no server storage) in Phase 15.
+
+### Alternatives Considered
+
+1. **Aggregate query-based suggestions ("popular searches").** Rejected: DELTA non-compliant without careful anonymization. Sparse data for months after launch. Creates social-proof dynamics misaligned with Calm Technology. Even with ADR-068-style thresholds, the minimum viable data for useful suggestions requires significant traffic volume.
+
+2. **Claude-powered suggestion generation.** Rejected: Adds latency (LLM call per keystroke or debounced batch), cost, and complexity. The corpus is bounded — pre-computed suggestions are faster, cheaper, and more reliable. The intent classification system (ADR-049 E1) already handles query understanding after submission.
+
+3. **No suggestions at all.** Considered: The intent classification + terminology bridge already handle "seeker doesn't know the right words" after query submission. However, pre-submission suggestions reduce typing friction, show seekers what the corpus contains, and extend the librarian metaphor. The bounded corpus makes guaranteed-result suggestions uniquely valuable.
+
+4. **Third-party search-as-a-service (Algolia, Typesense).** Rejected: Adds vendor dependency for a feature achievable with PostgreSQL `pg_trgm` and edge caching. Violates single-database principle (ADR-109). Over-engineered for a bounded corpus.
+
+### Rationale
+
+- **Bounded corpus is the advantage.** Web-scale autocomplete must handle infinite content and relies on query logs for signal. A sacred text library has finite, known content — every suggestion can guarantee results. This property is more valuable than trending queries.
+- **Corpus-derived suggestions are always fresh.** When a new book is ingested, its vocabulary automatically enters the suggestion index. No cold-start problem, no minimum query volume needed.
+- **Bridge-powered suggestions are unique.** No existing search product surfaces the gap between user vocabulary and corpus vocabulary as a suggestion. This extends the spiritual terminology bridge (ADR-052) from a backend query-expansion tool to a user-facing navigation aid.
+- **DELTA compliance by construction.** No behavioral data enters the suggestion pipeline. Privacy is a design property, not a policy constraint.
+- **Calm Technology alignment.** Suggestions show what's available — they don't optimize for engagement. No "trending," no social proof, no urgency signals.
+
+### Consequences
+
+- New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
+- New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions & Autocomplete"
+- ROADMAP.md updated: Deliverable 1.14 (basic prefix matching), 5.18 (multi-book + bridge + curated), 11.15 (per-language indices)
+- CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
+- Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-052 lifecycle)
+- Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-017)
+- Per-language suggestion indices required for Phase 11 (extends multilingual architecture)
+
+---
+
+## ADR-122: Crisis Resource Presence — Gentle Safety Net on Grief and Death Content
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's grief and death content strategy (ADR-114) targets seekers searching for "what happens after death," "spiritual comfort after loss," and "soul immortality." These are among the portal's highest-impact empathic entry points — they serve people in genuine pain. The SEO strategy deliberately positions the portal to rank for grief-related Yogananda queries.
+
+This strategy will reach people who are actively suicidal. A person searching at 2 AM for "what happens after death" may not be grieving a loss — they may be considering ending their own life. Yogananda's passages about the immortality of the soul, the freedom of death, and the continuation of consciousness are truthful and beautiful. But presented without context to a person in crisis, they could be read as endorsement of self-harm — a reading that fundamentally contradicts Yogananda's teaching that human life is a sacred opportunity for spiritual growth.
+
+The portal's "direct quotes only" principle (ADR-003) means it cannot add interpretive framing around passages. The Calm Technology principle means it cannot use aggressive modals or interstitials. The DELTA framework means it cannot identify or track vulnerable users. The question is: within these constraints, what is the portal's moral responsibility?
+
+### Decision
+
+1. **Display a non-intrusive crisis resource line on grief-adjacent content.** On the grief theme page (`/themes/grief`), on search results pages when the query matches grief/death intent patterns, and on the Quiet Corner page, display a single quiet line below the content area:
+
+   > *If you or someone you know is in crisis, help is available.* [Crisis helpline link]
+
+   Styled in `portal-text-muted`, smaller than body text, visually consistent with footer links — present but not competing with the teachings. No modal, no pop-up, no interstitial.
+
+2. **Locale-appropriate crisis resources.** Each supported locale provides the appropriate helpline:
+   - `en`: 988 Suicide and Crisis Lifeline (US), Samaritans 116 123 (UK/EU)
+   - `es`: Teléfono de la Esperanza (Spain), local equivalents (Latin America)
+   - `hi`/`bn`: iCall, Vandrevala Foundation, AASRA
+   - `ja`: Inochi no Denwa
+   - Other locales: IASP directory link as fallback
+
+   Resource data stored in locale files (`messages/{locale}.json`) alongside other UI strings. Editorial review required for all crisis resource text (consistent with ADR-023).
+
+3. **Intent detection is simple, not invasive.** The system does not analyze individual user behavior. Grief-adjacent content is identified by *content type* (grief theme page, death-related teaching topic), not by *user signals*. If a page is about death, it carries the resource line — regardless of who is reading or why.
+
+4. **The Quiet Corner always carries the resource line.** The Quiet Corner is designed for the "2 AM unable to sleep" persona (DESIGN.md § The Quiet Corner). This is the portal's highest-vulnerability context. The crisis resource line is a permanent, subtle feature of the Quiet Corner page.
+
+### Alternatives Considered
+
+1. **No crisis resources at all.** Considered: The portal is a library, not a mental health service. Adding crisis resources could feel patronizing or out of place. However: the portal's SEO strategy (ADR-114) *deliberately* targets people searching for comfort around death. Deliberately attracting vulnerable seekers while providing no safety net is a moral failure, not a design choice.
+
+2. **Prominent crisis modal or banner.** Rejected: Violates Calm Technology. A modal on grief content would be alarming, would interrupt the contemplative experience, and would treat every seeker reading about death as a potential suicide risk — which is both inaccurate and disrespectful.
+
+3. **AI-powered crisis detection.** Rejected: Violates DELTA (no behavioral profiling). Would require analyzing user intent beyond content classification. Architecturally incompatible with the portal's privacy commitments.
+
+4. **Link only from the About page or FAQ.** Considered: Less intrusive but defeats the purpose. The person in crisis is not navigating to the About page. The resource must be where the vulnerability is — on the grief content itself.
+
+### Rationale
+
+- **Moral responsibility follows from intentional positioning.** The portal is not passively available — it actively seeks to rank for grief queries (ADR-114). This creates a duty of care that goes beyond what a generic library would bear.
+- **The DELTA Dignity principle demands it.** "Users are seekers, not data points." Dignity includes acknowledging that some seekers are in danger and providing a path to help without surveillance or judgment.
+- **Calm implementation is possible.** A single muted line below content is not an aggressive intervention. It is the digital equivalent of a crisis helpline card placed on the library counter — available to those who need it, invisible to those who don't.
+- **Yogananda's teaching supports it.** Yogananda taught that human life is a precious opportunity for spiritual realization. Self-harm contradicts this teaching. Providing a crisis resource is consistent with the tradition's view of the sacredness of life.
+- **Industry precedent exists.** Google displays crisis resources on suicide-related queries. YouTube shows them on self-harm content. The portal should meet this standard without adopting the surveillance mechanisms that accompany it on those platforms.
+
+### Consequences
+
+- New UI element: crisis resource line on grief theme page, grief-adjacent search results, and Quiet Corner
+- Locale files extended with per-locale crisis helpline data
+- CONTEXT.md § Spiritual Design Principles references this ADR
+- CONTEXT.md § Open Questions (Stakeholder) includes crisis resource policy question for SRF input
+- No schema changes, no API changes, no privacy implications
+- Editorial review required for all crisis resource text before publication
+- Annual review recommended: verify helpline numbers and URLs remain current
+
+---
+
+## ADR-123: Circadian Content Choreography — Time-Aware Passage Selection
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal already shifts its visual warmth by time of day (ADR-039, Circadian Color Temperature) using nothing but `new Date().getHours()` — no tracking, no data sent to server. This addresses the *visual* dimension of temporal awareness. But the more important half is *content*.
+
+Today's Wisdom currently selects from a random pool with optional seasonal weighting (DESIGN.md § Today's Wisdom). A seeker arriving at 2 AM and a seeker arriving at 7 AM are in fundamentally different states. The 2 AM visitor — the person the "Seeking..." entry points are designed for (ADR-035) — would benefit from passages about comfort, the eternal nature of consciousness, and God's presence. The 7 AM visitor might be served by passages about vitality, willpower, and new beginnings.
+
+This is not personalization. It is the same principle as a temple that selects morning and evening chants differently — the teaching responds to the time, not the individual.
+
+### Decision
+
+1. **Extend the Today's Wisdom passage pool with a `time_affinity` tag.** Passages in the `daily_passages` table receive an optional `time_affinity` column (`dawn`, `morning`, `afternoon`, `evening`, `night`, or `NULL` for any-time). Editorial curation determines affinity — not an algorithm.
+
+2. **Five circadian bands, matching ADR-039's time bands:**
+
+   | Band | Hours | Character | Passage affinity |
+   |------|-------|-----------|-----------------|
+   | Dawn | 5:00–8:59 | Awakening | Vitality, new beginnings, divine energy, Energization |
+   | Morning | 9:00–11:59 | Clarity | Willpower, concentration, right action, purpose |
+   | Afternoon | 12:00–16:59 | Steadiness | Perseverance, equanimity, courage, service |
+   | Evening | 17:00–20:59 | Softening | Gratitude, love, devotion, peace |
+   | Night | 21:00–4:59 | Consolation | The eternal soul, fearlessness, God's presence, comfort |
+
+3. **Soft bias, not hard filter.** The selection is 60% time-affinity / 40% general pool (same ratio as seasonal weighting). A passage about courage can appear at any hour. The time affinity is a gentle shaping of probability, never a restriction.
+
+4. **Extends to Quiet Corner and zero-state suggestions.** The Quiet Corner affirmation selection uses the same circadian affinity. Zero-state search suggestions (ADR-121) can surface time-appropriate theme chips (e.g., "Peace" weighted higher at night).
+
+5. **Implementation is client-side band detection, server-side pool selection.** The API receives a `time_band` parameter (computed client-side from `new Date().getHours()`): `GET /api/v1/daily-passage?time_band=night`. The server selects from the affinity-weighted pool. No user time is stored or logged — the parameter is ephemeral.
+
+### Alternatives Considered
+
+1. **Server-side time detection via request timezone headers.** Rejected: HTTP does not reliably carry timezone. `Date` headers are server-time. Geo-IP timezone inference adds latency and a third-party dependency. Client-side `new Date()` is simpler, more accurate, and privacy-preserving.
+
+2. **Hard time-band filtering (only show dawn passages at dawn).** Rejected: Over-constrains the pool, especially in Phase 1 with a single book. The seasonal weighting model (60/40 soft bias) already exists and works.
+
+3. **No circadian content awareness — keep it fully random.** Considered: Pure randomness has a beautiful simplicity (bibliomancy). However: the portal already applies seasonal weighting, proving that editorial curation of randomness is an accepted pattern. Extending from seasonal to circadian is a natural evolution, not a new principle.
+
+### Rationale
+
+- **The 2 AM seeker is the portal's most important visitor.** The Findability Principle (CONTEXT.md § Mission) explicitly names the person "at 2 AM, unable to sleep because of anxiety." Circadian content choreography ensures that when this person arrives, the portal's first words are about comfort and the eternal soul — not about willpower and new habits.
+- **Zero tracking, zero profiling.** Uses the same `new Date()` mechanism as ADR-039. DELTA-compliant by construction.
+- **Consistent with existing patterns.** Seasonal weighting already shapes the pool. Circadian weighting is the same mechanism on a shorter timescale.
+- **Editorial, not algorithmic.** Humans assign time affinities. The system applies probability weighting. AI proposes nothing — this is pure curation.
+
+### Consequences
+
+- `daily_passages` table extended with `time_affinity` column (nullable enum)
+- `/api/v1/daily-passage` accepts optional `time_band` parameter
+- `/api/v1/quiet` affirmation selection uses same circadian weighting
+- DESIGN.md § Today's Wisdom updated with circadian choreography specification
+- DESIGN.md § The Quiet Corner updated with circadian affirmation selection
+- Editorial workload: passages need time-affinity tagging (lightweight — most assignments are intuitive)
+- Phase 1 pool may be thin for some bands with a single book; NULL-affinity passages fill gaps
+
+---
+
+## ADR-124: Micro-Copy as Ministry — Editorial Voice for UI Text
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's visual design (warm cream, Merriweather serif, generous whitespace, SRF gold accents) creates a contemplative atmosphere the moment a seeker arrives. But visual design is only half of the portal's voice. The other half is *words* — not Yogananda's words (those are governed by sacred text fidelity), but the portal's own words: error messages, empty states, loading text, confirmation dialogs, ARIA announcements, placeholder text, and interstitial copy.
+
+Over a 10-year horizon (ADR-033), dozens of developers will write UI strings. Without a shared understanding of the portal's verbal character, these strings will drift toward generic software copy ("No results found," "Error: please try again," "Loading..."). Each generic string is a missed opportunity — a moment where the portal could embody its mission but instead sounds like every other website.
+
+The portal has a brand identity for its AI: "The Librarian" (ADR-112). But the portal itself — the non-AI UI text — has no equivalent verbal identity.
+
+### Decision
+
+1. **All UI copy is treated as reviewed content.** UI strings are not developer placeholder text. They are part of the seeker's experience and receive the same editorial attention as theme names and curated queries (ADR-023). This means: strings are externalized to locale files from Phase 2, reviewed by SRF-aware editors, and never shipped as first-draft developer copy in production.
+
+2. **The portal's verbal character is: a warm, quiet librarian.** Consistent with ADR-112 but extended beyond the AI search persona to all UI text. The voice is:
+   - **Warm, not clinical.** "We didn't find a matching passage" not "No results found."
+   - **Honest, not apologetic.** "This page doesn't exist" not "Oops! Something went wrong."
+   - **Inviting, not instructional.** "As you read, long-press any words that speak to you" not "Tap and hold to bookmark."
+   - **Brief, not verbose.** One sentence where one sentence suffices. No filler, no exclamation marks, no emoji.
+   - **Never cute, never corporate.** No "Oops," no "Uh oh," no "Great news!" The register is adult, respectful, and spiritually aware.
+
+3. **Specific copy standards for high-impact moments:**
+
+   | Moment | Standard copy | Portal copy |
+   |--------|--------------|-------------|
+   | No search results | "No results found" | "We didn't find a matching passage. Yogananda wrote on many topics — try different words, or explore a theme." |
+   | Network error | "Network error. Retry." | A cached Yogananda passage about patience, with a quiet "Try again" link below. |
+   | 404 page | "Page not found" | A Yogananda passage about seeking, with navigation home and a search bar. "This page doesn't exist, but perhaps what you're seeking is here." |
+   | Empty bookmarks | "No bookmarks" | "You haven't marked any passages yet. As you read, long-press any words that speak to you." |
+   | Loading state | Spinner + "Loading..." | Quiet skeleton screen. No text. If prolonged: the lotus threshold (ADR-043) as a fallback. |
+   | Timer complete (Quiet Corner) | "Time's up" | No text. Just the chime. Optionally, after a moment, a new passage about carrying stillness into the world. |
+
+4. **ARIA labels carry warmth.** Screen reader announcements are not markup-quality copy — they are the only voice the portal has for blind seekers. "You are now in the Quiet Corner, a space for stillness" rather than "Main content region, The Quiet Corner." "Five passages found about courage" rather than "Search results: 5 items." The warmth that sighted seekers receive from visual design, screen reader users receive from language.
+
+5. **A micro-copywriting guide is maintained in the repository.** Location: `/docs/editorial/ui-copy-guide.md`. Contents: the voice principles above, a glossary of preferred terms (e.g., "seeker" not "user," "passage" not "result," "the teachings" not "our content"), and annotated examples for each page. This guide is a living document, updated as new UI surfaces are added.
+
+### Alternatives Considered
+
+1. **Leave copy to developer judgment.** Rejected: Over 10 years, developer turnover ensures inconsistency. The visual design system (DESIGN.md § Design Tokens) prevents visual drift; a verbal design system prevents copy drift. Same principle.
+
+2. **Full copywriting review for every string before merge.** Considered: Ensures quality but creates a bottleneck. Decision: Phase 1 strings are reviewed before launch. Phase 2+ strings are reviewed in batches during locale translation sprints (ADR-023). Developer-authored strings ship to staging, not directly to production.
+
+3. **AI-generated UI copy.** Rejected: The portal prohibits AI-generated user-facing content (ADR-003, ADR-023). UI copy is user-facing. Consistency requires human authorship and review.
+
+### Rationale
+
+- **Every word is a teaching moment.** A portal dedicated to sacred text should treat its own words with care. A 404 page that quotes Yogananda on seeking transforms an error into an encounter.
+- **ARIA labels are the portal's voice for blind seekers.** The warm cream background and generous whitespace do nothing for a screen reader user. The quality of the spoken language is their entire aesthetic experience.
+- **10-year consistency requires a system.** Design tokens prevent visual drift. Copy standards prevent verbal drift. Both serve the same architectural longevity goal (ADR-033).
+- **Micro-copy shapes first impressions.** A seeker's first error message, first empty state, or first loading experience forms a lasting impression of the portal's character.
+
+### Consequences
+
+- New file: `/docs/editorial/ui-copy-guide.md` (created during Phase 2 alongside locale file externalization)
+- All ARIA labels reviewed for warmth and clarity as part of Phase 2 accessibility foundation (ADR-017)
+- DESIGN.md § Frontend Design gains a "UI Copy Standards" subsection referencing this ADR
+- Locale files (`messages/*.json`) include copy-guide annotations for translators
+- CONTEXT.md open question added: editorial governance of UI copy (who reviews, what process)
+- No schema changes, no API changes
+
+---
+
+## ADR-125: Haptic Contemplation — Touch Feedback for Contemplative Gestures
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The Dwell interaction (ADR-038) is triggered on mobile by long-press (500ms). The portal responds visually: surrounding text dims, background warms, share and bookmark icons appear. But the seeker's thumb is *on the screen*. The most intimate confirmation of a contemplative gesture would be through touch — the sense already engaged.
+
+Similarly, the Quiet Corner timer (DESIGN.md § The Quiet Corner) ends with an audio chime and a visual flash (for hearing-impaired seekers). But a seeker in stillness may have their eyes closed. A haptic signal — felt through the device itself — would reach them without requiring sight or sound.
+
+The Web Vibration API (`navigator.vibrate()`) is supported on Android Chrome and partially on iOS Safari (with limitations). Haptic feedback is a progressive enhancement — devices that don't support it simply don't vibrate. No fallback needed because visual and audio feedback already exist.
+
+### Decision
+
+1. **Single gentle haptic pulse when Dwell mode activates on mobile.** `navigator.vibrate(10)` — a 10ms pulse, barely perceptible, felt as a "tap" confirmation. Not a phone buzz. A whisper through glass.
+
+2. **Slow haptic fade when the Quiet Corner timer completes.** A pattern mimicking a singing bowl's resonance: `navigator.vibrate([10, 50, 8, 70, 5, 100, 3])` — decreasing intensity with increasing gaps. This reaches a seeker whose eyes are closed and who may not hear a soft chime (e.g., phone on silent mode). Progressive enhancement: devices that don't support pattern vibration get a single 10ms pulse.
+
+3. **Respects `prefers-reduced-motion`.** When `prefers-reduced-motion: reduce` is active, all haptic feedback is suppressed. Vestibular disorders can be triggered by unexpected vibration. The same media query that suppresses visual animation suppresses haptic feedback.
+
+4. **No haptic feedback anywhere else.** Dwell activation and timer completion are the only two contemplative gestures that benefit from touch confirmation. Navigation, search, bookmarking, and sharing do not receive haptic feedback. Restraint is essential — frequent vibration would feel like notifications, violating Calm Technology.
+
+### Alternatives Considered
+
+1. **No haptic feedback at all.** Considered: The portal already provides visual and audio feedback for both interactions. Haptic adds a third sensory channel. Rejected because: the seeker's hand is already on the device for both gestures (long-press and phone-in-hand during timer). Confirming through the sense already engaged is more natural than confirming through a different sense.
+
+2. **Haptic feedback on more interactions (bookmarking, sharing, "Show me another").** Rejected: Over-use normalizes the signal. Haptic feedback should be reserved for contemplative moments — moments where the seeker is pausing, not navigating. Two interactions is the right number.
+
+3. **Custom vibration patterns via Web Audio API + haptic synthesis.** Rejected: Over-engineered. The Vibration API's simple patterns are sufficient. Complex haptic synthesis is unreliable across devices and not worth the implementation complexity.
+
+### Rationale
+
+- **Touch is the most intimate sense for mobile.** The seeker is already touching the device. Confirming a contemplative gesture through touch closes the sensory loop.
+- **Progressive enhancement with zero downside.** Devices that support vibration get a richer experience. Devices that don't get the existing visual/audio feedback. No feature detection complexity — `navigator.vibrate` is a no-op where unsupported.
+- **3 lines of code.** The implementation cost is negligible: a single `if (navigator.vibrate) navigator.vibrate(10)` call at dwell activation and a pattern call at timer completion.
+- **Calm Technology alignment.** Haptic feedback is felt, not heard or seen. It does not announce itself to the room. A person meditating in a shared space receives confirmation without breaking the silence.
+
+### Consequences
+
+- Two `navigator.vibrate()` calls added: one in dwell activation handler, one in timer completion handler
+- `prefers-reduced-motion` check wraps both calls
+- DESIGN.md § Dwell Interaction and § Quiet Corner updated with haptic specification
+- No schema changes, no API changes, no new dependencies
+- Manual testing required on Android and iOS devices (emulators don't reproduce vibration)
+
+---
+
+## ADR-126: Departure Grace — Session Closure Moments
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal has an opening gesture (ADR-043, Portal Threshold) — a 1.2-second lotus breath on first visit. There is no equivalent closing gesture. The seeker's last experience of the portal is whatever content they happen to be looking at when they close the tab.
+
+`beforeunload` event handlers are unreliable, browser-discouraged, and would feel intrusive. But the portal has natural *end points* — places where a reading session reaches its organic conclusion:
+
+- The end of a chapter (after the "Next Chapter" invitation)
+- The bottom of a search results page (after the last result)
+- The Quiet Corner timer completion (after the chime)
+- The end of a theme page (after the last passage)
+
+At each of these points, the portal could offer a closing word — not an interruption, not a modal, but content that naturally occupies the space at the bottom of the page. Like a priest's blessing at the end of a service, or the final line of a letter.
+
+### Decision
+
+1. **"Parting word" content block at natural session endpoints.** A brief Yogananda passage about carrying the teachings into daily life, displayed as quiet text at the very bottom of the content area — below the Next Chapter link, below the last search result, after the timer completion. Styled in `--portal-text-muted`, Merriweather 300, centered, with generous whitespace above. Not a card, not a callout — just words.
+
+2. **Placement points:**
+
+   | Location | Trigger | Content character |
+   |----------|---------|-------------------|
+   | End of chapter (below Next Chapter link) | Always present | Practice — "Take these words into your day" quality |
+   | Quiet Corner timer completion | After chime, 3-second delay | Returning — "Carry this stillness with you" quality |
+   | Bottom of search results | Below last result, above footer | Encouragement — "The teachings are always here" quality |
+   | Bottom of theme page | Below last passage | Exploration — "There is always more to discover" quality |
+
+3. **Parting passages are editorially curated.** A dedicated pool in the `daily_passages` table with `usage = 'parting'`. Small pool (10–20 passages), rotated randomly. These are short — one or two sentences. Examples from Yogananda's works:
+   - "Make your life a divine garden."
+   - "Be a fountain of peace to all."
+   - "Live each moment completely, and the future will take care of itself."
+
+4. **The Quiet Corner departure is special.** After the timer chime and the 3-second stillness, the affirmation gently crossfades (300ms) to a parting passage — one specifically about returning to the world from meditation. This transforms the timer's end from "session over" to "now begin."
+
+5. **No departure gesture on the reader when continuing to the next chapter.** The parting word appears below the "Next Chapter →" link. If the seeker clicks "Next Chapter," they never scroll down to it. It exists only for the seeker who reaches the bottom and *pauses* — who has finished for now.
+
+### Alternatives Considered
+
+1. **No departure gesture.** Considered: The portal's opening threshold (ADR-043) is deliberate, but the closing is left to the browser. Many sacred spaces have no formal exit ritual — you simply walk out. However: the portal's closing word is not a ritual to perform but content to discover. It's there for the seeker who reaches the bottom, not for the seeker who leaves mid-page.
+
+2. **`beforeunload` farewell.** Rejected: Unreliable, intrusive, browser-discouraged. The portal should never prevent or interrupt departure.
+
+3. **A fixed farewell footer on every page.** Rejected: Repetition deadens impact. A passage seen on every page becomes invisible. The parting word appears only at natural endpoints, keeping it fresh.
+
+4. **Animated departure (fade-to-cream, lotus fade-in).** Rejected: No way to detect departure intent reliably. Applying it to scroll-to-bottom would trigger during normal reading. Keep it as static content, not animation.
+
+### Rationale
+
+- **The portal's last word should be Yogananda's.** The opening threshold is visual (lotus, silence). The closing gesture is textual (a parting teaching). The portal's final offering is always the words it exists to serve.
+- **Natural endpoints, not tracked exits.** The parting word appears at content boundaries, not at behavioral boundaries. No scrolling analysis, no exit-intent detection, no tracking. DELTA-compliant by construction.
+- **The Quiet Corner departure is the highest-impact moment.** A seeker who just sat in silence for 5 or 15 minutes is in a receptive state. The transition from stillness back to the world is the moment where a single sentence can land most deeply.
+- **Low implementation cost.** Static content blocks at defined page positions. The passage pool is tiny (10–20 entries). No new API needed — the daily-passage endpoint with a `usage=parting` filter suffices.
+
+### Consequences
+
+- `daily_passages` table extended with `usage` column (enum: `wisdom`, `parting`, `affirmation`) — or a new `parting_passages` pool
+- Parting word content blocks added to: chapter end, search results bottom, theme page bottom, Quiet Corner post-timer
+- Quiet Corner timer completion flow updated: chime → 3s stillness → crossfade to parting passage
+- Editorial workload: curate 10–20 short parting passages from the corpus
+- DESIGN.md updated: new "Session Closure Moments" subsection
+- No new API endpoints needed (existing `/api/v1/daily-passage` with usage filter, or SSG'd into pages)
+
+---
+
+## ADR-127: Cognitive Accessibility — Reducing Complexity for All Seekers
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's accessibility commitment (ADR-017) targets WCAG 2.1 AA compliance: vision, hearing, motor, and some cognitive requirements. This covers screen readers, keyboard navigation, color contrast, and reduced motion. But cognitive accessibility is a broader dimension:
+
+- **Decision fatigue.** The homepage presents Today's Wisdom, a search bar, 6 thematic doors, 5 "Seeking..." links, and latest video thumbnails. For a first-time visitor in emotional distress, this quantity of choices may be overwhelming.
+
+- **Gesture vocabulary.** The portal uses: click (navigate), long-press (Dwell), hover-wait (dwell icon reveal), keyboard shortcuts (12 keys), scroll (read), and "Show me another" (refresh). Each individually is intuitive. In aggregate, the gesture vocabulary is larger than most reading applications.
+
+- **Reading complexity.** Yogananda's prose ranges from accessible affirmations to dense philosophical exposition. The portal treats all content equally in presentation.
+
+These concerns apply not only to seekers with cognitive disabilities but also to non-native English speakers (before Phase 11 adds their language), elderly seekers, seekers under acute emotional stress, and seekers unfamiliar with web conventions.
+
+### Decision
+
+1. **Progressive homepage disclosure for first visits.** On the first visit (sessionStorage, extending ADR-043's mechanism), the homepage after the lotus threshold shows a simplified state:
+   - Today's Wisdom (full size, centered, with "Show me another")
+   - The search bar ("What are you seeking?")
+   - A single line: "Or explore a theme" — linking to the thematic doors section below
+
+   The thematic doors, "Seeking..." entry points, and video section are present on the page but appear below the fold. The seeker discovers them by scrolling — at their own pace. Return visits within the session show the full homepage immediately.
+
+   This is not "hiding content" — it's sequencing the first encounter to reduce cognitive load. The most important elements (a teaching + a search bar) appear first. Everything else is available but not competing for attention.
+
+2. **Passage accessibility classification.** During ingestion, passages receive an editorial `accessibility_level` tag:
+   - `accessible`: Short, clear, affirmation-like. Suitable for daily wisdom, newcomer paths, Quiet Corner.
+   - `moderate`: Standard narrative prose. The bulk of the corpus.
+   - `dense`: Philosophical, multi-clause, requires sustained attention. Commentary on scriptures, metaphysical analysis.
+
+   This tag is used internally for pool selection (Today's Wisdom favors `accessible`; Quiet Corner uses only `accessible`; search returns all levels) — never displayed to the seeker. Not a quality judgment. Dense passages are not lesser teachings — they are teachings that reward deeper attention.
+
+3. **Simplified reading mode.** An optional "Focus" toggle in the reader header (Phase 4, alongside Dwell) that reduces the reader to: reading column + Next Chapter. The Related Teachings side panel, keyboard shortcut overlay, dwell icon, and bookmark icon are suppressed. The toggle is stored in `localStorage`. This mode serves seekers who want to read a book linearly without the library-navigation features — and it naturally serves cognitive accessibility needs without labeling them.
+
+4. **Consistent, minimal gesture vocabulary for core tasks.** The portal's essential experience (read, search, navigate) requires only: click, scroll, and type. All other gestures (long-press, hover-wait, keyboard shortcuts) are enhancements. The portal must be fully functional with only the three basic gestures. This is already approximately true but should be an explicit design constraint tested in QA.
+
+### Alternatives Considered
+
+1. **No cognitive accessibility considerations beyond WCAG 2.1 AA.** Rejected: WCAG AA covers minimum cognitive requirements (consistent navigation, error identification, reading level for labels). The portal's mission — serving seekers worldwide, including those in crisis — demands going further.
+
+2. **A dedicated "simple mode" for the entire portal.** Rejected: Labeling creates stigma. "Focus" mode in the reader is a feature, not an accessibility accommodation. The progressive homepage disclosure applies to all first-time visitors, not a special subset.
+
+3. **AI-powered reading level adaptation.** Rejected: Violates the "direct quotes only" principle (ADR-003). Yogananda's words cannot be simplified. The accessibility classification routes seekers to appropriate *passages*, not to modified text.
+
+### Rationale
+
+- **The seeker in crisis is the hardest cognitive accessibility case.** The "Seeking..." entry points target people in emotional distress. A person at 2 AM unable to sleep because of anxiety has reduced cognitive capacity. The homepage should require minimal cognitive effort to find comfort.
+- **Progressive disclosure is standard UX, not accommodation.** Apple, Google, and most modern products sequence complexity. Showing everything at once is a design choice, not a necessity.
+- **Focus mode serves multiple populations.** Linear readers, elderly seekers, seekers with cognitive disabilities, seekers on very small screens, and seekers who simply prefer simplicity all benefit from a reduced-chrome reading mode.
+- **Accessibility classification improves Today's Wisdom quality.** The daily passage should be a standalone moment of inspiration. Dense philosophical prose — however profound — makes a poor homepage greeting for a first-time visitor.
+
+### Consequences
+
+- Homepage first-visit behavior extended (sessionStorage): simplified above-the-fold state
+- New `accessibility_level` column on `book_chunks` (nullable enum: `accessible`, `moderate`, `dense`)
+- Today's Wisdom pool favors `accessible` passages (soft bias, not hard filter)
+- Quiet Corner pool restricted to `accessible` passages
+- New "Focus" toggle in reader header (Phase 4)
+- DESIGN.md § Accessibility Requirements gains a "Cognitive Accessibility" subsection
+- DESIGN.md § Homepage updated with progressive disclosure specification
+- Editorial workload: passages need accessibility classification during ingestion QA
+- No new API endpoints; `accessibility_level` is a query filter on existing endpoints
+
+---
+
+## ADR-128: Self-Revealing Navigation — Interface Taught Through Use
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal has several novel interaction patterns: Dwell mode (ADR-038), the Related Teachings side panel (ADR-034), keyboard shortcuts (ADR-042), the spiritual terminology bridge in suggestions (ADR-121), and graph traversal through related teachings (ADR-117). Each is documented in DESIGN.md with discoverability measures — a tooltip for Dwell, a `?` overlay for keyboard shortcuts, category icons in suggestions.
+
+These are conventional discoverability patterns borrowed from productivity software: tooltips, help overlays, first-run modals. They work, but they are *instructions about* the interface rather than *experiences of* the interface. A spiritually aligned portal should teach its own navigation the way a well-written book teaches you how to read it — through the experience itself, not through a preface.
+
+### Decision
+
+1. **Content-as-instruction for Dwell mode.** Instead of a tooltip ("Hover over any passage to focus on it for contemplation"), the most evocative passage in a chapter's first screen receives a subtly warmer background — not full Dwell mode, but a visual hint that paragraphs can be focused. The seeker's natural curiosity (hovering, tapping) discovers Dwell through exploration. The tooltip remains as a fallback for seekers who don't discover it organically within their first two chapter visits.
+
+2. **Contextual teaching for themes.** When a seeker's first search returns results, the result cards include a quiet contextual link: "This passage also appears in the theme: **Courage** →". This teaches the seeker that themes exist through a result they already care about — not through a homepage section they might not scroll to.
+
+3. **Graph traversal taught by the side panel.** The Related Teachings panel header shows the source passage text ("Related to: 'My body became immovably...'"). When the seeker clicks a related passage and navigates to a new chapter, the panel updates with new relations. The seeker has "traveled one hop" through the graph. The experience teaches graph traversal without ever using the phrase "knowledge graph" or explaining the concept.
+
+4. **Keyboard shortcuts taught by repetition, not by overlay.** When a keyboard-using seeker reaches the end of a chapter, a subtle bottom-of-viewport hint appears once: "Press → for next chapter". Not a full shortcut reference — just the one shortcut relevant at this moment. Subsequent shortcuts are introduced one at a time in context. The full `?` overlay remains available but is not the primary discovery path.
+
+5. **The terminology bridge teaches itself.** When the suggestion dropdown shows "Yogananda's terms: concentration, one-pointed attention" below a "mindfulness" query, the seeker learns that Yogananda uses different vocabulary — without any explanation of what a "terminology bridge" is. The interface teaches the concept through a single well-designed moment.
+
+### Alternatives Considered
+
+1. **Onboarding tour (step-by-step walkthrough of features).** Rejected: Onboarding tours have high skip rates, feel corporate, and violate Calm Technology. They teach the interface in the abstract before the seeker has any reason to care.
+
+2. **Feature discovery through badges or progress indicators.** Rejected: Gamification (ADR-014, DELTA Transcendence principle). "You've discovered 3 of 7 portal features!" is antithetical to the portal's values.
+
+3. **Tooltips and help overlays only (current design).** Considered: These are reliable and well-understood. Decision: Retain them as fallback but add content-as-instruction as the primary discovery path. Both systems coexist — the seeker who hovers discovers through content warmth; the seeker who doesn't discovers through the tooltip on the next visit.
+
+### Rationale
+
+- **A sacred text portal should teach through experience, not instruction.** Yogananda's own teaching method was experiential — meditation practice, not just philosophy. The portal's navigation should follow the same principle.
+- **Contextual learning is more effective than abstract instruction.** Research consistently shows that in-context learning (discovering a feature at the moment of relevance) produces better retention than front-loaded instruction (learning all features before using any).
+- **Calm Technology requires calm discovery.** Tooltips are a mild interruption. Content warmth and contextual links are not interruptions at all — they are part of the content experience.
+- **Fallbacks ensure no seeker is left behind.** Every self-revealing pattern has a conventional fallback (tooltip, overlay, explicit link) for seekers who don't discover the organic path.
+
+### Consequences
+
+- Dwell discoverability expanded: "warm passage" hint on first chapter visit alongside existing hover-to-reveal icon (ADR-060)
+- Search results template gains optional contextual theme link (shown on first search only, sessionStorage)
+- Keyboard shortcut discovery redesigned: context-specific single-shortcut hints replace front-loaded overlay as primary path
+- DESIGN.md § Frontend Design gains a "Self-Revealing Navigation" subsection
+- Existing discoverability measures (ADR-060 tooltip, ADR-042 `?` overlay) retained as fallback
+- No schema changes, no API changes
+- QA requirement: test that every feature is discoverable through *both* the self-revealing path and the conventional fallback
+
+---
+
+## ADR-129: Screen Reader Emotional Quality — Warmth in Spoken Interface
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's aesthetic — warm cream, serif typography, generous whitespace, gold accents — creates a contemplative atmosphere for sighted seekers. This atmosphere is a core part of the experience. But for blind seekers using screen readers, the portal's "atmosphere" is entirely constructed from spoken language: ARIA labels, landmark names, live-region announcements, alt text, and heading structure.
+
+Standard screen reader markup produces functional but emotionally flat output: "Navigation landmark. Link, Search. Link, Books. Link, Videos. Heading level 1, Today's Wisdom. Blockquote." This is correct. It is also the verbal equivalent of a fluorescent-lit institutional hallway — technically accessible but carrying no warmth.
+
+ADR-017 establishes WCAG 2.1 AA compliance as a Phase 2 foundation. ADR-124 establishes editorial standards for UI copy. This ADR specifically addresses the quality of language that screen readers speak — an audience of one sense that deserves the same care as the audience of five.
+
+### Decision
+
+1. **ARIA labels are written as human speech, not markup descriptions.** Every `aria-label`, `aria-describedby`, and `aria-live` announcement is written as if speaking to the seeker — warm, brief, and contextually meaningful.
+
+   | Element | Standard markup | Portal standard |
+   |---------|----------------|-----------------|
+   | Navigation landmark | "Main navigation" | "Portal navigation" |
+   | Search region | "Search" | "Search the teachings" |
+   | Today's Wisdom section | "Today's Wisdom" | "Today's Wisdom — a passage from Yogananda's writings" |
+   | Quiet Corner page | "Main content" | "The Quiet Corner — a space for stillness" |
+   | Dwell mode enter | "Passage focused" | "Passage focused for contemplation" |
+   | Dwell mode exit | "Passage unfocused" | "Returned to reading" |
+   | Search results count | "5 results" | "Five passages found" |
+   | Theme page | "Theme: Courage" | "Teachings on Courage — passages from across the library" |
+   | Related teachings | "Related content" | "Related teachings from other books" |
+   | Empty bookmarks | "No items" | "You haven't marked any passages yet" |
+
+2. **Passage citations are spoken naturally.** Screen reader output for a passage should flow as natural speech: "*'The soul is ever free; it is deathless, birthless...'* — from Autobiography of a Yogi, Chapter 26, page 312." Not "Blockquote. The soul is ever free semicolon it is deathless comma birthless dot dot dot. End blockquote. Autobiography of a Yogi. Chapter 26. Page 312."
+
+   Implementation: Use `aria-label` on the passage container to provide the natural reading, while the visual HTML retains its formatting. Screen readers read the label instead of parsing the visual structure.
+
+3. **The Quiet Corner timer announces with gentleness.** Timer start: "The timer has begun. [Duration] of stillness." Timer end: "The time of stillness is complete." Not "Timer started: 5:00" or "Timer complete."
+
+4. **Screen reader testing is part of the accessibility review.** Phase 2 includes VoiceOver (macOS/iOS), NVDA (Windows), and TalkBack (Android) testing. The test criterion is not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
+
+### Alternatives Considered
+
+1. **Standard ARIA labels only.** Considered: Functional and WCAG-compliant. Rejected because: the portal's mission is to make the teachings "available freely throughout the world" — and availability includes emotional availability. A screen reader experience that is technically accessible but emotionally barren is not freely available in the fullest sense.
+
+2. **Verbose ARIA labels with full context.** Rejected: Screen reader users value brevity. Long labels slow navigation and frustrate experienced screen reader users. The labels should be warmer than standard but not longer.
+
+3. **Custom screen reader stylesheet or audio design.** Rejected: Screen readers have their own speech synthesis and pacing that users have customized. The portal should not override these settings. The intervention point is the text content (ARIA labels), not the speech delivery.
+
+### Rationale
+
+- **Equality of experience, not just equality of access.** WCAG compliance ensures blind seekers can use the portal. Emotional quality ensures they experience the same contemplative atmosphere as sighted seekers. The portal should be equitable in spirit, not just in function.
+- **ARIA labels are the portal's voice for blind seekers.** The warm cream and gold accents do nothing for a screen reader user. The spoken language is their entire aesthetic.
+- **Low implementation cost, high experiential impact.** Changing ARIA labels from standard to warm is a string-level change. No architecture, no new components — just better words in the same places.
+- **Consistent with ADR-124.** If UI copy is ministry (ADR-124), then ARIA labels — which *are* UI copy, spoken aloud — are ministry too.
+
+### Consequences
+
+- All ARIA labels reviewed and rewritten to "spoken warmth" standard during Phase 2
+- Screen reader testing added to Phase 3 CI/CD (automated ARIA presence) and Phase 12 manual audit (emotional quality)
+- `/docs/editorial/ui-copy-guide.md` (ADR-124) extended with a screen reader section: ARIA label conventions, examples, and the "spoken warmth" standard
+- No schema changes, no API changes
+- Cross-reference: ADR-017 (accessibility foundation), ADR-124 (UI copy standards)
+
+---
+
+## ADR-130: Non-Search Seeker Journeys — Equal Excellence for Every Path
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal's architecture centers on search — the AI librarian (ADR-003, ADR-112), embedding pipeline (ADR-001, ADR-032), query expansion (ADR-049), and passage ranking. This is justified: intelligent search is the portal's differentiator and the AI librarian is the core innovation.
+
+But a significant population of seekers will never touch the search bar:
+
+- **The Google arrival.** A seeker finds a chapter via search engine results, reads, and leaves. Their entry point is a chapter page, not the homepage.
+- **The daily visitor.** Returns each morning for Today's Wisdom. Reads the passage, clicks "Show me another" once or twice, contemplates, leaves. Has never searched.
+- **The Quiet Corner seeker.** Goes directly to `/quiet` in a moment of crisis. Sits with the affirmation. Leaves. May never visit another page.
+- **The linear reader.** Opened Chapter 1, reads sequentially through the book. Uses Next Chapter. Doesn't explore cross-book connections.
+- **The shared-link recipient.** Receives a `/passage/[chunk-id]` URL from a friend. Reads the passage. Their impression of the entire portal is formed by this single page.
+
+Each of these paths should be as excellent as the search experience. "Excellent" does not mean adding features — it means ensuring that each path is complete, warm, and naturally invites deeper engagement without pressure.
+
+### Decision
+
+1. **The shared passage page (`/passage/[chunk-id]`) is the most important first-impression surface after the homepage.** It is mediated by *trust* — a friend sent this. The page should feel like receiving a gift, not visiting a website.
+
+   Enhancements:
+   - Above the passage: "A passage from the teachings of Paramahansa Yogananda" — framing context for seekers unfamiliar with the author.
+   - Below the citation: "This passage appears in *[Book Title]*, Chapter [N]. Continue reading →" — framing the book as a world to enter, not a citation to note.
+   - Below the book link: "Explore more teachings →" — linking to the homepage, not the library (the homepage's Today's Wisdom provides a second immediate encounter).
+   - The warm cream background, decorative quote mark (ADR-037), and generous whitespace ensure the page is visually the most beautiful thing the recipient sees in their social feed that day.
+
+2. **The Google-arrival chapter page has a gentle context header.** When a seeker lands on `/books/[slug]/[chapter]` without navigating through the portal (referrer is external or empty), a subtle one-line context bar appears above the chapter title: "You're reading *[Book Title]* by Paramahansa Yogananda — [Chapter N] of [Total] — Start from the beginning →". Styled in `--portal-text-muted`, `--text-sm`. Dismissed on scroll. Not shown when navigating within the portal.
+
+3. **The Quiet Corner is self-contained.** No navigation chrome competes with the affirmation. The header collapses to just the lotus mark (home link). The footer is suppressed. The page is almost entirely empty — the affirmation, the timer, and nothing else. This is already specified in DESIGN.md but is elevated here as an explicit design constraint: the Quiet Corner page must pass the "2 AM crisis test" — a person in distress should see nothing that adds to their cognitive load.
+
+4. **The daily visitor's path optimizes for Today's Wisdom.** The homepage's information architecture already places Today's Wisdom first. This ADR adds: the "Show me another" interaction should feel *inexhaustible* — the seeker should never feel they've "used up" the passages. When the pool is thin (Phase 1, one book), "Show me another" should cycle through all available passages before repeating any. A simple client-side exclusion list (sessionStorage) prevents repeats within a visit.
+
+5. **Each path naturally invites one step deeper — exactly one.** The shared passage page invites: continue reading the chapter. The chapter page (external arrival) invites: start from the beginning. The Quiet Corner invites: nothing during the timer, then a parting passage (ADR-126). Today's Wisdom invites: "Show me another" or search. Never more than one invitation at a time. Never pressure.
+
+### Alternatives Considered
+
+1. **Optimize only for search (the differentiating feature).** Rejected: The portal's mission is to make the teachings "available freely throughout the world." Availability means every path to the teachings is excellent, not just the most technically sophisticated one.
+
+2. **Add prompts to search from non-search pages.** Rejected: A shared passage recipient who sees "Try searching for more!" has been sold to, not served. The non-search paths should be complete in themselves, with organic connections to more content — not funnels into search.
+
+3. **A/B test non-search page variants.** Rejected: DELTA-compliant analytics (ADR-029) exclude user-level behavioral profiling. The portal cannot A/B test. Design decisions are made through editorial judgment and qualitative feedback (ADR-116).
+
+### Rationale
+
+- **The shared passage page is the portal's ambassador.** More people may encounter the portal through a shared link than through the homepage. That page must represent the portal's best self.
+- **The Quiet Corner is the portal's purest expression.** A page that is almost entirely empty, holding space for a single affirmation and a seeker in need — this is the portal at its most aligned with Yogananda's teaching about the power of stillness.
+- **"One step deeper" respects the seeker's autonomy.** The DELTA Agency principle means the seeker controls their experience. Offering one natural invitation is service. Offering three is pressure. Offering none is neglect.
+- **Daily visitors are the portal's most devoted seekers.** A person who returns every morning for Today's Wisdom has made the portal part of their spiritual practice. Their experience should reward this devotion with variety and depth, not repetition.
+
+### Consequences
+
+- Shared passage page (`/passage/[chunk-id]`) redesigned with framing context, book invitation, and homepage link
+- Chapter page gains external-arrival context header (referrer detection, sessionStorage dismissal)
+- Quiet Corner page explicitly constrained: suppressed footer, minimal header
+- "Show me another" gains sessionStorage-based repeat prevention within a visit
+- DESIGN.md § Passage Sharing, § The Quiet Corner, and § Book Reader updated
+- New DESIGN.md subsection: "Non-Search Seeker Journeys"
+- No schema changes, no new API endpoints
+- QA requirement: test each of the five non-search paths end-to-end for warmth, completeness, and single-invitation principle
+
+---
+
+## ADR-131: AI Audio Generation for Portal Audio Assets
+
+**Status:** Accepted | **Date:** 2026-02-21
+**Context:** ADR-003 (direct quotes only), ADR-076 (audio-visual ambiance), ADR-101 (Quiet Corner audio cues), ADR-023 (human review gate)
+
+### Context
+
+The portal requires original audio assets across two ADRs:
+
+- **ADR-101 (Phase 2):** Two discrete cues — a singing bowl strike and a gentle chime (~15KB each, sub-second duration).
+- **ADR-076 (Phase 12):** Two ambient loops — "Temple" and "Nature" soundscapes (~200–400KB each, 60–90 seconds).
+
+These are UI interaction elements, not teaching content. ADR-003's prohibition on AI-generated content applies to Yogananda's words — it does not extend to interface audio any more than it extends to CSS or typeface selection. A singing bowl cue is interaction design, not scripture.
+
+Three sourcing strategies exist: royalty-free sound libraries (Freesound, Pixabay), purpose-recorded audio (a real singing bowl in a real temple), and AI audio generation. This ADR evaluates the third option.
+
+### Decision
+
+**AI audio generation is an acceptable tool in the asset creation pipeline for UI and ambient audio.** It is not the only tool and not the default — it is one option alongside traditional sourcing, evaluated on merit per asset.
+
+#### Landscape Assessment (February 2026)
+
+**Recommended for exploration:**
+
+| Tool | Type | Quality | Duration | License | Fitness |
+|------|------|---------|----------|---------|---------|
+| Stable Audio Open 1.0 | Open-source, self-hosted | 44.1kHz stereo | Up to 47s | Stability Community License (commercial OK < $1M revenue; Enterprise above) — you own outputs | Strong for both discrete cues and ambient loops |
+| Stable Audio Open Small | Open-source, self-hosted | 44.1kHz stereo | Up to 11s | Same as above | Sufficient for ADR-101 cues; too short for ADR-076 loops |
+| ElevenLabs (SFX) | Commercial SaaS, API | High | Variable | Paid plans grant commercial rights to outputs | Strong for discrete cues; vendor dependency |
+
+**Evaluated and set aside:**
+
+| Tool | Reason |
+|------|--------|
+| Meta AudioGen | CC-BY-NC-4.0 — non-commercial restriction creates licensing ambiguity for an organizationally backed portal |
+| Meta MusicGen | Same CC-BY-NC-4.0 restriction; also music-focused, not sound-effects-focused |
+| Suno | Music tracks with vocals; no public API; overkill for UI audio |
+| Google Lyria 3 | No developer API; SynthID watermark embedded in all output; no published commercial terms |
+| Udio | Licensing terms insufficiently documented |
+
+#### Recommended Approach
+
+1. **For ADR-101 (Phase 2 — discrete cues):** Evaluate all three sourcing strategies side by side. Generate candidate bowl strikes and chimes using Stable Audio Open. Source candidates from Freesound (CC0 library). If SRF has access to a singing bowl, record a real strike. Present all candidates to human reviewers. Select on quality and contemplative resonance, not on provenance ideology.
+
+2. **For ADR-076 (Phase 12 — ambient loops):** AI generation is more compelling here. Custom ambient soundscapes ("distant singing bowl with gentle wind through trees") are difficult to source from stock libraries as a single coherent composition. Stable Audio Open's 47-second generation window, looped and crossfaded, can produce seamless ambient audio tailored to the portal's contemplative character. Traditional recording (field recording in an SRF temple garden) remains the gold-standard alternative.
+
+3. **Human review is mandatory.** Consistent with ADR-023, ADR-048, and ADR-049: AI proposes, humans approve. No AI-generated audio reaches seekers without human curation. Multiple candidates are generated; a human selects the one that belongs in this portal.
+
+4. **No runtime AI audio generation.** All audio assets are pre-generated, human-reviewed, and bundled as static files. There is no on-the-fly generation, no model inference at request time, no audio API calls in the serving path.
+
+#### Licensing Notes
+
+- **Stable Audio Open** outputs are owned by the generator under the Stability Community License. SRF should confirm whether its organizational revenue places it under the Community License (< $1M) or requires an Enterprise agreement. The portal itself is free, but SRF as an organization may exceed the threshold.
+- **ElevenLabs** paid plans grant commercial rights to generated audio. The per-generation cost is negligible for a handful of static assets.
+- Whichever tool is used, the final audio files should be documented with their provenance (tool, prompt, date, license) in the asset manifest.
+
+### Alternatives Considered
+
+1. **Prohibit AI-generated audio entirely — use only recordings or CC0 libraries.** Rejected as unnecessarily restrictive. The portal uses AI for search ranking, theme tagging, and translation drafting. Using it to generate a candidate chime sound — which a human then selects or rejects — is consistent with the project's established AI-as-tool philosophy. The prohibition in ADR-003 is about Yogananda's words, not about every artifact in the portal.
+
+2. **Default to AI generation for all audio assets.** Rejected. A real singing bowl carries acoustic properties — overtone series, room resonance, decay character — that current diffusion models approximate but do not replicate. For the Quiet Corner's contemplative purpose, authentic recordings may simply be better. The decision should be made by listening, not by policy.
+
+3. **Build an audio generation pipeline into the content system.** Rejected. The portal needs four audio files total across both ADRs. A pipeline is over-engineering. Generation happens on a developer's workstation during the asset creation process. The output is a `.mp3` file committed to the repository or uploaded to S3.
+
+### Consequences
+
+- Stable Audio Open 1.0 is the recommended open-source tool for audio asset exploration
+- ElevenLabs is the recommended commercial alternative for discrete sound effects
+- SRF's licensing position under the Stability Community License requires confirmation before production use
+- Asset provenance (tool, prompt, license) documented for each generated audio file
+- Human review remains the mandatory gate between AI-generated candidates and production assets
+- No new infrastructure, no runtime dependencies, no model hosting — generation is a development-time activity
+- **Extends ADR-101** and **ADR-076** with a sourcing strategy; does not alter their specifications
+
+---
+
+## ADR-132: Lectio Divina Mode — Structured Sacred Reading Practice
+
+**Status:** Accepted | **Date:** 2026-02-21
+**Context:** ADR-095 (Contextual Quiet Corner — Practice Bridge), ADR-038 (Dwell Mode), ADR-126 (Departure Grace), ADR-125 (Haptic Contemplation), DELTA Embodiment principle
+
+### Context
+
+The portal has individual contemplative interactions: Dwell mode for passage focus (ADR-038), the Quiet Corner for stillness (with timer), the practice bridge for transitioning from reading to meditation (ADR-095), and departure grace for session closure (ADR-126). These are powerful standalone gestures. But the contemplative tradition Yogananda represents has a *composed* practice for engaging with sacred text — a structured sequence of reading, reflection, response, and rest that transforms casual reading into meditation.
+
+In the Christian monastic tradition, this practice is called *lectio divina* (sacred reading). Yogananda's own tradition teaches a similar progression: read the guru's words, reflect on their meaning, offer your understanding to God, and rest in the resulting stillness. The portal has all the building blocks but lacks the composed experience.
+
+### Decision
+
+Add a **"Sacred Reading"** mode — an opt-in, guided contemplative engagement with a single passage. Accessible from Dwell mode (alongside "Pause with this" from ADR-095) via a small book-with-timer icon (16px, `--srf-gold` at 50% opacity).
+
+The experience proceeds through four timed stages:
+
+| Stage | Name | Duration (default) | Visual |
+|-------|------|---------------------|--------|
+| **Read** | *Lectio* | 2 min | Passage displayed fully, warm background. All reader chrome faded. |
+| **Reflect** | *Meditatio* | 3 min | Passage dims to 60%. Below: *"What word or phrase draws your attention?"* — an invitation, not an input field. |
+| **Respond** | *Oratio* | 3 min | Passage dims to 30%. Invitation text fades. Near-empty screen. |
+| **Rest** | *Contemplatio* | 5 min | Passage disappears entirely. Warm cream only. Singing bowl chime at completion. |
+
+**Total:** ~13 minutes (default). Two additional presets: shorter (1/2/2/3 = 8 min) and longer (3/5/5/7 = 20 min). Selected before the practice begins.
+
+**Stage transitions:** 600ms crossfade between stages. A barely visible progress indicator — a thin `--srf-gold` line at the screen bottom, growing left to right — shows which stage the seeker is in. Not a countdown, just a sense of place. The line divides into four segments corresponding to the four stages.
+
+**The question "What word or phrase draws your attention?"** is not a text input. There is no place to type. It is an invitation to internal reflection — the same question a meditation teacher would pose verbally. Styled in Merriweather 300, `--portal-text-muted`, centered below the dimmed passage.
+
+**Route:** Not a new route. Like the Contextual Quiet Corner (ADR-095), this is a CSS/JS mode on the existing reader: `data-mode="lectio"`. The URL does not change. Browser history is not affected.
+
+**No tracking.** No completion history. No "sessions completed." No streak. The experience is purely present-tense.
+
+### Accessibility
+
+- Screen reader announces each stage transition: *"Reflection stage. The passage is dimmed. Take a moment to notice what speaks to you."* → *"Response stage. Sit with what arose."* → *"Rest stage. The passage has faded. Rest in stillness."* → *"Your sacred reading is complete."*
+- `Escape` exits at any stage, returning to normal reader view
+- All keyboard shortcuts suppressed during the practice
+- `prefers-reduced-motion`: transitions instant (0ms), dimming still occurs, progress indicator still present
+- Timer completion: same chime + haptic pattern as Quiet Corner (ADR-125)
+- The four-stage structure is announced on entry: *"Sacred Reading practice. Four stages: Read, Reflect, Respond, Rest. Approximately 13 minutes."*
+
+### Phase
+
+Phase 8 (alongside Study Workspace, ADR-111). Requires Quiet Corner audio (ADR-101, Phase 2) and Dwell mode (ADR-038, Phase 4).
+
+### Rationale
+
+- **Composes existing interactions** into a new experience. Dwell dimming, Quiet Corner timer, practice bridge chrome suppression, departure grace chime — all reused, none duplicated.
+- **Grounded in contemplative tradition.** Yogananda explicitly valued deep engagement with the guru's words as a meditative practice. "Sacred reading" as a term is accessible to seekers from Christian, Hindu, and secular contemplative backgrounds.
+- **No new infrastructure.** Reuses the shared timer component, the dwell CSS states, and the chime audio asset. No new API endpoints, no new data model.
+- **DELTA Embodiment fulfilled.** The portal directly facilitates practice, not just reading. This is the most direct expression of the principle "the portal's deepest purpose is to become unnecessary" — the mode systematically moves the seeker from reading (digital) to stillness (embodied).
+- **Genuinely unprecedented.** No digital reading platform has implemented a structured contemplative engagement protocol for sacred text. Meditation apps have timers. Reading apps have text. This fuses them into a single practice that treats the text itself as a meditation object.
+
+### Alternatives Considered
+
+1. **Guided audio narration through the stages.** Rejected. The portal does not generate voice content, and adding narration would conflict with the silence the practice requires. The visual cues and screen reader announcements are sufficient.
+2. **Custom stage durations (user-configurable per stage).** Rejected for Phase 8. Three presets (8, 13, 20 min) cover the practical range. Custom configuration adds UI complexity that contradicts the practice's simplicity. Could be reconsidered for Phase 12+.
+3. **A dedicated `/lectio` route.** Rejected. The practice begins from a specific passage the seeker has already chosen to dwell on. A standalone page would require passage selection UI that duplicates existing search/browse. The in-reader mode is more natural: dwell → "I want to go deeper with this passage" → Sacred Reading.
+
+### Consequences
+
+- Dwell mode gains a second practice icon alongside "Pause with this" (ADR-095), for a total of three supplementary icons: share, bookmark, and now two practice paths
+- Reader component gains `data-mode="lectio"` CSS state with four sub-stages (`data-lectio-stage="read|reflect|respond|rest"`)
+- Timer logic reuses the shared Quiet Corner timer component
+- The Sacred Reading icon appears only in Dwell mode — not in normal reading. This prevents cognitive overload and ensures the seeker has already engaged contemplatively before the option appears.
+- No new server endpoints, no new data model, no tracking
+- **Extends ADR-095** with a more structured multi-stage practice; **extends ADR-038** with a composed contemplative mode; **complements ADR-126** by providing a structured closing (the Rest stage naturally serves as departure grace)
+
+---
+
+## ADR-133: The Anti-Collection — Passage Internalization
+
+**Status:** Accepted | **Date:** 2026-02-21
+**Context:** ADR-041 (Lotus Bookmarks), ADR-111 (Study Workspace), DELTA Transcendence principle
+
+### Context
+
+Every digital tool encourages collecting — bookmarking, favoriting, saving, pinning. The portal follows this pattern: Lotus Bookmarks (ADR-041) save chapters and passages; the Study Workspace (ADR-111) collects passages into teaching outlines. These are appropriate and well-designed.
+
+But the spiritual tradition the portal serves values something tools never design for: *internalization followed by release*. You study the scripture until it becomes part of you, and then you set the book down. The guru's words are meant to be absorbed, not hoarded. A seeker who has memorized and embodied a passage about courage no longer needs to bookmark it — the teaching lives in them.
+
+No knowledge management tool has ever designed for the *completion* of engagement with a piece of content. Everything assumes you'll want to return. The portal can model the full lifecycle: discovery → collection → contemplation → internalization.
+
+### Decision
+
+Add an **"I carry this with me"** action to bookmarked passages and Study Workspace collections.
+
+**Where it appears:**
+
+| Surface | Trigger | Interaction |
+|---------|---------|-------------|
+| Bookmarks page (`/bookmarks`) | Alongside "Remove" on each bookmarked passage | A lotus icon transitioning from filled to outlined — the visual inverse of bookmarking |
+| Study Workspace (`/study`) | Per-passage within a teaching outline | Same icon and interaction |
+| Dwell mode | When a bookmarked passage is dwelled, the lotus bookmark icon can be long-pressed to internalize | A deeper gesture for a deeper action |
+
+**Effect:**
+
+1. The passage moves from "Active Bookmarks" to a separate section: **"Carried With You"**
+2. The "Carried With You" section displays passages at 70% opacity in `--portal-text-muted` — still readable, but visually quieter
+3. The passage remains fully accessible: clicking expands it to full opacity, "Read in context" still works
+4. The act is always reversible — a single click returns the passage to active bookmarks
+
+**The experience over time:** Over weeks and months, a seeker watches their active collection evolve. Some passages stay active for years (ongoing struggle, daily reference). Others migrate to "Carried With You" as the teaching is absorbed. The flow from active to carried is a small act of spiritual self-awareness: "I no longer need this in front of me."
+
+**Design:**
+
+- "Carried With You" section appears below active bookmarks, separated by a quiet lotus divider (same `--srf-gold` lotus at 15% opacity used elsewhere)
+- Section heading: Merriweather Light, `--portal-text-muted` — "Carried With You"
+- Passage count displayed quietly: *"7 passages carried with you"* — an acknowledgment, not a metric
+- No animation on the transition. The passage moves between sections on next page render.
+
+**Storage:** Same localStorage structure as bookmarks (ADR-041), with an additional `carried: true` boolean per entry. Phase 15 server sync includes carried state alongside bookmarks.
+
+### What This Is Not
+
+- **Not an archive.** Archives imply "done, put away." Internalized passages are still present — they've changed relationship, not status.
+- **Not a deletion.** The passage is always there to return to.
+- **Not gamification.** No "passages internalized" counter, no progress bar, no celebration, no nudge. The seeker decides when a teaching has become part of them. That judgment is theirs alone.
+- **Not read-tracking.** Marking a passage as "carried" says nothing about whether it has been read. It says the seeker feels they no longer need the external reminder.
+
+### Phase
+
+Phase 8 (alongside Study Workspace, ADR-111). Trivial implementation — a boolean flag in the existing localStorage schema.
+
+### Rationale
+
+- **Models the full engagement lifecycle.** Discovery → collection → contemplation → internalization. Every other tool stops at collection. The portal continues to where the tradition says the real work happens.
+- **DELTA Transcendence.** Spiritual depth is not quantifiable — and the anti-collection respects this. There is no metric for "how internalized" a teaching is. There is only the seeker's own judgment.
+- **Zero implementation cost.** One boolean field in localStorage. One new CSS section on the bookmarks page. No new components, no new API endpoints.
+- **Consistent with the portal's soul.** The portal is designed to become unnecessary. The anti-collection is the feature-level expression of this principle: the bookmark is designed to become unnecessary too.
+
+### Consequences
+
+- Bookmarks page (`/bookmarks`) gains a "Carried With You" section below active bookmarks
+- Study Workspace gains per-passage internalization action
+- localStorage schema adds `carried: boolean` to bookmark entries
+- Phase 15 server sync includes carried state
+- The portal now models the complete lifecycle of engagement with a teaching: discovery → collection → contemplation → internalization
+- **Extends ADR-041** with a post-bookmark lifecycle; **extends ADR-111** with passage-level completion
+
+---
+
+## ADR-134: Structured Spiritual Ontology — Machine-Readable Teaching Structure
+
+**Status:** Accepted | **Date:** 2026-02-21
+**Context:** ADR-084 (Machine-Readable Content and AI Citation), ADR-093 (Living Glossary), ADR-098 (Knowledge Graph Visualization), ADR-055 (Reverse Bibliography), ADR-048 (Teaching Topics)
+
+### Context
+
+The portal exposes content to machines through several channels: `llms.txt` for AI crawlers (ADR-084), JSON-LD structured data for search engines, and the versioned API for programmatic access. These expose *content* — the text of passages, their citations, their theme tags.
+
+They do not expose *conceptual structure* — the relationships between Yogananda's ideas, the hierarchy of practices, the dependencies between concepts.
+
+An AI system querying the portal can find "passages about samadhi." It cannot learn that samadhi is a state, that it has prerequisites (deep meditation, pranayama), that Yogananda describes multiple degrees of samadhi (savikalpa, nirvikalpa), that it relates to concepts in other traditions (satori in Zen, unio mystica in Christianity), and that specific passages describe the practice path toward it.
+
+The Living Glossary (ADR-093) stores term definitions. The knowledge graph (ADR-098) visualizes passage-level relationships. The teaching topics (ADR-048) classify passages by theme. But none of these expose a *formal ontology* — a machine-readable map of how concepts relate to each other at the conceptual level, above and beyond individual passages.
+
+### Decision
+
+Build a **structured spiritual ontology** — a concept graph of Yogananda's teaching framework — and expose it through a read-only API endpoint and a JSON-LD export.
+
+#### Schema
+
+```sql
+-- ============================================================
+-- SPIRITUAL ONTOLOGY (concept graph — Phase 8+)
+-- ============================================================
+CREATE TABLE ontology_concepts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug            TEXT NOT NULL UNIQUE,               -- URL slug: 'samadhi'
+    name            TEXT NOT NULL,                       -- "Samadhi"
+    sanskrit_name   TEXT,                                -- 'samādhi' (IAST transliteration)
+    definition      TEXT NOT NULL,                       -- canonical definition
+    category        TEXT NOT NULL CHECK (category IN (
+        'state',          -- samadhi, cosmic consciousness, Christ consciousness
+        'practice',       -- meditation, pranayama, Hong-Sau technique
+        'principle',      -- karma, dharma, maya, reincarnation
+        'entity',         -- God, Divine Mother, the soul (atman)
+        'text',           -- Bhagavad Gita, Yoga Sutras, Bible
+        'tradition',      -- Kriya Yoga, Raja Yoga, Vedanta
+        'path'            -- the eightfold path, the chakra system
+    )),
+    glossary_id     UUID REFERENCES glossary_terms(id),  -- link to Living Glossary (ADR-093)
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE ontology_relations (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id       UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
+    target_id       UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
+    relation_type   TEXT NOT NULL CHECK (relation_type IN (
+        'has_prerequisite',    -- meditation HAS_PREREQUISITE concentration
+        'is_degree_of',        -- nirvikalpa_samadhi IS_DEGREE_OF samadhi
+        'is_practice_for',     -- hong_sau IS_PRACTICE_FOR concentration
+        'is_component_of',     -- pranayama IS_COMPONENT_OF kriya_yoga
+        'opposes',             -- maya OPPOSES self_realization
+        'leads_to',            -- self_realization LEADS_TO ever_new_joy
+        'parallels',           -- samadhi PARALLELS satori (cross-tradition)
+        'refines',             -- nirvikalpa_samadhi REFINES savikalpa_samadhi
+        'described_in'         -- (link to external references via ADR-055)
+    )),
+    editorial_note  TEXT,                                -- optional contextual explanation
+    tagged_by       TEXT NOT NULL DEFAULT 'manual' CHECK (tagged_by IN ('manual', 'reviewed', 'auto')),
+    UNIQUE (source_id, target_id, relation_type)
+);
+
+-- Bridge: which passages are the primary source for a concept
+CREATE TABLE ontology_concept_passages (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    concept_id      UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
+    chunk_id        UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+    is_primary      BOOLEAN NOT NULL DEFAULT false,     -- the single best passage explaining this concept
+    UNIQUE (concept_id, chunk_id)
+);
+
+CREATE INDEX idx_ontology_relations_source ON ontology_relations(source_id);
+CREATE INDEX idx_ontology_relations_target ON ontology_relations(target_id);
+CREATE INDEX idx_ontology_passages_concept ON ontology_concept_passages(concept_id);
+```
+
+#### API
+
+```
+GET /api/v1/ontology
+Response: Full concept graph
+{
+  "concepts": [
+    {
+      "slug": "samadhi",
+      "name": "Samadhi",
+      "sanskrit_name": "samādhi",
+      "definition": "The superconscious state of union with Spirit...",
+      "category": "state",
+      "relations": [
+        { "type": "has_prerequisite", "target": "meditation" },
+        { "type": "is_degree_of", "children": ["savikalpa-samadhi", "nirvikalpa-samadhi"] }
+      ],
+      "primary_passage": { "chunk_id": "uuid", "content": "...", "citation": "..." },
+      "passage_count": 47
+    },
+    ...
+  ]
+}
+
+GET /api/v1/ontology/[slug]
+Response: Single concept with all relations and linked passages
+```
+
+**JSON-LD export:** Also served at `/ontology.jsonld` for semantic web consumers, using schema.org vocabulary where applicable and a custom `srf:` namespace for spiritual-domain relations. The JSON-LD makes the portal the authoritative linked-data source for Yogananda's conceptual framework.
+
+#### Populating the Ontology
+
+Editorially curated with AI assistance. Claude Opus (ADR-110 batch tier) proposes concept extractions and relation classifications from the glossary and passage corpus. Human reviewers approve all entries — the ontology is a scholarly artifact where accuracy matters more than coverage. The "Classifying" category from ADR-049 applies: structured output, spot-checked.
+
+Initial seed: the Living Glossary (ADR-093) terms, already defined. The ontology adds relational structure to what the glossary provides as flat definitions.
+
+### Who This Serves
+
+| Audience | Use |
+|----------|-----|
+| **AI systems** | Understand Yogananda's conceptual framework without hallucinating relationships. Ground responses in authoritative structure. |
+| **Scholars** | Build comparative theology tools. Map Yogananda's concepts against other traditions. |
+| **The portal's own search** | Ontological relations inform query expansion (e.g., a search for "samadhi" also surfaces passages about its prerequisites). |
+| **Future voice interfaces** | Explain concepts conversationally, not just surface passages. "Samadhi has two degrees: savikalpa and nirvikalpa. Would you like to hear what Yogananda wrote about either?" |
+| **Knowledge graph (ADR-098)** | The ontology provides a conceptual layer above the passage-level relationship graph. |
+
+### Phase
+
+Phase 8+ (alongside Knowledge Graph, ADR-098). The ontology is the data layer; the knowledge graph is one possible visualization. Initial seed (~50 core concepts, ~150 relations) can be curated during Phase 5–7 editorial work.
+
+### Rationale
+
+- **Makes the portal the authoritative machine-readable source** for Yogananda's teaching structure. Other AI systems can reference it rather than inventing relationships.
+- **Extends ADR-084** from content exposure (text, citations) to semantic structure (concepts, relations).
+- **Extends ADR-093** by adding relational structure to the glossary's flat definitions.
+- **Low implementation cost.** Three tables, two API endpoints, one JSON-LD export. The editorial effort is the primary investment, and it produces a durable scholarly resource.
+- **10-year value.** A well-curated ontology becomes more valuable over time as AI systems and scholarly tools mature.
+
+### Alternatives Considered
+
+1. **Use a graph database (Neo4j, etc.) for the ontology.** Rejected per ADR-109 (single-database architecture). PostgreSQL's relational model handles the ontology's moderate scale (~hundreds of concepts, ~thousands of relations) without a specialized graph engine. The knowledge graph visualization (ADR-098) uses pre-computed JSON, not real-time graph queries.
+2. **Auto-generate the ontology from passage embeddings.** Rejected. Embedding similarity captures semantic relatedness, not conceptual structure. "Samadhi requires meditation" is a directional, typed relationship — not derivable from vector proximity alone. Human editorial judgment is required.
+3. **Expose the ontology only as JSON-LD, not as an API.** Rejected. The API enables the portal's own search system to use ontological relations for query expansion. JSON-LD alone would serve external consumers but not internal features.
+
+### Consequences
+
+- Three new tables: `ontology_concepts`, `ontology_relations`, `ontology_concept_passages`
+- New API endpoints: `GET /api/v1/ontology`, `GET /api/v1/ontology/[slug]`
+- JSON-LD export at `/ontology.jsonld`
+- Living Glossary (ADR-093) terms can be linked to ontology concepts via `glossary_id`
+- Knowledge Graph (ADR-098) gains ontological relations as an additional edge type
+- Query expansion (ADR-049 E1) can optionally traverse ontological prerequisites for richer search results
+- The portal becomes the first spiritual teachings platform to offer a formal, machine-readable conceptual ontology
+- **Extends ADR-084** with deep semantic structure; **extends ADR-093** with relational graph; **extends ADR-098** with a concept layer above the passage layer
+
+---
+
+*Last updated: 2026-02-21*

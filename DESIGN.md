@@ -1,12 +1,13 @@
 # SRF Online Teachings Portal — Technical Design
 
-> **Navigation guide.** 36 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
+> **Navigation guide.** 37 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
 
 | Section | Phase |
 |---------|-------|
 | [Design Philosophy](#design-philosophy) | — |
 | [Architecture Overview](#architecture-overview) | 0–1, 10+ |
 | [The AI Librarian: Search Architecture](#the-ai-librarian-search-architecture) | 1–2 |
+| [Search Suggestions & Autocomplete (ADR-121)](#search-suggestions--autocomplete-adr-121) | 1, 5, 11 |
 | [Data Model](#data-model) | 1+ |
 | [Content Ingestion Pipeline](#content-ingestion-pipeline) | 1, 10+ |
 | [Phase 1 Bootstrap (ADR-108)](#phase-1-bootstrap-adr-108) | 0–1 |
@@ -24,6 +25,8 @@
 | [Reverse Bibliography (ADR-055)](#reverse-bibliography--what-yogananda-read-adr-055) | 5+ |
 | [Calendar-Aware Content Surfacing (ADR-056)](#calendar-aware-content-surfacing-adr-056) | 5+ |
 | [Chunking Strategy (ADR-115)](#chunking-strategy-adr-115) | 1+ |
+| &emsp;[Semantic Density Classification](#semantic-density-classification) | 5+ |
+| &emsp;[Corpus Stylometric Fingerprint (ADR-103)](#corpus-stylometric-fingerprint-adr-103-extension) | 7+ |
 | [The Quiet Index (ADR-056)](#the-quiet-index--browsable-contemplative-taxonomy-adr-056) | 5+ |
 | [Daily Email: Verbatim Passage Delivery](#daily-email-verbatim-passage-delivery) | 9+ |
 | [Seeker Feedback (ADR-116)](#seeker-feedback--delta-compliant-signal-collection-adr-116) | 5+ |
@@ -69,7 +72,8 @@ Three services. One database. One AI provider (via AWS Bedrock).
 │  └──────────┬──────────────┬─────────────┘                   │
 │             │              │                                 │
 │     /api/v1/search   /api/v1/books                              │
-│     /api/v1/expand   /api/v1/chapters                           │
+│     /api/v1/suggest  /api/v1/chapters                           │
+│     /api/v1/expand                                              │
 │             │              │                                 │
 │             ▼              ▼                                 │
 │  ┌─────────────────────────────────────┐                    │
@@ -491,6 +495,169 @@ When the embedding model changes (e.g., from `text-embedding-3-small` to a succe
 ```
 
 **Cost estimate for full corpus re-embedding:** < $5 for text-embedding-3-small at 50K chunks (~25M tokens). The operational cost is primarily developer time for validation, not API spend.
+
+**Multilingual embedding quality (ADR-120).** text-embedding-3-small's multilingual capability is emergent from training data, not an explicit optimization target. For European languages (es, de, fr, it, pt), this is likely adequate. For Hindi, Bengali, and Japanese — where training data is sparser and morphology differs fundamentally — models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct) may produce meaningfully better retrieval. Phase 11 includes formal benchmarking with actual translated passages (Deliverable 11.3). Cost is not the differentiator — the full multilingual corpus costs < $1 to embed with text-embedding-3-small and < $15 even with the most expensive candidate models.
+
+**Domain-adapted embeddings (ADR-120, later-stage research).** The highest-ceiling path to world-class retrieval: fine-tune a multilingual base model on Yogananda's published corpus across languages. A domain-adapted model would understand spiritual vocabulary, metaphorical patterns, and cross-tradition concepts at a depth no general model matches. Prerequisites: multilingual corpus (Phase 11 ingestion) and per-language evaluation suites (Deliverable 11.10). The same migration procedure above applies — the architecture imposes no constraints on model provenance.
+
+### Search Suggestions & Autocomplete (ADR-121)
+
+The search architecture above handles what happens *after* a query is submitted. This section covers what happens *as the seeker types* — autocomplete suggestions that reduce friction, show what the corpus contains, and extend the librarian metaphor.
+
+**Core principle:** Suggestion intelligence is corpus-derived, not behavior-derived. All suggestions are extracted from the content itself, not from user query patterns. This ensures DELTA compliance (ADR-029), guarantees every suggestion leads to results, and aligns with the Calm Technology principle — suggestions show what's available, not what's popular.
+
+#### Suggestion Types
+
+Three distinct suggestion types, each with different sources and behavior:
+
+```
+Seeker types: "med"
+        │
+        ▼
+TERM COMPLETION (PostgreSQL pg_trgm — < 50ms)
+  Prefix match against suggestion index:
+  ┌─────────────────────────────────────────────────┐
+  │  🔤 meditation                          (theme) │
+  │  📖 Meditations on God               (chapter) │
+  │  📖 Meditation Promises Richest Results  (chapter) │
+  │  🔤 medical intuition                 (corpus) │
+  └─────────────────────────────────────────────────┘
+
+Seeker types: "How do I"
+        │
+        ▼
+QUERY SUGGESTION (curated, editorially maintained)
+  Match against curated question templates:
+  ┌─────────────────────────────────────────────────┐
+  │  ❓ How do I overcome fear?            (curated) │
+  │  ❓ How do I meditate?                 (curated) │
+  │  ❓ How do I find peace?               (curated) │
+  └─────────────────────────────────────────────────┘
+
+Seeker types: "mindful"
+        │
+        ▼
+BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
+  Terminology bridge detects a mapping:
+  ┌─────────────────────────────────────────────────┐
+  │  🔤 mindfulness                       (corpus) │
+  │  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+  │  Yogananda's terms: concentration,              │
+  │  one-pointed attention, interiorization          │
+  └─────────────────────────────────────────────────┘
+```
+
+**1. Term completion.** Prefix matching against a pre-computed suggestion index. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching, or pre-computed trie exported as static JSON and cached at edge (Vercel Edge Config or CDN). Latency target: < 50ms — no database round-trip on the hot path if edge-cached.
+
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 1.11) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-023), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
+
+**3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain.
+
+#### API Specification
+
+```
+GET /api/v1/search/suggest?q=med&language=en&limit=7
+
+Response:
+{
+  "suggestions": [
+    { "text": "meditation",           "type": "term",  "category": "theme"   },
+    { "text": "Meditations on God",   "type": "term",  "category": "chapter" },
+    { "text": "How do I meditate?",   "type": "query", "category": "curated" },
+    { "text": "medical intuition",    "type": "term",  "category": "corpus"  }
+  ],
+  "bridge_hint": null
+}
+```
+
+When the bridge activates:
+
+```
+GET /api/v1/search/suggest?q=mindful&language=en&limit=7
+
+{
+  "suggestions": [
+    { "text": "mindfulness", "type": "term", "category": "corpus" }
+  ],
+  "bridge_hint": {
+    "seeker_term": "mindfulness",
+    "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
+    "source_books": ["autobiography-of-a-yogi", "mans-eternal-quest"]
+  }
+}
+```
+
+No Claude API call in the suggestion path — pure database/cache lookup. Zero cost per suggestion request.
+
+#### Zero-State Experience
+
+When the search bar receives focus but the seeker has typed nothing, display curated entry points rather than an empty dropdown:
+
+- Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
+- One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
+- The search placeholder remains "What are you seeking?" (Deliverable 1.9)
+
+Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-023).
+
+#### Suggestion Index Construction
+
+The suggestion index is built during book ingestion (extending the ADR-052 lifecycle):
+
+```
+Book ingestion pipeline (new step after vocabulary extraction):
+  5. SUGGESTION INDEX EXTRACTION
+     From the book's chunks, extract:
+     → Distinctive terms (nouns, proper nouns, spiritual vocabulary)
+     → Chapter titles
+     → Book-specific phrases
+     Filter: remove stopwords, common English words, terms with < 2 occurrences
+     Output: per-book vocabulary contribution to the suggestion index
+
+     Merge into suggestion_terms table or static JSON export.
+     Index grows with each book — never shrinks.
+```
+
+#### Multilingual Suggestions (Phase 11)
+
+Per-language suggestion indices are required. Each language gets:
+- Its own extracted corpus vocabulary (from language-specific chunks)
+- Localized theme names (from `topic_translations`)
+- Localized curated queries (from `messages/{locale}.json`)
+- Language-specific `pg_trgm` or edge-cached index
+
+**Transliteration challenge:** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). CJK languages have no word boundaries, making prefix matching fundamentally different. The suggestion system must handle both native script and Romanized input for Indic languages. This is an open design question — see CONTEXT.md.
+
+**Sparse-language graceful handling:** If a language has few books, its suggestion index will be thin. When suggestions are sparse, the response should be honest (fewer suggestions, not padded with irrelevant terms) rather than falling back to English suggestions unprompted.
+
+#### Accessibility
+
+The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
+- `role="combobox"` on the search input
+- `role="listbox"` on the suggestion dropdown
+- `role="option"` on each suggestion
+- `aria-activedescendant` tracks keyboard-selected suggestion
+- Arrow keys navigate suggestions, `Enter` selects, `Escape` dismisses
+- Screen reader announces suggestion count on open ("7 suggestions available")
+- Screen reader announces each suggestion as arrow keys navigate
+- Bridge hints announced as supplementary text
+- High contrast mode: suggestion categories distinguished by prefix text, not color alone
+
+#### Phase Progression
+
+| Phase | Suggestion Capability | Source |
+|-------|----------------------|--------|
+| 1 | Basic prefix matching on single-book vocabulary + chapter titles | Corpus extraction from Autobiography, pre-computed |
+| 5 | Multi-book vocabulary + theme names + bridge-powered suggestions + curated queries | Expanded corpus + spiritual-terms.json + editorial |
+| 11 | Per-language suggestion indices + transliteration support | Language-specific indices |
+| 15 | Optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
+
+#### Interaction with Intent Classification
+
+Suggestions and intent classification (ADR-049 E1) are complementary, not redundant:
+- **Suggestions** operate *before* query submission (as-you-type, < 50ms, no LLM)
+- **Intent classification** operates *after* query submission (routes the final query, uses Claude Haiku)
+
+When a seeker selects a suggestion, intent classification still runs on the selected text. The suggestion narrows the query; intent classification routes it. A seeker who selects "meditation" (term suggestion) gets routed to the meditation theme page by intent classification. A seeker who selects "How do I meditate?" (curated query) gets routed to search with appropriate expansion.
 
 ---
 
@@ -1432,13 +1599,28 @@ A single Yogananda passage displayed prominently on every visit. The passage cha
 
 Seasonal weighting is a soft bias (e.g., 60% seasonal / 40% general), never a hard filter. A passage about courage can appear in any season.
 
+**Circadian content choreography (ADR-123):**
+
+The portal shifts visual warmth by time of day (ADR-039). It also shifts *content* warmth. The passage pool carries a `time_affinity` tag — the same circadian bands as ADR-039's color temperature:
+
+| Band | Hours | Character | Passage affinity |
+|------|-------|-----------|-----------------|
+| Dawn | 5:00–8:59 | Awakening | Vitality, new beginnings, divine energy, Energization |
+| Morning | 9:00–11:59 | Clarity | Willpower, concentration, right action, purpose |
+| Afternoon | 12:00–16:59 | Steadiness | Perseverance, equanimity, courage, service |
+| Evening | 17:00–20:59 | Softening | Gratitude, love, devotion, peace |
+| Night | 21:00–4:59 | Consolation | The eternal soul, fearlessness, God's presence, comfort |
+
+The 2 AM seeker — the person the "Seeking..." entry points are designed for — encounters passages about comfort and the eternal nature of consciousness, not about willpower and new habits. Zero tracking, zero profiling. The client sends `time_band` computed from `new Date().getHours()`; the server selects from an affinity-weighted pool (60% time-matched / 40% general, same ratio as seasonal). Passages with no `time_affinity` (NULL) are eligible in all bands. Both seasonal and circadian affinities can apply simultaneously — they compose naturally as weighted random selection.
+
 **API:**
 
 ```
 GET /api/v1/daily-passage
   Query params:
-    language  (optional)  — default 'en'
-    exclude   (optional)  — chunk ID to exclude (prevents repeat on "Show me another")
+    language   (optional)  — default 'en'
+    exclude    (optional)  — chunk ID to exclude (prevents repeat on "Show me another")
+    time_band  (optional)  — circadian band: 'dawn', 'morning', 'afternoon', 'evening', 'night' (ADR-123)
 
   Response:
   {
@@ -1935,10 +2117,43 @@ When reading a physical book, a profound passage stops you mid-page. The reader 
 └──────────────────────────────────────┘
 ```
 
+**Haptic feedback (ADR-125):** On mobile, a single gentle haptic pulse confirms dwell activation: `navigator.vibrate(10)` — a 10ms tap, barely perceptible, confirming through the sense already engaged. Suppressed when `prefers-reduced-motion: reduce` is active. Progressive enhancement: devices without Vibration API support get visual feedback only.
+
 **Accessibility:**
 - `Escape` exits dwell mode
-- Screen readers announce "Passage focused for contemplation" / "Returned to reading"
-- `prefers-reduced-motion`: transitions are instant (0ms), dimming still occurs
+- Screen readers announce "Passage focused for contemplation" / "Returned to reading" (ADR-129)
+- `prefers-reduced-motion`: transitions are instant (0ms), dimming still occurs, haptic feedback suppressed
+
+#### Layered Passage Depth — "Go Deeper Within the Text" (ADR-132, ADR-034)
+
+A passage about concentration means something different on the first reading versus the twentieth. The Related Teachings side panel (ADR-034) shows passages from *other books*. Layered Passage Depth shows depth *within* the same passage's context — what surrounds it, what echoes it across the library.
+
+**Trigger:** On any passage in the reader (including search results and theme pages), a quiet "Go deeper" text link (Merriweather 300, `--portal-text-muted`, `--srf-gold` underline on hover) appears below the citation. Distinct from the site-wide "Go Deeper" SRF ecosystem links — this is textual depth, not organizational.
+
+**Three layers — all verbatim Yogananda, editorially curated:**
+
+| Layer | Label | What it shows | Source |
+|-------|-------|---------------|--------|
+| **The teaching** | *(default — always visible)* | The passage itself | Current chunk |
+| **The context** | "In context" | Adjacent passages from the same chapter — what Yogananda said before and after. The argument, the narrative, the build-up. | Neighboring chunks by `paragraph_index` in same chapter |
+| **The web** | "Across the library" | Related passages from *other books* where Yogananda expressed the same idea differently — to different audiences, at different points in his life. | `chunk_relations` table (ADR-034) + `composition_era` metadata (ADR-118) |
+
+**Behavior:**
+- Clicking "Go deeper" expands a section below the passage (not a modal, not a new page)
+- Context layer shows ±2 paragraphs around the current passage, with the current passage highlighted
+- Web layer shows up to 5 cross-book relations, sorted by similarity, each with full citation
+- When `composition_era` metadata is available (ADR-118), the web layer includes the era: *"Written in the 1940s"* — showing how the teaching evolved
+- Layers can be toggled independently (both open, one open, neither)
+- `Escape` collapses all layers
+- On narrow screens: layers expand inline below the passage (no side panel interaction)
+
+**Who this serves:** The seeker who has already encountered a passage and wants to understand it more deeply — without leaving the reading flow. This is what a scholar does manually over years. The portal's relationship graph already contains this data; the experience makes it browsable from within the reading.
+
+**API:** No new endpoints. Uses existing `/api/v1/chunks/[chunk-id]/related` and chunk neighbor queries. The "context" layer is fetched from the chapter data already loaded in the reader.
+
+**Phase:** Phase 6 (alongside editorial reading threads, ADR-054). Requires Related Teachings (ADR-034, Phase 4) and chapter data already in the reader.
+
+---
 
 #### Time-Aware Reading — Circadian Color Temperature (ADR-039)
 
@@ -2058,12 +2273,14 @@ A single-purpose page designed for the moment of crisis. When someone arrives at
 - *Metaphysical Meditations* — spiritual affirmations and meditations
 - Curated affirmation-length passages from other books (editorial)
 
+**Timer completion (ADR-126):** After the chime, 3 seconds of continued stillness. Then the affirmation gently crossfades (300ms) to a parting passage — one specifically about returning to the world from meditation. This transforms the timer's end from "session over" to "now begin." Parting passages are editorially curated (see § Session Closure Moments).
+
 **Constraints:**
 - No tracking. No history. No "sessions completed." No streaks.
 - No ambient sound loops or background music (the user brings their own silence)
 - No account required
 - The timer is purely client-side (a simple `setTimeout` + Web Audio API chime)
-- Accessible: the chime has a visual equivalent (gentle screen flash) for hearing-impaired users
+- Accessible: the chime has a visual equivalent (gentle screen flash) for hearing-impaired users and a haptic equivalent (ADR-125) — a slow resonance pattern `navigator.vibrate([10, 50, 8, 70, 5, 100, 3])` mimicking a singing bowl's decay, reaching seekers whose eyes are closed and phone is on silent. Suppressed when `prefers-reduced-motion` is active.
 
 ### About Section (`/about`)
 
@@ -2225,6 +2442,98 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - A small, quiet share icon (link/chain icon, not social media logos)
 - On click: opens share menu (above)
 - No row of social media buttons. No third-party tracking scripts. The seeker chooses the medium.
+
+### UI Copy Standards — Micro-Copy as Ministry (ADR-124)
+
+Every word the portal speaks — beyond Yogananda's own — is part of the seeker's experience. UI copy (error messages, empty states, loading text, ARIA labels, placeholders) is treated as reviewed content, not developer placeholder text.
+
+**The portal's verbal character: a warm, quiet librarian.** Consistent with ADR-112 but extended beyond the AI search persona to all UI text.
+
+| Principle | Example: Standard | Example: Portal |
+|-----------|------------------|-----------------|
+| Warm, not clinical | "No results found" | "We didn't find a matching passage. Yogananda wrote on many topics — try different words, or explore a theme." |
+| Honest, not apologetic | "Oops! Something went wrong." | "This page doesn't exist, but perhaps what you're seeking is here." + search bar |
+| Inviting, not instructional | "Tap and hold to bookmark." | "As you read, long-press any words that speak to you." |
+| Brief, not verbose | One sentence where one sentence suffices | No filler, no exclamation marks, no emoji |
+| Never cute, never corporate | "Oops," "Uh oh," "Great news!" | Adult, respectful, spiritually aware register |
+
+**High-impact moments:**
+
+| Moment | Portal copy |
+|--------|-------------|
+| No search results | "We didn't find a matching passage. Yogananda wrote on many topics — try different words, or explore a theme." |
+| Network error | A cached Yogananda passage about patience, with a quiet "Try again" link below |
+| 404 page | A Yogananda passage about seeking, with navigation home and a search bar |
+| Empty bookmarks | "You haven't marked any passages yet. As you read, long-press any words that speak to you." |
+| Loading state | Quiet skeleton screen. No text. If prolonged: the lotus threshold (ADR-043) as fallback |
+| Timer complete (Quiet Corner) | No text. Just the chime. Then, after a moment, a parting passage (ADR-126) |
+
+**Preferred vocabulary:** "seeker" not "user." "Passage" not "result." "The teachings" not "our content." "Explore" not "browse." "Mark" not "bookmark" (as a verb).
+
+**ARIA labels carry warmth (ADR-129).** Screen reader announcements are not markup — they are the only voice the portal has for blind seekers. "You are now in the Quiet Corner, a space for stillness" not "Main content region, The Quiet Corner." "Five passages found about courage" not "Search results: 5 items." See § Screen Reader Emotional Quality under Accessibility for full specification.
+
+**Maintained in:** `/docs/editorial/ui-copy-guide.md` — voice principles, vocabulary glossary, and annotated examples per page. Created during Phase 2 alongside locale file externalization.
+
+### Session Closure Moments — Departure Grace (ADR-126)
+
+The portal has an opening gesture (ADR-043, Portal Threshold). It also has closing gestures — not `beforeunload` interceptions, but content that naturally occupies the space at the end of a reading session. The portal's last word, in every path, is Yogananda's.
+
+**"Parting word" content block at natural session endpoints.** A brief Yogananda passage about carrying the teachings into daily life. Styled in `--portal-text-muted`, Merriweather 300, centered, with generous whitespace above. Not a card, not a callout — just words.
+
+| Location | Content character |
+|----------|-------------------|
+| End of chapter (below "Next Chapter →" link) | Practice — "Take these words into your day" |
+| Quiet Corner timer completion (after chime + 3s stillness) | Returning — "Carry this stillness with you" |
+| Bottom of search results (below last result) | Encouragement — "The teachings are always here" |
+| Bottom of theme page (below last passage) | Exploration — "There is always more to discover" |
+
+**Parting passage pool:** Editorially curated, 10–20 short passages (one or two sentences). Stored in `daily_passages` with `usage = 'parting'`, rotated randomly. Examples from Yogananda's works: "Make your life a divine garden." / "Be a fountain of peace to all." / "Live each moment completely, and the future will take care of itself."
+
+**The Quiet Corner departure is special.** After the chime and 3 seconds of stillness, the affirmation crossfades (300ms) to a parting passage about returning to the world. This transforms the timer's end from "session over" to "now begin."
+
+**Design constraint:** The parting word appears *below* primary navigation (e.g., below "Next Chapter →"). Seekers continuing to the next chapter never scroll down to it. It exists only for the seeker who has finished for now.
+
+### Non-Search Seeker Journeys (ADR-130)
+
+The portal is equally excellent for seekers who never touch the search bar. Five non-search paths, each with specific design standards:
+
+**1. The shared-link recipient** (`/passage/[chunk-id]`) — the portal's ambassador page, mediated by trust (a friend sent this).
+- Above the passage: "A passage from the teachings of Paramahansa Yogananda" — context for unfamiliar seekers
+- Below the citation: "This passage appears in *[Book Title]*, Chapter [N]. Continue reading →" — the book as a world to enter
+- Below the book link: "Explore more teachings →" — linking to the homepage (Today's Wisdom as a second encounter)
+- The page should be the most beautiful thing the recipient sees in their social feed that day
+
+**2. The Google arrival** (`/books/[slug]/[chapter]` from external referrer) — gentle context without interruption.
+- A subtle one-line context bar above the chapter title: "You're reading *[Book Title]* by Paramahansa Yogananda — Chapter [N] of [Total] — Start from the beginning →"
+- Styled in `--portal-text-muted`, `--text-sm`. Dismissed on scroll. Not shown when navigating within the portal.
+
+**3. The daily visitor** (homepage → Today's Wisdom → "Show me another" → contemplate → leave).
+- "Show me another" feels inexhaustible. SessionStorage-based exclusion list prevents repeats within a visit — the seeker cycles through all available passages before any repetition.
+- Phase 1 pool depth is an open question (see CONTEXT.md).
+
+**4. The Quiet Corner seeker** (`/quiet` directly, often in crisis).
+- Self-contained: header collapses to lotus mark only, footer suppressed. Minimal cognitive load.
+- Must pass the "2 AM crisis test" — nothing on the page adds to distress.
+
+**5. The linear reader** (Chapter 1 → Chapter 2 → ... → Chapter N, via "Next Chapter").
+- The reading column belongs to the book. Cross-book features (Related Teachings, graph traversal) are in the side panel, never inline.
+- Optional Focus mode (ADR-127) reduces the reader to: reading column + Next Chapter. Everything else suppressed.
+
+**Single-invitation principle:** Each path invites exactly one step deeper — never more. The shared passage → continue reading the chapter. The external chapter arrival → start from the beginning. The Quiet Corner → nothing during timer, then a parting passage. Today's Wisdom → "Show me another" or search.
+
+### Self-Revealing Navigation (ADR-128)
+
+The portal teaches its own navigation through the experience of using it — not through tooltips, onboarding tours, or help overlays (though these remain as fallbacks).
+
+**Content-as-instruction for Dwell mode:** The most evocative passage in a chapter's first screen receives a subtly warmer background on first visit — not full Dwell mode, but a hint that paragraphs can be focused. The seeker's natural curiosity discovers Dwell through exploration. The ADR-060 tooltip appears as fallback if not discovered within two chapter visits.
+
+**Contextual teaching for themes:** When a seeker's first search returns results, result cards include a quiet link: "This passage also appears in the theme: **Courage** →" — teaching that themes exist through a result the seeker already cares about. Shown on first search only (sessionStorage).
+
+**Keyboard shortcuts taught in context:** When a keyboard-using seeker reaches the end of a chapter, a one-time hint appears: "Press → for next chapter." Not a full shortcut reference — just the one shortcut relevant now. Subsequent shortcuts are introduced one at a time in context. The `?` overlay remains available.
+
+**The terminology bridge teaches itself:** The suggestion dropdown showing "Yogananda's terms: concentration, one-pointed attention" below a "mindfulness" query teaches the vocabulary gap concept through a single well-designed moment — no explanation of "terminology bridge" needed.
+
+**Fallback guarantee:** Every self-revealing pattern has a conventional fallback (tooltip, overlay, explicit link) for seekers who don't discover the organic path.
 
 ### Image Usage Guidelines
 
@@ -3890,6 +4199,39 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 2. Level AAA criteri
 | Consistent navigation | Header and footer identical on every page. No layout shifts between pages. |
 | Reading mode | Phase 2: clean reader with generous whitespace. Phase 12: adjustable font size, sepia/dark mode. |
 
+#### Cognitive Accessibility — Beyond WCAG Minimums (ADR-127)
+
+WCAG 2.1 AA covers minimum cognitive requirements (consistent navigation, error identification, reading level for labels). The portal's mission — serving seekers worldwide, including those in crisis — demands going further.
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Progressive homepage disclosure | First visit (sessionStorage) shows simplified above-the-fold: Today's Wisdom + search bar + "Or explore a theme" link. Thematic doors, "Seeking..." entries, and videos are below the fold. Return visits show the full homepage. |
+| Passage accessibility classification | Passages tagged during ingestion QA: `accessible` (short, clear, affirmation-like), `moderate` (standard prose), `dense` (philosophical, multi-clause). Used internally for pool selection — never displayed. Today's Wisdom favors `accessible`; Quiet Corner uses only `accessible`. |
+| Simplified reading mode ("Focus") | Optional toggle in reader header (Phase 4). Reduces reader to: reading column + Next Chapter. Related Teachings panel, keyboard shortcuts, dwell icon, and bookmark icon suppressed. Stored in `localStorage`. |
+| Minimal gesture vocabulary for core tasks | The portal's essential experience (read, search, navigate) requires only: click, scroll, type. All other gestures (long-press, hover-wait, keyboard shortcuts) are enhancements. Explicitly tested in QA. |
+| Decision fatigue reduction | Non-search pages follow the single-invitation principle (ADR-130): each endpoint invites exactly one step deeper, never more. |
+
+#### Screen Reader Emotional Quality (ADR-129)
+
+The warm cream background and gold accents do nothing for blind seekers. The spoken language of ARIA labels is their entire aesthetic. Standard markup produces functional but emotionally flat output. The portal's screen reader voice carries the same warmth as its visual design.
+
+| Element | Standard markup | Portal standard |
+|---------|----------------|-----------------|
+| Search region | "Search" | "Search the teachings" |
+| Today's Wisdom section | "Today's Wisdom" | "Today's Wisdom — a passage from Yogananda's writings" |
+| Quiet Corner page | "Main content" | "The Quiet Corner — a space for stillness" |
+| Dwell mode enter | "Passage focused" | "Passage focused for contemplation" |
+| Dwell mode exit | "Passage unfocused" | "Returned to reading" |
+| Search results count | "5 results" | "Five passages found" |
+| Theme page | "Theme: Courage" | "Teachings on Courage — passages from across the library" |
+| Empty bookmarks | "No items" | "You haven't marked any passages yet" |
+| Timer start | "Timer started: 5:00" | "The timer has begun. Five minutes of stillness." |
+| Timer end | "Timer complete" | "The time of stillness is complete." |
+
+**Passage citations read naturally.** Screen reader output flows as speech: "'The soul is ever free; it is deathless, birthless...' — from Autobiography of a Yogi, Chapter 26, page 312." Uses `aria-label` on passage containers for natural reading while visual HTML retains its formatting.
+
+**Testing criterion:** Phase 2 screen reader testing (VoiceOver, NVDA, TalkBack) evaluates not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
+
 #### Performance as Accessibility
 
 | Requirement | Implementation |
@@ -4106,6 +4448,59 @@ The chunking algorithm is the single most important factor in search retrieval q
 ### Per-Language Validation (Phase 11)
 
 English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts; Devanagari and Bengali have different word-boundary characteristics. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary. See ROADMAP deliverable 11.10 for the formal validation requirement.
+
+### Semantic Density Classification
+
+Not all passages carry equal semantic weight per token. Some sentences condense an entire teaching into ten words ("The soul is ever free"). Others are narrative connective tissue ("We traveled by train to Puri"). Semantic density — meaning per word — is a useful signal for multiple portal features.
+
+**Classification:** A `semantic_density` score per chunk, computed during ingestion:
+
+| Score | Label | Description | Example |
+|-------|-------|-------------|---------|
+| `high` | Aphoristic | Maximum meaning per token. Standalone truth. Dwell-worthy. | *"The soul is ever free; it is deathless, birthless..."* |
+| `medium` | Expository | Standard teaching prose. Develops an idea across sentences. | *"When you practice meditation regularly, the mind..."* |
+| `low` | Narrative | Story, transition, biographical detail. Context, not teaching. | *"We arrived at the station in the early morning..."* |
+
+**How computed:** Claude Opus (ADR-110 batch tier, "Classifying" category from ADR-049) classifies each chunk during ingestion. Not a numeric score — a three-level enum. Spot-checked by reviewer.
+
+**Column:** `ALTER TABLE book_chunks ADD COLUMN semantic_density TEXT CHECK (semantic_density IN ('high', 'medium', 'low'));`
+
+**Where it's used:**
+
+| Feature | How density helps |
+|---------|-------------------|
+| Today's Wisdom (ADR-046) | Favors `high` density passages — aphorisms, standalone truths |
+| Quiet Corner (ADR-101) | Uses only `high` density passages — affirmations must stand alone |
+| "The Essential Yogananda" | A curated view of the ~200 highest-density passages across the entire library. Not a new page initially — a filter on the `/themes` or `/explore` page. The 200 passages that pack the most teaching per word. |
+| Self-Revealing Navigation (ADR-128) | The "most evocative passage" selected for the warm-background hint on first visit is the highest-density passage in the chapter's first screen |
+| Search result ranking | Density as a tiebreaker when relevance scores are close — prefer aphoristic passages that stand alone over narrative context |
+
+**Phase:** Populated during Phase 5 ingestion (when Claude batch processing is available). Retroactively applied to Phase 1 content.
+
+### Corpus Stylometric Fingerprint (ADR-103 extension)
+
+Content Integrity Verification (ADR-103) uses per-chapter content hashes to verify text hasn't been altered. A stylometric fingerprint adds a deeper layer: not just "this text hasn't been changed" but "this text is consistent with the verified patterns of Yogananda's writing."
+
+**What the fingerprint captures:**
+
+| Dimension | Signal |
+|-----------|--------|
+| **Sentence length distribution** | Mean, median, and standard deviation of words per sentence, per book |
+| **Vocabulary frequency** | The characteristic vocabulary profile — frequency of spiritual terms, pronouns, imperative forms |
+| **Metaphor recurrence** | Yogananda's distinctive metaphors: ocean/wave, lotus, light/darkness, divine mother. Frequency and distribution. |
+| **Rhetorical mode ratio** | Declarative vs. imperative vs. interrogative sentences across the corpus |
+| **Passage structure** | Average paragraph length, dialogue-to-exposition ratio, quotation density |
+
+**How computed:** A batch analysis script run once after full corpus ingestion. Outputs a JSON fingerprint file per book and one for the aggregate corpus. Stored alongside content hashes on the `/integrity` page.
+
+**Who this serves:**
+- **Content integrity.** In a world of AI-generated spiritual content, the ability to verify "this passage is consistent with Yogananda's writing style" is a unique trust signal.
+- **Scholars.** Stylometric analysis is a recognized methodology in textual scholarship. Making the portal's fingerprint public invites scholarly engagement.
+- **AI systems consuming portal content (ADR-084).** The fingerprint helps AI systems distinguish authentic Yogananda passages from AI-generated imitations.
+
+**What this is not:** Not a plagiarism detector. Not a tool for verifying external claims about Yogananda's authorship. It is a statistical profile of the authenticated corpus — a reference point, not a judge.
+
+**Phase:** Phase 7+ (requires substantial corpus ingestion). Published on the `/integrity` page alongside content hashes.
 
 ---
 
@@ -5060,6 +5455,141 @@ Public page listing all books and their per-chapter content hashes. "How to veri
 
 Pre-rendered, shareable page with key passages, discussion prompts, and cross-book connections. < 30KB HTML. Optimized for WhatsApp/SMS preview.
 
+### `/vocabulary` — Yogananda's Language (ADR-093, ADR-121)
+
+The search suggestion system (ADR-121) maps modern terms ("mindfulness") to Yogananda's vocabulary ("concentration, one-pointed attention"). This mapping is currently a search optimization. The Vocabulary Bridge page inverts it into a *learning experience*.
+
+**Purpose:** A dedicated page that presents Yogananda's vocabulary — not as definitions (the Glossary handles that, ADR-093), but as a *translation guide* between contemporary language and the master's specific usage. Over time, seekers stop searching for "mindfulness" and start searching for "concentration." The vocabulary bridge measures its own success by becoming unnecessary.
+
+**Layout:**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                               │
+│   Yogananda's Language                                        │
+│                                                               │
+│   Yogananda used language with precision — each word          │
+│   chosen to convey a specific spiritual reality.              │
+│   When he says "concentration," he means something            │
+│   deeper than the modern usage.                               │
+│                                                               │
+│   ─────────────────────────────────────────────────────────  │
+│                                                               │
+│   You might search for...     Yogananda's word is...          │
+│                                                               │
+│   mindfulness                 concentration, one-pointed      │
+│                               attention                       │
+│   enlightenment               Self-realization, cosmic        │
+│                               consciousness                   │
+│   energy                      prana, life force               │
+│   subconscious                superconscious                  │
+│   willpower                   dynamic will                    │
+│   prayer                      scientific prayer,              │
+│                               affirmation                     │
+│                                                               │
+│   Each term links to → Glossary definition                    │
+│                       → Passages where Yogananda uses it      │
+│                       → Related search                        │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Data source:** The terminology bridge mapping table already built for ADR-121 search suggestions. The vocabulary page is a human-readable view of the same data.
+
+**Phase:** Phase 5 (alongside Glossary, ADR-093). Content is editorial — the mapping between modern and Yogananda-specific vocabulary requires human curation.
+
+### `/explore` — Knowledge Graph and Passage Constellation (ADR-098, ADR-134)
+
+Interactive visual map of the teaching corpus. Two visualization modes:
+
+**Mode 1: Knowledge Graph** (ADR-098) — Traditional node-edge visualization showing relationships between passages, themes, people, and books. Pre-computed graph JSON, client-side rendering.
+
+**Mode 2: Passage Constellation** — A 2D spatial exploration where passages are positioned by semantic similarity, derived from embedding vectors reduced to two dimensions (UMAP or t-SNE, pre-computed at build time).
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                               │
+│   Explore the Teachings                                       │
+│                                                               │
+│     [Graph]    [Constellation]                                │
+│                                                               │
+│         ·                                                     │
+│       · · ·        ·                                          │
+│     · · · · ·    · · ·         ·                              │
+│       · · · ·      · ·       · ·                              │
+│         · ·          ·     · · · ·                            │
+│           ·                  · · ·                            │
+│                                ·          · ·                 │
+│                     ·                    · · ·                │
+│                   · ·                      ·                  │
+│                     ·                                         │
+│                                                               │
+│   Dense clusters reveal where themes converge.                │
+│   Outlier passages sit between worlds.                        │
+│   Click any point to read.                                    │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Constellation behavior:**
+- Each dot represents a passage (chunk). Color-coded by book (using the book's assigned palette color) at low opacity
+- Dense clusters become visually apparent — 40 passages about "divine love" form a neighborhood
+- Outlier passages — teachings that bridge two themes — sit in the sparse space between clusters and are often the most interesting discoveries
+- Hover reveals the first line of the passage + citation
+- Click navigates to the passage in the reader
+- Zoom in/out with scroll or pinch. Pan with drag.
+- Cluster labels appear when zoomed out (derived from the dominant theme tag for passages in that region)
+- No lines, no arrows. Just points of light on warm cream. The spatial layout reveals relationships that lists and hierarchies hide.
+
+**Implementation:** UMAP dimensionality reduction from the 1536-dimensional embedding vectors to 2D coordinates. Pre-computed at build time or nightly batch (not real-time). Stored as a static JSON file (~500KB for ~10,000 passages with coordinates and minimal metadata). Client-side rendering with Canvas or WebGL for performance.
+
+**Who this serves:** Seekers who don't know what to search for. Scholars who want to see the corpus's *shape*. The visually oriented. The curious. The constellation answers: "What does the totality of Yogananda's teaching look like?"
+
+**Phase:** Phase 8+ (alongside Knowledge Graph, ADR-098). The constellation uses existing embedding data; the only new computation is the UMAP reduction.
+
+Linked from Library and themes pages (not primary nav).
+
+### `/ontology` — Spiritual Concept Map (ADR-134)
+
+A human-readable view of the structured spiritual ontology (ADR-134). Presents Yogananda's conceptual framework as a navigable map: states, practices, principles, and their relationships.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                               │
+│   Yogananda's Teaching Structure                              │
+│                                                               │
+│   A map of how the teachings connect.                         │
+│                                                               │
+│   Samadhi                                                     │
+│   The superconscious state of union with Spirit.              │
+│                                                               │
+│   Requires:  meditation → concentration → pranayama           │
+│   Degrees:   savikalpa samadhi · nirvikalpa samadhi           │
+│   Parallels: satori (Zen) · unio mystica (Christian)          │
+│   Passages:  47 across 6 books                                │
+│                                                               │
+│   "In the initial states of God-contact (savikalpa            │
+│    samadhi) the devotee's consciousness merges..."            │
+│   — Autobiography of a Yogi, Chapter 26, p. 312              │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Phase:** Phase 8+ (alongside ontology data model, ADR-134).
+
+### Personal Taxonomy in Study Workspace (ADR-111 extension)
+
+The portal's themes (Peace, Courage, Healing) are universal. But seekers have *personal* names for their states. The Study Workspace (ADR-111) can accommodate this.
+
+**Extension:** Within the Study Workspace, collections can be given seeker-defined names that aren't drawn from the portal's theme vocabulary. "The conversation I keep replaying." "What I need before sleep." "For Mom." The portal provides no vocabulary for these — the seeker's own words become the organizing principle.
+
+- All client-side, all private, all deletable (consistent with ADR-111 localStorage pattern)
+- The portal's taxonomy is canonical and editorial; the seeker's taxonomy is intimate and uncurated
+- Personal collection names are never sent to the server, never appear in analytics, never inform the portal's theme system
+- Phase 15 server sync preserves personal names if the seeker opts in
+
+This transforms the Study Workspace from a composition tool into a personal spiritual workspace — a private space for organizing the teachings around one's own life, not the portal's categories.
+
 ---
 
 ## Image Serving Architecture (ADR-086, ADR-106, ADR-107)
@@ -5093,4 +5623,4 @@ See CONTEXT.md § Open Questions for the consolidated list. Technical and stakeh
 
 ---
 
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-21*
