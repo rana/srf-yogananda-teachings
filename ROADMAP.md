@@ -341,6 +341,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 8.4 | **Study Workspace** | Public `/study` route for anyone engaging deeply with the teachings — monastics, study circle leaders, yoga teachers, home meditators, chaplains, parents. Theme-driven passage discovery (uses existing search API), passage collection with full citations, teaching arc assembly (drag passages into sections like "Opening," "Core Teaching," "Practice," "Closing"), speaker/study notes separated from Yogananda's words. All state in localStorage (no account required). Export: print PDF, presentation mode, plain text. Optional server sync in Phase 15. (ADR-111) |
 | 8.5 | **Study circle sharing** | "Share with your circle" button on Study Guide view. Generates a shareable URL (`/study/[book-slug]/[chapter]/share/[hash]`) with key passages, discussion prompts, and cross-book connections. < 30KB HTML, edge-cached, optimized for WhatsApp/SMS preview and OG cards. No authentication, no tracking. (ADR-099) |
 | 8.6 | **Magazine integration** | `magazine_issues`, `magazine_articles`, `magazine_chunks` tables. Magazine ingestion pipeline (PDF → chunk → embed → QA, mirroring book ingestion). Yogananda's articles enter full search/theme pipeline. Monastic articles searchable via `include_commentary` filter. `/magazine` landing, `/magazine/{year}/{season}` issue view, `/magazine/{year}/{season}/{slug}` article reader. "Magazine" added to primary navigation. API: `GET /api/v1/magazine/issues`, `/issues/{year}/{season}`, `/articles/{slug}`. Pre-rendered issue and article PDFs via `@react-pdf/renderer`. (ADR-105) |
+| 8.7 | **Shared-link collections** | "Share" button in Study Workspace generates a shareable URL (`/collections/[share-hash]`) for any collection. No account required — works with localStorage collections via a one-time server upload at share time. < 30KB HTML, edge-cached. Visible note: *"This collection was curated by a community member, not by SRF."* No staff review needed for shared-link tier — content is already-public SRF text. Lays the foundation for community curation in Phase 16–17. (ADR-135) |
 
 ### Success Criteria
 
@@ -348,6 +349,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 - Presentation mode fills viewport with readable text, no chrome visible, arrow-key navigation works
 - Study guide view renders key themes, notable passages, and cross-book connections for every chapter
 - Study Workspace allows any visitor to collect, sequence, and export passages without authentication (ADR-111)
+- Shared-link collections generate stable URLs that render correctly with full citations and community disclaimer
 - Magazine articles by Yogananda appear in search results alongside book passages
 
 ---
@@ -606,6 +608,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | 16.6 | **Telegram bot** | Telegram bot for search, daily wisdom, and audio content. Free to operate (no per-message cost). Rich formatting (Markdown), inline keyboards, audio clip delivery. Same messaging Lambda, Telegram-specific formatter. (ADR-085) |
 | 16.7 | **USSD and IVR exploration** | Evaluate USSD menu-based access for Africa (telco partnership via Africa's Talking) and IVR voice access for non-literate seekers. IVR could play Yogananda's own voice recordings — a direct connection no text channel can provide. Requires telco partnerships and cost analysis. (ADR-085) |
 | 16.8 | **"What Is Humanity Seeking?" annual report** | *(Public dashboard moved to Phase 7 — ADR-094.)* First annual curated narrative report from `search_theme_aggregates` data. Published in Self-Realization Magazine (ADR-105) and/or by the philanthropist's foundation. Human-curated with data visualizations: rising/falling themes, geographic patterns, seasonal trends, correlation with world events. Not auto-generated — the portal provides the data, humans provide the interpretation. Complements the live `/seeking` dashboard with deeper editorial analysis. |
+| 16.9 | **Community Collections gallery** | `/collections` gallery page displaying published and featured community collections. Filterable by type (theme, study guide, situational, event, cross-media), language, and book. Admin portal review queue for community submissions (extends ADR-064). Staff can approve, reject with feedback, or request revision. Featured collections promoted to homepage and theme pages. Visual distinction from staff-curated Editorial Reading Threads (ADR-054). Builds on Phase 8 shared-link foundation. (ADR-135) |
 
 ### Success Criteria
 
@@ -613,6 +616,33 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 - SMS gateway delivers passages for keyword queries in at least 2 regions (India, US or Africa)
 - Telegram bot responds to search queries with formatted passages and citations
 - Local center discovery returns nearest SRF centers with correct location data
+- Community Collections gallery displays published collections with filtering by type and language
+- Admin portal review queue processes community submissions with approve/reject/revise workflow
+
+---
+
+## Phase 17: Community Curation at Scale
+
+**Goal:** Transform the portal from a staff-curated library into a community-enriched teaching ecosystem where VLD members and devoted seekers contribute editorial work under staff guidance.
+
+### Deliverables
+
+| # | Deliverable | Description |
+|---|-------------|-------------|
+| 17.1 | **VLD dashboard** | Admin portal section for VLD members (Auth0 role: `vld`). Browse open curation briefs, claim assignments, track submission status, access editorial guidance. No gamification — no leaderboards, no submission counts visible to other members. Service is its own reward. (ADR-136) |
+| 17.2 | **Curation briefs** | Staff-authored structured curation requests. `curation_briefs` table with title, description, collection type, target language, deadline. VLD members claim and fulfill briefs via the Study Workspace. Staff reviews completed briefs through the existing admin portal review queue. (ADR-136) |
+| 17.3 | **Trusted submitter status** | After a threshold of approved collections (TBD, likely 3–5), VLD members earn trusted submitter status. Trusted submissions enter a lighter review queue — staff can batch-approve with a scan rather than detailed review. Not auto-publishing — every collection passes through staff eyes. Trusted status is revocable. (ADR-136) |
+| 17.4 | **Collection remixing** | "Use as starting point" button on published collections. Creates a copy in the seeker's Study Workspace for personal modification. Attribution chain preserved: "Based on [original curator]'s collection." Remixed collections go through the same review pipeline if submitted for publication. |
+| 17.5 | **Multilingual community collections** | Extend community curation to non-English languages. Spanish-speaking center leaders curate from Spanish-edition passages. Language-specific gallery filtering. Curation briefs can target specific languages. Requires Phase 11 multilingual content as prerequisite. |
+| 17.6 | **Community collection analytics (DELTA-compliant)** | Anonymized, aggregated insights for staff editorial decisions: which collection types are most submitted, which themes have gaps, which curation briefs attract the most claims. No individual curator analytics. No seeker-facing metrics. Staff-only dashboard in admin portal. (ADR-029) |
+
+### Success Criteria
+
+- VLD members can browse, claim, and fulfill curation briefs through the admin portal
+- Trusted submitter pipeline reduces average staff review time per submission
+- At least one non-English community collection is published through the multilingual pipeline
+- Collection remixing preserves attribution chain and passes through review pipeline
+- DELTA-compliant analytics inform staff editorial strategy without exposing individual curator activity
 
 ---
 
@@ -663,12 +693,14 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | **14** | Phase 13 content hub schema deployed | Audio/image source material available from SRF |
 | **15** | Phase 14 complete, SRF decision on user accounts | Auth0 configuration aligned with SRF identity standards |
 | **16** | Phase 15 account infrastructure (if applicable) | Regional SMS partner contracts negotiated |
+| **17** | Phase 16 community collections gallery operational, VLD roster available from SRF | Phase 15 account infrastructure for curator attribution |
 
 **Critical decision gates** (require SRF input before the phase begins):
 - **Phase 5:** Who owns editorial governance?
 - **Phase 10:** Contentful tier and content model granularity
 - **Phase 11:** YSS branding strategy for Hindi/Bengali locales
 - **Phase 15:** Whether to implement user accounts at all
+- **Phase 17:** VLD role assignment process and community curation governance model
 
 ---
 
@@ -682,7 +714,8 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | Phase 10 | ~$50-100+ | Contentful paid tier likely needed, Lambda functions for Contentful webhooks. |
 | Phase 11+ | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
 | Phases 13–14 | +$30-80 | Audio hosting on S3 + CloudFront streaming. Whisper transcription one-time cost (~$0.006/min). Audio file storage scales with archive size. |
-| Phase 16 | +$600-1,200 | SMS gateway costs vary by region (India: ~$0.002/msg, US: ~$0.04/msg). Telegram bot: free. USSD/IVR: requires telco negotiation. |
+| Phase 16 | +$600-1,200 | SMS gateway costs vary by region (India: ~$0.002/msg, US: ~$0.04/msg). Telegram bot: free. USSD/IVR: requires telco negotiation. Community collections gallery: negligible incremental cost (same Neon/Vercel infrastructure). |
+| Phase 17 | +$0-50 | VLD dashboard and curation briefs use existing admin portal infrastructure. Storage for community collections: negligible (text and references, not media). Primary cost is staff review time, not infrastructure. |
 
 ---
 

@@ -1461,6 +1461,8 @@ SENTRY_AUTH_TOKEN=         # Source map uploads
 | `/videos` | Video library — categorized by playlist | YouTube API (ISR) |
 | `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) |
 | `/study` | Study Workspace — passage collection, teaching arc assembly, export (Phase 8, ADR-111) | `localStorage` (no server) |
+| `/collections` | Community Collections gallery — published/featured curated passage collections (Phase 16, ADR-135) | Neon (`study_outlines` where visibility = published/featured) |
+| `/collections/[share-hash]` | Single community collection view (Phase 8 shared-link, Phase 16 published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) |
 | `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 5, ADR-116) | Neon (`seeker_feedback`) |
 
 ### Search Results Component
@@ -4917,6 +4919,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-024). The admin ro
 - `/lib/services/social.ts` — asset generation, caption management
 - `/lib/services/translation.ts` — translation review, locale progress tracking
 - `/lib/services/impact.ts` — aggregated metrics for leadership dashboard
+- `/lib/services/collections.ts` — community collections, visibility management, submission pipeline (ADR-135)
 
 ### Phase Delivery
 
@@ -5589,6 +5592,114 @@ The portal's themes (Peace, Courage, Healing) are universal. But seekers have *p
 - Phase 15 server sync preserves personal names if the seeker opts in
 
 This transforms the Study Workspace from a composition tool into a personal spiritual workspace — a private space for organizing the teachings around one's own life, not the portal's categories.
+
+---
+
+## Community Collections — Public Curation (ADR-135, ADR-136)
+
+The Study Workspace (ADR-111) enables personal passage collection. Community Collections extend this with a publish path: personal → shared → reviewed → public.
+
+### Four-Tier Visibility
+
+| Tier | Audience | Review | Phase |
+|------|----------|--------|-------|
+| **Private** | Creator only | None | 8 (existing Study Workspace) |
+| **Shared link** | Anyone with URL | None | 8 |
+| **Published** | Everyone (gallery) | Staff review required | 16 |
+| **Featured** | Everyone (prominent) | Staff-promoted | 16 |
+
+**Shared link** is the workhorse for study circles: a center leader curates a reading plan in the Study Workspace, clicks "Share," and gets a URL to send via WhatsApp or email. No account required. No staff review needed — the content is already-public SRF text. The page carries a note: *"This collection was curated by a community member, not by SRF."*
+
+**Published** collections enter a staff review queue in the admin portal (extending ADR-064). Review evaluates theological coherence, citation completeness, and curation quality. The pipeline mirrors ADR-048: `submitted` → review → `published` or `rejected` with feedback.
+
+### Collection Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `theme` | Passages around a spiritual theme | "Yogananda on Divine Friendship" |
+| `study_guide` | Structured reading plan with sections | "12-Week Autobiography Journey" |
+| `situational` | Passages for a life moment | "For When You're Grieving" |
+| `event` | Passages for an SRF calendar event | "Mahasamadhi Readings" |
+| `cross_media` | Passages paired with talks/articles | "The Gita: Book and Lecture" |
+
+### Schema Extension (extends ADR-111 tables)
+
+```sql
+ALTER TABLE study_outlines ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'
+    CHECK (visibility IN ('private', 'shared_link', 'published', 'featured'));
+ALTER TABLE study_outlines ADD COLUMN share_hash TEXT UNIQUE;
+ALTER TABLE study_outlines ADD COLUMN collection_type TEXT
+    CHECK (collection_type IN ('theme', 'study_guide', 'situational', 'event', 'cross_media'));
+ALTER TABLE study_outlines ADD COLUMN submitted_at TIMESTAMPTZ;
+ALTER TABLE study_outlines ADD COLUMN reviewed_by TEXT;
+ALTER TABLE study_outlines ADD COLUMN reviewed_at TIMESTAMPTZ;
+ALTER TABLE study_outlines ADD COLUMN review_notes TEXT;
+ALTER TABLE study_outlines ADD COLUMN curator_display_name TEXT;
+ALTER TABLE study_outlines ADD COLUMN language TEXT DEFAULT 'en';
+```
+
+### Routes
+
+| Route | Purpose | Auth |
+|-------|---------|------|
+| `/collections` | Gallery of published/featured collections. Filter by type, theme, language. | Public |
+| `/collections/[share-hash]` | Single collection view (shared-link, published, or featured) | Public |
+| `/study` | Study Workspace (existing). "Share" and "Submit" buttons for server-synced collections. | Public (Phase 15 for server sync) |
+
+### Gallery Page (`/collections`)
+
+The gallery presents published community collections with filtering:
+
+- **Filter by type:** theme, study guide, situational, event, cross-media
+- **Filter by language:** follows portal's multilingual strategy
+- **Sort by:** newest, type, book (alphabetical)
+- **No engagement metrics.** No view counts, no likes, no popularity rankings. DELTA compliance (ADR-029) extends to community features. Quality is signaled through the "Featured" tier (staff-promoted), not community voting.
+
+### Admin Portal Review Queue (extends ADR-064)
+
+Community collection submissions appear in the admin portal alongside theme tag review and other editorial queues:
+
+- Display: collection title, curator name, passage count, collection type
+- Preview: full collection view with all passages and personal notes
+- Actions: Approve, Reject (with feedback), Request Revision
+- Keyboard-driven: same patterns as theme tag review (`a` approve, `r` reject, `→` next)
+
+### VLD Curation Pipeline (ADR-136)
+
+VLD members access a dedicated section in the admin portal (Auth0 role: `vld`):
+
+```sql
+CREATE TABLE curation_briefs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    collection_type TEXT NOT NULL,
+    target_language TEXT DEFAULT 'en',
+    created_by TEXT NOT NULL,
+    claimed_by TEXT,
+    claimed_at TIMESTAMPTZ,
+    submitted_at TIMESTAMPTZ,
+    status TEXT DEFAULT 'open'
+        CHECK (status IN ('open', 'claimed', 'submitted', 'approved', 'revision_requested')),
+    deadline TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Workflow:** Staff creates brief ("We need a collection on friendship for July") → VLD member claims → curates in Study Workspace → submits → staff reviews → published.
+
+**Trusted submitter status:** After a threshold of approved collections (TBD, likely 3–5), VLD members' submissions enter a lighter review queue (batch-approve). Not auto-publishing — every collection passes through staff eyes — but review effort scales sublinearly.
+
+### Content Integrity
+
+- Collections arrange existing corpus content. No new content is created.
+- Personal notes are visually distinct: smaller font, different background, prefixed with curator name. Never presented as Yogananda's words.
+- Shared and published collections retain full citations (book, chapter, page) on every passage.
+- The portal does not host user-generated prose, commentary, or interpretation. Collections are selection and sequence.
+
+### Service File
+
+`/lib/services/collections.ts` — collection queries, visibility management, share hash generation, submission pipeline, gallery filtering.
 
 ---
 

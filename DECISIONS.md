@@ -160,6 +160,8 @@ Each decision is recorded with full context so future contributors understand no
 
 **Community & Future Readiness**
 - ADR-081: Lessons Integration Readiness
+- ADR-135: Community Collections — Tiered Visibility Public Curation
+- ADR-136: VLD Editorial Delegation — Volunteer Curation Pipeline
 
 **Withdrawn**
 - ~~ADR-053: Search Query Retention and Aggregation Strategy~~ (deliberately withdrawn — raw table is sufficient)
@@ -9760,6 +9762,206 @@ Phase 8+ (alongside Knowledge Graph, ADR-098). The ontology is the data layer; t
 - Query expansion (ADR-049 E1) can optionally traverse ontological prerequisites for richer search results
 - The portal becomes the first spiritual teachings platform to offer a formal, machine-readable conceptual ontology
 - **Extends ADR-084** with deep semantic structure; **extends ADR-093** with relational graph; **extends ADR-098** with a concept layer above the passage layer
+
+---
+
+## ADR-135: Community Collections — Tiered Visibility Public Curation
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-111 (Study Workspace), ADR-054 (Editorial Reading Threads), ADR-048 (Tagging Pipeline), ADR-029 (DELTA), ADR-003 (Librarian Principle)
+
+### Context
+
+The Study Workspace (ADR-111) allows anyone to collect, arrange, and export passages — but collections remain private (localStorage or Phase 15 server sync). Editorial Reading Threads (ADR-054) are staff-curated passage sequences — but only staff can create them. There is no path for community members to share their curated arrangements of Yogananda's teachings with other seekers.
+
+This gap matters because:
+
+- **Center leaders and study circle facilitators** prepare weekly readings and want to share them with their groups.
+- **Long-term devotees** accumulate thematic collections over years of study that have genuine editorial quality.
+- **VLD (Voluntary League of Disciples) members** exist specifically to serve SRF's mission and could contribute editorial work.
+- **New seekers** benefit from community-curated entry points alongside the portal's own editorial curation.
+
+The core design question: how to enable community sharing while maintaining the theological integrity gate ("AI proposes, humans approve" → "community proposes, staff approves") and avoiding engagement-driven dynamics that violate DELTA (ADR-029).
+
+### Decision
+
+Extend the Study Workspace with a **four-tier visibility model** for collections:
+
+| Tier | Who sees it | Review required | Discovery |
+|------|-------------|-----------------|-----------|
+| **Private** | Only the creator | No | Not discoverable |
+| **Shared link** | Anyone with the URL | No | Not discoverable — direct URL only |
+| **Published** | Everyone | **Yes** — staff review | Discoverable in `/collections` gallery |
+| **Featured** | Everyone, prominently | Staff-promoted | Highlighted on homepage, theme pages, or "Staff Picks" |
+
+**Private** is the existing Study Workspace behavior (localStorage, Phase 15 server sync). No change.
+
+**Shared link** is the critical middle tier. A center leader can share a reading plan with their group immediately, without waiting for staff review. The content is already public SRF-published text — the link merely shares an arrangement. Risk is low: the audience is self-selecting (people who received the link), and the content is Yogananda's own words with full citations. Shared-link collections carry a visible note: *"This collection was curated by a community member, not by SRF."*
+
+**Published** requires staff review via the admin portal review queue. Community members submit their collection for consideration. Staff reviewers evaluate for theological coherence (passages aren't juxtaposed misleadingly), completeness (citations intact, passages not truncated), and quality (the arrangement serves seekers). Approved collections appear in the `/collections` gallery. The review pipeline mirrors ADR-048: `submitted` → review queue → `published` or `rejected` with feedback.
+
+**Featured** is staff-promoted. A published collection that staff considers particularly valuable can be elevated to homepage placement, theme page cross-links, or "Staff Picks" sections. This provides editorial quality signals without engagement metrics.
+
+### Collection Types
+
+Community collections may be categorized as:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Theme collection** | Passages around a spiritual theme | "Yogananda on Divine Friendship" |
+| **Study guide** | Structured reading plan with sections | "12-Week Journey Through the Autobiography" |
+| **Situational reading** | Passages for a life moment | "For When You're Grieving" |
+| **Event reading** | Passages for an SRF calendar event | "Mahasamadhi Commemoration Readings" |
+| **Cross-media collection** | Passages paired with talks, articles | "The Bhagavad Gita: Book and Lecture" |
+
+### What Collections Are Not
+
+- Collections do **not** create new content. They arrange existing corpus content. Yogananda's words are the content; the collection is an arrangement.
+- Personal notes attached to passages in shared/published collections are visually distinct from Yogananda's text — smaller font, different background, prefixed with the curator's chosen display name. Never presented as Yogananda's words.
+- Collections are **not** comments, reviews, or interpretations. The portal does not host user-generated prose about the teachings. Collections are selection and sequence.
+- Collections do **not** carry engagement metrics visible to curators or other seekers. No like counts, view counts, or popularity rankings. DELTA compliance (ADR-029) extends to community features.
+
+### Schema Extension
+
+Extends the Study Workspace schema (ADR-111):
+
+```sql
+-- Extend study_outlines with visibility and review fields
+ALTER TABLE study_outlines ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'
+    CHECK (visibility IN ('private', 'shared_link', 'published', 'featured'));
+ALTER TABLE study_outlines ADD COLUMN share_hash TEXT UNIQUE;       -- generated on first share
+ALTER TABLE study_outlines ADD COLUMN collection_type TEXT
+    CHECK (collection_type IN ('theme', 'study_guide', 'situational', 'event', 'cross_media'));
+ALTER TABLE study_outlines ADD COLUMN submitted_at TIMESTAMPTZ;
+ALTER TABLE study_outlines ADD COLUMN reviewed_by TEXT;              -- staff reviewer
+ALTER TABLE study_outlines ADD COLUMN reviewed_at TIMESTAMPTZ;
+ALTER TABLE study_outlines ADD COLUMN review_notes TEXT;             -- feedback if rejected
+ALTER TABLE study_outlines ADD COLUMN curator_display_name TEXT;     -- optional, shown on published
+ALTER TABLE study_outlines ADD COLUMN language TEXT DEFAULT 'en';
+```
+
+### Routes
+
+- `/collections` — Gallery of published and featured collections. Filterable by type, theme, language. No authentication required.
+- `/collections/[share-hash]` — Single collection view. Works for shared-link, published, and featured tiers.
+- `/study` — Study Workspace (existing). "Share" and "Submit for review" buttons added for collections stored server-side (Phase 15+).
+
+### Attribution and Identity
+
+- **Private and shared-link collections:** No attribution required. Curator may optionally set a display name.
+- **Published and featured collections:** Display name required. No account linking, no profile pages, no follower counts. The display name appears once at the top of the collection: *"Curated by [name]."* No curator analytics, no submission history visible to other seekers.
+- **Anonymous publication:** Curators may choose "A devotee" or "A seeker" as display name. Attribution exists for accountability (staff know who submitted), not for ego.
+
+### Alternatives Considered
+
+1. **Allow community curation without any review.** Rejected. Yogananda's teachings can be arranged misleadingly (cherry-picking quotes to support positions he'd disagree with). The theological integrity gate is non-negotiable.
+2. **Require authentication for all sharing.** Rejected. Shared-link tier serves center leaders who need to share a reading plan with their study group immediately. Authentication adds friction for the lowest-risk tier.
+3. **Community voting/ranking.** Rejected. Engagement metrics violate DELTA (ADR-029) and create dopamine dynamics the portal explicitly avoids.
+4. **Commenting on collections.** Rejected. The portal is not a social platform. Collections are curated arrangements, not discussion threads.
+
+### Consequences
+
+- Phase 8 adds shared-link export to Study Workspace (lightweight — just a URL with a hash)
+- Phase 16 adds the `/collections` gallery with published and featured tiers, and the admin portal review queue for community submissions
+- Phase 17 adds VLD pipeline, trusted submitter workflows, and scaled community curation (ADR-136)
+- The admin portal (ADR-064) gains a new review queue type: community collection submissions
+- Schema migration adds visibility, review, and attribution columns to `study_outlines`
+- Multilingual collections follow the portal's multilingual strategy (ADR-020): a Spanish-speaking center leader curates from Spanish-edition passages; language column enables filtering
+- **Extends ADR-111** (Study Workspace) with public visibility; **extends ADR-054** (Editorial Reading Threads) with community sourcing; **mirrors ADR-048** (tagging pipeline) with the "community proposes, staff approves" pattern
+
+---
+
+## ADR-136: VLD Editorial Delegation — Volunteer Curation Pipeline
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-135 (Community Collections), ADR-064 (Staff Experience Architecture), ADR-048 (Tagging Pipeline), ADR-081 (Lessons Integration Readiness)
+
+### Context
+
+The Voluntary League of Disciples (VLD) is SRF's established network of lay volunteers who support the organization's mission through service. The portal's editorial workflows (theme tag review, daily passage curation, translation review, content QA) all require human labor. The staff team is small and has many responsibilities beyond the portal.
+
+Community Collections (ADR-135) introduce a general-purpose community curation model. But VLD members are a distinct population: **known, vetted, mission-aligned, and organizationally connected to SRF.** They deserve a differentiated pipeline that leverages their commitment without burdening staff with unnecessary review overhead.
+
+### Decision
+
+Create a **VLD editorial delegation model** with three components:
+
+**1. Curation Briefs (Staff → VLD)**
+
+Staff can create structured curation requests that VLD members claim and fulfill:
+
+```sql
+CREATE TABLE curation_briefs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,                        -- "Passages on Friendship for July"
+    description TEXT NOT NULL,                  -- Detailed brief with guidance
+    collection_type TEXT NOT NULL,              -- matches ADR-135 types
+    target_language TEXT DEFAULT 'en',
+    created_by TEXT NOT NULL,                   -- staff member
+    claimed_by TEXT,                            -- VLD member who accepted
+    claimed_at TIMESTAMPTZ,
+    submitted_at TIMESTAMPTZ,
+    status TEXT DEFAULT 'open'
+        CHECK (status IN ('open', 'claimed', 'submitted', 'approved', 'revision_requested')),
+    deadline TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+Workflow: Staff creates brief → VLD member claims → curates collection in Study Workspace → submits → staff reviews → published. The brief provides editorial guidance that improves submission quality and reduces review friction.
+
+**2. Trusted Submitter Status**
+
+After N approved collections (threshold TBD — likely 3–5), a VLD member earns "trusted submitter" status:
+
+```sql
+ALTER TABLE study_outlines ADD COLUMN trusted_submission BOOLEAN DEFAULT false;
+```
+
+Trusted submitters' collections enter a **lighter review queue**: staff can batch-approve with a single scan rather than detailed review. Trusted status is revocable. This is not auto-publishing — every collection still passes through staff eyes — but review effort scales sublinearly with submission volume.
+
+**3. VLD Dashboard**
+
+A section within the admin portal (accessible to users with `vld` Auth0 role):
+
+- **Open briefs:** Available curation requests to claim
+- **My submissions:** Status of submitted collections (in review, approved, revision requested)
+- **Guidance:** Editorial principles, style notes, theological boundaries
+- **No gamification:** No leaderboards, no submission counts visible to other VLD members, no badges. Service is its own reward.
+
+### Auth0 Role Addition
+
+```
+vld — Curation brief browsing, collection submission, personal submission status. No editorial review access.
+```
+
+This extends the role structure from ADR-064 (Staff Experience Architecture):
+
+| Role | Access |
+|------|--------|
+| `vld` | Open briefs, personal submissions, editorial guidance |
+| `editor` | All VLD access + review queues, approval/rejection |
+| `reviewer` | All editor access + theological review (final approval tier) |
+| `admin` | All access + user management |
+
+### Alternatives Considered
+
+1. **Treat VLD members the same as general public.** Rejected. VLD members are vetted volunteers with organizational accountability. A differentiated pipeline respects their commitment and reduces staff overhead.
+2. **Auto-publish trusted VLD submissions.** Rejected. Every collection that reaches seekers passes through staff eyes. The "human review as mandatory gate" principle (§ Critical Design Constraints) applies universally. Trusted status reduces review *effort*, not review *requirement*.
+3. **Give VLD members full editor access.** Rejected. Editors can approve others' submissions. VLD members submit; staff approves. The separation maintains the editorial integrity gate.
+
+### Consequences
+
+- New Auth0 role: `vld`
+- New table: `curation_briefs`
+- Admin portal gains VLD dashboard section
+- Staff gains ability to delegate curation work at scale
+- Phase 17 deliverable (see ROADMAP.md)
+- VLD member onboarding requires SRF coordination — SRF maintains the VLD roster; portal integrates via Auth0 role assignment
+- Future consideration: could extend beyond curation to translation review, theme tag review, or other editorial tasks where VLD members have relevant skills
+- **Extends ADR-135** (Community Collections) with organizational delegation; **extends ADR-064** (Staff Experience) with volunteer roles
 
 ---
 
