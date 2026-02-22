@@ -65,7 +65,7 @@ Located in `docs/reference/`:
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 112 decisions in DECISIONS.md (ADR-001 through ADR-112), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-112. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 113 decisions in DECISIONS.md (ADR-001 through ADR-113), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-113. Header format: `## ADR-NNN: Title`.
 
 **DES-NNN** (Design Sections) — 53 sections in DESIGN.md (DES-001 through DES-053), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 

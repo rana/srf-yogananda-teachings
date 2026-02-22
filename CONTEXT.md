@@ -2,11 +2,11 @@
 
 ## Current State
 
-**Phase:** Design complete. Ready to begin Phase 0 (Prove).
+**Phase:** Design complete. Ready to begin Phase 0a (Prove).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture + 51 design sections DES-001 through DES-051), DECISIONS.md (105 ADRs, numbered 001–105, organized into 11 topical groups), ROADMAP.md (15 phases, 0–14). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture + 53 design sections DES-001 through DES-053), DECISIONS.md (113 ADRs, numbered 001–113, organized into 11 topical groups), ROADMAP.md (15 phases, 0a–14). No code yet.
 
-**What's next:** Phase 0 — Prove. Repo setup, Neon provisioning, Vercel/Sentry configuration, initial schema migration, stakeholder kickoff, then single-book search and AI librarian. See ROADMAP.md § Phase 0 for deliverables.
+**What's next:** Phase 0a — Prove. Confirm edition + PDF source with SRF, then: repo setup, Neon + schema, PDF ingestion, hybrid search API, search UI, book reader, search quality evaluation. Eight deliverables answering one question: does semantic search work over Yogananda's text? Phase 0b (Foundation) adds Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md § Phase 0a and § Phase 0b for deliverables. (ADR-113)
 
 ---
 
@@ -42,23 +42,19 @@
 ### Stakeholder (require SRF input)
 
 - [ ] What is the relationship between this portal and the SRF/YSS app? Complementary or overlapping reader? Will the portal's search eventually power the app?
-- [ ] Who will manage the editorial workflow — theme tagging, daily passage curation, text QA? Monastic order, AE team, or dedicated content editor?
 - [ ] What does the philanthropist's foundation consider a successful outcome at 12 months? (Shapes analytics and reporting.)
 - [ ] Can SRF provide center location data (addresses, coordinates, schedules) for an in-portal "Meditation Near Me" feature?
 - [ ] What is SRF's copyright/licensing posture for the portal content? Read online only, or also downloadable/printable? What attribution is required? *All non-Lessons material is offered free of charge. The architecture supports both read-online and downloadable formats. SRF should determine specific licensing terms at their discretion.*
 - [ ] About page content: does SRF have approved biography text for Yogananda and descriptions of the line of gurus, or do we draft for their review?
-- [ ] Does SRF/YSS have **digital text** of official translated editions? If only printed books, OCR per language is a massive effort requiring fluent reviewers. (Critical for Phase 10 scoping.)
 - [ ] Which books have official translations in which languages? (Content availability matrix — determines what each language's portal experience looks like.)
 - [ ] Who reviews the AI-drafted UI translations (~200–300 strings)? Claude generates drafts (ADR-078), but human review is mandatory. Does SRF have multilingual monastics or volunteers who can review for spiritual register and tone?
 - [ ] Should Hindi and Bengali be co-launched with the Western-language set in Phase 10, or does the 10a/10b split remain? The current sequencing places Yogananda's heritage languages (~830M speakers) after European languages — practical given SRF's existing translation infrastructure, but at tension with the mission of global availability. If resource constraints require phased rollout, the rationale should be explicitly documented as a resourcing decision rather than natural ordering. (ADR-077)
 - [ ] Should YSS have co-equal or advisory authority over Hindi/Bengali design decisions? This affects visual design, editorial voice, cultural adaptation, and the branding decision (ADR-079). Co-equal means YSS participates in design from Phase 0; advisory means YSS reviews completed designs. (Relates to ADR-077, ADR-079)
 - [ ] Does YSS have photographic archives of Yogananda's Indian biographical sites (Gorakhpur birthplace, Serampore college, Ranchi YSS schools, Dakshineswar)? These would be primary content for Sacred Places in the Hindi/Bengali locales, where Google Street View coverage is patchy or absent. (Relates to DES-023, ADR-069)
 - [ ] Does SRF/YSS have pastoral care resources (center contacts, counselors) that could complement helpline numbers in locales where mental health helplines are underserved or culturally stigmatized? Rural Indian seekers may contact a pandit or elder before calling a helpline. Crisis resource data in `messages/{locale}.json` should support multiple resource types, not only helplines. (Relates to ADR-071)
-- [ ] For Hindi/Bengali: same portal domain (`teachings.yogananda.org/hi/`) or YSS-branded domain? Organizational question with architectural implications.
 - [ ] Do translated editions preserve paragraph structure? If yes, `canonical_chunk_id` alignment during ingestion is straightforward (match by chapter_number + paragraph_index). If translations reorganize content, alignment requires semantic matching. (Critical for Phase 10 cross-language linking.)
 - [ ] Does the teaching portal get its own mobile app, or do portal features (search, daily passage, reader) integrate into the existing SRF/YSS app? The API-first architecture (ADR-011) supports either path.
 - [ ] Is *Cosmic Chants* one canonical volume or a family of editions/compilations? Are there distinct collections (e.g., *Cosmic Chants* vs. devotional songs within other books) that need separate modeling? Should the SRF app's chant practice feature (if it exists) be linked from the portal as a "signpost"? (Relates to ADR-059)
-- [ ] Does SRF prefer the portal repo in GitLab from day one (per SRF IDP standards), or is GitHub acceptable for Phases 0–8 with a planned Phase 9 migration? The Terraform code and CI/CD pipelines are SCM-agnostic; only the workflow files change.
 - [ ] What Sentry and New Relic configurations does SRF use across their existing properties? Aligning observability tooling enables operational consistency.
 - [ ] What are the content licensing terms for portal-served content — read-online only, or also downloadable/redistributable? (Relates to ADR-081)
 - [ ] Does the philanthropist's foundation want to publish "What Is Humanity Seeking?" as a standalone annual communications asset (report, subdomain, media syndication)? If so, communications planning should begin before the Phase 6 dashboard ships. (Relates to ADR-090)
@@ -120,7 +116,11 @@
 2. **AI provider:** Claude via AWS Bedrock with model tiering — Haiku for real-time search (query expansion, intent classification, passage ranking), Opus for offline batch tasks (theme tagging, vocabulary extraction, relation classification). *(Resolved by ADR-014.)*
 3. **Single database vs. multi-database:** Single-database architecture (Neon only, no DynamoDB). Simplicity over ecosystem conformity. *(Resolved by ADR-013.)*
 4. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-027.)*
-5. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
+5. **Digital text availability:** SRF/YSS has digital text of official translated editions. Per-language OCR is not required. *(Resolved: confirmed by stakeholder.)*
+6. **Editorial workflow ownership:** Non-issue — resolved through organizational discussion. *(Resolved: confirmed by stakeholder.)*
+7. **SCM for Phases 0–8:** GitHub acceptable for Phases 0–8 with planned Phase 9 migration to GitLab. *(Resolved: confirmed by stakeholder.)*
+8. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
+9. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
 
 ---
 

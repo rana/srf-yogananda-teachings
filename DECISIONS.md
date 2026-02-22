@@ -137,6 +137,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
 - ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
+- ADR-113: Phase 0 Split — Prove Before Foundation
 ---
 
 ## ADR-001: Direct Quotes Only — No AI Synthesis
@@ -9937,5 +9938,55 @@ When a significant AI model upgrade or prompt revision occurs:
 - Embedding migration has a defined lifecycle: parallel → converge → deprecate → delete (90 days).
 - AI re-evaluation is explicitly opt-in — preventing scope creep when models improve.
 - DESIGN.md § DES-034 (Content Lifecycle Management) should reference this ADR for versioning policy.
+
+---
+
+## ADR-113: Phase 0 Split — Prove Before Foundation
+
+- **Status:** Accepted
+- **Date:** 2026-02-22
+
+### Context
+
+Phase 0 ("Prove") had accumulated 21 deliverables — a mix of the core existential question ("does semantic search work over Yogananda's text?") and production foundation work (Vercel deployment, Sentry, observability, query expansion, rate limiting, MCP server, homepage, cultural consultation). The phase was structured as a single unit gated only by SRF availability.
+
+The risk: 21 deliverables is a product, not a proof. The most consequential question — whether hybrid vector + FTS search produces quality results over Yogananda's specific prose — was buried among infrastructure tasks. If search quality fails, everything else built in Phase 0 is premature.
+
+Additionally, 112 ADRs and 53 design sections existed with zero lines of code. The design was comprehensive and ready for implementation, but the gap between design and empirical contact was widening.
+
+### Decision
+
+Split Phase 0 into two sub-phases:
+
+**Phase 0a: Prove** (8 deliverables)
+Answer one question: does semantic search over Yogananda's text return relevant, accurately cited, verbatim passages? Minimal vertical slice: repo → schema → ingest → search → read → evaluate. No deployment, no AI enhancements, no homepage, no observability beyond what's needed locally.
+
+**Phase 0b: Foundation** (10 deliverables)
+Deploy to Vercel, add Claude-based query expansion and intent classification, build the homepage, establish observability, provision the MCP server, add rate limiting and search suggestions. This phase transforms the proven local prototype into a deployed, AI-enhanced portal.
+
+Phase 0a has two conversation prerequisites (edition confirmation, PDF source) but no engineering dependencies. Phase 0b is gated on Phase 0a's search quality evaluation passing (≥ 80% threshold).
+
+### Rationale
+
+- **Empirical contact first.** The design is ready. The highest-value action is contact with the actual corpus — Yogananda's long-form, metaphor-dense, sometimes archaic spiritual prose. No amount of design iteration substitutes for running embeddings against real text.
+- **Fail fast on the existential question.** If chunking, embedding, or hybrid search produce poor results on this specific corpus, the project needs to know immediately — not after building a homepage and observability stack.
+- **Reduce Phase 0 scope creep.** 21 deliverables labeled "Prove" set an implicit expectation that all 21 must complete before declaring Phase 0 done. The split makes the proof explicit and small.
+- **Contingency planning.** Phase 0a includes a "What If Search Quality Fails?" section with four concrete fallbacks (chunking adjustment, embedding model swap, manual curation bridge, hybrid weighting tuning). This contingency was absent from the original Phase 0.
+
+### Alternatives Considered
+
+1. **Keep Phase 0 as-is, just start building.** Viable but risks building the homepage and observability before knowing if search works. The split costs nothing — it's a reframing, not a structural change.
+
+2. **Move Phase 0b deliverables into Phase 1.** Considered, but Phase 1 ("Build") already has its own scope (all pages, engineering infrastructure, accessibility). Phase 0b is genuinely "foundation" work that should precede Phase 1.
+
+3. **Even smaller Phase 0a (5 deliverables — no reader, no eval).** The reader and evaluation are both essential to declaring search "proven." Without the reader, "Read in context" links can't be tested. Without the evaluation, the quality threshold is subjective.
+
+### Consequences
+
+- Phase 0a can begin immediately once edition and PDF source are confirmed — no SRF AE team availability needed.
+- Phase 0b is gated on Phase 0a's search quality evaluation. If the evaluation fails, Phase 0b is deferred until contingency measures resolve the quality gap.
+- Phase 1's hard prerequisite changes from "Phase 0 complete" to "Phase 0b complete."
+- The Phase Gates table in ROADMAP.md is updated to reflect the split.
+- References to "Phase 0" deliverable numbers in other documents (DESIGN.md, CONTEXT.md) should use the new 0a/0b numbering.
 
 ---

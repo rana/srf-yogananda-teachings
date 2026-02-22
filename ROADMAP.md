@@ -1,10 +1,11 @@
 # SRF Online Teachings Portal — Roadmap
 
-> **At a glance.** 15 phases (0–14) from proving the search through community curation at scale, plus supporting sections.
+> **At a glance.** 15 phases (0a–14) from proving the search through community curation at scale, plus supporting sections. Phase 0 is split into 0a (Prove) and 0b (Foundation) per ADR-113.
 
 | Phase | Name | Focus |
 |-------|------|-------|
-| [0](#phase-0-prove) | Prove | Foundation, single-book search, AI librarian |
+| [0a](#phase-0a-prove) | Prove | Ingest one book, prove semantic search works |
+| [0b](#phase-0b-foundation) | Foundation | Deployment, observability, AI librarian, homepage |
 | [1](#phase-1-build) | Build | All pages, engineering infrastructure, accessibility |
 | [2](#phase-2-read) | Read | Dwell, bookmarks, keyboard nav, typography |
 | [3](#phase-3-grow) | Grow | Multi-book corpus, cross-book search |
@@ -59,11 +60,74 @@ See CONTEXT.md § Open Questions for the consolidated list. See ADR-102 (analysi
 
 ---
 
-## Phase 0: Prove
+## Phase 0a: Prove
 
-**Goal:** Provision the development environment, resolve blocking questions, and prove that semantic search across Yogananda's text returns high-quality, relevant, verbatim passages with accurate citations. Deliver a working vertical slice: ingest → search → read.
+**Goal:** Answer the existential question: does semantic search across Yogananda's text return high-quality, relevant, verbatim passages with accurate citations? Deliver the minimum vertical slice: ingest → search → read. Everything else waits until this works.
 
-*Phase 0 is the first encounter between this design and a real seeker. Every decision made here will be tested by someone in need. Build accordingly.*
+*Phase 0a is deliberately small. The design is 112 ADRs deep — the risk is no longer under-design but over-design without empirical contact. Ship this, learn from it, then build the foundation.* (ADR-113)
+
+**Focus book:** Autobiography of a Yogi
+
+### Prerequisites (conversations, not code)
+
+These are blocking conversations that must happen before ingestion begins:
+
+1. **Edition confirmation:** Confirm with SRF which edition of Autobiography of a Yogi is the canonical page-number reference (1946 first edition, 1998 13th edition, or current printing). All portal citations depend on this. (ADR-034)
+2. **PDF source confirmation:** Confirm PDF source for Autobiography with SRF AE team.
+
+### Deliverables
+
+| # | Deliverable | Description |
+|---|-------------|-------------|
+| 0a.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-041) |
+| 0a.2 | **Neon project + initial schema** | Create Neon project with pgvector extension enabled. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). Hybrid search function. Run via dbmate. Verify tables, indexes, hybrid_search function, and tsvector trigger. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034) |
+| 0a.3 | **PDF ingestion script** | Download Autobiography PDF → convert with marker → chunk by paragraphs → generate embeddings → insert into Neon. Chunking follows the formal strategy in DESIGN.md § Chunking Strategy (ADR-048): paragraph-based, 100–500 token range, special handling for epigraphs and poetry. Typographic normalization applied during ingestion (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter during ingestion and store in `chapters.content_hash` (ADR-039) — the `/integrity` page and verification API ship in Phase 1, but hashes are computed here so the data exists from day one. |
+| 0a.4 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. Review mechanism for Phases 0–2 is lightweight (Retool view or CLI pager over ingested chunks) — the full editorial review portal ships in Phase 4. |
+| 0a.5 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. Claude-based enhancements added in Phase 0b. (ADR-011, ADR-044) |
+| 0a.6 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
+| 0a.7 | **Basic book reader** | Chapter-by-chapter reading view with deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
+| 0a.8 | **Search quality evaluation** | Test suite of ~30 representative queries with expected passages. Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Phase 10 when translated content exists (ADR-047). (ADR-005 E5) |
+
+### Technology
+
+| Component | Service | Cost |
+|-----------|---------|------|
+| Frontend | Next.js (local dev; Vercel in 0b) | $0 |
+| Database | Neon PostgreSQL + pgvector (free tier) | $0 |
+| Embeddings | OpenAI text-embedding-3-small | ~$0.10 one-time |
+| PDF processing | marker (open-source Python) | $0 |
+| Migrations | dbmate (open-source) | $0 |
+| SCM | GitHub | $0 |
+
+### Success Criteria
+
+- `pnpm dev` starts a working Next.js application locally
+- `dbmate status` shows migration 001 applied
+- A seeker can type "How do I overcome fear?" and receive 3–5 relevant, verbatim Yogananda quotes with accurate book/chapter/page citations
+- "Read in context" links navigate to the correct passage in the reader
+- Simple keyword searches ("divine mother") work without any LLM involvement
+- Search latency < 2 seconds for hybrid queries
+- Zero AI-generated content appears in any user-facing result
+- The book reader enforces 65–75 character line length
+- "Find this book" links are present on every passage and link to the SRF Bookstore
+- Search quality evaluation passes: ≥ 80% of test queries return at least one relevant passage in the top 3 results
+
+### What If Search Quality Fails?
+
+If the ≥ 80% threshold is not met, the following contingencies apply before proceeding to Phase 0b:
+
+1. **Chunking adjustment.** Yogananda's prose is long-form and metaphorical. Test 200, 300, and 500 token chunk sizes. Evaluate paragraph-boundary vs. sliding-window chunking.
+2. **Embedding model swap.** Benchmark against Cohere embed-v3, BGE-M3, or multilingual-e5-large-instruct using the same test suite. The `embedding_model` column on `book_chunks` supports migration (ADR-046).
+3. **Manual curation bridge.** Tag the 30 test queries with expected passages manually. Use these as a curated fallback while improving automated retrieval. The portal can launch with curated results for common queries and automated results for long-tail.
+4. **Hybrid weighting tuning.** Adjust the RRF k-constant and the relative weight of vector vs. FTS results.
+
+---
+
+## Phase 0b: Foundation
+
+**Goal:** Deploy to Vercel, add the AI librarian layer (query expansion, intent classification, passage ranking), build the homepage, establish observability, and provision the development-time MCP server. Phase 0b transforms the working local proof into a deployed, observable, AI-enhanced portal.
+
+*Phase 0b depends on Phase 0a's search quality evaluation passing. If the core search doesn't work, everything built here is premature.* (ADR-113)
 
 **Focus book:** Autobiography of a Yogi
 
@@ -71,27 +135,16 @@ See CONTEXT.md § Open Questions for the consolidated list. See ADR-102 (analysi
 
 | # | Deliverable | Description |
 |---|-------------|-------------|
-| 0.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-041) |
-| 0.2 | **Neon project provisioning** | Create Neon project with pgvector extension enabled. Create dev branch for local development. Note pooled and direct connection strings. Verify connectivity from local environment. |
-| 0.3 | **Vercel project + Sentry project** | Link repository to Vercel. Configure environment variables. Deploy stub `/api/v1/health` endpoint. Create Sentry project, configure DSN, verify error capture. (ADR-095) |
-| 0.4 | **Initial schema migration** | Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Run via dbmate. Verify tables, indexes, hybrid_search function, and tsvector trigger. |
-| 0.5 | **Stakeholder kickoff** | Confirm with SRF AE team: GitHub acceptable for Phases 0–8? Confirm PDF source for Autobiography. Confirm portal domain (`teachings.yogananda.org` or alternative). |
-| 0.6 | **Edition confirmation** | Confirm with SRF which edition of Autobiography of a Yogi is the canonical page-number reference (1946 first edition, 1998 13th edition, or current printing). All portal citations depend on this. (ADR-034) |
-| 0.7 | **Neon database + schema** | PostgreSQL with pgvector enabled. Tables: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), chapters, book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032), daily_passages, affirmations, chunk_relations, search_theme_aggregates (ADR-053), chapter_study_notes, book_chunks_archive (ADR-034). Hybrid search function. dbmate configured with `/migrations/` directory. Initial schema as migration 001. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034) |
-| 0.8 | **PDF ingestion script** | Download Autobiography PDF → convert with marker → chunk by paragraphs → generate embeddings → insert into Neon. Chunking follows the formal strategy in DESIGN.md § Chunking Strategy (ADR-048): paragraph-based, 100–500 token range, special handling for epigraphs and poetry. Typographic normalization applied during ingestion (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter during ingestion and store in `chapters.content_hash` (ADR-039) — the `/integrity` page and verification API ship in Phase 1, but hashes are computed here so the data exists from day one. |
-| 0.9 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. Review mechanism for Phases 0–2 is lightweight (Retool view or CLI pager over ingested chunks) — the full editorial review portal ships in Phase 4. |
-| 0.10 | **Shared service layer + API conventions** | All business logic in `/lib/services/` (not in Server Components). API routes use `/api/v1/` prefix, accept both cookie and Bearer token auth, return cursor-based pagination on list endpoints, include Cache-Control headers. (ADR-011) |
-| 0.11 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. Search intent classification routes seekers to the optimal experience (theme page, reader, empathic entry, or standard search). (ADR-011, ADR-005 E1) |
-| 0.12 | **Query expansion + spiritual terminology bridge** | Claude API integration for expanding conceptual queries into semantic search terms. Includes tradition-aware vocabulary mapping (`/lib/data/spiritual-terms.json`) that bridges modern/cross-tradition terms to Yogananda's vocabulary. Per-book evolution lifecycle: each book ingestion triggers vocabulary extraction → diff → human review → merge (ADR-051). Optional — bypassed for simple keyword queries. (ADR-005 E2, ADR-051) |
-| 0.13 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. |
-| 0.14 | **Basic book reader** | Chapter-by-chapter reading view with deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
-| 0.15 | **Minimal homepage** | Today's Wisdom (random passage on each visit), "Show me another" link (new random passage, no page reload). Search bar with prompt "What are you seeking?" Styled with SRF design tokens. Cross-fade animation added in Phase 1. |
-| 0.16 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-095) |
-| 0.17 | **Search quality evaluation** | Test suite of ~30 representative queries with expected passages. Claude serves as automated evaluation judge in CI — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Runs on every PR touching search pipeline. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Phase 10 when translated content exists (ADR-047). (ADR-005 E5) |
-| 0.18 | **Search API rate limiting** | Two-layer rate limiting: Cloudflare WAF rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-081). Rate-limited searches fall back to database-only (no Claude API call) — graceful degradation. Claude API monthly budget cap as cost protection. `/scripts/` directory with CI-agnostic deployment scripts. Permissive `robots.txt` (allow all, block `/admin/`). (ADR-023, ADR-018, ADR-081) |
-| 0.19 | **Custom SRF Corpus MCP server** | Development-time MCP server allowing Claude Code to search the book corpus during development (e.g., "find all passages about meditation in Autobiography"). Connects to Neon, exposes search and chunk-retrieval tools. Registered in `.claude/` config. (ADR-097) |
-| 0.20 | **Search suggestions — basic prefix matching** | `GET /api/v1/search/suggest` endpoint returning term completions from single-book vocabulary: distinctive terms extracted from Autobiography chunks during ingestion, chapter titles, book title. PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching. Zero-state experience: curated theme names as suggestion chips when search bar is focused but empty. Curated query suggestions seeded from search quality test suite (~30 queries). ARIA combobox pattern for accessibility. Latency target: < 50ms. No Claude API call in suggestion path. (ADR-049) |
-| 0.21 | **Cultural design consultation** | Identify at least one YSS-connected consultant (designer, devotee, or monastic) who participates in design reviews from Phase 0. Cultural consultation is a posture maintained throughout all phases, not a Phase 10 deliverable. This consultant reviews visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways for cultural sensitivity. Does not require full-time commitment — periodic review sessions. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
+| 0b.1 | **Vercel project + Sentry project** | Link repository to Vercel. Configure environment variables. Deploy stub `/api/v1/health` endpoint. Create Sentry project, configure DSN, verify error capture. (ADR-095) |
+| 0b.2 | **Shared service layer + API conventions** | All business logic in `/lib/services/` (not in Server Components). API routes use `/api/v1/` prefix, accept both cookie and Bearer token auth, return cursor-based pagination on list endpoints, include Cache-Control headers. (ADR-011) |
+| 0b.3 | **Query expansion + spiritual terminology bridge** | Claude API integration for expanding conceptual queries into semantic search terms. Includes tradition-aware vocabulary mapping (`/lib/data/spiritual-terms.json`) that bridges modern/cross-tradition terms to Yogananda's vocabulary. Per-book evolution lifecycle: each book ingestion triggers vocabulary extraction → diff → human review → merge (ADR-051). Optional — bypassed for simple keyword queries. (ADR-005 E2, ADR-051) |
+| 0b.4 | **Search intent classification + passage ranking** | Search intent classification routes seekers to the optimal experience (theme page, reader, empathic entry, or standard search). Claude passage ranking selects and ranks top 5 from the hybrid search candidates. Both gracefully degrade to unranked hybrid results when Claude is unavailable. (ADR-005 E1, ADR-014) |
+| 0b.5 | **Minimal homepage** | Today's Wisdom (random passage on each visit), "Show me another" link (new random passage, no page reload). Search bar with prompt "What are you seeking?" Styled with SRF design tokens. Cross-fade animation added in Phase 1. |
+| 0b.6 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-095) |
+| 0b.7 | **Search API rate limiting** | Two-layer rate limiting: Cloudflare WAF rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-081). Rate-limited searches fall back to database-only (no Claude API call) — graceful degradation. Claude API monthly budget cap as cost protection. `/scripts/` directory with CI-agnostic deployment scripts. Permissive `robots.txt` (allow all, block `/admin/`). (ADR-023, ADR-018, ADR-081) |
+| 0b.8 | **Custom SRF Corpus MCP server** | Development-time MCP server allowing Claude Code to search the book corpus during development (e.g., "find all passages about meditation in Autobiography"). Connects to Neon, exposes search and chunk-retrieval tools. Registered in `.claude/` config. (ADR-097) |
+| 0b.9 | **Search suggestions — basic prefix matching** | `GET /api/v1/search/suggest` endpoint returning term completions from single-book vocabulary: distinctive terms extracted from Autobiography chunks during ingestion, chapter titles, book title. PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching. Zero-state experience: curated theme names as suggestion chips when search bar is focused but empty. Curated query suggestions seeded from search quality test suite (~30 queries). ARIA combobox pattern for accessibility. Latency target: < 50ms. No Claude API call in suggestion path. (ADR-049) |
+| 0b.10 | **Cultural design consultation** | Identify at least one YSS-connected consultant (designer, devotee, or monastic) who participates in design reviews from Phase 0. Cultural consultation is a posture maintained throughout all phases, not a Phase 10 deliverable. This consultant reviews visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways for cultural sensitivity. Does not require full-time commitment — periodic review sessions. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
 
 ### Technology
 
@@ -111,22 +164,14 @@ See CONTEXT.md § Open Questions for the consolidated list. See ADR-102 (analysi
 
 ### Success Criteria
 
-- `pnpm dev` starts a working Next.js application locally
 - `/api/v1/health` returns `200 OK` on both local and Vercel
-- `dbmate status` shows migration 001 applied
 - Sentry test error appears in dashboard
 - `.env.example` documents all required environment variables
-- A seeker can type "How do I overcome fear?" and receive 3–5 relevant, verbatim Yogananda quotes with accurate book/chapter/page citations
-- "Read in context" links navigate to the correct passage in the reader
-- Simple keyword searches ("divine mother") work without any LLM involvement
-- Search latency < 2 seconds for hybrid queries
-- Zero AI-generated content appears in any user-facing result
+- Query expansion improves search quality: conceptual queries ("How do I find inner peace?") return more relevant results than pure hybrid search
 - The homepage displays a different Yogananda passage on each visit ("Today's Wisdom")
 - "Show me another" loads a new random passage without page reload
-- The book reader enforces 65–75 character line length
-- "Find this book" links are present on every passage and link to the SRF Bookstore
-- Search quality evaluation passes: ≥ 80% of test queries return at least one relevant passage in the top 3 results
 - Sentry captures errors, structured logging works with request ID correlation
+- Search suggestions return results in < 50ms
 
 ### Open Questions to Resolve
 
@@ -711,8 +756,9 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 
 | Phase | Hard Prerequisites | Soft Prerequisites |
 |-------|---|---|
-| **0 (Prove)** | — | SRF AE team availability for kickoff |
-| **1 (Build)** | Phase 0 complete, PDF source confirmed | Embedding model benchmarks started |
+| **0a (Prove)** | Edition confirmed, PDF source confirmed | — |
+| **0b (Foundation)** | Phase 0a search quality evaluation passes | SRF AE team availability for kickoff |
+| **1 (Build)** | Phase 0b complete | Embedding model benchmarks started |
 | **2 (Read)** | Phase 1 complete | — |
 | **3 (Grow)** | Phase 2 complete | — |
 | **4 (Operate)** | Phase 3 complete, editorial governance decided, portal coordinator identified | Theme taxonomy reviewed by theological advisor |
@@ -740,7 +786,8 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 
 | Phase | Estimated Monthly Cost | Notes |
 |-------|----------------------|-------|
-| Phases 0–2 | ~$5-10 | Neon free, Vercel free, minimal Claude API usage, one-time embedding cost. S3 backup < $1/mo. |
+| Phase 0a | ~$0-1 | Neon free, local dev only, one-time embedding cost (~$0.10). |
+| Phases 0b–2 | ~$5-10 | Vercel free, minimal Claude API usage. S3 backup < $1/mo. |
 | Phases 3–5 | ~$10-20 | More embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
 | Phases 6–8 | ~$20-40 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. |
 | Phase 9 | ~$50-100+ | Contentful paid tier likely needed, Lambda functions for Contentful webhooks. |
