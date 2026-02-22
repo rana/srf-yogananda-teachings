@@ -39,42 +39,40 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Database | Neon PostgreSQL + pgvector (hybrid vector + full-text search) |
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | OpenAI text-embedding-3-small (multilingual) |
-| CMS | Contentful (Phase 10+) |
+| CMS | Contentful (Phase 9+) |
 | Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
 
 Business logic lives in `/lib/services/` (framework-agnostic TypeScript). The architecture is designed for a **10-year maintenance horizon**: data in PostgreSQL, migrations in raw SQL, dependencies treated as commitments.
 
 ## Phasing
 
-The project is planned across 17 phases (0–16), each delivering a working increment. Three monolithic phases were decomposed into focused pairs (3→3+4, 7→8+9, 11→13+14):
+The project is planned across 15 capability-themed phases (0–14), each delivering a single coherent capability. Reorganized from the original 18-phase plan via ADR-103 — merging small phases, splitting oversized ones, and aligning engineering infrastructure with the phases that need it.
 
-| Phase | Focus |
-|-------|-------|
-| **0** | Foundation — repo setup, Neon provisioning, Vercel/Sentry config, initial schema migration, stakeholder kickoff |
-| **1** | Prove the search — single book (*Autobiography of a Yogi*), search API + UI, basic reader |
-| **2** | Complete portal — all pages, SRF visual identity, accessibility, i18n infrastructure, sharing, newcomer path, content integrity |
-| **3** | Engineering infrastructure — testing, Terraform, Figma, Storybook, KaiOS CI, OpenAPI spec |
-| **4** | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
-| **5** | Multi-book expansion — first-wave books, theme tagging, Doors of Entry, editorial review portal, glossary, practice bridge |
-| **6** | Related Teachings — cross-book connections, reader side panel, editorial threads |
-| **7** | Full library — remaining books, verse-aware chunking, observability, "What Is Humanity Seeking?" dashboard, knowledge graph |
-| **8** | Reader export & staff tools — PDF downloads, presentation mode, study guides, talk preparation, magazine integration, study circle sharing |
-| **9** | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp, calendar reading journeys |
-| **10** | Contentful integration — CMS as editorial source of truth, GitLab migration |
-| **11** | Multi-language — official SRF/YSS translations in 8+ languages |
-| **12** | Accessibility audit & polish — formal WCAG audit, PWA, Calm Technology design system |
-| **13** | Video intelligence & content hub — platform-agnostic video catalog, transcription, cross-media search |
-| **14** | Audio, images & branding — audio library, photograph gallery, multi-media threads, YSS branding, digital watermarking |
-| **15** | User accounts — optional sign-in for bookmarks sync, reading progress, personalized daily passage |
-| **16** | Community & events — event calendar, center discovery, SMS/Telegram access |
+| Phase | Name | Focus |
+|-------|------|-------|
+| **0** | Prove | Foundation + single-book search — repo setup, Neon provisioning, Vercel/Sentry config, *Autobiography of a Yogi*, search API + UI, basic reader |
+| **1** | Build | Complete portal + engineering — all pages, SRF visual identity, accessibility, i18n infrastructure, testing, Terraform, Storybook |
+| **2** | Read | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
+| **3** | Grow | Multi-book corpus — first-wave books, cross-book search, Today's Wisdom pool, batch Lambda |
+| **4** | Operate | Editorial operations — theme tagging, Doors of Entry, editorial review portal, glossary, practice bridge, operational playbook |
+| **5** | Connect | Related Teachings — cross-book connections, reader side panel, editorial threads |
+| **6** | Complete | Full library — remaining books, verse-aware chunking, observability, "What Is Humanity Seeking?" dashboard, knowledge graph |
+| **7** | Empower | Reader export & staff tools — PDF downloads, presentation mode, study guides, magazine integration, study circle sharing |
+| **8** | Distribute | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp, calendar reading journeys |
+| **9** | Integrate | Contentful integration — CMS as editorial source of truth, GitLab migration |
+| **10** | Translate | Multi-language — official SRF/YSS translations in 8+ languages |
+| **11** | Polish | Accessibility audit & polish — formal WCAG audit, PWA, Calm Technology design system |
+| **12** | Multimedia | Cross-media — video catalog, transcription, audio library, photograph gallery, YSS branding |
+| **13** | Personalize | User accounts — optional sign-in for bookmarks sync, reading progress, personalized daily passage |
+| **14** | Community | Community & events — event calendar, center discovery, community curation, SMS/Telegram access |
 
 ## Current Status
 
-**Design complete. Ready to begin Phase 0 (Foundation).**
+**Design complete. Ready to begin Phase 0 (Prove).**
 
 This repository contains comprehensive design documentation produced using Claude Code:
 
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
 - [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 110 Architecture Decision Records with full rationale
-- [ROADMAP.md](ROADMAP.md) — 17 phases (0–16) with deliverables, success criteria, and phase gates
+- [DECISIONS.md](DECISIONS.md) — 103 Architecture Decision Records with full rationale
+- [ROADMAP.md](ROADMAP.md) — 15 phases (0–14) with deliverables, success criteria, and phase gates

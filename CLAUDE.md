@@ -8,8 +8,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 100 Architecture Decision Records (ADR-001 through ADR-100) organized into 11 topical groups, with full rationale for every major choice
-4. **ROADMAP.md** — 18 phases (0–17) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
+3. **DECISIONS.md** — 103 Architecture Decision Records (ADR-001 through ADR-103) organized into 11 topical groups, with full rationale for every major choice
+4. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
 
@@ -29,10 +29,10 @@ Located in `docs/reference/`:
 2. **Sacred text fidelity.** Every displayed passage must include book, chapter, and page citation. No orphaned quotes. AI translation of Yogananda's words is never acceptable — only official SRF/YSS translations. (ADR-075, ADR-078)
 3. **Calm Technology.** No gamification, no aggressive notifications, no dopamine loops. Warm cream backgrounds, serif typography, generous whitespace.
 4. **SRF Lessons are out of scope (with future readiness).** The private home-study lessons and Kriya Yoga techniques are explicitly excluded from this portal. The architecture supports future Lessons integration for authorized students via content-level access control (ADR-085), but no Lessons code ships in any current phase.
-5. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Phase 15+). Cursor-based pagination. (ADR-011)
+5. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Phase 13+). Cursor-based pagination. (ADR-011)
 6. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-095)
-7. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. The embedding model is multilingual by explicit requirement. UI strings are externalized, CSS uses logical properties, and the schema includes cross-language linking. Phase 1 is English-only but the architecture is locale-ready — adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
-8. **Accessibility from Phase 2.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets serve seekers on 3G in rural India (< 100KB JS, FCP < 1.5s). axe-core in CI — accessibility violations block merges. Phase 12 is the audit, not the introduction. (ADR-003)
+7. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. The embedding model is multilingual by explicit requirement. UI strings are externalized, CSS uses logical properties, and the schema includes cross-language linking. Phase 0 is English-only but the architecture is locale-ready — adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
+8. **Accessibility from Phase 1.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets serve seekers on 3G in rural India (< 100KB JS, FCP < 1.5s). axe-core in CI — accessibility violations block merges. Phase 11 is the audit, not the introduction. (ADR-003)
 9. **Global Equity.** One product, complete at every level — Bihar to San Francisco, neither a compromised version of the other. Performance budgets, device diversity, progressive enhancement, and data-cost awareness serve this commitment. When a feature proposal seems to conflict, the response is "and how does the base experience work?" — not "we can't do that." (ADR-006)
 10. **Human review as mandatory gate.** No user-facing content reaches seekers without human verification. Auto-tagged themes, AI-drafted translations, generated social assets — all require human approval before publication. AI proposes, humans approve. (ADR-078, ADR-032, ADR-005)
 11. **Signpost, not destination.** The portal points toward deeper SRF practice (Lessons, centers, app, meditation) without tracking conversions or acting as a sales funnel. No engagement metrics that optimize for screen time. No "sign up to access" gates. All content freely available.
@@ -41,7 +41,7 @@ Located in `docs/reference/`:
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), OpenAI text-embedding-3-small, Contentful (Phase 10+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), OpenAI text-embedding-3-small, Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
@@ -52,20 +52,20 @@ Located in `docs/reference/`:
 /app/api/v1/ — Versioned API routes
 /migrations/ — Numbered SQL migrations (dbmate)
 /terraform/ — Infrastructure as Code
-/lambda/ — AWS Lambda handlers (Phase 3+, ADR-017)
+/lambda/ — AWS Lambda handlers (Phase 1+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
 /scripts/ — CI-agnostic deployment scripts
 /docs/reference/ — Background research (not active project docs)
-/docs/operational/ — Operational playbook (Phase 5+: procedures for editorial, ingestion, VLD)
+/docs/operational/ — Operational playbook (Phase 4+: procedures for editorial, ingestion, VLD)
 ```
 
 **Design tokens:** Merriweather + Lora + Open Sans. SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
-**MCP servers:** Neon (now), Sentry (Phase 1), Contentful (Phase 10+), SRF Corpus (custom three-tier: development Phase 1, internal editorial Phase 5, external distribution Phase 9; ADR-101). Details in DESIGN.md § MCP Server Strategy.
+**MCP servers:** Neon (now), Sentry (Phase 0), Contentful (Phase 9+), SRF Corpus (custom three-tier: development Phase 0, internal editorial Phase 4, external distribution Phase 8; ADR-101). Details in DESIGN.md § MCP Server Strategy.
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 101 decisions in DECISIONS.md (ADR-001 through ADR-101), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-101. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 103 decisions in DECISIONS.md (ADR-001 through ADR-103), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-103. Header format: `## ADR-NNN: Title`.
 
 **DES-NNN** (Design Sections) — 49 sections in DESIGN.md (DES-001 through DES-049), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 
