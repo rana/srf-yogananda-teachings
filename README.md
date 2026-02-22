@@ -16,10 +16,15 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 - **The Quiet Corner** — a micro-sanctuary with a single affirmation and optional gentle timer, for the moment of immediate need
 - **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, keyboard-first navigation, and contextual Quiet Corner for in-reader practice
 - **Living Glossary** — user-facing spiritual terminology with inline reader highlighting and Yogananda's own definitions as verbatim passages
+- **Editorial Reading Threads** — curated cross-book pathways ("Teachings in Conversation") connecting related passages across Yogananda's works
+- **Sacred Places** — contemplative geography of SRF/YSS properties and biographical sites from Yogananda's life, cross-referenced with book passages
 - **Self-Realization Magazine** — magazine archives as a primary content type, with Yogananda's articles fully searchable alongside book passages
 - **"What Is Humanity Seeking?"** — a public-facing, contemplative dashboard visualizing anonymized global search themes ("Right now, the world is seeking peace...")
+- **Study Workspace** — PDF export, presentation mode, and study guides for individual and group use
 - **Calendar reading journeys** — structured multi-day experiences ("40 Days with Yogananda") delivered via daily email
 - **Knowledge graph** — interactive visual map of the teaching corpus showing cross-book connections, themes, persons, and scriptures
+- **The Spiritual Guide** — life-situation and worldview-sensitive entry pathways for seekers who don't know where to begin
+- **Community collections** — public curation by Voluntary League of Devotees (VLD) members, with editorial review
 - **Multi-language support** — architecture designed from day one to serve official SRF/YSS translations in all available languages
 - **Cross-media search** (later phases) — video talks, audio recordings, and photographs searchable alongside book text through a unified content hub
 
@@ -40,9 +45,15 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | OpenAI text-embedding-3-small (multilingual) |
 | CMS | Contentful (Phase 9+) |
+| Auth | Auth0 (Phase 13+) |
+| Edge/CDN | Cloudflare |
 | Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
+| IaC | Terraform |
+| Migrations | dbmate (raw SQL) |
+| Monitoring | Sentry, New Relic |
+| Analytics | Amplitude (DELTA-compliant event allowlist) |
 
-Business logic lives in `/lib/services/` (framework-agnostic TypeScript). The architecture is designed for a **10-year maintenance horizon**: data in PostgreSQL, migrations in raw SQL, dependencies treated as commitments.
+Business logic lives in `/lib/services/` (framework-agnostic TypeScript). A three-tier MCP server strategy (ADR-101) provides corpus access at development, editorial, and external distribution layers. The architecture is designed for a **10-year maintenance horizon**: data in PostgreSQL, migrations in raw SQL, dependencies treated as commitments.
 
 ## Phasing
 
