@@ -120,9 +120,12 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-095: Observability Strategy
 - ADR-096: Design Tooling — Figma
 - ADR-097: MCP Server Strategy — Development Tooling for AI Implementation
+- ADR-100: AI Editorial Workflow Maturity — Trust Graduation and Feedback Loops
+- ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
 
 **Governance**
 - ADR-098: Documentation Architecture — Five-Document System with AI-First Navigation
+- ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
 ---
 
 ## ADR-001: Direct Quotes Only — No AI Synthesis
@@ -7734,13 +7737,13 @@ Amplitude's defaults assume user-level behavioral tracking. The portal must expl
 
 | Event | Properties | Purpose |
 |-------|-----------|---------|
-| `page_viewed` | `{ page_type, language, country_code }` | Countries reached, languages served |
+| `page_viewed` | `{ page_type, language, requested_language, country_code }` | Countries reached, languages served, unmet language demand |
 | `passage_served` | `{ book_slug, language }` | Books/passages served count |
 | `share_link_generated` | `{ format }` | Share link generation count |
 | `center_locator_clicked` | `{}` | Did digital lead to physical? |
-| `search_performed` | `{ language, result_count }` | Search usage (not query content — that's in server logs) |
+| `search_performed` | `{ language, result_count, zero_results }` | Search usage, zero-result rate (not query content — that's in server logs) |
 
-Country code derived from Vercel/Cloudflare edge headers, not IP geolocation lookup. Anonymized at the edge.
+Country code derived from Vercel/Cloudflare edge headers, not IP geolocation lookup. Anonymized at the edge. `requested_language` derived from `Accept-Language` header — measures the gap between what seekers want and what the portal serves. `zero_results` boolean flags searches returning no passages — the zero-result rate is the most actionable operational metric for search quality.
 
 ### Rationale
 
@@ -7933,9 +7936,8 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 5. **DECISIONS.md Index by Concern.** ADRs grouped by domain (already established at ADR-009).
 6. **Implemented-section annotations.** When a DESIGN.md section is fully implemented, annotate: `**Status: Implemented** — see [code path]`. Code becomes the source of truth; DESIGN.md retains architectural rationale.
 7. **ADRs are immutable history.** Decisions are superseded (new ADR), withdrawn (with explanation), or removed (number retired) — never silently edited.
-8. **All documents carry a `Last updated` footer.** Updated on any modification.
-9. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
-10. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
+8. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end. Document-level "Last updated" footers are not used — `git log` provides better granularity without maintenance burden.
+9. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
 
 ### Rationale
 
@@ -7956,4 +7958,371 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 
 ---
 
-*Last updated: 2026-02-21*
+## ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+
+### Context
+
+The portal serves seekers worldwide, including the EU (GDPR), UK (UK GDPR), Germany (TTDSG/DSGVO), California (CCPA/CPRA), Brazil (LGPD), India (DPDPA), and Japan (APPI). Global privacy compliance is a legal necessity, but the DELTA framework and Calm Technology principles already produce an architecture that *substantively exceeds* most regulatory requirements — because the portal collects almost no personal data by design.
+
+The remaining compliance work is primarily documentary (privacy policy, sub-processor inventory, retention policies, data subject rights documentation) rather than architectural. One architectural change is required: self-hosting Google Fonts to avoid IP transmission to Google servers (per LG München I, Case No. 3 O 17493/20).
+
+### Decision
+
+**1. Privacy policy and legal pages.** Add `/privacy` and `/legal` to the portal URL structure. The privacy policy must be human-readable (not legal boilerplate), written in the portal's contemplative voice, and translated alongside UI strings in Phase 11. Disclose: what data is collected, why, how long retained, who processes it, data subject rights, and sub-processor list. The privacy policy is a Phase 2 deliverable alongside the accessibility foundation.
+
+**2. Self-hosted fonts.** Replace Google Fonts CDN imports with self-hosted font files served from Vercel's CDN. Download Merriweather, Lora, and Open Sans WOFF2 files, bundle in the application. This eliminates IP transmission to Google servers and improves performance (no DNS lookup to `fonts.googleapis.com`). Phase 2 deliverable.
+
+**3. Cookie and localStorage disclosure.** The portal uses a language preference cookie (user-initiated) and `localStorage` for bookmarks, reader settings, study workspace, and first-visit detection. Under ePrivacy/TTDSG §25(2)(2), all serve user-initiated functionality and qualify as "strictly necessary" — no consent banner required. This determination is documented in the privacy policy. No cookie banner is added (cookie banners are antithetical to Calm Technology and unnecessary when all storage is functional).
+
+**4. Email subscription: lawful basis, erasure, retention.**
+- **Lawful basis:** Consent (GDPR Art. 6(1)(a)) via double opt-in. Documented on the subscription form and in the privacy policy.
+- **Right to erasure:** The unsubscribe endpoint (`GET /api/v1/email/unsubscribe`) currently soft-deletes (sets `is_active = false`). Add a `DELETE /api/v1/email/subscriber` endpoint that performs hard deletion (removes the row entirely) to comply with GDPR Article 17. The unsubscribe confirmation page offers "Remove my data entirely" as an additional option.
+- **Retention:** Unsubscribed email records (soft-deleted) are automatically purged 90 days after `unsubscribed_at`. Active subscriber data is retained for the duration of the subscription. Bounce/failure records are retained for 30 days for operational health monitoring.
+
+**5. Seeker feedback PII mitigation.** The `/feedback` form includes a notice: "Please do not include personal information (name, email, location) in your feedback." Feedback entries are reviewed periodically for inadvertent PII, which is redacted by editorial staff. Feedback entries older than 2 years are eligible for archival aggregation (convert to anonymized statistics, delete raw text).
+
+**6. Sub-processor inventory.** Maintain a documented inventory of all services that process data on the portal's behalf, with their roles, data touched, and geographic regions. Update when services are added or changed. Published as part of the privacy policy.
+
+**7. `search_queries` table.** The table stores query text without user identifiers. Under GDPR recital 26, data that cannot identify a natural person is not personal data. The portal cannot match a data subject access request to their queries because no user identifiers are stored. This is documented in the privacy policy. The minimum aggregation threshold of 10 (ADR-053) prevents re-identification in the reporting layer.
+
+**8. Rate limiting and IP processing.** Cloudflare processes IP addresses for WAF/rate-limiting purposes. The portal itself does not store IP addresses. This is disclosed in the privacy policy: "Our CDN provider processes IP addresses for security purposes. We do not store IP addresses."
+
+**9. YouTube privacy-enhanced embeds.** The facade pattern (thumbnail → click to load from `youtube-nocookie.com`) ensures no Google connection occurs until the user actively clicks play. This is compliant with strict German GDPR interpretation and documented.
+
+**10. Record of Processing Activities (ROPA).** Maintain a ROPA (GDPR Article 30) documenting all processing activities. For the portal's minimal data profile, this is a short document. Created in Phase 2, maintained as processing activities change.
+
+**11. Phase 15 age consideration.** When user accounts are introduced (Phase 15), the signup flow must include minimum age verification. GDPR: 16 in most of EU (member state variation down to 13). COPPA: 13 in US. The email subscription (Phase 9) should include a minimum age statement: "You must be 16 or older to subscribe."
+
+### DELTA ↔ GDPR Crosswalk
+
+| DELTA Principle | GDPR Alignment | Portal Implementation |
+|-----------------|---------------|----------------------|
+| **Dignity** — seekers are not data points | Art. 5(1)(a) — fairness; Art. 5(1)(c) — data minimization | No user identification, no behavioral profiling, no data monetization |
+| **Embodiment** — encourage practice over screen time | Art. 5(1)(b) — purpose limitation | No engagement metrics, no retention optimization, no session tracking |
+| **Love** — compassion in all interactions | Art. 12 — transparent, intelligible communication | Privacy policy in contemplative voice, not legal boilerplate |
+| **Transcendence** — no gamification | Art. 5(1)(c) — data minimization | No achievement data, no streaks, no leaderboards to store |
+| **Agency** — users control their experience | Art. 7 — conditions for consent; Art. 17 — right to erasure | Double opt-in, one-click unsubscribe, hard deletion option, no dark patterns |
+
+### Sub-Processor Inventory
+
+| Service | GDPR Role | Data Touched | Region | DPA Required |
+|---------|-----------|-------------|--------|-------------|
+| **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica Phase 10+ | Yes |
+| **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | Yes |
+| **Cloudflare** | Processor | Request metadata, IP for WAF (transient) | Global | Yes |
+| **Amplitude** | Processor | Anonymized events with country_code | US | Yes |
+| **Sentry** | Processor | Error stack traces, request context | US | Yes |
+| **New Relic** | Processor | Performance metrics, log aggregation | US | Yes (Phase 7+) |
+| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | Covered by AWS DPA |
+| **OpenAI** | Processor | Corpus text at embedding time (one-time) | US | Yes |
+| **Resend/SES** | Processor | Subscriber email addresses | US | Yes (Phase 9+) |
+| **Auth0** | Processor | User accounts (if implemented) | US | Yes (Phase 15+) |
+| **Contentful** | Processor | Editorial content (no personal data) | EU | Yes (Phase 10+) |
+
+EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. The sub-processor inventory is reviewed when services are added or changed, and published as part of the privacy policy.
+
+### Rationale
+
+- **DELTA exceeds GDPR.** The portal's ethical framework produces stronger privacy protections than any single regulation requires. Compliance is a natural consequence, not an afterthought. The strongest compliance demonstration is: "We designed for human dignity first, and compliance followed."
+- **Architectural changes are minimal.** Self-hosted fonts is the only code change. Everything else is documentation.
+- **No cookie banner.** All client-side storage serves user-initiated functionality (strictly necessary under ePrivacy/TTDSG). Adding a consent banner to a portal with no tracking, no profiling, and no advertising cookies would be Calm Technology theater — noise without substance.
+- **Global coverage.** The portal's data minimization posture satisfies GDPR, UK GDPR, CCPA/CPRA, LGPD, DPDPA, and APPI simultaneously. Regional differences matter at the margins (minimum age for consent, cross-border transfer mechanisms), not at the architectural level.
+
+### Consequences
+
+- `/privacy` and `/legal` pages added to URL structure (Phase 2)
+- Self-hosted fonts replace Google Fonts CDN (Phase 2)
+- Privacy policy drafted in contemplative voice, translated alongside UI strings (Phase 11)
+- `DELETE /api/v1/email/subscriber` endpoint for hard deletion (Phase 9)
+- 90-day automatic purge of soft-deleted subscriber records (Phase 9)
+- Feedback form gains PII notice (Phase 5)
+- ROPA document created (Phase 2)
+- Sub-processor inventory maintained in DESIGN.md
+- Minimum age statement on email subscription form (Phase 9)
+- Phase 15 account signup includes age verification
+- New open questions added to CONTEXT.md: data controller identity, minimum age policy, Indian DPDPA cross-border rules, Brazilian LGPD DPO requirement
+
+*Section added: 2026-02-21, global privacy compliance exploration*
+
+---
+
+## ADR-100: AI Editorial Workflow Maturity — Trust Graduation and Feedback Loops
+
+**Status:** Accepted | **Date:** 2026-02-21
+
+### Context
+
+DES-035 catalogs 25+ AI-assisted editorial workflows, all governed by the principle "AI proposes, humans approve." This principle is correct as a starting posture but incomplete as a 10-year operating model. The portal's monastic content editor has a 2–3 hour daily window for editorial work. As the corpus grows from 1 book (Phase 1) to 15+ books plus video, audio, images, magazine archives, and community submissions (Phase 14+), the total review volume grows multiplicatively — more content types × more workflows × more languages.
+
+The current design implicitly assumes review demand will stay within human capacity. It won't. By Phase 7, the editorial team will be managing theme tag reviews, tone spot-checks, daily passage curation, translation reviews, feedback triage, social media approvals, reverse bibliography verification, and editorial thread curation. Without a governed mechanism for evolving the AI-human relationship over time, one of three things happens: (a) review queues grow unbounded, (b) reviewers rubber-stamp to keep pace, or (c) the team informally skips reviews for "trusted" workflows — losing the audit trail that makes the system trustworthy.
+
+Additionally, DES-035 describes a stateless relationship between AI and editors. Each AI proposal starts fresh. When the theological reviewer consistently selects Option 2 over Option 1 for Christian contemplative pathways, or when a theme tag reviewer rejects "Joy" classifications for passages about sacrifice, that accumulated editorial judgment never flows back to improve the AI's proposals. Over a decade, this is a significant waste of editorial attention.
+
+### Decision
+
+#### 1. Three-Stage Workflow Maturity Model
+
+Every AI-assisted workflow in DES-035 operates at one of three maturity stages. Stage transitions are governed, auditable, and reversible.
+
+| Stage | AI Role | Human Role | Entry Criteria |
+|---|---|---|---|
+| **Full Review** | Proposes | Approves every item | Default for all new workflows |
+| **Spot-Check** | Proposes and applies provisionally | Reviews random sample (10–20%) + all AI-flagged exceptions | ≥ 500 items reviewed at Full Review with ≥ 95% approval rate, ≥ 3 months of operation, theological reviewer sign-off |
+| **Exception-Only** | Applies autonomously | Reviews only items where AI confidence < threshold or AI explicitly abstains | ≥ 2,000 items at Spot-Check with ≥ 98% sample-approval rate, ≥ 6 months at Spot-Check, no theological errors in audit period, portal coordinator sign-off |
+
+**Stage transitions are per-workflow, per-language.** Theme tag classification may reach Spot-Check in English while remaining at Full Review in Hindi. Tone classification may reach Exception-Only while worldview pathway generation permanently stays at Full Review.
+
+**Certain workflows never graduate beyond Full Review:**
+- Worldview guide pathway generation (theological sensitivity)
+- Life-phase pathway generation (theological sensitivity)
+- Community collection pre-review (final approval is inherently human)
+- Crisis language detection (safety-critical)
+
+**Regression:** Any theological error, citation error affecting a published passage, or pattern of reviewer overrides (> 15% in a 30-day window) triggers automatic regression to the previous stage. The regression is logged, the prompt is reviewed, and re-graduation requires meeting the original criteria again.
+
+#### 2. Feedback Loop Protocol
+
+Reviewer corrections systematically refine AI proposals over time through three mechanisms:
+
+**a. Override tracking.** Every reviewer action (approve, reject, edit, select alternative) is logged in an `ai_review_log` table with the workflow type, AI's proposal, reviewer's decision, and reviewer's rationale (optional free text). This table is internal — never exposed to seekers, never used for analytics.
+
+**b. Prompt refinement cadence.** Quarterly, the portal coordinator reviews override patterns per workflow:
+- Workflows with > 10% override rate: prompt revision required
+- Workflows with consistent override patterns (e.g., "always rejects 'Joy' for passages about sacrifice"): add the pattern as a negative example in the prompt
+- The refined prompt is versioned and the previous version archived
+
+**c. Confidence calibration.** AI confidence scores are compared against actual approval rates. If the AI is consistently confident about proposals that get rejected, the confidence threshold for Spot-Check routing is raised. If the AI is consistently uncertain about proposals that get approved, the threshold is lowered. Calibration is reviewed quarterly alongside prompt refinement.
+
+#### 3. AI Abstention Protocol
+
+The AI can decline to propose when it recognizes insufficient signal. Abstention routes the item directly to human review without an AI pre-classification, avoiding the anchoring bias of a low-quality proposal.
+
+Abstention triggers:
+- Passage in a script the model cannot reliably process (e.g., Devanāgarī-heavy passages for tone classification)
+- Fewer than 3 corpus passages available for a pathway generation slot
+- Confidence score below a per-workflow floor (set during Full Review stage based on observed accuracy)
+- Content that falls outside the model's training distribution (e.g., a community collection mixing prose and chant in a way the classifier hasn't seen)
+
+When the AI abstains, the review queue item is marked `ai_abstained = true` with a brief explanation ("Insufficient corpus coverage for Sufi poetry pathway — only 2 relevant passages found"). The reviewer sees no AI proposal, only the raw content and the abstention reason. Abstention rates are tracked per workflow as a health metric.
+
+#### 4. Cross-Workflow Consistency Checks
+
+AI-assisted workflows operate on shared content but independently. A passage can be tagged "joyful" by tone classification, placed in a "Grief & Loss" guide pathway, and classified as "consoling" by the daily passage curator — each correct in context but potentially contradictory.
+
+A nightly batch job runs consistency checks across workflow outputs:
+- Tone classification vs. theme tag alignment (flag passages where tone and theme are semantically opposed)
+- Guide pathway passage selection vs. accessibility rating (flag deep passages in newcomer pathways)
+- Daily passage tone sequence vs. calendar events (flag challenging passages on consoling calendar dates)
+- Theme tag vs. editorial thread placement (flag passages tagged "Peace" placed in a "Courage" thread)
+
+Inconsistencies are surfaced in the editorial home screen as a low-priority review category. They are not errors — context legitimately changes meaning. But persistent inconsistencies suggest a classification problem worth investigating.
+
+**Phase:** 5 (consistency checks). Quarterly cadence begins Phase 5. Maturity model governance begins Phase 5 for theme tag classification (first workflow to reach Full Review volume). Feedback loop protocol begins Phase 1 (override logging from the first AI-assisted search).
+
+#### 5. Workflow Dependency Awareness
+
+DES-035 workflows have implicit dependencies that affect consistency when upstream outputs change:
+
+```
+Ingestion QA ──► Theme Tag Classification ──► Worldview Pathway Generation
+                                           ──► Daily Passage Pre-Curation
+                 Tone Classification ──────► Daily Passage Pre-Curation
+                 External Ref Extraction ──► Worldview Pathway Generation
+                 Feedback Categorization ──► Content Correction (DES-034)
+```
+
+When an upstream workflow's output changes (e.g., an OCR correction alters passage text, or a theme tag is reclassified), downstream workflows that consumed the old output are flagged for re-evaluation. This is not automatic re-execution — it's a staleness signal in the editorial queue: "This passage's theme tags changed since it was included in the Christmas pathway. Review recommended."
+
+### Rationale
+
+- **"AI proposes, humans approve" remains the governing principle.** The maturity model doesn't replace it — it operationalizes it for a decade of growth. Full Review is the permanent default. Graduation is earned, governed, and reversible.
+- **Editorial attention is the scarcest resource.** The monastic editor's 2–3 hour daily window is finite. The maturity model preserves that attention for the workflows that need it most, rather than spreading it uniformly across workflows of vastly different sensitivity.
+- **Trust without audit is not trust.** Informal "we stopped reviewing tone tags because they're always right" is a liability. Governed stage transitions with documented criteria preserve institutional confidence across staff turnovers.
+- **The AI should get better at its job.** A librarian's assistant who never learns from corrections is a poor assistant. The feedback loop doesn't change the model — it refines the prompts, thresholds, and routing rules that shape how the model is used.
+- **Abstention is a feature, not a failure.** An AI that says "I can't help here" is more trustworthy than one that always produces an answer. The abstention protocol makes the AI's limitations visible rather than hidden behind low-confidence proposals.
+
+### Consequences
+
+- `ai_review_log` table added to schema (Phase 1 — logging begins with the first AI-assisted workflow)
+- `ai_abstained` boolean column added to review queue items (Phase 1)
+- Quarterly prompt refinement cadence added to operational playbook (Phase 5)
+- Maturity stage tracked per workflow per language in `ai_workflow_config` table (Phase 5)
+- Nightly consistency check batch job (Phase 5, runs alongside existing nightly jobs)
+- Workflow dependency graph documented in DES-035 and maintained as workflows are added
+- New open question: editorial capacity modeling — projected review hours per phase (added to CONTEXT.md)
+- DES-035 updated with new subsections: Feedback Loop Protocol, AI Observes pattern, AI Abstains protocol, Workflow Dependency Graph, Unified Prompt Versioning
+
+*Section added: 2026-02-21, DES-035 deep exploration*
+
+---
+
+## ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
+
+**Status:** Accepted | **Date:** 2026-02-21
+
+### Context
+
+ADR-097 established MCP (Model Context Protocol) servers as development tooling — tools for Claude Code to use while building the portal. The SRF Corpus MCP (DES-031) provides six development-time tools: `search_corpus`, `search_by_theme`, `search_references`, `get_vocabulary_bridge`, `get_book_metadata`, `get_theme_metadata`.
+
+But MCP consumers extend well beyond the development AI. Three additional tiers of AI consumer already exist in the design:
+
+1. **Internal editorial AI agents.** DES-035 catalogs 25+ AI-assisted workflows, all requiring corpus access. Theme tag proposal needs similar-passage retrieval. Guide pathway generation needs ontology traversal, reverse bibliography queries, and vocabulary bridge lookups. Translation review needs cross-language passage alignment. These workflows currently access the corpus through ad-hoc service layer calls — MCP would provide a canonical, auditable, consistent interface.
+
+2. **Internal cross-property consumers.** The SRF mobile app (CONTEXT.md § Stakeholder question), Retool dashboards, the Impact Dashboard, and other SRF web properties are potential consumers. The API-first architecture (ADR-011) already serves HTTP clients; MCP serves AI-native clients using the same service layer.
+
+3. **External AI assistants.** By 2027, seekers will ask ChatGPT, Claude, Gemini, and custom agents about Yogananda's teachings. Without structured access, these AIs fabricate from training data (violating ADR-001) or scrape and paraphrase the portal (violating fidelity). With production MCP, the AI receives verbatim, attributed quotes with portal URLs — the Findability Principle (CONTEXT.md § Mission) realized through the channel where seekers already are.
+
+The API-first architecture (ADR-011) was designed so "the same response serves web, mobile, and any future consumer." MCP is the AI-native realization of that architectural foresight. The service layer in `/lib/services/` is the constant; MCP tools are thin wrappers, just as API routes are thin wrappers.
+
+ADR-026 already envisions multi-channel distribution (WhatsApp, SMS, IVR). AI assistants are the most consequential new channel of 2027–2030. MCP is the protocol by which that channel accesses the portal.
+
+### Decision
+
+Evolve MCP from a single development tier into a three-tier corpus access layer, all wrapping the same service functions in `/lib/services/`.
+
+#### Tier 1: Development (Phase 1 — current)
+
+Unrestricted access for Claude Code during portal development. Existing tools from DES-031 plus additional tools as development needs arise.
+
+| Tool | Service Function | Purpose |
+|---|---|---|
+| `search_corpus(query, limit)` | `search.ts` | Find passages by semantic query |
+| `search_by_theme(slug)` | `themes.ts` | Theme-based retrieval |
+| `search_references(source_name)` | `references.ts` | External reference lookup |
+| `get_vocabulary_bridge(category)` | reads `spiritual-terms.json` | Terminology mapping |
+| `get_book_metadata(slug)` | `books.ts` | Book information |
+| `get_theme_metadata(slug)` | `themes.ts` | Theme information |
+
+#### Tier 2: Internal (Phase 5+)
+
+Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that internal AI workflows need:
+
+| Tool | Service Function | Purpose | Phase |
+|---|---|---|---|
+| `get_chunk_with_context(chunk_id, window)` | `chunks.ts` | Passage + N surrounding chunks for QA, classification, review | 5 |
+| `get_similar_passages(chunk_id, threshold, limit)` | `search.ts` | Embedding-based nearest neighbors (distinct from theme search) | 5 |
+| `get_graph_neighborhood(node_id, depth, types[])` | `graph.ts` | Subgraph around any node, filtered by node/edge type | 7 |
+| `find_concept_path(source_slug, target_slug)` | `graph.ts` | Shortest path in the ontology between two concepts | 8 |
+| `get_glossary_terms_in_passage(chunk_id)` | `glossary.ts` | Glossary terms appearing in a passage (with definitions) | 5 |
+| `get_passage_translations(canonical_chunk_id)` | `translations.ts` | All language variants of a passage | 11 |
+| `get_content_coverage(theme_slug)` | `themes.ts` | Passage count, book distribution, tone distribution per theme | 5 |
+| `verify_citation(book_slug, chapter, page)` | `citations.ts` | Confirm a quote exists in the corpus | 5 |
+| `get_pending_reviews(queue_type, limit)` | `queue.ts` | Items awaiting human review | 5 |
+| `get_search_trends(period, min_count)` | `analytics.ts` | Anonymized aggregated query themes (DELTA-compliant) | 7 |
+| `get_cross_book_connections(chunk_id)` | `relations.ts` | Related passages from other books | 6 |
+| `get_person_context(person_slug)` | `people.ts` | Biography, lineage, key mentioning passages | 6 |
+| `get_daily_passage(language, exclude_id)` | `daily.ts` | Random passage from curated pool | 5 |
+
+Internal tools use service-to-service authentication (API key or IAM role, not Auth0). No rate limiting beyond standard database connection limits.
+
+#### Tier 3: External (Phase 9+)
+
+Rate-limited, potentially registered access for third-party AI assistants. Exposes a subset of tools (no admin/editorial tools) with mandatory fidelity metadata on every response.
+
+**Available tools:** `search_corpus`, `search_by_theme`, `get_book_metadata`, `get_theme_metadata`, `get_glossary_terms_in_passage`, `get_graph_neighborhood`, `find_concept_path`, `get_person_context`, `get_daily_passage`, `verify_citation`.
+
+**Not available externally:** `get_pending_reviews`, `get_search_trends`, `get_content_coverage`, `get_similar_passages` (internal editorial tools), `get_passage_translations` (deferred until copyright posture is clear).
+
+**Fidelity metadata envelope:** Every external MCP response wraps content in a fidelity contract:
+
+```jsonc
+{
+  "passages": [
+    {
+      "text": "Verbatim passage text...",
+      "citation": {
+        "book": "Autobiography of a Yogi",
+        "chapter": 12,
+        "chapter_title": "Years in My Master's Hermitage",
+        "page": 142
+      },
+      "context_url": "/books/autobiography-of-a-yogi/12#chunk-uuid",
+      "themes": ["Peace", "Meditation"]
+    }
+  ],
+  "fidelity": {
+    "source": "Self-Realization Fellowship",
+    "portal": "teachings.yogananda.org",
+    "presentation": "verbatim_only",
+    "paraphrase_permitted": false,
+    "attribution_required": true,
+    "attribution_format": "{book}, Chapter {chapter}, p. {page}",
+    "context_url_purpose": "Full chapter context — present to the user alongside the quote"
+  },
+  "rate_limit": {
+    "remaining": 85,
+    "reset_at": "2027-05-15T12:00:00Z"
+  }
+}
+```
+
+The `fidelity` object is a moral signal, not a technical enforcement — analogous to Creative Commons metadata. Well-behaved AI consumers respect it; the portal cannot prevent violation. The `context_url` field ensures the seeker always has one click to reach the full, unmediated portal experience.
+
+**Rate limiting:** External MCP uses the same Cloudflare + application-level tiering as the HTTP API (ADR-023). Registered consumers (those who agree to the fidelity contract) receive higher limits. Unregistered consumers receive the same limits as anonymous web crawlers (ADR-081).
+
+**Access governance:** Three options, to be decided as a stakeholder question:
+1. **Open** — any MCP client can connect (simplest, maximum reach)
+2. **Registered** — MCP clients register and receive an API key (enables usage monitoring, fidelity contract agreement)
+3. **Partner** — only AI providers who sign a fidelity agreement (most control, least reach)
+
+The recommendation is option 2 (registered) — it balances reach with accountability, and the registration step is where the fidelity contract is acknowledged.
+
+### The Knowledge Graph as MCP Surface
+
+The Knowledge Graph (ADR-062) is the richest machine-readable representation of how the teachings relate to each other. Its MCP tools serve fundamentally different queries than text search:
+
+| Query Type | Search API | Knowledge Graph MCP |
+|---|---|---|
+| "What did Yogananda say about fear?" | Ranked passages | — |
+| "How does meditation relate to concentration in Yogananda's framework?" | — | `get_graph_neighborhood` → structural relationships |
+| "What is the path from pranayama to samadhi?" | — | `find_concept_path` → ontological steps with passages at each |
+| "Who is Lahiri Mahasaya?" | Passages mentioning him | `get_person_context` → biography + lineage + passages |
+| "What themes cluster around grief in the teachings?" | Passages tagged grief | `get_graph_neighborhood("grief", 2, ["theme"])` → related themes and their connections |
+
+These structural queries are the portal's unique offering — no other digital representation of Yogananda's teachings encodes relational structure. Making them available via MCP is what distinguishes the portal's MCP from a simple search API proxy.
+
+### The Aggregate-from-Verbatim Problem
+
+When an AI consumer retrieves multiple passages and must present them, it faces the tension the portal itself navigates (CONTEXT.md § Curation as Interpretation):
+
+| Action | Fidelity Status |
+|---|---|
+| Present individual passages with citations | Faithful |
+| Select "best" passages from results | Curation = interpretation (acceptable — the portal does this too) |
+| Summarize: "Yogananda teaches that..." | **Violates ADR-001** |
+| Group: "Three contexts — immortality, grief, purpose" | Gray zone — framing is new, quotes aren't |
+
+The portal's position: **serve faithful data with clear fidelity signals, and accept that downstream presentation is outside the portal's jurisdiction.** This is analogous to a physical library: the librarian provides the books faithfully; what the reader does with them is theirs. The `fidelity` metadata and `context_url` provide the reader a path back to the unmediated source.
+
+For internal consumers, the "AI proposes, humans approve" pattern (ADR-100) already governs how AI agents compose with verbatim content. The MCP tools make corpus access explicit and auditable — you can trace exactly which passages an agent retrieved and what it proposed.
+
+### DELTA Implications
+
+If a seeker's AI assistant tracks their queries and accesses the portal MCP on their behalf, the portal is *indirectly* enabling behavioral profiling — the AI knows the seeker asked about grief. The portal's position: the MCP response contains no user identifiers and carries no tracking. The DELTA framework governs the portal's own behavior, not third-party consumers. However, the fidelity metadata could include a DELTA-inspired signal: `"user_tracking_policy": "This content was served without user identification. Consuming applications are encouraged to respect seeker privacy."` — unenforceable but consistent with the portal's voice.
+
+### Rationale
+
+- **The service layer is the constant.** MCP tools are thin wrappers around `/lib/services/` functions, just as API routes are thin wrappers. One implementation, multiple access protocols. This is ADR-011's "any future consumer" principle applied to AI consumers specifically.
+- **Internal AI workflows are the immediate value.** The 25+ editorial workflows in DES-035 are the first consumers beyond development. Formalizing their corpus access through MCP tools creates a canonical, auditable interface that supports ADR-100's maturity model — every AI proposal can be traced to the exact MCP queries that informed it.
+- **External distribution is the strategic value.** AI assistants are the highest-reach distribution channel the portal hasn't designed for. The Findability Principle — "the teachings should find the seeker" — applies with singular force here: the seeker doesn't need to know the portal exists. Their AI assistant finds the teachings on their behalf.
+- **The fidelity metadata is a moral signal.** The portal can't enforce how external AIs present content. But it can make the faithful path easy and the unfaithful path legible. Every response says "this is verbatim, attribution is required, here is the context URL." Well-designed AI systems will respect these signals.
+- **The "signpost" principle amplifies, not diminishes.** When an AI serves a Yogananda quote with a portal URL, the seeker discovers the portal through the teachings — exactly the pattern the portal was designed to create. The AI is a signpost to the portal, which is a signpost to practice.
+
+### Consequences
+
+- DES-031 expanded from a summary table to a full three-tier MCP architecture specification
+- Internal MCP tools added to development backlog: Phase 5 (editorial tools), Phase 6 (relation/people tools), Phase 7 (graph tools), Phase 8 (ontology tools)
+- External MCP tools added as Phase 9 deliverable alongside WhatsApp, email, and social media distribution
+- Fidelity metadata schema defined and included in every external response
+- DES-035 updated to reference MCP tools as the canonical corpus access path for AI workflows
+- New stakeholder questions added to CONTEXT.md: SRF's posture on external AI access, copyright implications, and sacred text in AI context
+- Access governance model (open/registered/partner) deferred to stakeholder decision before Phase 9
+- This decision supersedes the external-facing aspects of ADR-097 (which remains valid for the development tier). ADR-097's evaluation of third-party MCP servers (Sentry, Contentful, etc.) is unchanged.
+- Knowledge Graph MCP tools (`get_graph_neighborhood`, `find_concept_path`) require the graph service layer (`/lib/services/graph.ts`) to support these query patterns — verify during Phase 7 graph implementation
+
+*Section added: 2026-02-21, MCP three-tier exploration*
+
+---

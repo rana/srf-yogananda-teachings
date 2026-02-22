@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Technical Design
 
-> **Navigation guide.** 41 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
+> **Navigation guide.** 42 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
 
 | Section | Phase |
 |---------|-------|
@@ -50,6 +50,7 @@
 | &emsp;[DES-046: Study Circle Sharing](#des-046-study-circle-sharing) | 16+ |
 | &emsp;[DES-047: `/browse` — The Complete Index](#des-047-browse-the-complete-index) | 2+ |
 | &emsp;[DES-048: `/guide` — The Spiritual Guide](#des-048-guide-the-spiritual-guide) | 5+ |
+| [DES-049: Responsive Design Strategy](#des-049-responsive-design-strategy) | 2+ |
 | [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | — |
 | [ADR-035, ADR-063, ADR-064: Image Serving Architecture](#adr-035-adr-063-adr-064-image-serving-architecture) | 7+ |
 
@@ -1505,6 +1506,8 @@ SENTRY_AUTH_TOKEN= # Source map uploads
 | `/collections` | Community Collections gallery — published/featured curated passage collections (Phase 16, ADR-086) | Neon (`study_outlines` where visibility = published/featured) |
 | `/collections/[share-hash]` | Single community collection view (Phase 8 shared-link, Phase 16 published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) |
 | `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 5, ADR-084) | Neon (`seeker_feedback`) |
+| `/privacy` | Privacy policy — what data is collected, why, how long, sub-processors, data subject rights (Phase 2, ADR-099) | Static (ISR) |
+| `/legal` | Legal information — terms of use, copyright, content licensing (Phase 2, ADR-099) | Static (ISR) |
 
 ### Search Results Component
 
@@ -2897,13 +2900,25 @@ A **single simplified lotus design** (geometric, 3-petal, SVG) serves as the por
 
 The SVG is defined once as a reusable component, parameterized for size, color, and opacity via CSS custom properties.
 
-#### Google Fonts Import
+#### Self-Hosted Fonts (ADR-099)
 
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400&family=Merriweather:wght@300;400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+Fonts are self-hosted from Vercel's CDN — not loaded from Google Fonts CDN. This eliminates IP transmission to Google servers (required by LG München I, Case No. 3 O 17493/20 for German GDPR compliance) and improves performance (no DNS lookup to `fonts.googleapis.com`).
+
+Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans (400, 600). Place in `/public/fonts/`. Reference via `@font-face` declarations in global CSS:
+
+```css
+@font-face {
+  font-family: 'Merriweather';
+  src: url('/fonts/merriweather-v30-latin-300.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+/* ... additional weights and families */
 ```
+
+`font-display: swap` preserves the same FOUT behavior as the previous Google Fonts `display=swap` parameter.
+
+*Section revised: 2026-02-21, ADR-099 (self-hosted fonts for GDPR compliance)*
 
 ---
 
@@ -4238,6 +4253,28 @@ Response:
 
 The outer layer stops abuse before it reaches the application — the 15 search/min Cloudflare limit is stricter than the inner layer because it's a hard block (429), while the inner layer's 30/min threshold triggers graceful degradation (results still returned, just without AI enhancement). A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
 
+### ADR-099: Sub-Processor Inventory
+
+All services that process data on the portal's behalf, with their roles, data touched, and geographic regions. Maintained as part of the privacy policy (`/privacy`).
+
+| Service | GDPR Role | Data Touched | Region | Phase |
+|---------|-----------|-------------|--------|-------|
+| **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica Phase 10+ | 0+ |
+| **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | 0+ |
+| **Cloudflare** | Processor | Request metadata, IP for WAF (transient, not stored by portal) | Global | 0+ |
+| **Amplitude** | Processor | Anonymized events with country_code (no user ID) | US | 7+ |
+| **Sentry** | Processor | Error stack traces, request context | US | 0+ |
+| **New Relic** | Processor | Performance metrics, log aggregation | US | 7+ |
+| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | 1+ |
+| **OpenAI** | Processor | Corpus text at embedding time (one-time, not retained) | US | 1+ |
+| **Resend/SES** | Processor | Subscriber email addresses | US | 9+ |
+| **Auth0** | Processor | User accounts (if implemented) | US | 15+ |
+| **Contentful** | Processor | Editorial content (no personal data) | EU | 10+ |
+
+EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. Review when services are added or changed.
+
+*Section added: 2026-02-21, ADR-099*
+
 ---
 
 ## DES-025: Accessibility Requirements (Phase 2 Foundation)
@@ -4476,6 +4513,8 @@ CREATE TABLE chunk_external_references (
 ### Who This Serves
 
 Scholars, interfaith seekers, and devotees who want to understand Yogananda's intellectual and spiritual lineage. It's data already in the text — surfaced, not generated.
+
+**"Yogananda in Conversation" — the interfaith dimension.** The reverse bibliography is framed as a scholarly index, but it is also the portal's most natural interfaith bridge. Yogananda engaged with the Bible and the Bhagavad Gita, with Christ and Krishna, with Kabir and Rumi, with Einstein and Luther Burbank. The totality of these references forms a map of one tradition's deep engagement with many others — grounded entirely in verbatim text, not in editorial interpretation. For a Christian seeker, `/references/bible` answers "How does Yogananda engage with my scripture?" For a Sufi-inclined visitor, `/references/omar-khayyam` or `/references/kabir` does the same. For an agnostic, the full reference index shows the breadth of Yogananda's intellectual world. The reverse bibliography can carry a secondary editorial framing — "Yogananda in Conversation" — surfacing this cross-tradition engagement as a navigational pathway alongside its scholarly function. The data is identical; the framing acknowledges that these references serve worldview navigation, not just academic cataloging. See also DES-048 § Worldview adaptation and CONTEXT.md § Open Questions (Stakeholder: worldview-sensitive `/guide` pathways).
 
 ---
 
@@ -4754,6 +4793,29 @@ GET /api/v1/email/unsubscribe?token=xxx
 
 **Daily seed logic:** Use the current date as a deterministic seed to select the day's passage, ensuring all emails contain the same quote and the portal homepage can display "Today's email featured this passage" if desired.
 
+### Email Data Retention and Erasure (ADR-099)
+
+**Lawful basis:** Consent (GDPR Art. 6(1)(a)) via double opt-in. Stated on the subscription form and in `/privacy`.
+
+**Retention policy:**
+- **Active subscribers:** Email retained for the duration of the subscription.
+- **Unsubscribed (soft-deleted):** `is_active = false`, `unsubscribed_at` set. Row automatically purged 90 days after `unsubscribed_at`.
+- **Bounce/failure records:** Retained for 30 days for operational health, then purged.
+
+**Right to erasure:** In addition to the existing unsubscribe endpoint, a hard-deletion endpoint removes the subscriber row entirely:
+
+```
+DELETE /api/v1/email/subscriber?token=xxx
+ → Deletes row from email_subscribers
+ → Shows "Your data has been removed" confirmation
+```
+
+The unsubscribe confirmation page offers both options: "Stay unsubscribed (data removed in 90 days)" and "Remove my data now."
+
+**Minimum age:** The subscription form includes the statement: "You must be 16 or older to subscribe." (GDPR Art. 8; adjusted per member state where applicable.)
+
+*Section added: 2026-02-21, ADR-099*
+
 ---
 
 ## ADR-084: Seeker Feedback — DELTA-Compliant Signal Collection
@@ -4789,6 +4851,10 @@ CREATE INDEX idx_feedback_type ON seeker_feedback(feedback_type, created_at DESC
 
 `POST /api/v1/feedback` — rate-limited at 5 submissions per IP per hour (IP is used for rate limiting but not stored in the database).
 
+### PII Mitigation (ADR-099)
+
+The feedback form includes the notice: *"Please do not include personal information (name, email, location) in your feedback."* Feedback entries are reviewed periodically by editorial staff; inadvertent PII is redacted. Entries older than 2 years are eligible for archival aggregation (convert to anonymized statistics, delete raw text).
+
 ### Editorial Integration
 
 Feedback appears in the editorial review portal (Phase 5) as a "Seeker Feedback" queue alongside theme tag review and ingestion QA. Citation error reports are highest priority — they directly affect the portal's fidelity guarantee.
@@ -4797,11 +4863,142 @@ Feedback appears in the editorial review portal (Phase 5) as a "Seeker Feedback"
 
 ## DES-031: MCP Server Strategy
 
+MCP (Model Context Protocol) serves three tiers of AI consumer, all wrapping the same `/lib/services/` functions. MCP tools are the AI-native complement to HTTP API routes — one service layer, two access protocols. (ADR-097 governs third-party MCP servers; ADR-101 governs the portal's own MCP tiers.)
+
+### Third-Party MCP Servers (ADR-097)
+
 | MCP Server | Use Case | Availability |
 |------------|----------|-------------|
 | **Neon MCP** | Database schema management, SQL execution, migrations during development | Available now |
-| **Contentful MCP** | Content model design, entry management during development | To be investigated |
-| **Custom: SRF Corpus MCP** | Allow Claude Code to search the book corpus during development (e.g., "find all passages about meditation in Autobiography") | Build as part of Phase 1 |
+| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Phase 1 |
+| **Contentful MCP** | Content model design, entry management during development | Phase 10+ (evaluate) |
+
+See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
+
+### SRF Corpus MCP — Three-Tier Architecture (ADR-101)
+
+```
+Seeker (browser) → API Route → Service Layer → Neon
+AI agent (MCP)   → MCP Tool  → Service Layer → Neon
+Claude Code (dev) → MCP Tool → Service Layer → Neon
+```
+
+The service layer doesn't care who's calling. The access protocol and metadata envelope differ by tier.
+
+#### Tier 1: Development (Phase 1)
+
+Unrestricted access for Claude Code during portal development. Also used for iterating on guide pathway generation prompts (DES-035 § Worldview Guide Pathway Generation, DES-048 § Worldview Pathway Catalog) — developer tests "generate a guide pathway for Buddhist meditators" interactively, refining prompt templates before deploying to the admin portal batch workflow.
+
+| Tool | Service Function | Purpose |
+|---|---|---|
+| `search_corpus(query, limit)` | `search.ts` | Find passages by semantic query |
+| `search_by_theme(slug)` | `themes.ts` | Theme-based retrieval |
+| `search_references(source_name)` | `references.ts` | External reference lookup |
+| `get_vocabulary_bridge(category)` | reads `spiritual-terms.json` | Terminology mapping |
+| `get_book_metadata(slug)` | `books.ts` | Book information |
+| `get_theme_metadata(slug)` | `themes.ts` | Theme information |
+
+#### Tier 2: Internal (Phase 5+)
+
+Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that DES-035 AI workflows need for corpus-grounded proposals. Authentication via API key or IAM role (not Auth0).
+
+| Tool | Service Function | Purpose | Phase |
+|---|---|---|---|
+| `get_chunk_with_context(chunk_id, window)` | `chunks.ts` | Passage + N surrounding chunks (for QA, classification, review) | 5 |
+| `get_similar_passages(chunk_id, threshold, limit)` | `search.ts` | Embedding-based nearest neighbors (distinct from theme search) | 5 |
+| `get_glossary_terms_in_passage(chunk_id)` | `glossary.ts` | Glossary terms in a passage with definitions | 5 |
+| `get_content_coverage(theme_slug)` | `themes.ts` | Passage count, book distribution, tone distribution per theme | 5 |
+| `verify_citation(book_slug, chapter, page)` | `citations.ts` | Confirm a quote exists in the corpus | 5 |
+| `get_pending_reviews(queue_type, limit)` | `queue.ts` | Items awaiting human review in a specific queue | 5 |
+| `get_daily_passage(language, exclude_id)` | `daily.ts` | Random passage from curated pool | 5 |
+| `get_cross_book_connections(chunk_id)` | `relations.ts` | Related passages from other books | 6 |
+| `get_person_context(person_slug)` | `people.ts` | Biography, lineage position, key mentioning passages | 6 |
+| `get_graph_neighborhood(node_id, depth, types[])` | `graph.ts` | Subgraph around any node, filtered by node/edge type | 7 |
+| `get_search_trends(period, min_count)` | `analytics.ts` | Anonymized aggregated query themes (DELTA-compliant) | 7 |
+| `find_concept_path(source_slug, target_slug)` | `graph.ts` | Shortest ontological path between two concepts | 8 |
+| `get_passage_translations(canonical_chunk_id)` | `translations.ts` | All language variants of a passage | 11 |
+
+**Internal MCP use cases by consumer:**
+
+| Consumer | Primary Tools | Phase |
+|---|---|---|
+| Theme tag proposal AI | `get_similar_passages`, `get_content_coverage`, `get_graph_neighborhood` | 5, 7 |
+| Guide pathway generation AI | `search_corpus`, `search_references`, `get_vocabulary_bridge`, `find_concept_path` | 5, 8 |
+| Ingestion QA AI | `get_chunk_with_context`, `verify_citation` | 5 |
+| Translation review AI | `get_passage_translations`, `get_glossary_terms_in_passage` | 11 |
+| Reading thread drafting AI | `get_cross_book_connections`, `get_graph_neighborhood`, `find_concept_path` | 6, 7, 8 |
+| Social media caption AI | `search_corpus`, `get_book_metadata`, `get_theme_metadata` | 9 |
+| Impact narrative AI | `get_search_trends`, `get_graph_neighborhood` | 7 |
+| SRF mobile app | `search_corpus`, `get_daily_passage`, `get_graph_neighborhood`, `get_person_context` | TBD (stakeholder) |
+| Admin portal AI features | `get_pending_reviews`, `get_content_coverage`, `get_search_trends` | 5, 7 |
+
+#### Tier 3: External (Phase 9+)
+
+Rate-limited access for third-party AI assistants (ChatGPT, Claude, Gemini, custom agents). Exposes a content-serving subset (no admin/editorial tools). Every response wrapped in fidelity metadata.
+
+**Available tools:** `search_corpus`, `search_by_theme`, `get_book_metadata`, `get_theme_metadata`, `get_glossary_terms_in_passage`, `get_graph_neighborhood`, `find_concept_path`, `get_person_context`, `get_daily_passage`, `verify_citation`.
+
+**Not available externally:** `get_pending_reviews`, `get_search_trends`, `get_content_coverage`, `get_similar_passages`, `get_chunk_with_context`, `get_passage_translations`.
+
+**Fidelity metadata envelope:**
+
+```jsonc
+{
+  "passages": [
+    {
+      "text": "Verbatim passage text...",
+      "citation": {
+        "book": "Autobiography of a Yogi",
+        "chapter": 12,
+        "chapter_title": "Years in My Master's Hermitage",
+        "page": 142
+      },
+      "context_url": "/books/autobiography-of-a-yogi/12#chunk-uuid",
+      "themes": ["Peace", "Meditation"]
+    }
+  ],
+  "fidelity": {
+    "source": "Self-Realization Fellowship",
+    "portal": "teachings.yogananda.org",
+    "presentation": "verbatim_only",
+    "paraphrase_permitted": false,
+    "attribution_required": true,
+    "attribution_format": "{book}, Chapter {chapter}, p. {page}",
+    "context_url_purpose": "Full chapter context — present to user alongside quote"
+  }
+}
+```
+
+The `fidelity` object is a moral signal, not a technical enforcement — analogous to Creative Commons metadata. The `context_url` ensures seekers always have one click to the full, unmediated portal.
+
+**Rate limiting:** Same Cloudflare + application-level tiering as HTTP API (ADR-023). Registered consumers (fidelity contract acknowledged) receive higher limits. Unregistered consumers receive anonymous web crawler limits (ADR-081).
+
+**Access governance:** Stakeholder decision (CONTEXT.md). Recommendation: registered access — clients receive an API key upon acknowledging the fidelity contract, balancing reach with accountability.
+
+### Knowledge Graph as MCP Surface
+
+The Knowledge Graph (ADR-062) answers structural queries that text search cannot:
+
+| Query Type | Tool | What It Returns |
+|---|---|---|
+| "How does meditation relate to concentration?" | `get_graph_neighborhood("meditation", 2, ["theme", "concept"])` | Structural relationships between concepts |
+| "What is the path from pranayama to samadhi?" | `find_concept_path("pranayama", "samadhi")` | Ontological steps with a representative passage at each |
+| "Who is Lahiri Mahasaya?" | `get_person_context("lahiri-mahasaya")` | Biography, lineage position, key passages |
+| "What themes cluster around grief?" | `get_graph_neighborhood("grief", 2, ["theme"])` | Related themes and their connection types |
+
+These structural queries are the portal's unique offering via MCP — no other digital representation of Yogananda's teachings encodes relational structure. The graph API (`/api/v1/graph/subgraph`) serves the web client; MCP tools serve AI consumers needing the same relational data in a different access pattern.
+
+### MCP Service File
+
+`/lib/mcp/` directory:
+- `server.ts` — MCP server setup, tier routing, authentication
+- `tools/corpus.ts` — search, theme, reference, vocabulary bridge tools
+- `tools/editorial.ts` — internal editorial tools (Tier 2 only)
+- `tools/graph.ts` — Knowledge Graph traversal tools
+- `tools/people.ts` — People Library tools
+- `tools/fidelity.ts` — fidelity metadata envelope wrapper (Tier 3)
+
+All tools delegate to `/lib/services/` — zero business logic in the MCP layer.
 
 ---
 
@@ -5065,6 +5262,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 - `/lib/services/impact.ts` — aggregated metrics for leadership dashboard
 - `/lib/services/collections.ts` — community collections, visibility management, submission pipeline (ADR-086)
 - `/lib/services/graph.ts` — knowledge graph queries, subgraph extraction, cluster resolution (ADR-062)
+- `/lib/mcp/` — MCP server (three-tier corpus access layer, ADR-101): `server.ts` (tier routing, auth), `tools/corpus.ts`, `tools/editorial.ts`, `tools/graph.ts`, `tools/people.ts`, `tools/fidelity.ts` (external envelope wrapper). All tools delegate to `/lib/services/` — zero business logic in the MCP layer.
 
 ### Phase Delivery
 
@@ -5262,6 +5460,8 @@ By year 3, the people operating the portal may be different from those who built
 
 The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. This section consolidates all AI-human collaboration patterns into a single reference. The governing principle is consistent: **AI proposes, humans approve.** Automated intelligence improves efficiency; human judgment ensures fidelity.
 
+**Corpus access pattern:** All AI workflows access the teaching corpus through MCP tools (ADR-101, DES-031 Tier 2) rather than ad-hoc service layer calls. This provides a canonical, auditable interface — every AI proposal can be traced to the exact MCP queries that informed it. The MCP tools are thin wrappers around `/lib/services/` functions; the service layer is the source of truth. See DES-031 § Internal MCP use cases by consumer for the tool-to-workflow mapping.
+
 ### Existing AI-Assisted Workflows (Designed in Individual ADRs)
 
 | Task | AI Role | Human Role | Phase | ADR |
@@ -5276,7 +5476,9 @@ The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. Thi
 | Social media captions | Generates caption text with citation | Reviews and edits before posting | 9 | ADR-092 |
 | Relation type classification | Classifies cross-book relation types | Spot-checks | 6 | ADR-005 E6 |
 | External reference extraction | Extracts Bible, Gita, Patanjali references from text | Three-state review (auto → reviewed → manual) | 6 | DES-027 |
-| `/guide` page drafts | Drafts recommendation text for seeker pathways | Reviews before publication | 5 | DES-047 |
+| `/guide` page drafts (need-based) | Drafts recommendation text for seeker need pathways | Reviews before publication | 5 | DES-048 |
+| `/guide` worldview pathways | Generates corpus-grounded guide sections for 12 worldview perspectives using seed queries, reverse bibliography, and vocabulary bridge | Theological review before publication | 5+ | DES-048, DES-027 |
+| `/guide` life-phase pathways | Generates guide sections for 9 life-phase perspectives using tone filters, accessibility levels, situation themes, and characteristic questions as generation anchors | Editorial + theological review | 5+ | DES-048 |
 | Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search) | Implicit — classification rules are human-authored | 1 | ADR-005 E1 |
 | Search quality evaluation | Automated judge assessing search result relevance in CI | Sets expected-passage test suite | 1 | ADR-005 E5 |
 
@@ -5391,6 +5593,81 @@ Staff gets a concise summary without querying the database. Displayed in the adm
 
 **Phase:** 5 (alongside book ingestion workflow improvements).
 
+#### Worldview Guide Pathway Generation (Corpus-Grounded)
+
+Claude generates draft `/guide` pathway sections for each worldview perspective, grounded entirely in the SRF corpus. This is the most editorially sensitive AI-assisted workflow — it determines how seekers from different traditions encounter the teachings — and requires theological review, not just editorial review.
+
+**Trigger:** On-demand from admin portal ("Generate guide pathways"), or after a new book ingestion introduces significant new cross-tradition content (e.g., *The Second Coming of Christ* creates the Christian pathway; *Wine of the Mystic* creates the Sufi/poetry pathway).
+
+**Generation pipeline:**
+
+1. Admin selects a perspective from the worldview catalog (see DES-048 § Worldview Pathway Catalog)
+2. Claude Opus (batch tier, ADR-014) receives:
+   - A perspective-specific prompt template (see below)
+   - Corpus search results for that perspective's seed queries (via Neon, same queries as SRF Corpus MCP)
+   - Reverse bibliography entries matching that perspective's tradition (DES-027)
+   - Vocabulary bridge entries for that perspective's categories from `spiritual-terms.json`
+   - Current theme taxonomy with passage counts
+3. Claude outputs structured JSON:
+   - Title and framing paragraph (navigational, never paraphrasing Yogananda — ADR-001)
+   - 2–3 recommended resources per pathway (book, theme, reading thread, reference index, Quiet Corner)
+   - Framing text for each recommendation
+   - Bridge vocabulary highlights (3–5 terms mapping the perspective's vocabulary to Yogananda's)
+   - 3–5 representative passage IDs selected from search results
+   - For each recommendation slot: top-3 alternatives with reasoning, so the reviewer chooses
+4. Output enters editorial review queue as `tagged_by = 'auto'`
+5. Theological reviewer sees:
+   - The generated pathway with all passages displayed inline
+   - Claude's reasoning for each selection ("Selected because this passage directly addresses Christ Consciousness using language accessible to Christian readers")
+   - Alternative options per slot
+   - Accept / edit / reject controls
+6. On approval (`tagged_by = 'reviewed'`), content is committed to `messages/{locale}.json` and deployed via normal release process
+
+**Prompt template structure** (one per perspective, versioned in `/lib/data/guide-prompts/`):
+
+```
+You are generating a guide pathway for the SRF teachings portal.
+
+PERSPECTIVE: {perspective_name}
+DESCRIPTION: {perspective_description}
+
+You have access to:
+- CORPUS_RESULTS: Passages matching these queries: {seed_queries}
+- REFERENCES: External sources Yogananda references from this tradition: {reference_data}
+- BRIDGE_TERMS: Vocabulary mappings for this perspective: {bridge_entries}
+- THEMES: Relevant theme pages with passage counts: {theme_data}
+- BOOKS: Available books with descriptions: {book_data}
+
+Generate a guide pathway section following these rules:
+1. The title uses "If you..." phrasing: warm, inviting, never presumptuous
+2. The framing paragraph (2-3 sentences) is navigational — it tells the seeker WHERE to go, not WHAT to think
+3. Never paraphrase or summarize Yogananda's words — only point to where they live
+4. Select 2-3 recommendations (a book, a theme, a reference index, a reading thread, the Quiet Corner)
+5. For each recommendation, write one sentence of editorial framing
+6. Identify 3-5 bridge terms that map this perspective's vocabulary to Yogananda's
+7. Select 3-5 representative passages that would resonate with this perspective
+8. For each recommendation slot, provide your top choice and 2 alternatives with brief reasoning
+
+Output format: {json_schema}
+```
+
+**Development-time iteration:** During development, the SRF Corpus MCP server (ADR-097, DES-031) lets Claude Code test pathway generation interactively — "generate a guide pathway for Buddhist meditators" — and refine prompts until quality is high. The polished prompt templates are then deployed for the admin portal batch workflow.
+
+**Life-phase pathway generation:** Uses the same pipeline with a different prompt template structure. Instead of tradition-specific seed queries and vocabulary bridges, life-phase prompts use:
+- The characteristic question as the generation anchor ("Is this all there is?")
+- Tone filters (`consoling`, `practical`, `contemplative`, etc.) to select passages matching the season's emotional register
+- Accessibility level constraints (level 1 for youth pathways, level 2–3 for elder/approaching-end pathways)
+- Situation theme associations as content sources (the Parenting theme feeds the Raising a Family pathway)
+- Autobiography chapter mapping — which chapters in Yogananda's own life story speak to this season
+
+Life-phase prompts are stored alongside worldview prompts in `/lib/data/guide-prompts/` with a `life-phase/` subdirectory.
+
+**Regeneration after corpus growth:** When a new book is ingested (Phase 5+), the admin portal flags which worldview and life-phase pathways may benefit from regeneration based on the new book's theme density and reference profile. E.g., ingesting *The Second Coming of Christ* triggers a regeneration flag for the Christian contemplative pathway; ingesting *Scientific Healing Affirmations* triggers a flag for the Facing Illness life-phase pathway. Staff decides whether to regenerate, and regenerated drafts go through the same review pipeline.
+
+**Phase:** 5+ (requires theme system, reverse bibliography, vocabulary bridge, editorial review infrastructure). Initial pathways generated for English; Phase 11 adds per-locale cultural adaptation of each pathway.
+
+**Service file:** `/lib/services/guide-generation.ts` — prompt template loading, corpus query orchestration, structured output parsing, admin portal integration.
+
 #### Impact Report Drafting
 
 For the annual "What Is Humanity Seeking?" report (Phase 16, deliverable 16.8), Claude drafts narrative text from aggregated data:
@@ -5412,6 +5689,147 @@ The AI's voice in staff-facing interfaces should match the portal's contemplativ
 - "Claude's recommendation: approve. Confidence: high. Reasoning: strong thematic alignment with 'Peace' across 3 similar passages already tagged."
 
 The admin portal's AI-generated text follows the same editorial voice guide (ADR-074) as seeker-facing copy — warm, honest, not mechanical.
+
+### Workflow Maturity Model (ADR-100)
+
+The "AI proposes, humans approve" principle is the permanent default. But over a decade, as the corpus grows and editorial demands multiply, some workflows earn graduated trust through consistent accuracy. ADR-100 establishes a three-stage maturity model:
+
+| Stage | Human Involvement | Graduation Criteria |
+|---|---|---|
+| **Full Review** | Approves every item | Default — no criteria needed |
+| **Spot-Check** | Reviews 10–20% sample + flagged items | ≥ 500 items, ≥ 95% approval rate, ≥ 3 months, theological sign-off |
+| **Exception-Only** | Reviews only AI-abstained or low-confidence items | ≥ 2,000 items at Spot-Check, ≥ 98% approval, ≥ 6 months, coordinator sign-off |
+
+**Permanently Full Review workflows:** Worldview pathway generation, life-phase pathway generation, community collection approval, crisis language detection. These never graduate — the theological judgment required is irreducible.
+
+Stage transitions are per-workflow, per-language, governed, auditable, and reversible. Any theological error or sustained override pattern (> 15% in 30 days) triggers automatic regression. See ADR-100 for full governance specification.
+
+### Feedback Loop Protocol (ADR-100)
+
+AI proposals improve over time through systematic feedback, not model fine-tuning:
+
+**Override tracking.** Every reviewer action (approve, reject, edit, select alternative) is logged in `ai_review_log` with the workflow type, AI proposal, reviewer decision, and optional rationale. This table is internal — never exposed to seekers, never used for analytics.
+
+**Prompt refinement cadence.** Quarterly, the portal coordinator reviews override patterns:
+- Workflows with > 10% override rate → prompt revision required
+- Consistent override patterns (e.g., "always rejects 'Joy' for passages about sacrifice") → pattern added as negative example in the prompt
+- Refined prompts are versioned; previous versions archived in `/lib/data/prompt-archive/`
+
+**Confidence calibration.** AI confidence scores are compared against actual approval rates quarterly. If the AI is consistently confident about rejected proposals, the routing threshold is raised. If consistently uncertain about approved proposals, the threshold is lowered.
+
+**Service file:** `/lib/services/ai-review.ts` — override logging, quarterly report generation, confidence calibration queries.
+
+### AI Observes — Passive Intelligence Pattern
+
+"AI proposes, humans approve" is an active pattern — the AI generates, the human reviews. The portal also needs a complementary passive pattern: **"AI observes, humans are informed."** These are not proposals requiring approval. They are ambient awareness surfaced in the editorial home screen as low-priority informational items.
+
+| Observation Type | Example | Cadence |
+|---|---|---|
+| **Theme diversity drift** | "The theme 'Peace' is now 60% dominated by passages from one book. Diversity has decreased since Phase 6." | Weekly |
+| **Classification staleness** | "142 theme tags were classified > 18 months ago with prompt version 1.2. Current prompt is 2.1. Reclassification may improve accuracy." | Monthly |
+| **Coverage gaps** | "No passages in the corpus address 'Forgiveness' from a practical perspective — only contemplative. This affects the Facing Guilt life-phase pathway." | After each book ingestion |
+| **Cross-workflow inconsistency** | "Passage #247 is tagged 'joyful' by tone classification but selected for the Grief & Loss guide pathway." | Nightly batch |
+| **Engagement signal anomalies** | "The 'Healing' theme page shows 3× higher passage-resonance signals than any other theme. The theme may benefit from subdivision." | Monthly |
+
+Observations are **never actionable recommendations** — they state a condition. The editorial team decides whether the condition matters. Many observations will be dismissed. The AI doesn't need to know which.
+
+**Phase:** 5 (alongside editorial home screen, which becomes the natural surface for observations).
+
+**Service file:** `/lib/services/ai-observations.ts` — observation generation, staleness detection, diversity metrics, consistency checks.
+
+### AI Abstains — Confidence-Aware Routing
+
+Sometimes the right AI behavior is to decline. A low-confidence proposal can be worse than no proposal, because it anchors the reviewer's judgment rather than allowing them to form their own assessment of the content.
+
+**Abstention triggers:**
+- Passage in a script the model cannot reliably process (Devanāgarī-heavy content for tone classification)
+- Fewer than 3 corpus passages available for a pathway generation slot
+- Confidence score below a per-workflow floor (calibrated during Full Review stage)
+- Content outside the model's observed distribution (e.g., chant-prose hybrid in a theme classifier trained on prose)
+
+**Reviewer experience:** When the AI abstains, the queue item is marked `ai_abstained = true` with a brief explanation ("Insufficient corpus coverage for Sufi poetry pathway — only 2 relevant passages found"). The reviewer sees the raw content with no AI pre-classification. The abstention reason provides context without anchoring.
+
+**Abstention rates** are tracked per workflow as a health metric. Rising abstention in a workflow signals either corpus gaps or prompt degradation — both worth investigating.
+
+**Phase:** 1 (abstention capability ships with the first AI-assisted workflow; confidence floors are calibrated during Full Review operation).
+
+### Workflow Dependency Graph
+
+DES-035 workflows have implicit dependencies. When an upstream workflow's output changes, downstream consumers may need re-evaluation.
+
+```
+                    ┌──────────────┐
+                    │ Ingestion QA │
+                    └──────┬───────┘
+                           │ text corrections invalidate downstream
+                           ▼
+              ┌────────────────────────┐
+              │ Theme Tag Classification│──────────────┐
+              └────────────┬───────────┘              │
+                           │                          │
+              ┌────────────▼───────────┐   ┌──────────▼──────────────┐
+              │ Tone Classification    │   │ Worldview Pathway Gen.  │
+              └────────────┬───────────┘   └──────────▲──────────────┘
+                           │                          │
+              ┌────────────▼───────────┐   ┌──────────┴──────────────┐
+              │ Daily Passage Curation │   │ External Ref Extraction │
+              └────────────────────────┘   └─────────────────────────┘
+
+              ┌────────────────────────┐   ┌─────────────────────────┐
+              │ Feedback Categorization│──►│ Content Correction      │
+              └────────────────────────┘   │ (DES-034)               │
+                                           └─────────────────────────┘
+```
+
+**Staleness signaling:** When an upstream workflow's output changes (OCR correction alters passage text, a theme tag is reclassified), downstream workflows that consumed the old output are flagged in the editorial queue: "This passage's theme tags changed since it was included in the Christmas pathway. Review recommended." This is not automatic re-execution — it is a staleness signal that the editor can act on or dismiss.
+
+**Phase:** 5 (staleness signaling requires the editorial queue infrastructure).
+
+### Unified Prompt Versioning
+
+DES-035 § Worldview Guide Pathway Generation specifies versioned prompt templates in `/lib/data/guide-prompts/`. All other AI-assisted workflows also depend on system prompts that will evolve over time — but only the worldview pathway has explicit versioning.
+
+**All AI-assisted workflow prompts** are versioned under a unified directory structure:
+
+```
+/lib/data/ai-prompts/
+  theme-classification/
+    v1.0.md          ← initial prompt
+    v1.1.md          ← quarterly refinement (2027-Q2)
+    CHANGELOG.md     ← override patterns that motivated each revision
+  tone-classification/
+    v1.0.md
+  query-expansion/
+    v1.0.md
+  guide-prompts/
+    worldview/
+      christian-contemplative.md
+      buddhist-meditator.md
+      ...
+    life-phase/
+      young-seeker.md
+      ...
+  feedback-categorization/
+    v1.0.md
+  ingestion-qa/
+    v1.0.md
+  ...
+```
+
+Each prompt file includes:
+- The system prompt text
+- The input schema (what data the prompt receives)
+- The output schema (what structure the prompt produces)
+- Version date and author
+- Override patterns from the previous version that motivated the revision (from `ai_review_log` quarterly analysis)
+
+**Why this matters for a 10-year project:** When the theological reviewer who spent 3 years refining worldview prompts moves to a different role, the prompt files preserve *what* was refined. The `CHANGELOG.md` files preserve *why* — which override patterns, which edge cases, which editorial judgments shaped the current prompt. This is institutional memory that survives staff turnover.
+
+The existing `/lib/data/guide-prompts/` directory is subsumed into the unified structure. The `/lib/data/spiritual-terms.json` vocabulary bridge remains a separate file consumed by multiple prompts.
+
+**Phase:** 1 (directory structure created at repo setup; initial prompts for search intent classification and ingestion QA are the first entries).
+
+*Section revised: 2026-02-21, ADR-100 deep exploration — added maturity model, feedback loops, AI Observes, AI Abstains, dependency graph, unified prompt versioning*
 
 ---
 
@@ -5631,11 +6049,32 @@ No user identification. No IP addresses. No session IDs.
 
 | Event | Properties | Metric It Supports |
 |-------|-----------|-------------------|
-| `page_viewed` | `{ page_type, language, country_code }` | Countries reached, languages served |
+| `page_viewed` | `{ page_type, language, requested_language, country_code }` | Countries reached, languages served, unmet language demand |
 | `passage_served` | `{ book_slug, language }` | Books/passages served |
 | `share_link_generated` | `{ format }` | Share link generation count |
 | `center_locator_clicked` | `{}` | Digital → physical bridge |
-| `search_performed` | `{ language, result_count }` | Search usage volume |
+| `search_performed` | `{ language, result_count, zero_results }` | Search usage volume, zero-result rate |
+
+**`requested_language` rationale:** The `page_viewed` event carries `language` (the locale actually served) and `requested_language` (the seeker's `Accept-Language` header preference). The delta between requested and served is a direct measure of unmet language demand — e.g., how many seekers per week arrive wanting Hindi but receive English. This signal is impossible to backfill and directly informs Phase 11 language prioritization. When `requested_language === language`, the property adds no information and can be elided in analysis.
+
+**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Phase 7 Retool dashboard (deliverable 7.4) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
+
+### Standing Operational Metrics
+
+Beyond the Amplitude event allowlist and APM tooling, the following derived metrics should be computed and surfaced in the Phase 7 Retool dashboard for ongoing operational awareness:
+
+| Metric | Source | Refresh | Dashboard |
+|--------|--------|---------|-----------|
+| Zero-result rate (% of searches returning 0 passages) | `search_performed` events | Daily | Retool (staff) |
+| Most common zero-result queries (top 20) | `search_queries` table | Daily | Retool (staff) |
+| Search degradation mode distribution | Structured logs (`searchMode` field) | Daily | Retool (staff) |
+| AI cost (Claude Haiku calls × per-call cost) | AWS Bedrock billing / CloudWatch | Daily | Retool (staff) |
+| Unmet language demand (requested ≠ served) | `page_viewed` events | Weekly | Retool (staff) + Impact Dashboard (Phase 11) |
+| Content availability matrix (books × languages) | `books` + `book_chunks` tables | On content change | Impact Dashboard |
+| Editorial queue depth by type | `review_queue` tables | Real-time | Admin portal pipeline dashboard |
+| Geographic Core Web Vitals (per target region) | New Relic Synthetics | Continuous | New Relic |
+
+*Section added: 2026-02-21, analytics exploration*
 
 ---
 
@@ -6198,9 +6637,269 @@ A curated recommendation page organized by spiritual need. Where `/browse` answe
 
 **Cultural adaptation:** Per-locale guide variants in Phase 11+ (stored in `messages/{locale}.json`). Different cultures have different spiritual entry points — an Indian seeker may start with karma and dharma; a Western seeker may start with meditation and self-improvement.
 
+**Worldview adaptation:** Seekers arrive not only from different cultures and languages but from different epistemological starting points — and Yogananda's corpus speaks to many of them directly. A Christian contemplative finds *The Second Coming of Christ*. A Sufi or poetry lover finds *Wine of the Mystic*. A Buddhist meditator finds Yogananda's scientific descriptions of concentration and consciousness. A scholar of comparative religion finds the reverse bibliography (DES-027). An agnostic interested in the science of spirituality finds Yogananda's engagement with Einstein, physics, and the experimental method. The `/guide` page can serve these worldview entry points alongside need-based pathways, using the same editorial template — "If you come from a Christian contemplative tradition," "If you have a Buddhist meditation practice," "If you are interested in the intersection of science and spirituality." These are editorial content, not architectural changes. They surface affinities already present in the corpus rather than imposing an interfaith framing from outside. Whether to include worldview pathways is an SRF editorial decision — see CONTEXT.md § Open Questions (Stakeholder).
+
 **Navigation:** Linked from site footer ("Where to begin"), from the "Start Here" newcomer path (Phase 2.13), and from `/browse` (bidirectional link). Each recommendation section links to the relevant destination page.
 
 **Phase:** Phase 5 (requires theme system, glossary, and editorial infrastructure). Grows editorially through Phase 6+ as reading threads, people, and references become available.
+
+#### Worldview Pathway Catalog
+
+The `/guide` page organizes pathways into three groups: **need-based** (existing: "If you are dealing with loss," "If you are exploring meditation"), **worldview-based** ("If you come from a Christian contemplative tradition"), and **life-phase** ("If you are asking: 'Is this all there is?'"). All three use the same editorial template and three-state provenance. Worldview and life-phase pathways are AI-generated from corpus data (see DES-035 § Worldview Guide Pathway Generation) and require theological review before publication.
+
+The following catalog defines each perspective, its corpus affinity points, the seed queries and resources Claude uses during generation, and representative bridge vocabulary. Each pathway is a self-contained `/guide` section — seekers may see one, several, or none depending on editorial decisions about which pathways meet SRF's pastoral standards.
+
+| # | Perspective | Key Corpus Affinity | Primary Books | Seed Themes / References | Bridge Vocabulary |
+|---|---|---|---|---|---|
+| 1 | **Christian Contemplative** | Yogananda's 1,600-page Gospel commentary; extensive Bible engagement | *The Second Coming of Christ*, *Autobiography* | Christ (person), Bible (scripture) | prayer ↔ meditation, Holy Spirit ↔ AUM, Kingdom of Heaven ↔ Christ Consciousness |
+| 2 | **Hindu / Vedantic Practitioner** | Gita commentary, yoga philosophy, Sanskrit terminology throughout | *God Talks With Arjuna*, *Autobiography* | Krishna (person), Bhagavad Gita (scripture), yoga_path themes | Home vocabulary — bridge runs in reverse (find which books discuss specific yogic concepts) |
+| 3 | **Buddhist / Zen Meditator** | Scientific meditation descriptions, consciousness states, concentration | *Autobiography* (meditation chapters), *Scientific Healing Affirmations* | Meditation, concentration, non-attachment (principles) | satori ↔ samadhi, nirvana ↔ moksha, sangha ↔ satsanga, dukkha ↔ maya |
+| 4 | **Sufi / Poetry Lover** | Rubaiyat commentary, Kabir/Rumi references, devotional love | *Wine of the Mystic*, *Cosmic Chants* | Omar Khayyam, Kabir (references), Devotion (practice) | dhikr ↔ meditation/chanting, fana ↔ samadhi, the Beloved ↔ Divine Beloved |
+| 5 | **Jewish / Contemplative Seeker** | Old Testament references, mystical unity, ethical teachings | *The Second Coming of Christ* (OT passages), *Man's Eternal Quest* | Bible (scripture — OT subset) | tikkun olam ↔ karma yoga, kavvanah ↔ concentration, devekut ↔ God-communion |
+| 6 | **Science & Consciousness Explorer** | Yogananda's scientific framing of yoga, engagement with scientists | *Autobiography* (science chapters), *Man's Eternal Quest* | Einstein, Luther Burbank (references), scientific category in vocabulary bridge | consciousness ↔ cosmic consciousness, energy ↔ prana/life force, neuroplasticity ↔ will and habit |
+| 7 | **Spiritual But Not Religious** | Universal human themes, no doctrinal prerequisites, empathic entry points | *Autobiography*, *Where There Is Light* | Quality themes (Peace, Joy, Purpose, Courage), Quiet Corner | No bridge needed — entry is through universal emotional language already present in theme names and empathic entry points |
+| 8 | **Yoga Practitioner (Body to Spirit)** | Yoga philosophy beyond asana, pranayama, energy body | *Autobiography*, *God Talks With Arjuna* | yoga_path themes, pranayama/meditation (practices) | asana ↔ (Yogananda rarely discusses postures — this is itself a discovery), pranayama ↔ life force control, chakra ↔ astral centers |
+| 9 | **Grief / Crisis Visitor** | Consolation, the soul's immortality, purpose of suffering | All books (cross-cutting) | Grief & Loss (situation), Quiet Corner, tone: `consoling` | No bridge needed — entry is through raw human need. The most interfaith pathway because grief has no tradition. |
+| 10 | **Psychology / Self-Improvement Seeker** | Willpower, habit formation, concentration, practical life advice | *Man's Eternal Quest*, *Where There Is Light*, *Sayings* | situation themes (Work, Relationships), tone: `practical` | mindfulness ↔ concentration, self-actualization ↔ Self-realization, flow state ↔ superconsciousness |
+| 11 | **Comparative Religion / Academic** | Cross-tradition references, the reverse bibliography as intellectual map | All books | Full reverse bibliography (DES-027), Knowledge Graph, principle themes | No bridge — vocabulary precision is valued; the glossary (ADR-038) and ontology (ADR-043) serve this population |
+| 12 | **Parent / Family-Oriented Seeker** | Practical guidance on raising children, family life, relationships | *Man's Eternal Quest*, *Journey to Self-Realization* | Parenting, Relationships (situations), tone: `practical` | mindful parenting ↔ conscious child-rearing, values ↔ spiritual qualities |
+
+**Generation priority:** Pathways 1, 3, 6, 7, 9 have the strongest corpus affinity and address the largest seeker populations. Generate and review these first. Pathways 2, 4, 8 have deep corpus support but smaller initial audiences. Pathways 5, 10, 11, 12 require multi-book corpus (Phase 5+) for meaningful content.
+
+**What is NOT a worldview pathway:** A pathway that would require the portal to adopt a theological position. "If you believe all religions are one" is a claim; "If you come from a Christian contemplative tradition" is a starting point. The pathways acknowledge where the seeker is, then point to where Yogananda's words are. They do not assert what Yogananda "would say to a Buddhist" — they show where he actually wrote about the themes that tradition cares about.
+
+**Pathway structure** (same template for all):
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ │
+│ IF YOU COME FROM A CHRISTIAN CONTEMPLATIVE TRADITION │
+│ │
+│ Yogananda devoted much of his life to exploring the │
+│ unity between Christ's teachings and India's ancient │
+│ yoga science. His writings engage deeply with the │
+│ Gospels, the nature of Christ Consciousness, and the │
+│ practice of communion with God. │
+│ │
+│ → The Second Coming of Christ │
+│ Yogananda's verse-by-verse commentary on the │
+│ Gospels — 1,600 pages exploring the inner meaning │
+│ of Christ's words. │
+│ │
+│ → Christ — theme page │
+│ Passages about Jesus from across all books. │
+│ │
+│ → Bible — reverse bibliography │
+│ Every Biblical reference in Yogananda's works. │
+│ │
+│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │
+│ │
+│ You may also recognize: │
+│ prayer → Yogananda calls it "meditation" │
+│ Holy Spirit → he writes of "AUM, the cosmic │
+│ vibration" │
+│ │
+│ 💬 "I... perceive the voice of God, a great │
+│ harmony... the voice of Aum or Amen, the │
+│ great cosmic sound." │
+│ — Autobiography of a Yogi, Ch. 14, p. 161 │
+│ │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**"You may also recognize" section:** A small vocabulary bridge at the bottom of each worldview pathway, showing 2–3 terms from the seeker's tradition and Yogananda's equivalent. Not a glossary — a moment of recognition: "Oh, he's talking about the same thing." This data comes from the `spiritual-terms.json` vocabulary bridge, filtered by the perspective's categories. For perspectives where no bridge is needed (SBNR, grief, comparative religion), this section is omitted.
+
+**Representative passage:** Each pathway includes one representative Yogananda passage (verbatim, with full citation) selected by Claude from the corpus search results as the single most resonant quote for that perspective. The reviewer may substitute a different passage. This gives the seeker an immediate taste of what they'll find.
+
+#### Life-Phase Pathway Catalog
+
+The `/guide` page's third group: pathways organized by **where you are in the arc of a life**. Where worldview pathways ask "where are you coming from?", life-phase pathways ask "where are you *in your life right now*?"
+
+This dimension is distinct from situation themes (ADR-032). Situation themes describe circumstances — "parenting," "work," "aging." Life-phase pathways describe temporal identity and characteristic questions. "Parenting" is a circumstance that could arise at 22 or 42; "I'm building a life and trying to balance purpose with responsibility" is a season. The passage selection, tone, and accessibility level all shift with the season.
+
+The Autobiography is a special asset here: it is literally a life-phase narrative. Yogananda's childhood chapters speak to young seekers; his years of searching speak to those in transition; his mission-building years speak to those building a life; his later chapters speak to those approaching the end. An editorial reading thread (DES-026) tracing "The Autobiography as a Life Journey" could map chapters to seasons — the portal's only book that *is* a life story.
+
+| # | Life Phase | Characteristic Question | Key Corpus Affinity | Situation Themes | Tone Filter | Accessibility |
+|---|---|---|---|---|---|---|
+| 1 | **Young Seeker (13–22)** | "What should I do with my life?" | *Autobiography* youth chapters (1–12), *Where There Is Light*, willpower/concentration passages | — | `practical`, `joyful` | Level 1 (universal) |
+| 2 | **Building a Life (22–35)** | "How do I balance the inner and the outer?" | *Man's Eternal Quest*, *Where There Is Light*, *Sayings*, karma yoga passages | Work, Relationships | `practical` | Level 1–2 |
+| 3 | **Raising a Family** | "How do I raise my children wisely?" | Parenting passages across books, education teachings, duty to family | Parenting, Relationships | `practical` | Level 1–2 |
+| 4 | **The Middle Passage (40–55)** | "Is this all there is?" | *Journey to Self-Realization*, Purpose theme, deepening practice, second-half-of-life passages | Work, Purpose | `contemplative`, `challenging` | Level 2–3 |
+| 5 | **The Caregiver** | "Where do I find strength to keep going?" | Divine protection, patience, selfless love, inner reserves, service as spiritual practice | Health/Wellness, Relationships | `consoling`, `practical` | Level 1–2 |
+| 6 | **Facing Illness** | "How do I heal — or accept?" | *Scientific Healing Affirmations* (entire book), healing theme, the body and the soul, willpower | Health/Wellness, Healing (quality) | `consoling`, `practical` | Level 1–2 |
+| 7 | **The Second Half (55+)** | "How do I grow old with grace?" | Aging theme, wisdom of experience, the soul's eternal youth, deepening practice with time | Aging | `contemplative`, `consoling` | Level 2–3 |
+| 8 | **Approaching the End** | "What awaits me?" | Soul's immortality, afterlife passages, fearlessness of death, the transition, the astral world | Loss & Grief, Aging | `consoling`, `contemplative` | Level 2–3 |
+| 9 | **New to Spiritual Practice** | "I want to begin but don't know how." | *Autobiography* as entry narrative, meditation descriptions, the Quiet Corner, Joy and Peace themes | — | `practical`, `joyful` | Level 1 (universal) |
+
+**Relationship to situation themes:** Life-phase pathways *compose* existing situation themes into temporal context. The Parenting situation theme page shows all passages about raising children. The "Raising a Family" life-phase pathway says: "You are in a season of family — here is the Parenting theme, here is how Yogananda balanced family duty with spiritual life, here is the Relationships theme for the marriage that sustains the family, and here is the Quiet Corner for the parent who has five minutes of silence."
+
+**The characteristic question:** Each life-phase pathway opens with the question that defines its season — not as a heading, but as the emotional entry point. This replaces the worldview pathway's "If you come from..." framing with "If you are asking..." framing:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ │
+│ IF YOU ARE ASKING: "IS THIS ALL THERE IS?" │
+│ │
+│ The middle of life often brings a quiet reckoning — │
+│ the sense that outward success hasn't answered the │
+│ inner question. Yogananda wrote extensively about │
+│ this turning point: the moment when the soul's │
+│ deeper purpose begins to assert itself. │
+│ │
+│ → Journey to Self-Realization │
+│ Talks from Yogananda's later years, when his │
+│ own teaching had deepened into direct, practical │
+│ wisdom about the soul's journey. │
+│ │
+│ → Purpose — theme page │
+│ Passages on meaning, dharma, and the divine plan │
+│ from across all books. │
+│ │
+│ → "Yogananda on the Two Halves of Life" │
+│ An editorial reading thread tracing the arc from │
+│ worldly achievement to spiritual deepening. │
+│ │
+│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │
+│ │
+│ Others in this season have found: │
+│ · The Quiet Corner — 5 minutes of stillness │
+│ · "Comfort after loss" — if part of the │
+│ reckoning involves grief │
+│ │
+│ 💬 "You must not let your life run in the │
+│ ordinary way; do something that nobody else │
+│ has done, something that will dazzle the │
+│ world." │
+│ — The Divine Romance, Ch. 37, p. 440 │
+│ │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**"Others in this season have found" section:** The life-phase equivalent of the worldview pathway's "You may also recognize." Instead of vocabulary bridges (which map across traditions), life-phase pathways offer lateral connections — other portal features that serve this season. The Quiet Corner for the exhausted parent. The Grief theme for the midlife seeker whose reckoning includes loss. The Knowledge Graph for the retired seeker with time to explore. These are editorially curated, not algorithmically generated.
+
+**Age sensitivity:** The pathways use seasons and questions, not age ranges, in the seeker-facing UI. The age ranges in the catalog above are editorial guidance for corpus selection, not display labels. "If you are asking: 'What should I do with my life?'" serves a 16-year-old and a 45-year-old in career transition equally. The content Claude selects may differ (younger-skewing tone for the Youth pathway, deeper teachings for the Middle Passage), but the question is universal.
+
+**The Young Seeker consideration:** The portal will be visited by teenagers — a 14-year-old grieving a grandparent, a 17-year-old curious about meditation from a yoga class. The portal's contemplative voice, slow pace, and absence of gamification actually *serve* this population well — it's the opposite of every other digital experience in their life. But the editorial voice should acknowledge their existence without being patronizing. Passages at accessibility level 1 with `practical` or `joyful` tone naturally serve younger readers. See CONTEXT.md § Open Questions for the editorial sensitivity question.
+
+**Generation:** Life-phase pathways use the same AI-assisted generation pipeline as worldview pathways (DES-035 § Worldview Guide Pathway Generation). The prompt template differs: instead of tradition-specific seed queries and vocabulary bridges, life-phase prompts use tone filters, accessibility levels, situation theme associations, and the characteristic question as the generation anchor. Claude searches for passages that *answer the question of this season* and selects resources that serve the seeker's temporal context.
+
+**Generation priority:** Pathways 1, 4, 6, 8 address the most acute life-phase needs and have the strongest emotional urgency. Pathway 9 (New to Spiritual Practice) overlaps with the existing "If you are new to Yogananda's teachings" need-based pathway and may not need a separate life-phase version. Pathways 2, 3, 5, 7 have broader corpus support but less acute urgency.
+
+---
+
+## DES-049: Responsive Design Strategy
+
+The portal's breakpoints (DES-015) define four viewport tiers. This section consolidates the responsive behavior of every major component into a single reference, ensuring consistent layout decisions across the codebase. It also addresses interaction modality, orientation, and print — dimensions that viewport width alone does not capture.
+
+### Breakpoint Behavior Matrix
+
+| Component | Mobile (≤639px) | Tablet (640–1023px) | Desktop (≥1024px) | Wide (≥1280px) |
+|-----------|----------------|--------------------|--------------------|----------------|
+| **Navigation** | Hamburger menu | Hamburger menu (≤768px) or condensed horizontal nav (>768px) | Full horizontal nav | Full horizontal nav |
+| **Search results** | Full-width stacked cards | Full-width stacked cards, wider citation line | Two-column card grid or single-column with side metadata | Two-column with side metadata |
+| **Book reader** | Single column, full-width text | Single column with wider margins; landscape: consider two-column (see Orientation below) | Single column with generous margins, Related Teachings side panel visible | Reader centered at `--bp-max-content`, side panel always visible |
+| **Quiet Corner** | Centered vertical layout, affirmation fills viewport | Centered with more breathing room; timer controls inline | Horizontal layout option: affirmation left, timer right | Same as desktop, max-width constrained |
+| **Today's Wisdom** | Stacked: passage card, then theme chips below | Passage card with theme chips inline | Passage card with theme chips and "Show me another" inline | Same as desktop |
+| **Theme pages** | Single-column passage list | Two-column passage card grid | Two-column grid with theme description sidebar | Three-column grid at `--bp-wide` |
+| **Knowledge Graph** | 2-hop subgraph, max ~500 nodes, touch-optimized (ADR-062) | Full graph with cluster-first loading | Full graph, hover tooltips | Full graph at native resolution |
+| **Presentation mode** | Text 24px+, full viewport, swipe navigation | Text 28px+, full viewport | Text 32px+, arrow-key navigation | Text 36px+, centered reading column |
+
+### Interaction Modality Detection
+
+Viewport width is an unreliable proxy for interaction capability. A tablet with a keyboard case behaves like a desktop; a touchscreen laptop behaves like a tablet. The portal uses CSS media features for interaction-dependent behavior:
+
+```css
+/* Hover-dependent interactions (dwell icon reveal, tooltip previews) */
+@media (hover: hover) and (pointer: fine) {
+  /* Desktop-class: show hover affordances */
+}
+
+/* Touch-primary interactions (long-press dwell, native share) */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch-class: show touch affordances, enlarge tap targets */
+}
+
+/* Hybrid devices (touchscreen laptops) — favor touch affordances */
+@media (hover: hover) and (pointer: coarse) {
+  /* Show both hover and touch affordances */
+}
+```
+
+**Component implications:**
+- **Dwell mode:** Hover-icon trigger for `(hover: hover) and (pointer: fine)`. Long-press for `(pointer: coarse)`. Both available on hybrid devices. (Extends DES-009)
+- **Share menu:** `navigator.share` (native sheet) for `(pointer: coarse)`. Custom share menu for `(pointer: fine)`. (Extends ADR-024)
+- **Glossary terms:** Hover tooltip for `(hover: hover)`. Tap-to-reveal for `(hover: none)`. (Extends DES-042)
+- **Touch targets:** 44×44px minimum always. 48px minimum on `(pointer: coarse)` for key navigation and form inputs. (ADR-003, ADR-006 §2)
+
+### Orientation Handling
+
+The portal does not lock orientation. Layout adapts:
+
+| Context | Portrait | Landscape |
+|---------|----------|-----------|
+| **Phone reader** | Single column, full width | Single column with wider margins. Text line length capped at `--bp-max-content` equivalent (prevents excessively long lines). |
+| **Tablet reader** | Single column with generous margins | Two-column option: chapter text left, Related Teachings / footnotes right. Opt-in via reader settings (stored in `localStorage`). |
+| **Presentation mode** | Vertical: passage centered | Landscape preferred for group reading. Text fills viewport width with proportionally larger font. |
+| **Quiet Corner** | Vertical: affirmation above timer | Horizontal: affirmation left, timer right. More spacious for meditation posture with device propped landscape. |
+| **Knowledge Graph** | Taller viewport, more vertical spread | Wider viewport, more horizontal spread. Graph physics adapts. |
+
+### Print Stylesheet
+
+Book content is the most likely print target — seekers in the Global South may print chapters at cybercafés, and study groups may print passages for discussion. Print stylesheets load only when `@media print` matches (zero cost during normal browsing, per ADR-006 §1).
+
+```css
+@media print {
+  /* Typography */
+  body { font-family: 'Merriweather', Georgia, serif; font-size: 12pt; line-height: 1.6; color: #000; }
+
+  /* Layout: single column, no chrome */
+  nav, footer, .share-menu, .dwell-icon, .search-bar,
+  .related-teachings, .theme-chips { display: none; }
+
+  /* Citations: always visible, never truncated */
+  .citation { font-size: 10pt; font-style: italic; }
+
+  /* Page headers/footers */
+  @page { margin: 2cm; }
+  @page :first { margin-top: 3cm; } /* extra top margin for chapter title */
+
+  /* Attribution */
+  .print-footer::after {
+    content: "From teachings.yogananda.org — Paramahansa Yogananda's published teachings, freely available worldwide.";
+    display: block; font-size: 9pt; margin-top: 2em; color: #595959;
+  }
+
+  /* URL display for links */
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
+
+  /* Page breaks: never inside a passage, always before chapter titles */
+  .passage-card { break-inside: avoid; }
+  h2 { break-before: page; }
+}
+```
+
+### Tablet as First-Class Reading Surface
+
+Tablets are arguably the ideal form factor for sustained book reading — larger than a phone, more portable than a laptop, usable in bed, in a garden, or at a study group. The portal treats tablet as a distinct experience tier, not an interpolation between mobile and desktop:
+
+- **Reader margins** are wider than mobile (the text should not feel cramped) but narrower than desktop (no wasted whitespace on a 10" screen). Target: 48px margins at 768px width, scaling to 64px at 1023px.
+- **Related Teachings** panel: bottom sheet on portrait tablet (matches mobile pattern). Side panel on landscape tablet (matches desktop pattern). The orientation transition is the natural breakpoint, not the viewport width.
+- **Two-column reader in landscape** is an opt-in setting (reader settings popover), not a default. Some seekers prefer single-column regardless of viewport. Stored in `localStorage`.
+- **Touch targets** remain 44×44px minimum (not enlarged to 48px like feature-phone pages) — tablet touch precision is closer to desktop than to a 4" phone screen.
+
+### Automatic Low-Bandwidth Suggestion
+
+ADR-006 §1 specifies a text-only mode toggle. DES-049 extends this with an automatic suggestion:
+
+When `navigator.connection.effectiveType` reports `'2g'` or `'slow-2g'`, the portal displays a one-time suggestion banner (not a modal): *"Your connection appears slow. Switch to text-only mode for a faster experience?"* with Accept / Dismiss. Dismissed preference stored in `sessionStorage` (resets per session, allowing re-suggestion if conditions change). The banner uses the portal's warm cream palette, not an alert style. Never forced — always a suggestion.
+
+### Future Considerations
+
+- **Foldable devices:** Samsung Galaxy Fold, Pixel Fold present a "phone when folded, tablet when open" form factor. The portal's responsive breakpoints handle this naturally (viewport width changes on fold/unfold), but the fold crease bisecting two-column layouts is a concern. Monitor CSS `env(fold-left)` / `env(fold-right)` proposals (CSS Viewport Segments specification). No action needed until foldable market share warrants testing.
+- **Smart displays:** Google Nest Hub, Amazon Echo Show — natural surfaces for "Show me today's wisdom." The API-first architecture (ADR-011) and structured data (ADR-043 JSON-LD) enable this without portal-side changes. A smart display integration would be a new API consumer, not a new responsive breakpoint.
+- **TV / casting:** Presentation mode (ADR-006 §5) is designed as a "digital lectern." A phone casting to a TV via Chromecast or AirPlay is the most natural home-satsang implementation. The 10-foot UI paradigm (large text, no hover, D-pad navigation) differs from all current breakpoints. If demand emerges, a `data-mode="cast"` CSS mode alongside `data-mode="present"` could serve this with minimal code.
+
+---
 
 ### ADR-043, ADR-061, ADR-062: `/explore` — Knowledge Graph and Passage Constellation
 
@@ -6550,5 +7249,3 @@ Images are stored in S3 and served via CloudFront. At ingestion, the Lambda pipe
 See CONTEXT.md § Open Questions for the consolidated list. Technical and stakeholder questions live there so they're visible at session start and move to "Resolved" as work progresses. Architectural questions that arise during implementation should be added to CONTEXT.md and, if they require a decision, captured as an ADR in DECISIONS.md.
 
 ---
-
-*Last updated: 2026-02-21*

@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 98 Architecture Decision Records (ADR-001 through ADR-098) organized into 11 topical groups, with full rationale for every major choice
+3. **DECISIONS.md** — 100 Architecture Decision Records (ADR-001 through ADR-100) organized into 11 topical groups, with full rationale for every major choice
 4. **ROADMAP.md** — 18 phases (0–17) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -46,6 +46,7 @@ Located in `docs/reference/`:
 **Code layout:**
 ```
 /lib/services/ — Business logic (framework-agnostic TypeScript)
+/lib/mcp/ — MCP server (three-tier corpus access layer, ADR-101)
 /lib/logger.ts — Structured JSON logging
 /app/ — Next.js Server Components + Route Handlers
 /app/api/v1/ — Versioned API routes
@@ -60,13 +61,13 @@ Located in `docs/reference/`:
 
 **Design tokens:** Merriweather + Lora + Open Sans. SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
-**MCP servers:** Neon (now), Sentry (Phase 1), Contentful (Phase 10+), SRF Corpus (custom, Phase 1). Details in DESIGN.md § MCP Server Strategy.
+**MCP servers:** Neon (now), Sentry (Phase 1), Contentful (Phase 10+), SRF Corpus (custom three-tier: development Phase 1, internal editorial Phase 5, external distribution Phase 9; ADR-101). Details in DESIGN.md § MCP Server Strategy.
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 98 decisions in DECISIONS.md (ADR-001 through ADR-098), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-098. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 101 decisions in DECISIONS.md (ADR-001 through ADR-101), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-101. Header format: `## ADR-NNN: Title`.
 
-**DES-NNN** (Design Sections) — 48 sections in DESIGN.md (DES-001 through DES-048), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
+**DES-NNN** (Design Sections) — 49 sections in DESIGN.md (DES-001 through DES-049), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
 
@@ -90,8 +91,6 @@ Five documents. Keep them accurate as you work — drift compounds across sessio
 | New editorial review queue type | Update DESIGN.md § Unified Review Queue Abstraction, add to Phase Delivery table, update operational playbook. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Reference document added or obsoleted | Update this file's § Reference Documents list |
-
-Always update the `Last updated` footer on any modified document.
 
 ## Documentation–Code Transition
 
