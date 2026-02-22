@@ -89,6 +89,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-072: Cognitive Accessibility — Reducing Complexity for All Seekers
 - ADR-073: Screen Reader Emotional Quality — Warmth in Spoken Interface
 - ADR-074: Micro-Copy as Ministry — Editorial Voice for UI Text
+- ADR-104: Practice Bridge & Public Kriya Yoga Overview — Signpost Enrichment
 
 **Internationalization**
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
@@ -113,6 +114,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-090: "What Is Humanity Seeking?" as Strategic Communications Asset
 - ADR-091: Daily Email — Verbatim Passage Delivery
 - ADR-092: Social Media Strategy — Portal-Generated Assets, Human Distribution
+- ADR-105: Portal Updates — Seeker-Facing Changelog
 
 **Operations & Engineering**
 - ADR-093: Engineering Standards for SRF Projects
@@ -122,6 +124,10 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-097: MCP Server Strategy — Development Tooling for AI Implementation
 - ADR-100: AI Editorial Workflow Maturity — Trust Graduation and Feedback Loops
 - ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
+- ADR-106: Outbound Webhook Events — Push-Based Content Syndication
+- ADR-107: Timestamp Filtering on List Endpoints — Incremental Sync for Automation Consumers
+- ADR-108: Magazine API Rationalization — Flat Resources, Single-Segment Slugs
+- ADR-109: Cross-API Route Rationalization — Consistent Identifiers, Consolidated Namespaces, Complete CRUD
 
 **Governance**
 - ADR-098: Documentation Architecture — Five-Document System with AI-First Navigation
@@ -426,7 +432,7 @@ Claude **never**:
 1. **Generates text that could be mistaken for Yogananda's words.** Not even summaries, not even "in the style of." The portal displays only verbatim published text.
 2. **Paraphrases, summarizes, or synthesizes across passages.** A seeker reads Yogananda's actual sentences, not Claude's interpretation of them.
 3. **Translates Yogananda's published text.** Only official SRF/YSS human translations are served. Machine translation of sacred text is never acceptable — "inviolable constraint, not a cost optimization" (ADR-078).
-4. **Interprets meditation techniques or spiritual practices.** The Kriya Yoga technique and SRF Lessons are explicitly out of scope. Claude must not explain, summarize, or advise on spiritual practices.
+4. **Interprets meditation techniques or spiritual practices.** Kriya Yoga technique instructions and SRF Lesson content are permanently out of scope. Claude must not explain, summarize, or advise on spiritual techniques. Note: Yogananda's *published descriptions* of Kriya Yoga (e.g., Autobiography Ch. 26) are part of the corpus and surfaced normally as search results and theme page content — these are public descriptions, not technique instruction. Claude may find and rank these passages but must not interpret them as practice guidance. (ADR-104)
 5. **Acts as a conversational agent or chatbot.** No dialogue, no follow-up questions, no "let me help you explore that further." The seeker interacts with the search bar, not with Claude.
 6. **Answers questions directly.** Claude finds passages that answer questions. It does not formulate answers itself.
 7. **Profiles or personalizes based on user behavior.** DELTA Agency principle — the AI facilitates access, it does not shape the experience based on behavioral data.
@@ -460,6 +466,7 @@ Classify the seeker's query intent before search executes, routing to the optima
 | `definitional` | "what is samadhi" | Search with boost for passages where Yogananda *defines* the term |
 | `situational` | "how to raise spiritual children" | Search with situation-theme boost |
 | `browsing` | "show me something inspiring" | Route to Today's Wisdom / random passage |
+| `practice_inquiry` | "how to practice Kriya Yoga", "learn meditation technique", "Kriya Yoga technique" | Route to Practice pathway (`/guide#practice`) or Kriya Yoga theme page. Display practice bridge note: formal instruction available through SRF. Never return raw passages that could be misread as technique instruction. (ADR-104) |
 
 **Implementation:** Lightweight classification call before the main search pipeline. Returns a JSON intent label + optional routing hint. Falls back to standard hybrid search if classification is uncertain.
 
@@ -579,6 +586,14 @@ Classify passages in the `daily_passages` pool by emotional tone:
 | `practical` | Concrete advice, technique-adjacent | Actionable |
 
 **Implementation:** Stored as a `tone` column on `daily_passages`. The selection algorithm ensures tonal variety across the week (not three "challenging" passages in a row) without any user tracking. Pure editorial metadata.
+
+**Cultural note on tone categories:** These five categories were developed from a Western emotional vocabulary. Phase 10 editorial review should assess whether they resonate across cultures. Specific concerns:
+
+- **"Challenging"** — In guru-disciple traditions, stern teaching is considered the *highest* compassion (*guru-kṛpā*), not a separate emotional register. Indian seekers may not experience "challenging" passages as distinct from "consoling" ones.
+- **"Practical" vs. "contemplative"** — This is a Western split. In many Indian traditions, practice IS contemplation. The distinction may feel artificial to Hindu/Vedantic practitioners.
+- **Circadian weighting and cultural context** — The 2 AM consolation assumption reflects a Western sleep-anxiety pattern. A seeker awake at 4 AM in India during brahmamuhurta is likely meditating, not in distress. The circadian UX uses locale-aware solar-position bands (see DESIGN.md § Circadian content choreography) to adapt time-band selection to cultural context.
+
+Additional tone dimensions may be needed for Hindi, Bengali, and Japanese locales — or the existing five may require reinterpretation in locale-specific editorial guidelines. This is an editorial question, not a schema change (the `tone` column remains a string; adding new values requires no migration).
 
 **Why this matters:** Small refinement that makes the daily experience feel curated rather than random. No personalization, no tracking — just editorial intelligence applied at content level.
 
@@ -2054,7 +2069,7 @@ The portal generates PDFs for multiple content types: full books, individual cha
 GET /api/v1/books/{slug}/pdf → Full book PDF
 GET /api/v1/books/{slug}/chapters/{n}/pdf → Chapter PDF
 GET /api/v1/audio/{slug}/transcript/pdf → Audio transcript PDF
-GET /api/v1/videos/{id}/transcript/pdf → Video transcript PDF
+GET /api/v1/videos/{slug}/transcript/pdf → Video transcript PDF
 
 # ── Dynamic PDFs (on-demand generation) ──
 
@@ -2084,8 +2099,8 @@ Audio and video transcripts are sub-resources that serve dual purpose — as JSO
 GET /api/v1/audio/{slug}/transcript → JSON (timestamped segments for player)
 GET /api/v1/audio/{slug}/transcript/pdf → PDF (formatted transcript for reading/printing)
 
-GET /api/v1/videos/{id}/transcript → JSON (timestamped chunks for player)
-GET /api/v1/videos/{id}/transcript/pdf → PDF (formatted transcript for reading/printing)
+GET /api/v1/videos/{slug}/transcript → JSON (timestamped chunks for player)
+GET /api/v1/videos/{slug}/transcript/pdf → PDF (formatted transcript for reading/printing)
 ```
 
 The `/transcript` endpoint is useful on its own — it's what the synchronized audio player and video player consume. The `/transcript/pdf` endpoint is a formatted view of the same data.
@@ -2134,7 +2149,7 @@ Pre-renderable PDFs are GET endpoints on their parent resources. But a seeker wh
 ### Consequences
 
 - Pre-rendered PDFs added to ingestion pipeline: book PDFs generated after book ingestion, transcript PDFs generated after transcript approval
-- S3 bucket structure: `s3://srf-teachings-{env}-assets/pdf/books/{slug}.pdf`, `s3://srf-teachings-{env}-assets/pdf/books/{slug}/chapters/{n}.pdf`, `s3://srf-teachings-{env}-assets/pdf/audio/{slug}-transcript.pdf`, `s3://srf-teachings-{env}-assets/pdf/videos/{id}-transcript.pdf`
+- S3 bucket structure: `s3://srf-teachings-{env}-assets/pdf/books/{slug}.pdf`, `s3://srf-teachings-{env}-assets/pdf/books/{slug}/chapters/{n}.pdf`, `s3://srf-teachings-{env}-assets/pdf/audio/{slug}-transcript.pdf`, `s3://srf-teachings-{env}-assets/pdf/videos/{slug}-transcript.pdf`
 - Lambda function for dynamic PDF generation (`/lambda/pdf-generator/`)
 - `@react-pdf/renderer` added as a dependency (or in a shared package if Lambda and Vercel both generate PDFs)
 - CloudFront invalidation on content update (book re-ingestion, transcript edit)
@@ -3404,6 +3419,7 @@ Integrate Self-Realization Magazine as a primary content type with differentiate
 ```sql
 CREATE TABLE magazine_issues (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ slug TEXT NOT NULL UNIQUE,        -- e.g., '2025-spring', '1925-winter'
  volume INTEGER NOT NULL,
  issue_number INTEGER NOT NULL,
  season TEXT CHECK (season IN ('spring', 'summer', 'fall', 'winter')),
@@ -3423,7 +3439,7 @@ CREATE TABLE magazine_articles (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid,
  issue_id UUID NOT NULL REFERENCES magazine_issues(id) ON DELETE CASCADE,
  title TEXT NOT NULL,
- slug TEXT NOT NULL,
+ slug TEXT NOT NULL UNIQUE,          -- globally unique (ADR-108)
  author_name TEXT NOT NULL,
  author_type TEXT NOT NULL
  CHECK (author_type IN ('yogananda', 'monastic', 'devotee', 'editorial')),
@@ -3432,8 +3448,7 @@ CREATE TABLE magazine_articles (
  access_level TEXT NOT NULL DEFAULT 'public'
  CHECK (access_level IN ('public', 'subscriber')),
  created_at TIMESTAMPTZ DEFAULT now,
- updated_at TIMESTAMPTZ DEFAULT now,
- UNIQUE(issue_id, slug)
+ updated_at TIMESTAMPTZ DEFAULT now
 );
 
 CREATE TABLE magazine_chunks (
@@ -3471,18 +3486,21 @@ Search · Books · Videos · Magazine · Quiet · About
 ### UI Pages
 
 - `/magazine` — Landing page: latest issue (cover + table of contents), browse by year, "Yogananda's Magazine Writings" index
-- `/magazine/{year}/{season}` — Single issue: cover, editorial note, article list with author types
-- `/magazine/{year}/{season}/{slug}` — Article reader: same reader component as books, with author byline and issue citation
+- `/magazine/{issue-slug}` — Single issue: cover, editorial note, article list with author types (e.g., `/magazine/2025-spring`)
+- `/magazine/{issue-slug}/{article-slug}` — Article reader: same reader component as books, with author byline and issue citation
 
 ### API Endpoints
 
 ```
-GET /api/v1/magazine/issues → Paginated issue list
-GET /api/v1/magazine/issues/{year}/{season} → Single issue with articles
-GET /api/v1/magazine/articles/{slug} → Single article with chunks
-GET /api/v1/magazine/issues/{year}/{season}/pdf → Issue PDF (pre-rendered)
+GET /api/v1/magazine/issues              → Paginated issue list
+GET /api/v1/magazine/issues/{slug}       → Single issue (metadata + article summaries)
+GET /api/v1/magazine/issues/{slug}/pdf   → Issue PDF (pre-rendered)
+GET /api/v1/magazine/articles            → Paginated article list (filterable by issue_id, author_type, language)
+GET /api/v1/magazine/articles/{slug}     → Single article with chunks
 GET /api/v1/magazine/articles/{slug}/pdf → Article PDF
 ```
+
+See ADR-108 for rationale on flat articles list vs. nested sub-collection route.
 
 ### Search Integration
 
@@ -4178,7 +4196,7 @@ In Phase 0 (English only), this is equivalent to the original "top 30" — the E
 - The ingestion pipeline gains a new Step 7: Compute Chunk Relations (after embedding, before final verification)
 - A `chunk_relations` table is added to migration 001 (empty until Phase 5 populates it with multi-book content)
 - A `chunk_references` table is added for human-curated editorial cross-references (supplements automatic similarity)
-- Two new API endpoints: `/api/v1/chunks/[id]/related` and `/api/v1/chapters/[slug]/[number]/thread`
+- Two new API endpoints: `/api/v1/chunks/[id]/related` and `/api/v1/books/[slug]/chapters/[number]/thread`
 - Two new service functions: `relations.ts` and `thread.ts`
 - The Book Reader component gains a Related Teachings side panel (desktop) and bottom sheet (mobile)
 - A related content quality test suite (Phase 5+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends
@@ -4433,7 +4451,7 @@ Full transcription of SRF's YouTube library (~500 videos) via Whisper: $150–30
 - Two new tables (`video_transcripts`, `video_chunks`) added in Phase 12
 - The hybrid search function extends to query `video_chunks` alongside `book_chunks`
 - `chunk_relations` computation expands to include cross-media similarity
-- The video player page (`/videos/[id]`) gains a synchronized transcript panel
+- The video player page (`/videos/[slug]`) gains a synchronized transcript panel
 - The schema extension is fully additive — no changes to existing tables
 - The architectural groundwork (hybrid search, chunk relations, embedding pipeline) generalizes to video chunks naturally
 
@@ -5584,9 +5602,11 @@ A simple section (on the About page initially, or a dedicated `/events` page) th
 
 | Element | Content | Source |
 |---------|---------|--------|
-| **World Convocation** | Brief description + link to `convocation.yogananda.org` | Static text + external link |
+| **World Convocation** | SRF's annual gathering — free, in Los Angeles and online. Classes, group meditations, kirtan, pilgrimage tours to sacred SRF sites, monastic fellowship. Open to all. Link to `convocation.yogananda.org`. Cross-link to Sacred Places ("/places"). | Static text + external link |
 | **Commemorations** | Christmas meditation, Mahasamadhi, Janmashtami, Founder's Day, etc. | Static list with approximate dates + links to SRF event pages |
-| **Online events** | Link to Online Meditation Center live schedule | External link to `onlinemeditation.yogananda.org` |
+| **Online events** | Live group meditations, guided meditations, and devotional chanting via the Online Meditation Center. | External link to `onlinemeditation.yogananda.org` |
+| **Monastic visits** | SRF monastics visit centers worldwide for classes, meditations, and fellowship. | Link to SRF events page |
+| **Youth & young adult programs** | Dedicated programs for young seekers. | Link to SRF youth/young adult pages |
 
 This is a signpost, not a destination. The portal does not replicate event registration, schedules, or logistics.
 
@@ -5625,7 +5645,8 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 - Brief description of its significance in Yogananda's life and mission
 - **Cross-reference to the book** — "Read about this place in Autobiography of a Yogi, Chapter X" with deep link to the reader
 - Visiting information — address, hours, link to SRF/YSS site for details
-- Simple map (Phase 11)
+- "Take a Virtual Tour" — SRF virtual pilgrimage tour link (where available: Mother Center, Lake Shrine, Hollywood Temple, Encinitas)
+- Street View link (Phase 11, ADR-070) — fallback virtual visit for places without SRF tours
 
 **The unique value:** The teaching portal is the only place that can cross-reference sacred places with the specific passages that describe them. When a seeker reads about Serampore in the Autobiography, the portal can show "Visit this place." When they browse the Sacred Places page, each entry links back to every passage that mentions it. The teachings and the places illuminate each other.
 
@@ -5641,6 +5662,8 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 - **Unique cross-referencing.** No other site connects Yogananda's physical world to his written words with deep links into a book reader. This is the portal's distinctive contribution.
 - **"What Next" Bridge.** Both Events and Sacred Places serve the portal's signpost function — pointing toward the broader SRF world without tracking conversions.
 - **Signpost, not duplicate.** The convocation site handles event logistics. The Online Meditation Center handles live events. The portal links to both without replicating their functionality.
+- **Virtual pilgrimage tours.** SRF offers narrated virtual pilgrimage tours of Mother Center, Lake Shrine, Hollywood Temple, and Encinitas Ashram Center. These are richer than Street View and serve the same "visit this place" intent. Sacred Places entries for these properties should link to SRF's tours ("Take a Virtual Tour →") when `virtual_tour_url` is populated. SRF tour URLs take priority over Street View for the same property. Canonical tour URLs are a stakeholder question (CONTEXT.md).
+- **Convocation ↔ Sacred Places cross-link.** The portal uniquely connects what makes a place sacred (book passages) with how to experience it (virtual tour, in-person visit, Convocation pilgrimage). Sacred Places entries for LA-area SRF properties should include a seasonal note: "This site is part of the annual SRF World Convocation pilgrimage." The Events section Convocation entry links back to Sacred Places ("Explore the sacred places → /places"). This three-way connection — teaching, place, gathering — is the portal's distinctive signpost contribution.
 - **No embedded map — Street View links instead (ADR-070).** Zero dependencies, zero tracking, zero cost. Street View URLs give seekers a virtual visit to physical places without embedding any map SDK. "Get Directions" delegates navigation to the user's preferred maps app.
 
 ### Alternatives Considered
@@ -5776,15 +5799,37 @@ The portal's "direct quotes only" principle (ADR-001) means it cannot add interp
 - **Yogananda's teaching supports it.** Yogananda taught that human life is a precious opportunity for spiritual realization. Self-harm contradicts this teaching. Providing a crisis resource is consistent with the tradition's view of the sacredness of life.
 - **Industry precedent exists.** Google displays crisis resources on suicide-related queries. YouTube shows them on self-harm content. The portal should meet this standard without adopting the surveillance mechanisms that accompany it on those platforms.
 
+### Cultural Adaptation of Crisis Resources
+
+The crisis model above was designed from a Western clinical perspective — individual suicidality, helpline-based intervention. This framing is culturally narrow:
+
+- **Collective cultures (India, Latin America, Africa):** Crisis often manifests as family crisis, economic despair, or social shame rather than individual suicidality. The person in distress may not identify as individually suicidal.
+- **Helpline trust and availability:** In the West, helplines are trusted and accessible. In much of the Global South, mental health helplines are sparse, stigmatized, or culturally inappropriate. Rural Indian seekers are more likely to contact a pandit, family elder, or local temple than call iCall or the Vandrevala Foundation.
+- **Spiritual community as resource:** SRF/YSS centers, local meditation groups, and satsang communities are themselves crisis resources — particularly for seekers already engaged with the tradition.
+
+**Adaptation:** Per-locale crisis resource data in `messages/{locale}.json` should support multiple resource types:
+
+| Resource Type | Example | When Appropriate |
+|---------------|---------|-----------------|
+| **Helpline** | 988 (US), 116 123 (EU), iCall (India) | All locales — always included where available |
+| **Community contact** | "Speak with a trusted elder or spiritual counselor" | Locales where helplines are sparse or stigmatized |
+| **SRF/YSS center** | "Find a nearby SRF/YSS center: [link]" | All locales — the organization itself as pastoral resource |
+| **Quiet Corner** | "The Quiet Corner offers a space for stillness" | All locales — the portal itself as immediate resource |
+
+The per-locale resource configuration determines which types appear and in what order. The single muted line UI remains — but its content adapts to what the seeker's culture recognizes as help.
+
+**Stakeholder question:** Does SRF/YSS have pastoral care resources (center contacts, counselors) that could complement helpline numbers? See CONTEXT.md § Open Questions (Stakeholder).
+
 ### Consequences
 
 - New UI element: crisis resource line on grief theme page, grief-adjacent search results, and Quiet Corner
-- Locale files extended with per-locale crisis helpline data
+- Locale files extended with per-locale crisis resource data — supporting multiple resource types (helplines, community contacts, SRF/YSS centers), not only helplines
 - CONTEXT.md § Spiritual Design Principles references this ADR
-- CONTEXT.md § Open Questions (Stakeholder) includes crisis resource policy question for SRF input
+- CONTEXT.md § Open Questions (Stakeholder) includes crisis resource policy question for SRF input, and pastoral care resource question
 - No schema changes, no API changes, no privacy implications
 - Editorial review required for all crisis resource text before publication
 - Annual review recommended: verify helpline numbers and URLs remain current
+- Per-locale crisis resource configuration reviewed during Phase 10 localization for cultural appropriateness
 
 ---
 
@@ -5980,6 +6025,7 @@ The portal has a brand identity for its AI: "The Librarian" (ADR-089). But the p
 - DESIGN.md § Frontend Design gains a "UI Copy Standards" subsection referencing this ADR
 - Locale files (`messages/*.json`) include copy-guide annotations for translators
 - CONTEXT.md open question added: editorial governance of UI copy (who reviews, what process)
+- **Per-locale terminology adaptation:** The term "seeker" is the English-language editorial voice. Per-locale editorial review (Phase 10) should determine the culturally appropriate term in each language. In Hindi, *sādhak* (साधक, practitioner) or *pāṭhak* (reader) may resonate more than a literal translation of "seeker" — *sādhak* implies active practice, not searching. In Japanese, "seeker" (*tanbōsha*) implies outsider status; "practitioner" or "reader" may feel more respectful. The preferred terms per locale are documented in `/docs/editorial/ui-copy-guide.md` and applied consistently in `messages/{locale}.json`.
 - No schema changes, no API changes
 
 ---
@@ -6144,13 +6190,20 @@ Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave
 - **YSS translations exist.** YSS has published official Hindi and Bengali translations of key Yogananda works. The content likely exists (pending confirmation of digital availability).
 - **Devanagari and Bengali scripts** are LTR, so the CSS logical properties decision (ADR-076) already covers the directional requirements. Font support (Noto Sans Devanagari, Noto Sans Bengali) is available via Google Fonts.
 
+### Risks
+
+- **The 10a/10b split creates an optics and equity gap.** During the period between the Western-language launch and the Indian-language launch, the portal serves Yogananda's teachings in Japanese, German, French, Italian, and Portuguese — but not in Hindi or Bengali. For a portal whose mission is "available freely throughout the world," this period represents a visible contradiction of mission integrity. The practical rationale (SRF's existing Western translation infrastructure, convocation site alignment) is genuine, but the sequencing should be explicitly documented as a resourcing decision, not presented as natural ordering.
+- **Yogananda's heritage languages carry symbolic weight.** Serving European languages before the master's own heritage languages may be perceived as perpetuating a colonial pattern — Western audiences served first, Indian audiences second — regardless of the operational reasons. Early engagement with YSS and Indian design voices can mitigate this.
+- **The longer 10b is delayed after 10a, the greater the equity gap.** If 10a and 10b can be compressed (or better, parallelized), the optics and the mission alignment both improve. See CONTEXT.md § Open Questions (Stakeholder) for the co-launch question.
+
 ### Consequences
 
-- Phase 10 is split into waves (10a Western, 10b Indian, 10c Evaluation)
+- Phase 10 is split into waves (10a Western, 10b Indian, 10c Evaluation). The split is a resourcing decision — not an assertion that Western languages are higher priority than Yogananda's heritage languages.
 - Need to confirm YSS has digital text of Hindi/Bengali translations (stakeholder question)
 - May need YSS-specific UI adaptations (organizational branding differences between SRF and YSS)
 - Google Fonts Noto Sans Devanagari and Noto Sans Bengali added to the font stack for Phase 10 Indian wave
 - The portal URL and branding question: is the Hindi/Bengali version served from the same domain (teachings.yogananda.org/hi/) or a YSS-branded domain?
+- YSS representatives participate in Hindi/Bengali design decisions as co-equal stakeholders (see CONTEXT.md § Stakeholders)
 
 ---
 
@@ -6577,9 +6630,24 @@ Each sitemap includes `<lastmod>` from content update timestamps and `<changefre
 /feed/daily-passage.xml — Today's Wisdom (daily)
 /feed/new-content.xml — New books, recordings, videos (irregular)
 /feed/audio.xml — New audio recordings
+/feed/updates.xml — Portal feature updates (ADR-105)
 ```
 
-RSS enables subscription without accounts, email, or apps. RSS readers are still widely used, and feeds are consumed by automation tools, research systems, and content aggregators.
+#### Why RSS
+
+**DELTA-compliant subscription.** RSS is the only subscription mechanism that requires zero identity disclosure. Email subscription requires an address. App push notifications require a device token. Account-based notifications require authentication. RSS requires nothing — the seeker's feed reader polls a public URL. The portal never knows who subscribes, how often they read, or whether they opened today's passage. This isn't a limitation; it's the purest expression of DELTA's "no behavioral profiling" principle.
+
+**Zero-auth, zero-SDK consumption.** The portal's JSON API (`/api/v1/`) is designed for developers who can parse JSON and handle pagination. RSS is designed for everyone else. A seeker in rural India with a basic RSS reader on a feature phone can subscribe to Today's Wisdom. A monastery's internal system can pull daily passages. A volunteer's Zapier workflow can trigger email campaigns. No API key, no client library, no rate limit negotiation, no documentation to read. RSS is the lowest-friction distribution channel that exists — and that aligns directly with the Global Equity commitment (ADR-006).
+
+**Automation ecosystem.** Zapier, IFTTT, Make.com, n8n, and Power Automate all have native RSS triggers that require zero configuration beyond a feed URL. SRF's existing Zapier workflows (SRF Tech Stack Brief) can consume portal RSS feeds immediately — no custom integration code, no webhook registration, no API key provisioning. For organizations that use no-code automation, RSS *is* the API.
+
+**Archival and research value.** Libraries, academic aggregators, and digital preservation systems consume RSS as a standard discovery protocol. The Internet Archive's Wayback Machine uses RSS to identify new content for archival. Google Scholar and academic search engines use RSS for content discovery alongside sitemaps. Making the portal's content available via RSS ensures it enters the broader archival ecosystem automatically.
+
+**Resilience and independence.** RSS feeds are static XML files, cacheable at every layer (CDN, browser, feed reader). If the portal experiences downtime, cached feed content remains available in every subscriber's reader. If a seeker's internet is intermittent, their reader syncs when connectivity returns — no missed passages, no "you were offline" gaps. The feed reader, not the portal, controls the reading experience. This respects seeker autonomy in a way that push notifications and email cannot.
+
+**Content discovery without engagement metrics.** Unlike email (open rates, click-through tracking) or app notifications (delivery receipts, engagement scores), RSS provides no feedback signal to the publisher. The portal cannot optimize for "RSS engagement" because it has no data to optimize against. This is architecturally consistent with the portal's refusal to track screen time or optimize for attention (ADR-095, DELTA).
+
+**Complementary to webhooks and email.** RSS, outbound webhooks (ADR-106), and daily email (ADR-091) serve different consumption patterns. Email is push-to-inbox for seekers who want passive delivery. Webhooks are push-to-system for SRF's internal automation. RSS is pull-on-demand for seekers and systems that prefer to control their own polling schedule. All three deliver the same content through different channels — the seeker chooses, the portal doesn't preference one over another.
 
 ### 6. OpenAPI Specification
 
@@ -7498,6 +7566,126 @@ This is a **content production tool**, not an auto-poster. The human decides whe
 
 ---
 
+## ADR-105: Portal Updates — Seeker-Facing Changelog
+
+- **Status:** Accepted
+- **Date:** 2026-02-22
+
+### Context
+
+Over a 10-year lifespan, the portal will evolve through 15 phases — adding books, languages, features, and content types. Seekers who visited in Phase 3 and return in Phase 8 would not know that WhatsApp search, Sacred Places, reading journeys, or the Knowledge Graph exist unless they stumble upon them. Existing mechanisms cover content additions (deliverable 3.8's "What's New in the Library" gold dot for new books; Phase 8 RSS feed `/feed/new-content.xml` for new books/recordings/videos) but nothing communicates *capability* changes to seekers.
+
+The daily email (ADR-091) explicitly excludes announcements: "The email is a passage, not a newsletter. No announcements, no feature updates." This is correct — the email channel must remain pure. But the portal itself should offer a quiet, opt-in way for seekers to learn what has changed.
+
+| Approach | Description | Fit |
+|----------|-------------|-----|
+| **Homepage banner** | "New! Knowledge Graph" | Poor — violates Calm Technology; attention-grabbing |
+| **Email announcements** | Feature updates in daily email | Poor — ADR-091 explicitly forbids this |
+| **Push notifications** | Browser notifications for new features | Poor — aggressive; antithetical to DELTA |
+| **Dedicated `/updates` page** | Quiet page linked from footer, written in portal voice | Good — opt-in, transparent, contemplative |
+| **RSS feed extension** | Add portal updates to existing RSS infrastructure | Good — machine-readable, no UI overhead |
+
+### Decision
+
+**A `/updates` page — "The Library Notice Board" — linked from the site footer.** Portal updates are written in the portal's contemplative editorial voice (ADR-074), centered on the teachings rather than the technology. AI drafts update notes from deployment metadata and git history; human review is mandatory before publication (consistent with the "AI proposes, humans approve" principle). The page maintains a seasonal archive of all portal changes.
+
+### Guiding Metaphor
+
+A library notice board, not a SaaS changelog. The notice board says "The poetry wing is now open" — not "Version 2.0: Poetry Module Deployed."
+
+### Voice Standards
+
+| SaaS Voice (wrong) | Portal Voice (right) |
+|---------------------|---------------------|
+| "New Feature: Knowledge Graph!" | "The teachings are now connected — explore how Yogananda's ideas flow across books" |
+| "We added WhatsApp support" | "You can now ask Yogananda's books a question from WhatsApp" |
+| "Dark mode is here" | "The reader now adjusts to evening light" |
+| "v3.2: Bug fixes and performance" | *(omit — seekers don't need this)* |
+| "9 new languages!" | "The teachings are now available in Hindi, Bengali, and seven more languages" |
+
+### Content Categories
+
+| Category | Include? | Rationale |
+|----------|----------|-----------|
+| New books added to the library | Yes | Directly serves mission — "the library has grown" |
+| New languages added | Yes | "The teachings are now available in Hindi" |
+| New content types (audio, video) | Yes | "You can now hear Yogananda's voice" |
+| Major new pages (Sacred Places, Knowledge Graph, Quiet Corner textures) | Yes | New ways to explore the teachings |
+| Seeker-noticeable UX improvements | Selectively | Only when meaningful — "The reader now remembers where you left off" |
+| Bug fixes, performance | No | Developer concerns, not seeker concerns |
+| Infrastructure changes (Contentful, GitLab) | No | Internal, invisible |
+| Security patches | No | Standard maintenance |
+
+### Automation Pipeline
+
+```
+Git tags / deploy events
+    → AI reads commit history since last release
+    → AI drafts seeker-facing summary in portal voice (ADR-074)
+    → Draft enters editorial review queue (ADR-082, DES-033)
+    → Portal coordinator or content editor reviews and approves
+    → Published to /updates page and RSS feed
+```
+
+**AI role:** Category C (drafting) per ADR-005 taxonomy — same pattern as social media captions (ADR-092) and UI string translation (ADR-078). Claude reads developer-facing deployment metadata and produces seeker-facing prose. Human review is mandatory.
+
+### Archive Format
+
+Updates are organized by season, not version number — consistent with the portal's calendar awareness (DES-028) and contemplative sensibility:
+
+```
+Spring 2027
+  The Library has grown — three new books join the collection
+  The teachings are now connected across books
+
+Winter 2026
+  The portal opens — Autobiography of a Yogi, free to the world
+```
+
+Over a decade, this archive becomes a narrative of the portal's growth — the philanthropist's offering unfolding over time.
+
+### DELTA Compliance
+
+| DELTA Principle | How Updates Page Complies |
+|-----------------|--------------------------|
+| **Dignity** | Transparently shows what's available — never "you're missing out" |
+| **Embodiment** | Never optimizes for return visits. No "come back to see what's new" |
+| **Love** | Warm language centered on the teachings, not the technology |
+| **Transcendence** | No gamification — no "X features added this quarter!" counts |
+| **Agency** | Seekers discover updates at their own pace. No push notifications |
+
+### Placement
+
+- **Primary:** `/updates` page linked from site footer ("What's new in the portal")
+- **RSS:** `/feed/updates.xml` alongside existing content feeds (Phase 8)
+- **About page:** Brief "Recent additions" summary on the About page (optional, editorial judgment)
+- **Not:** Homepage banners, daily email, push notifications, or nav-bar badges
+
+### Multilingual (Phase 10+)
+
+Update notes follow the same translation workflow as other editorial content (ADR-078): AI drafts translation, human reviewer approves. A Hindi-speaking seeker learns about the Hindi launch in Hindi.
+
+### Rationale
+
+- **Content Availability Honesty** (CONTEXT.md) already commits the portal to transparency about what it has. This extends that honesty to capabilities.
+- **The philanthropist's foundation** (ADR-090) benefits from a public record of portal growth — the `/updates` archive complements the "What Is Humanity Seeking?" dashboard as evidence of stewardship.
+- **Returning seekers** deserve to know what's changed. A contemplative notice board respects their attention without demanding it.
+- **10-year horizon** (ADR-004): over a decade, the changelog becomes a narrative artifact — meaningful in its own right.
+
+### Consequences
+
+- New DES-051 in DESIGN.md specifying the `/updates` page design, data model, and editorial workflow
+- New deliverable in Phase 4 (when the editorial portal activates — first phase with human review capability)
+- New AI workflow in DES-035 for update note drafting
+- New review queue type (`updates`) in the editorial portal (DES-033)
+- RSS feed extension in Phase 8 (deliverable 8.6)
+- Portal coordinator role gains update review responsibility
+- `portal_updates` table added to schema
+
+- **Relates to:** ADR-074 (editorial voice), ADR-082 (editorial portal), ADR-091 (daily email — boundary: updates stay out of email), ADR-092 (social media — parallel "AI drafts, human approves" pattern), ADR-095 (DELTA analytics), ADR-090 (philanthropist communications), DES-033 (unified review queue), DES-035 (AI workflows)
+
+---
+
 ## ADR-093: Engineering Standards for SRF Projects
 
 - **Status:** Accepted
@@ -7938,7 +8126,7 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 5. **DECISIONS.md Index by Concern.** ADRs grouped by domain (already established at ADR-009).
 6. **Implemented-section annotations.** When a DESIGN.md section is fully implemented, annotate: `**Status: Implemented** — see [code path]`. Code becomes the source of truth; DESIGN.md retains architectural rationale.
 7. **ADRs are immutable history.** Decisions are superseded (new ADR), withdrawn (with explanation), or removed (number retired) — never silently edited.
-8. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end. Document-level "Last updated" footers are not used — `git log` provides better granularity without maintenance burden.
+8. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 9. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
 
 ### Rationale
@@ -7960,14 +8148,16 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 
 ---
 
-## ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
+## ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 
 - **Status:** Accepted
 - **Date:** 2026-02-21
 
 ### Context
 
-The portal serves seekers worldwide, including the EU (GDPR), UK (UK GDPR), Germany (TTDSG/DSGVO), California (CCPA/CPRA), Brazil (LGPD), India (DPDPA), and Japan (APPI). Global privacy compliance is a legal necessity, but the DELTA framework and Calm Technology principles already produce an architecture that *substantively exceeds* most regulatory requirements — because the portal collects almost no personal data by design.
+The portal's privacy architecture derives from DELTA — the faith-based AI ethics framework — not from any single regulation. DELTA's principles (Dignity, Embodiment, Love, Transcendence, Agency) produced an architecture that collects almost no personal data by design. Regulatory compliance follows naturally.
+
+The portal serves seekers worldwide. The majority by population will be in India (DPDPA), Brazil (LGPD), and other non-EU jurisdictions — not Europe. GDPR (EU/EEA), UK GDPR, CCPA/CPRA (California), APPI (Japan), and TTDSG/DSGVO (Germany) also apply. DELTA produces protections that substantively exceed all of these frameworks because the portal's minimal-data architecture was designed for human dignity, not compliance.
 
 The remaining compliance work is primarily documentary (privacy policy, sub-processor inventory, retention policies, data subject rights documentation) rather than architectural. One architectural change is required: self-hosting Google Fonts to avoid IP transmission to Google servers (per LG München I, Case No. 3 O 17493/20).
 
@@ -8438,5 +8628,607 @@ Key structural changes:
 - All existing ADR substance preserved — only phase number references change
 
 *Section added: 2026-02-21, Proposal C adoption*
+
+---
+
+## ADR-104: Practice Bridge & Public Kriya Yoga Overview — Signpost Enrichment
+
+- **Status:** Accepted
+- **Date:** 2026-02-21
+- **Relates to:** ADR-085 (Lessons Integration Readiness), ADR-001 (Direct Quotes Only), ADR-005 E1 (Search Intent Classification), ADR-067 (Non-Search Seeker Journeys), ADR-069 (Signpost, Not Destination), DES-014 (Session Closure Moments), DES-026 (Editorial Reading Threads), DES-048 (`/guide` — The Spiritual Guide)
+
+### Context
+
+The portal is designed as a "signpost, not destination" (ADR-069) — it points seekers toward deeper SRF practice without tracking conversions or acting as a sales funnel. The About page's "Go Deeper" section is described as "the most important part of this page" (DESIGN.md § About Section), but currently offers only a single link: `→ SRF Lessons (home-study meditation program)`.
+
+Meanwhile, Yogananda's most consistent teaching across all his published books is that reading is insufficient — practice is everything. *Autobiography of a Yogi* devotes an entire chapter (Ch. 26, "The Science of Kriya Yoga") to publicly explaining what Kriya Yoga is, its ancient lineage, and its purpose. Passages throughout the corpus explicitly invite the reader to move from intellectual understanding to direct experience through meditation.
+
+SRF's own website (yogananda.org) maintains extensive, publicly approved content about Kriya Yoga and the Lessons:
+- `/kriya-yoga-path-of-meditation` — public description of the Kriya Yoga path
+- `/lessons` — "A 9-month in-depth course on meditation and spiritual living"
+- `/lessons-programs` — three-tier progression: Basic Lessons → Supplement Series → Kriya Yoga Initiation
+- `/a-beginners-meditation` — free public meditation instruction
+- `/meditate` — meditation hub page
+
+The portal's Key Terminology entry for Kriya Yoga states "NOT to be discussed or documented in this portal." This is stricter than SRF itself. The constraint conflates two fundamentally different things:
+
+1. **Teaching the Kriya technique** — secret, requires initiation, permanently out of scope
+2. **Describing what Kriya Yoga is** using Yogananda's own published words — public, already in the corpus
+
+A portal that faithfully presents Yogananda's books but offers no coherent bridge from reading to practice paradoxically underserves the seeker it has already moved — and is less faithful to the author's stated intent than one that includes such a bridge.
+
+### Decision
+
+Establish a **Practice Bridge** — a set of editorial surfaces that coherently guide seekers from reading Yogananda's published teachings toward understanding the path of formal practice, using four mechanisms:
+
+**1. Enriched "Go Deeper" section on the About page.**
+
+Replace the single Lessons link with a substantive section: 2–3 paragraphs of SRF-approved description of the Lessons program, the three-tier path (Lessons → Supplements → Kriya Initiation), a representative verbatim Yogananda passage about the importance of practice (with citation), and links to both the free Beginner's Meditation (`yogananda.org/a-beginners-meditation`) and the Lessons enrollment page (`yogananda.org/lessons`).
+
+**2. Practice Bridge editorial tag.**
+
+A new editorial annotation — `practice_bridge: true` — on passages where Yogananda explicitly invites the reader to practice (not every mention of meditation, only passages where the author's intent is clearly "do this, don't just read about it"). Human-tagged, same three-state pipeline as theme tags (ADR-032). On tagged passages, a quiet contextual note appears below the citation:
+
+```
+Yogananda taught specific meditation techniques through
+Self-Realization Fellowship.
+Begin with a free meditation → yogananda.org/meditate
+Learn about the SRF Lessons → yogananda.org/lessons
+```
+
+Styled in `--portal-text-muted`, Merriweather 300 — the same visual weight as the "Find this book" bookstore link. Not a modal, not a card, not a CTA. Just a signpost.
+
+**3. `/guide` pathway: "If You Feel Drawn to Practice."**
+
+A new pathway in DES-048, using the same template as all existing pathways. Progression: Begin now (SRF's free Beginner's Meditation) → The Quiet Corner (portal's own micro-practice) → Autobiography Ch. 26 (Yogananda's public description of Kriya) → Kriya Yoga theme page → SRF Lessons. The free path is foregrounded equally with the paid path — the beginner's meditation and the Quiet Corner appear before the Lessons link.
+
+**4. Quiet Corner practice note.**
+
+After the timer completes and the parting passage appears (DES-014), a single-line practice link below the parting passage: `If you'd like to deepen your meditation practice → yogananda.org/meditate`. This is the moment of maximum receptivity — the seeker has just experienced stillness and may be most open to understanding that deeper practice exists.
+
+**Additionally:**
+
+- **"The Path of Practice" editorial reading thread** (DES-026): A curated passage sequence tracing Yogananda's published teachings on the arc from reading to practice — why meditate → what meditation is → what Kriya Yoga is → the lineage → the invitation. All verbatim, all cited. The final entry signposts SRF Lessons. Phase 5+.
+- **Kriya Yoga theme page scope note** (`yoga_path` category): An editorial note at the top of the Kriya Yoga theme page: "Yogananda's published descriptions of Kriya Yoga and its place in the yoga tradition. Formal instruction in Kriya Yoga is available through the SRF Lessons." Links to `yogananda.org/lessons`. Phase 5+.
+- **Search intent pattern: `practice_inquiry`**: Added to E1 intent classification (ADR-005). Queries like "how to practice Kriya Yoga," "learn Kriya," "Kriya Yoga technique" are routed to the curated Kriya overview (theme page or `/guide` practice pathway) rather than raw search results, with the practice bridge note. Analogous to crisis query detection — a pattern where intent requires curated response, not just retrieval.
+
+### What This Is Not
+
+- **Not a sales funnel.** No conversion tracking, no enrollment metrics, no A/B testing of CTA copy, no urgency language. The Practice Bridge is editorial content reviewed by SRF, presented once, at rest. It does not follow the seeker around the site.
+- **Not technique instruction.** The portal never teaches Kriya Yoga, the Hong-Sau technique, AUM meditation, or the Energization Exercises. It shows what Yogananda *wrote publicly about* these practices. The technique boundary (ADR-085) is unchanged.
+- **Not a replacement for SRF's own content.** SRF's website provides institutional descriptions and enrollment flows. The portal provides corpus-grounded content — Yogananda's own published words. The portal links *to* SRF for the action step. Complementary, not duplicative.
+- **Not behavior-derived.** The Practice Bridge appears based on content (editorial tags on passages, fixed `/guide` pathway, fixed Quiet Corner note) — never based on user behavior, visit frequency, or engagement patterns. DELTA-compliant.
+
+### Ethical Frame
+
+Three distinctions separate the Practice Bridge from a sales funnel:
+
+1. **The portal provides information; it never optimizes for action.** There is no "Enroll Now" button. The practice bridge note has the same visual weight as the bookstore link — a quiet signpost, not a call to action.
+2. **Yogananda himself made this invitation publicly.** Chapter 26 exists. The portal is surfacing the author's own stated purpose for his books. Omitting the practice bridge would be less faithful to the source material than including it.
+3. **The free path is foregrounded.** The Beginner's Meditation (free, on yogananda.org) and the Quiet Corner (free, built into the portal) appear before the Lessons (paid). A seeker can practice today without enrolling or spending money.
+
+### Consequences
+
+- CONTEXT.md Key Terminology updated: Kriya Yoga entry revised from "NOT to be discussed" to "Technique instructions never included; Yogananda's published descriptions surfaced normally"
+- DESIGN.md § About Section: "Go Deeper" enriched with SRF-approved Lessons description
+- DESIGN.md § DES-048: New `/guide` pathway added
+- DESIGN.md § DES-014: Quiet Corner practice note added after parting passage
+- DESIGN.md § DES-026: "The Path of Practice" thread documented as a planned thread
+- DESIGN.md § Theme Taxonomy: Scope note added to Kriya Yoga theme
+- ADR-005 E1 intent table: `practice_inquiry` intent added
+- New stakeholder questions added to CONTEXT.md: SRF approval of enriched Lessons description, canonical enrollment URL confirmation
+- The "Conversion to SRF Lessons" anti-metric (CONTEXT.md § Measuring Success) remains unchanged — the portal never tracks how many seekers enroll. Information availability is not the same as conversion optimization.
+- ADR-085 (Lessons Integration Readiness) is unaffected — it governs future *content-level* access control for actual Lesson materials. ADR-104 governs *public descriptions of* the Lessons path, using only published information.
+
+*Section added: 2026-02-21, Practice Bridge proposal*
+
+---
+
+## ADR-106: Outbound Webhook Events — Push-Based Content Syndication
+
+**Status:** Accepted
+**Date:** 2026-02-22
+**Deciders:** Architecture team
+**Context:** ADR-011 (API-first), ADR-081 (machine readability), ADR-023 (rate limiting), ADR-026 (messaging channels), ADR-091 (daily email), ADR-092 (social media), ADR-105 (portal updates)
+
+### Context
+
+The portal publishes content through multiple channels: web, daily email, RSS feeds, WhatsApp, SMS, social media, and the external MCP server. Every outbound channel currently must either poll the API for changes or be hard-wired into the content lifecycle code. This creates two problems:
+
+1. **Polling is wasteful and laggy.** SRF's existing Zapier workflows (connected to SendGrid, Constant Contact, MS Dynamics, and other systems per the SRF Tech Stack Brief) would need to poll portal API endpoints at regular intervals to detect changes. Zapier's polling triggers check every 1–15 minutes depending on plan tier. For a daily passage that changes at midnight UTC, this means up to 15 minutes of unnecessary delay — and thousands of wasted requests across all Zapier workflows per day.
+
+2. **Tight coupling.** Without a generic event system, each new distribution channel requires modifying the content lifecycle code. Adding a WhatsApp notification when a new book is published means editing the book ingestion pipeline. This scales poorly as channels multiply.
+
+A lightweight outbound webhook system lets the portal **push** content lifecycle events to registered consumers — SRF's Zapier, internal systems, future partner integrations, and the portal's own subsystems — without modifying content pipelines.
+
+### Decision
+
+Implement an outbound webhook event system that publishes content lifecycle events to registered subscribers via HTTP POST. Events follow a standardized envelope format. Webhook registration is admin-only (no self-service until Phase 13+).
+
+### Event Catalog
+
+| Event | Fires When | Payload Summary |
+|-------|-----------|-----------------|
+| `daily_passage.rotated` | Daily passage changes (midnight UTC) | `chunk_id`, passage text, citation, `reader_url` |
+| `content.published` | New book, chapter, audio recording, or video is published | `content_type`, `content_id`, title, `language` |
+| `content.updated` | Existing content corrected (text, metadata, citations) | `content_type`, `content_id`, `changed_fields[]` |
+| `theme.published` | New teaching theme approved and published | `theme_slug`, theme name, `category` |
+| `collection.published` | Community collection approved by staff (ADR-086) | `collection_id`, title, `passage_count` |
+| `social_asset.approved` | Social media quote image approved for distribution (ADR-092) | `chunk_id`, `asset_urls{}` (by aspect ratio), caption |
+| `portal_update.published` | New portal update published (ADR-105) | `update_id`, title, summary, category |
+| `search_index.rebuilt` | Search index recomputed (re-embedding, migration) | `affected_books[]`, `chunk_count` |
+| `email.dispatched` | Daily email sent to subscribers (ADR-091) | `chunk_id`, `subscriber_count` (no PII) |
+| `journey.step` | Calendar journey advances to next day's passage (DES-045) | `journey_slug`, `day_number`, `chunk_id` |
+
+Events that involve content include enough data for the subscriber to act without a follow-up API call (e.g., the `daily_passage.rotated` event includes the passage text and citation, so Zapier can format an email without querying `/api/v1/daily-passage`). This reduces round-trips for automation consumers.
+
+### Webhook Envelope
+
+```json
+{
+  "event": "daily_passage.rotated",
+  "event_id": "evt_01H...",
+  "timestamp": "2026-03-15T00:00:12Z",
+  "portal_version": "v1",
+  "data": {
+    "chunk_id": "uuid",
+    "content": "The soul is ever free...",
+    "book_title": "Autobiography of a Yogi",
+    "chapter_number": 14,
+    "page_number": 142,
+    "reader_url": "/books/autobiography-of-a-yogi/14#chunk-uuid"
+  }
+}
+```
+
+Every envelope includes:
+- `event` — machine-readable event type from the catalog
+- `event_id` — unique UUID for idempotency (subscribers can deduplicate)
+- `timestamp` — ISO 8601 UTC when the event occurred
+- `portal_version` — `v1` (incremented if envelope schema changes)
+- `data` — event-specific payload
+
+### Delivery Semantics
+
+- **At-least-once delivery.** Failed deliveries (non-2xx response or timeout) retry with exponential backoff: 1 min, 5 min, 30 min, 2 hours, 12 hours. After 5 failures, the webhook is marked `suspended` and an alert fires in Sentry.
+- **Timeout:** 10 seconds per delivery attempt. Subscribers must respond quickly (accept and process asynchronously).
+- **Signature verification:** Each delivery includes an `X-Portal-Signature` header — HMAC-SHA256 of the raw body using the subscriber's secret key. Subscribers should verify to prevent spoofing.
+- **Ordering:** Events are delivered in approximate chronological order but not guaranteed. Subscribers should use `timestamp` for ordering, not delivery order.
+- **No fan-out queuing in Phase 8.** Initial implementation fires webhooks synchronously from a background job (Vercel cron or Lambda). If subscriber count grows beyond ~20, migrate to SQS fan-out (Phase 10+).
+
+### Schema
+
+```sql
+CREATE TABLE webhook_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,                      -- "SRF Zapier — Daily Email", "Internal Slack Bot"
+  url TEXT NOT NULL,                       -- Delivery URL (HTTPS required)
+  secret TEXT NOT NULL,                    -- HMAC signing secret
+  events TEXT[] NOT NULL,                  -- Subscribed event types, e.g. '{daily_passage.rotated,content.published}'
+  is_active BOOLEAN DEFAULT true,
+  suspended_at TIMESTAMPTZ,               -- Set after 5 consecutive failures
+  created_at TIMESTAMPTZ DEFAULT now(),
+  created_by TEXT NOT NULL                 -- Admin who registered (email or role identifier)
+);
+
+CREATE TABLE webhook_deliveries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscriber_id UUID NOT NULL REFERENCES webhook_subscribers(id),
+  event_id TEXT NOT NULL,                  -- From envelope
+  event_type TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'delivered', 'failed', 'suspended')),
+  attempts INTEGER DEFAULT 0,
+  last_attempt_at TIMESTAMPTZ,
+  response_status INTEGER,                -- HTTP status from subscriber
+  response_body TEXT,                      -- First 1KB of response (for debugging)
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_deliveries_pending ON webhook_deliveries(status, created_at)
+  WHERE status IN ('pending', 'failed');
+CREATE INDEX idx_deliveries_subscriber ON webhook_deliveries(subscriber_id, created_at DESC);
+```
+
+### Webhook Use Cases by Consumer
+
+**SRF Internal (Zapier / Lambda)**
+- Daily passage → SendGrid/Constant Contact email campaigns
+- Daily passage → WhatsApp broadcast to subscribed seekers (ADR-026)
+- New content → MS Dynamics CRM update (donor/stakeholder communications)
+- Social asset approved → Buffer/Hootsuite scheduling queue
+- Portal update → internal Slack/Teams notification for AE team
+- Content correction → trigger CDN cache purge via Cloudflare API
+- Search index rebuilt → trigger integration test suite
+
+**Editorial / Staff**
+- Content published → notify editorial staff via email/Slack (independent of admin portal)
+- Collection submitted → alert review queue (staff who aren't in the admin portal all day)
+- Seeker feedback spike → alert if feedback count exceeds threshold (potential issue)
+- Journey step → daily operational confirmation that journey emails dispatched correctly
+
+**Community / External (Phase 13+)**
+- Daily passage → third-party spiritual apps that want to display "Today's Wisdom"
+- Content published → meditation center websites that embed a "Latest from Yogananda" widget
+- Theme published → partner sites that curate topical Yogananda content
+
+**Portal Internal Subsystems**
+- Content published → incremental sitemap regeneration (SEO)
+- Content updated → RSS feed regeneration (instead of polling the database on a cron)
+- Content published → pre-warm CDN cache for new pages
+- Social asset approved → auto-post to RSS (machine syndication of social assets)
+
+### Admin Interface
+
+Webhook subscribers are managed via the editorial admin portal (Phase 8, extending ADR-082). The interface shows:
+- Registered subscribers with event subscriptions
+- Delivery log (last 30 days) with success/failure status
+- "Test" button to send a test event to a subscriber
+- "Suspend/Resume" controls for failing subscribers
+
+No self-service registration. All subscribers are provisioned by SRF staff. Phase 13+ may introduce self-service registration with API key auth for external consumers.
+
+### Alternatives Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Polling only (no webhooks)** | Simplest to build | Wasteful, laggy, scales poorly with consumers, tight coupling |
+| **AWS EventBridge** | Managed, scalable, native AWS | Adds infrastructure dependency, overkill for <20 subscribers, harder to debug |
+| **AWS SNS** | Managed pub/sub, HTTP subscriptions built-in | Subscription confirmation flow is awkward for Zapier, less control over retry logic |
+| **Custom webhook system** | Full control, simple to understand, matches portal's "boring technology" ethos | Must build retry logic, monitoring, admin UI |
+
+The custom webhook system wins because:
+- The portal has <20 expected subscribers for several years
+- Zapier consumes standard HTTP POST natively (no adapters needed)
+- The retry logic is ~50 lines of code in a cron job
+- Full observability via the existing Sentry + structured logging stack
+- No new AWS service to provision, monitor, or pay for
+
+### DELTA Compliance
+
+Webhook payloads never contain seeker data. Events describe *content* lifecycle (a passage was published, a theme was added) — never *user* behavior (a seeker searched, a seeker read). The `email.dispatched` event includes `subscriber_count` (aggregate) but no individual subscriber data. The `seeker_feedback` system (ADR-084) does not fire webhook events — feedback is internal-only.
+
+### Phasing
+
+| Phase | What Ships |
+|-------|-----------|
+| **Phase 8** | Webhook schema, subscriber management, delivery engine. Initial events: `daily_passage.rotated`, `content.published`, `content.updated`, `social_asset.approved`, `portal_update.published`. Admin UI in editorial portal. |
+| **Phase 9** | Contentful webhook *inbound* (already planned, deliverable 9.3) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
+| **Phase 10+** | Additional events as channels mature: `journey.step`, `email.dispatched`. SQS fan-out if subscriber count exceeds ~20. |
+| **Phase 13+** | Self-service webhook registration with API key auth for external consumers. |
+
+### Consequences
+
+- New `webhook_subscribers` and `webhook_deliveries` tables in Phase 8 migration
+- New background job for webhook delivery and retry (Vercel cron or Lambda)
+- DESIGN.md § DES-052 documents the webhook event system
+- ROADMAP.md Phase 8 gains webhook deliverable
+- ADR-081 § RSS section updated: RSS feeds regenerate via webhook event rather than polling cron
+- SRF's existing Zapier workflows can subscribe to portal events from Phase 8 launch
+- Future messaging channels (ADR-026) can subscribe to `daily_passage.rotated` instead of polling
+
+*Section added: 2026-02-22, outbound webhook event system*
+
+---
+
+## ADR-107: Timestamp Filtering on List Endpoints — Incremental Sync for Automation Consumers
+
+**Status:** Accepted
+**Date:** 2026-02-22
+**Deciders:** Architecture team
+**Context:** ADR-011 (API-first), ADR-106 (outbound webhooks), ADR-081 (machine readability), ADR-023 (rate limiting)
+
+### Context
+
+Outbound webhooks (ADR-106) solve the "push" problem — subscribers learn about new content immediately. But webhooks are not perfectly reliable. A subscriber might miss events during downtime, a Zapier workflow might be paused and resumed, or a new consumer might need to backfill historical changes. The standard REST solution is timestamp-based filtering: "give me everything that changed since my last sync."
+
+Current list endpoints (`/api/v1/books`, `/api/v1/themes`, `/api/v1/passages`, etc.) return full collections with cursor-based pagination but no way to filter by recency. A Zapier polling trigger that wants "new books since yesterday" must fetch the entire book list and compare against its internal state. This is wasteful for the consumer and the portal's rate limits.
+
+### Decision
+
+Add `updated_since` and `created_since` query parameters to all list endpoints that return content collections. These parameters accept ISO 8601 timestamps and filter results to items modified or created after the specified time.
+
+### Parameter Specification
+
+```
+GET /api/v1/books?updated_since=2026-03-01T00:00:00Z
+GET /api/v1/themes?created_since=2026-03-15T12:00:00Z
+GET /api/v1/audio?updated_since=2026-02-28T00:00:00Z&language=hi
+```
+
+| Parameter | Type | Behavior |
+|-----------|------|----------|
+| `updated_since` | ISO 8601 timestamp | Returns items where `updated_at > :timestamp` (includes both newly created and modified items) |
+| `created_since` | ISO 8601 timestamp | Returns items where `created_at > :timestamp` (only newly created items, excludes updates to existing items) |
+
+Both parameters:
+- Are optional — omitting them returns the full collection (existing behavior unchanged)
+- Compose with existing parameters (`language`, `book_id`, `category`, cursor pagination)
+- Use strict greater-than (`>`) comparison, not greater-than-or-equal, to avoid re-fetching the boundary item
+- Return results ordered by the filtered timestamp ascending (oldest first), which is the natural order for incremental sync
+
+If both `updated_since` and `created_since` are provided, the API returns a 400 error — they represent different sync strategies and combining them is ambiguous.
+
+### Affected Endpoints
+
+| Endpoint | `updated_since` | `created_since` | Notes |
+|----------|:---:|:---:|-------|
+| `GET /api/v1/books` | Yes | Yes | |
+| `GET /api/v1/books/[slug]/chapters` | Yes | Yes | |
+| `GET /api/v1/themes` | Yes | Yes | |
+| `GET /api/v1/themes/[slug]/passages` | Yes | Yes | |
+| `GET /api/v1/audio` | Yes | Yes | |
+| `GET /api/v1/videos` | Yes | Yes | |
+| `GET /api/v1/images` | Yes | Yes | |
+| `GET /api/v1/people` | Yes | Yes | |
+| `GET /api/v1/ontology` | Yes | No | Ontology terms are rarely updated; `created_since` suffices via `updated_since` |
+| `GET /api/v1/magazine/issues` | Yes | Yes | |
+| `GET /api/v1/magazine/articles` | Yes | Yes | |
+| `GET /api/v1/collections` | Yes | Yes | Community collections (ADR-086) |
+
+Not affected:
+- `GET /api/v1/search` — query-driven, not collection-based
+- `GET /api/v1/daily-passage` — returns a single item, not a collection
+- `GET /api/v1/quiet` — returns a single affirmation
+- `GET /api/v1/health` — operational, not content
+- `GET /api/v1/graph/*` — pre-computed, served from CDN
+- `GET /api/v1/search/suggest` — autocomplete, not a syncable collection
+
+### Schema Requirement
+
+All content tables must have both `created_at` and `updated_at` columns with indexes. The existing schema already includes `created_at` on most tables. This ADR requires:
+
+1. **`updated_at` column** on all content tables that don't already have it.
+2. **Database trigger** to automatically set `updated_at = now()` on every UPDATE.
+3. **Composite index** on `(updated_at, id)` for efficient cursor pagination with timestamp filtering.
+
+```sql
+-- Example trigger (applied to all content tables)
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_books_updated_at
+  BEFORE UPDATE ON books
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Composite index for timestamp-filtered pagination
+CREATE INDEX idx_books_updated_at ON books(updated_at, id);
+CREATE INDEX idx_book_chunks_updated_at ON book_chunks(updated_at, id);
+CREATE INDEX idx_teaching_topics_updated_at ON teaching_topics(updated_at, id);
+```
+
+### Response Metadata
+
+When timestamp filtering is active, the response includes sync metadata:
+
+```json
+{
+  "results": [...],
+  "sync": {
+    "filtered_by": "updated_since",
+    "since": "2026-03-01T00:00:00Z",
+    "result_count": 3,
+    "latest_timestamp": "2026-03-14T09:22:11Z"
+  },
+  "pagination": {
+    "next_cursor": "..."
+  }
+}
+```
+
+The `latest_timestamp` field tells the consumer what value to use for their next `updated_since` call — enabling reliable incremental sync without clock drift issues.
+
+### Zapier Integration Pattern
+
+Zapier's polling trigger model works naturally with `created_since`:
+
+1. Zapier stores the `latest_timestamp` from the previous poll
+2. On each poll interval, Zapier calls `GET /api/v1/books?created_since={latest_timestamp}`
+3. If results are returned, Zapier triggers the workflow and updates its stored timestamp
+4. If no results, Zapier does nothing
+
+This turns Zapier from "fetch everything and deduplicate" to "fetch only what's new" — reducing API calls by orders of magnitude for stable content collections.
+
+### Relationship to Webhooks (ADR-106)
+
+Webhooks and timestamp filtering serve complementary purposes:
+
+| Scenario | Best Tool |
+|----------|-----------|
+| Real-time notification when content changes | Webhooks (ADR-106) |
+| Catching up after missed webhooks or downtime | `updated_since` filtering |
+| Initial backfill when a new consumer connects | `created_since` filtering |
+| Zapier polling trigger (no webhook support) | `created_since` filtering |
+| Verifying webhook data against source of truth | `updated_since` filtering |
+
+A robust integration uses both: webhooks for real-time events, timestamp filtering for reconciliation.
+
+### Phasing
+
+| Phase | What Ships |
+|-------|-----------|
+| **Phase 0** | `updated_at` columns and triggers on all content tables in the initial schema migration. No API filtering yet. |
+| **Phase 1** | `updated_since` and `created_since` parameters on `GET /api/v1/books` and `GET /api/v1/books/[slug]/chapters`. |
+| **Phase 4** | Timestamp filtering on theme endpoints (`/api/v1/themes`, `/api/v1/themes/[slug]/passages`). |
+| **Phase 5+** | Timestamp filtering on all remaining list endpoints as they ship. |
+
+### Consequences
+
+- Phase 0 schema migration adds `updated_at` columns and triggers to all content tables
+- All list endpoints gain optional `updated_since` and `created_since` parameters as they ship
+- Response envelope gains `sync` metadata when timestamp filtering is active
+- OpenAPI spec (ADR-081) documents the filtering parameters on each endpoint
+- Zapier polling triggers become efficient from Phase 1
+- Combined with ADR-106, the portal supports both push (webhooks) and pull (timestamp filtering) sync strategies
+
+*Section added: 2026-02-22, timestamp filtering for incremental sync*
+
+---
+
+## ADR-108: Magazine API Rationalization — Flat Resources, Single-Segment Slugs
+
+**Status:** Accepted
+**Date:** 2026-02-22
+**Deciders:** Architecture team
+**Context:** ADR-040 (magazine content type), ADR-011 (API-first), ADR-107 (timestamp filtering), DES-041 (magazine section architecture)
+
+### Context
+
+ADR-040 defined five magazine API endpoints using a two-segment composite identifier (`{year}/{season}`) for issues and only a single-article lookup endpoint for articles. ADR-107 later added a flat `GET /api/v1/magazine/articles` endpoint with timestamp filtering, but DES-041's endpoint list didn't include it. This created three problems:
+
+1. **DES-041 and ADR-107 disagreed** on whether a flat articles list endpoint existed.
+2. **The `{year}/{season}` composite identifier** is unusual in APIs — it breaks conventions around path parameter counting, complicates OpenAPI specs, and requires two-segment parsing where every other resource in the portal uses a single slug.
+3. **The `UNIQUE(issue_id, slug)` constraint** on `magazine_articles` meant article slugs were only unique within an issue, but `GET /api/v1/magazine/articles/{slug}` assumed global uniqueness. The schema didn't enforce what the API required.
+
+Additionally, the single-issue endpoint returned articles inline, while the flat articles endpoint (if it existed) would provide the same data through a different path. No clear boundary between the two.
+
+### Decision
+
+Rationalize the magazine API into flat, independently addressable resources with single-segment identifiers. No nested sub-collection routes.
+
+**Endpoints after rationalization:**
+
+```
+GET /api/v1/magazine/issues              — Paginated issue list
+GET /api/v1/magazine/issues/{slug}       — Single issue (metadata + article summaries)
+GET /api/v1/magazine/issues/{slug}/pdf   — Issue PDF
+
+GET /api/v1/magazine/articles            — Paginated article list, filterable
+GET /api/v1/magazine/articles/{slug}     — Single article with chunks
+GET /api/v1/magazine/articles/{slug}/pdf — Article PDF
+```
+
+**Key changes:**
+
+1. **Single-segment issue slugs.** `{year}/{season}` → `{slug}` (e.g., `2025-spring`). A `slug TEXT NOT NULL UNIQUE` column is added to `magazine_issues`. The slug is computed from year + season during ingestion.
+
+2. **Flat articles list is a first-class endpoint.** `GET /api/v1/magazine/articles` supports `?issue_id=`, `?author_type=`, `?language=`, and the ADR-107 timestamp filters. This serves three use cases from one endpoint: the "Yogananda's Magazine Writings" index on the landing page (`?author_type=yogananda`), issue-scoped article browsing (`?issue_id={uuid}`), and incremental sync (`?updated_since=`).
+
+3. **Globally unique article slugs.** The `UNIQUE(issue_id, slug)` constraint on `magazine_articles` is replaced with `UNIQUE(slug)`. The ingestion pipeline must generate globally unique slugs (e.g., by prefixing with issue slug if needed). This makes `GET /api/v1/magazine/articles/{slug}` unambiguous.
+
+4. **No nested sub-collection route.** `GET /api/v1/magazine/issues/{slug}/articles` does not exist. The flat articles endpoint with `?issue_id=` filter replaces it. Rationale: query-parameter filtering composes (add `&author_type=yogananda` freely), avoids duplicate cache keys and code paths, and matches the pattern of every other filterable list in the portal.
+
+5. **Single-issue response includes article summaries, not full articles.** `GET /api/v1/magazine/issues/{slug}` returns issue metadata plus a summary array (title, slug, author_name, author_type, position) — enough for the issue page to render its table of contents. Full article data (chunks, pagination) comes from the articles endpoint.
+
+### Alternatives Considered
+
+**Nested route (`GET /api/v1/magazine/issues/{slug}/articles`):** More discoverable for clients navigating from issue to articles. Rejected because: (a) articles are independently addressable resources that participate in search, have their own reader pages, and have their own PDFs — they aren't purely subordinate to issues; (b) the flat endpoint with `?issue_id=` serves the same need without a second code path; (c) the portal's consumers (Next.js frontend, Zapier) work better with flat + filters than link traversal.
+
+**Keep `{year}/{season}` composite identifier:** Human-readable and maps naturally to the magazine's publishing model. Rejected because: (a) every other resource in the API uses a single path parameter; (b) composite identifiers complicate middleware, OpenAPI specs, and client libraries; (c) the slug `2025-spring` is equally readable as a single segment.
+
+### Schema Changes
+
+```sql
+-- magazine_issues gains a slug column
+ALTER TABLE magazine_issues ADD COLUMN slug TEXT NOT NULL UNIQUE;
+-- e.g., '2025-spring', '1925-winter'
+
+-- magazine_articles: slug becomes globally unique
+ALTER TABLE magazine_articles DROP CONSTRAINT magazine_articles_issue_id_slug_key;
+ALTER TABLE magazine_articles ADD CONSTRAINT magazine_articles_slug_key UNIQUE (slug);
+```
+
+### Consequences
+
+- DES-041 and ADR-107 are now consistent — both reference the same set of magazine endpoints
+- `magazine_issues` schema gains a `slug` column; `magazine_articles` slug constraint changes from `UNIQUE(issue_id, slug)` to `UNIQUE(slug)`
+- Frontend page routes updated: `/magazine/{issue-slug}` and `/magazine/{issue-slug}/{article-slug}`
+- Knowledge graph click targets updated to single-segment URLs
+- Service layer signature changes: `getIssue(slug)` replaces `getIssue(year, season)`; `getArticles(cursor, limit, filters)` added
+- Cache table gains entries for `/api/v1/magazine/issues/{slug}` and `/api/v1/magazine/articles`
+- Ingestion pipeline must generate globally unique article slugs
+
+*Section added: 2026-02-22, magazine API rationalization*
+
+---
+
+## ADR-109: Cross-API Route Rationalization — Consistent Identifiers, Consolidated Namespaces, Complete CRUD
+
+**Status:** Accepted
+**Date:** 2026-02-22
+**Deciders:** Architecture team
+**Context:** ADR-025 (PDF routes), ADR-050 (chunk relations), ADR-055 (video integration), ADR-057 (audio library), ADR-108 (magazine API rationalization)
+
+### Context
+
+A cross-API review after ADR-108 (magazine rationalization) revealed five inconsistencies that accumulated as different content types were designed in separate ADRs:
+
+1. **Chapter sub-resources split across two URL namespaces.** Chapter content lives at `/api/v1/books/[slug]/chapters/[number]`, but thread and relations endpoints broke out to a top-level `/api/v1/chapters/[slug]/[number]/`. Same resource, two URL patterns.
+
+2. **Video endpoints use `{id}` while every other resource uses `{slug}`.** The `videos` table has `slug TEXT NOT NULL UNIQUE`, but ADR-025 and ADR-055 defined transcript endpoints as `/api/v1/videos/{id}/transcript`. Audio uses `{slug}` for the identical pattern.
+
+3. **DESIGN.md still references a rejected PDF namespace.** The sharing section (DES-018) uses `/api/v1/pdf/passage/{chunk-id}`, `/api/v1/pdf/chapter/{book-slug}/{chapter}`, `/api/v1/pdf/book/{book-slug}` — a parallel namespace that ADR-025 explicitly rejected under "Why Not `/api/v1/pdf/books/{slug}`".
+
+4. **Audio and video lack single-resource detail endpoints.** Every other content type (books, images, people, glossary, ontology, places, magazine issues/articles) has a `GET /resource/{slug}` detail endpoint. Audio and video only had list + transcript sub-resources.
+
+5. **Books lack a single-resource detail endpoint.** `GET /api/v1/books` (list) and `GET /api/v1/books/[slug]/chapters/[number]` (chapter content) exist, but no `GET /api/v1/books/{slug}` for book metadata with chapter index. The book landing page (`/books/[slug]`) needs this data.
+
+### Decision
+
+Apply five targeted fixes to bring the entire API surface into consistency.
+
+**1. Consolidate chapter sub-resources under `/books/[slug]/chapters/[number]/`.**
+
+```
+GET /api/v1/books/[slug]/chapters/[number]            — chapter content
+GET /api/v1/books/[slug]/chapters/[number]/pdf         — chapter PDF
+GET /api/v1/books/[slug]/chapters/[number]/thread      — reading thread
+GET /api/v1/books/[slug]/chapters/[number]/relations   — batch relation prefetch
+```
+
+The top-level `/api/v1/chapters/` namespace is eliminated. Chapters are subordinate to books — they're not independently addressable. A developer who discovers `/books/autobiography/chapters/3` can append `/thread` or `/relations` without learning a second URL pattern.
+
+**2. Video endpoints use `{slug}`, not `{id}`.**
+
+```
+GET /api/v1/videos/{slug}                  — video detail (NEW)
+GET /api/v1/videos/{slug}/transcript       — transcript JSON
+GET /api/v1/videos/{slug}/transcript/pdf   — transcript PDF
+```
+
+Matches audio (`/api/v1/audio/{slug}/transcript`) and every other resource in the API. The `videos` table already has `slug TEXT NOT NULL UNIQUE`.
+
+**3. DESIGN.md PDF references corrected to match ADR-025.**
+
+The sharing section's `/api/v1/pdf/passage/{chunk-id}` references are replaced with resource-anchored routes per ADR-025's established pattern. Single-passage PDFs use `POST /api/v1/exports/pdf` with a single-item body.
+
+**4. Audio and video gain detail endpoints.**
+
+```
+GET /api/v1/audio/{slug}    — recording metadata (speaker, duration, type, etc.)
+GET /api/v1/videos/{slug}   — video metadata (platform, speakers, duration, etc.)
+```
+
+Both schemas have rich metadata that the frontend detail pages need. These follow the same pattern as `GET /api/v1/images/{slug}`, `GET /api/v1/people/[slug]`, etc.
+
+**5. Books gain a detail endpoint.**
+
+```
+GET /api/v1/books/{slug}    — book metadata + chapter index
+```
+
+Returns title, author, description, cover image, publication year, bookstore URL, available languages, and chapter list (number + title). Serves the book landing page (`/books/[slug]`). Eliminates the tentative note about "a new endpoint or `?include=chapters`" in the book landing page design.
+
+### Not Changed
+
+- **`/api/v1/videos/latest` and `/api/v1/videos/library`** remain as-is. These are Phase 2 YouTube-proxy convenience endpoints. When videos become database-backed in Phase 12, the main `GET /api/v1/videos` endpoint with query parameters supersedes them. Premature to rationalize a transitional design.
+
+- **Nested routes where nesting is correct.** `/books/[slug]/chapters/[number]`, `/themes/[slug]/passages`, `/people/[slug]/passages`, `/images/{slug}/related` — these nest a subordinate or relationship resource under its parent. The nesting is appropriate and stays.
+
+### Consequences
+
+- The top-level `/api/v1/chapters/` namespace no longer exists — all chapter sub-resources live under `/api/v1/books/[slug]/chapters/[number]/`
+- All video endpoints use `{slug}`, consistent with every other resource
+- DESIGN.md § DES-018 sharing section uses ADR-025-compliant PDF routes
+- Three new detail endpoints: `GET /api/v1/books/{slug}`, `GET /api/v1/audio/{slug}`, `GET /api/v1/videos/{slug}`
+- Cache table gains entries for all new detail endpoints
+- Service layer gains `getBook(slug)`, `getRecording(slug)`, `getVideo(slug)` functions
+- ROADMAP.md Phase 5 deliverable updated to use consolidated chapter URLs
+
+*Section added: 2026-02-22, cross-API route rationalization*
 
 ---

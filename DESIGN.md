@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Technical Design
 
-> **Navigation guide.** 42 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
+> **Navigation guide.** 44 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
 
 | Section | Phase |
 |---------|-------|
@@ -53,6 +53,8 @@
 | [DES-049: Responsive Design Strategy](#des-049-responsive-design-strategy) | 1+ |
 | [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | — |
 | [ADR-035, ADR-063, ADR-064: Image Serving Architecture](#adr-035-adr-063-adr-064-image-serving-architecture) | 6+ |
+| [DES-050: Seeker & User Persona Index](#des-050-seeker--user-persona-index) | — |
+| [DES-051: Portal Updates Page — "The Library Notice Board"](#des-051-portal-updates-page-the-library-notice-board) | 4+ |
 
 ---
 
@@ -1659,6 +1661,68 @@ The portal shifts visual warmth by time of day (DES-011). It also shifts *conten
 
 The 2 AM seeker — the person the "Seeking..." entry points are designed for — encounters passages about comfort and the eternal nature of consciousness, not about willpower and new habits. Zero tracking, zero profiling. The client sends `time_band` computed from `new Date.getHours`; the server selects from an affinity-weighted pool (60% time-matched / 40% general, same ratio as seasonal). Passages with no `time_affinity` (NULL) are eligible in all bands. Both seasonal and circadian affinities can apply simultaneously — they compose naturally as weighted random selection.
 
+**Solar-position awareness (locale-sensitive circadian UX):**
+
+The fixed-clock-hour bands above assume a single global relationship between "2 AM" and the human experience. They don't hold everywhere:
+
+- **Brahmamuhurta (3:30–5:30 AM)** in Indian tradition is the auspicious pre-dawn period for meditation — a seeker awake at 4 AM in Kolkata is likely practicing, not unable to sleep from anxiety. "Consolation" at this hour misreads the cultural context.
+- **Summer in Helsinki:** 2 AM has twilight. The emotional register of "Night" doesn't match the sky.
+- **Equatorial regions:** Sunrise and sunset barely shift across the year. Fixed bands work better than at high latitudes.
+
+The solution uses three signals already present on every request — none requiring new data collection:
+
+1. **Browser timezone** — `Intl.DateTimeFormat().resolvedOptions().timeZone` gives the IANA zone name (e.g., `Asia/Kolkata`, `America/Chicago`). Client-side, no permission.
+2. **Locale path prefix** — `/hi/` implies India, `/de/` implies Germany. The URL the seeker already chose.
+3. **`navigator.language` country code** — `hi-IN`, `de-DE`. Already in the browser, client-side.
+
+Timezone alone has a north-south accuracy problem: `America/Chicago` spans from Texas (26°N) to North Dakota (49°N) — a 1.5-hour summer sunrise spread. Adding country narrows this significantly. Timezone + country → centroid latitude is accurate to ±200km for most combinations, giving sunrise accuracy within ±15 minutes. For single-timezone countries (India, Japan, Germany), the accuracy is even better.
+
+**Accepted inaccuracy:** For large multi-timezone countries (US, Russia, Brazil), the centroid latitude of a timezone+country combination still has ±30–45 minute sunrise uncertainty. This is acceptable because the bands are 1.5–3 hours wide and selection is probabilistic (60/40 weighted). A seeker at a band boundary might receive a passage from the adjacent band — which is still a reasonable passage for that hour. The design accepts this inaccuracy to remain DELTA-compliant. No geolocation API, no IP-derived location, no permission prompt.
+
+**Latitude derivation:**
+
+```
+Client computes:
+  1. timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+     (e.g., "Asia/Kolkata", "America/Chicago")
+  2. country = navigator.language country code OR locale path prefix
+     (e.g., "IN", "US", "DE")
+  3. latitude = lookup(timezone, country)
+     (static table, ~3KB — maps timezone+country pairs to centroid latitudes)
+  4. sunrise, sunset = suncalc(latitude, timezoneLongitude, today)
+     (deterministic solar calculation, ~2KB)
+  5. time_band = classify(currentHour, sunrise, sunset, locale)
+```
+
+**Accuracy by key locale:**
+
+| Locale | Timezone | Country | Centroid lat | Sunrise accuracy | Notes |
+|--------|----------|---------|-------------|-----------------|-------|
+| Hindi | `Asia/Kolkata` | IN | ~22°N | ±30 min | Single timezone covers all India; brahmamuhurta override makes solar precision less critical |
+| Bengali | `Asia/Kolkata` | IN | ~22°N | ±30 min | Same as Hindi |
+| Japanese | `Asia/Tokyo` | JP | ~36°N | ±20 min | Single timezone; north-south extent moderate |
+| German | `Europe/Berlin` | DE | ~51°N | ±15 min | Small country; high accuracy |
+| Spanish (Latin Am) | varies | varies | varies | ±30–45 min | Multiple timezones across Latin America; good enough |
+| US English | varies | US | varies | ±45 min | Large timezone spans; widest inaccuracy but bands are forgiving |
+
+**Classification with locale profiles:**
+
+| Condition | Band | Character |
+|-----------|------|-----------|
+| 1.5h before sunrise → sunrise | `dawn` | Awakening (or brahmamuhurta in Indian locales) |
+| sunrise → solar noon - 1h | `morning` | Clarity, purpose |
+| solar noon - 1h → sunset - 2h | `afternoon` | Steadiness, perseverance |
+| sunset - 2h → sunset + 1.5h | `evening` | Softening, gratitude |
+| sunset + 1.5h → 1.5h before sunrise | `night` | Consolation, the eternal soul |
+
+**Indian locale override:** For `hi` and `bn` locales, 3:30–5:30 AM maps to a `brahmamuhurta` band (regardless of solar position) — passages emphasize meditation practice, divine energy, and dawn consciousness rather than consolation. The API gains an optional `brahmamuhurta` time_band value; the server selects from a meditation-practice-weighted pool. This band coexists with `dawn` — it covers the pre-dawn period that `dawn` would otherwise absorb.
+
+**Fallback:** If timezone is unavailable (rare), fall back to the fixed clock-hour bands above. The fixed bands remain the correct default for environments where timezone data is missing.
+
+**Implementation cost:** ~5KB client-side (timezone+country → latitude table ~3KB + suncalc ~2KB). The client computes `time_band` and sends it as a query parameter — the server never sees timezone, country, or coordinates. No new database columns. No server-side location processing. The server receives only a band name (`dawn`, `night`, `brahmamuhurta`, etc.) — the same opacity as the current fixed-clock design.
+
+**Phase:** Solar-aware circadian ships alongside the circadian color temperature in Phase 11. Indian locale brahmamuhurta override ships in Phase 10b with the Hindi/Bengali launch.
+
 **API:**
 
 ```
@@ -1666,7 +1730,7 @@ GET /api/v1/daily-passage
  Query params:
  language (optional) — default 'en'
  exclude (optional) — chunk ID to exclude (prevents repeat on "Show me another")
- time_band (optional) — circadian band: 'dawn', 'morning', 'afternoon', 'evening', 'night'
+ time_band (optional) — circadian band: 'dawn', 'morning', 'afternoon', 'evening', 'night', 'brahmamuhurta' (Indian locales, 3:30–5:30 AM)
 
  Response:
  {
@@ -1703,6 +1767,8 @@ Six **quality** theme cards displayed below the search bar. Each links to `/them
 | `practice` | "Spiritual Practices" | Meditation, Concentration, Pranayama, Affirmation, Energization | 4+ |
 | `yoga_path` | "Paths of Yoga" | Kriya Yoga, Raja Yoga, Bhakti Yoga, Karma Yoga, Jnana Yoga, Hatha Yoga, Mantra Yoga | 5+ |
 
+**Kriya Yoga theme page scope note (ADR-104):** The Kriya Yoga theme page (`/themes/kriya-yoga`) shows Yogananda's *published descriptions* of Kriya Yoga and its place in the yoga tradition — not technique instruction. An editorial note at the top of the page, styled as a quiet `--portal-text-muted` block: "Yogananda's published descriptions of Kriya Yoga and its place in the yoga tradition. Formal instruction in Kriya Yoga is available through the SRF Lessons → yogananda.org/lessons." This note is editorial content in `messages/{locale}.json`, SRF-reviewed. The note appears only on the Kriya Yoga theme page, not on other `yoga_path` themes. Below the note, the standard theme page layout: tagged passages, "Read in context" links, "Show more" — same as every other theme.
+
 Each category is a calm, distinct section on the `/themes` page — not a tabbed interface, just vertical sections with clear headings. Categories appear only when they contain at least one published topic. A topic goes live when an editor judges the tagged passages have sufficient depth — no fixed minimum count. Five deeply relevant passages about Laya Yoga is worth publishing; three tangentially tagged passages about a new topic probably isn't. Human judgment, not mechanical thresholds. The six quality themes remain the sole presence on the homepage.
 
 **Theme page (`/themes/[slug]`):**
@@ -1714,6 +1780,33 @@ Each category is a calm, distinct section on the `/themes` page — not a tabbed
 - No pagination — infinite gentle scroll, loading 5 more at a time
 - Header: theme name + a brief Yogananda quote that encapsulates the theme (editorially chosen)
 - Only passages with `tagged_by IN ('manual', 'reviewed')` are displayed — never unreviewed auto-tags
+
+#### Practice Bridge Tag (ADR-104)
+
+An editorial annotation — `practice_bridge: true` — on passages where Yogananda explicitly invites the reader to move from reading to practice. Not every mention of meditation or Kriya Yoga — only passages where the author's intent is clearly "do this, don't just read about it."
+
+**Tagging:** Human-tagged, same three-state pipeline as theme tags (ADR-032). Auto-classification may propose candidates; humans make every decision.
+
+**Display:** On tagged passages in the reader, search results, and theme pages, a quiet contextual note appears below the citation:
+
+```
+Yogananda taught specific meditation techniques through
+Self-Realization Fellowship.
+Begin with a free meditation → yogananda.org/meditate
+Learn about the SRF Lessons → yogananda.org/lessons
+```
+
+Styled in `--portal-text-muted`, Merriweather 300, `--text-sm` — the same visual weight as the "Find this book" bookstore link. Not a modal, not a card, not a CTA. A signpost, not a funnel. Present on every occurrence of the tagged passage across the portal.
+
+**Content:** The note text is editorial content in `messages/{locale}.json` — localized in Phase 10+, SRF-reviewed in all locales. The external URLs (`yogananda.org/meditate`, `yogananda.org/lessons`) are constants, not per-locale (SRF's site handles its own locale routing).
+
+**Schema addition:**
+
+```sql
+ALTER TABLE book_chunks ADD COLUMN practice_bridge BOOLEAN NOT NULL DEFAULT false;
+```
+
+**Phase:** 4+ (alongside the theme tagging pipeline). Initial tagging pass during multi-book corpus expansion (Phase 3–4).
 
 #### "Seeking..." (Empathic Entry Points)
 
@@ -1860,7 +1953,7 @@ The landing page for each individual book — the table of contents.
 - "Begin reading →" link to chapter 1
 - "Find this book →" link to SRF Bookstore
 
-**API:** Chapters are served by a new endpoint or the existing `GET /api/v1/books` extended with a `?include=chapters` parameter. The book landing page can also be SSG'd from the database at build time.
+**API:** `GET /api/v1/books/{slug}` returns book metadata with chapter index. The book landing page can also be SSG'd from the database at build time.
 
 ### Book Reader (`/books/[slug]/[chapter]`)
 
@@ -1951,7 +2044,7 @@ Loading varies by connection quality (screen width determines presentation, data
 
 | | Wide screen (≥ 1024px) | Narrow screen (< 1024px) |
 |---|---|---|
-| **Good connection** | Side panel visible. Batch prefetch all chapter relations on load (`GET /api/v1/chapters/[slug]/[number]/relations`, ~30–50KB). All subsequent updates are local cache lookups — zero network during reading. | Pill visible. Same batch prefetch — tap shows pre-loaded results instantly. |
+| **Good connection** | Side panel visible. Batch prefetch all chapter relations on load (`GET /api/v1/books/[slug]/chapters/[number]/relations`, ~30–50KB). All subsequent updates are local cache lookups — zero network during reading. | Pill visible. Same batch prefetch — tap shows pre-loaded results instantly. |
 | **Slow/metered (3G)** | Side panel visible. Loads on-demand when settled paragraph changes (not prefetched). | Pill visible. Tap triggers single API call for current paragraph. |
 | **Save-Data / text-only / 2G** | No panel. "Continue the Thread" at chapter end only (part of page render, zero extra cost). | No pill. "Continue the Thread" only. |
 
@@ -2059,7 +2152,7 @@ This separation means:
 - Pre-computed at build time or heavily cached (ISR)
 - The introductory text ("These themes — ...") is generated from the chapter's most prominent theme tags, not by an LLM
 
-**Implementation:** Query `chunk_relations` for all chunks in the current chapter, aggregate by target, deduplicate, rank by max similarity, filter to other books, take top 3. This data is included in the batch prefetch response (`/api/v1/chapters/[slug]/[number]/relations`) for batch-tier connections.
+**Implementation:** Query `chunk_relations` for all chunks in the current chapter, aggregate by target, deduplicate, rank by max similarity, filter to other books, take top 3. This data is included in the batch prefetch response (`/api/v1/books/[slug]/chapters/[number]/relations`) for batch-tier connections.
 
 #### Physical Book Bridge
 
@@ -2437,11 +2530,32 @@ The About page serves first-time visitors who don't know Yogananda or SRF. It is
 │ │
 │ Go Deeper │
 │ │
-│ → SRF Lessons (home-study meditation program) │
+│ Yogananda's published books are an invitation to │
+│ practice. If these teachings resonate with you, the │
+│ natural next step is to experience them directly │
+│ through meditation. │
+│ │
+│ → Begin today: A Beginner's Meditation │
+│ Free instruction from SRF — you can practice │
+│ right now. (yogananda.org/a-beginners-meditation) │
+│ │
+│ → The SRF Lessons │
+│ A 9-month home-study course in meditation and │
+│ spiritual living, including three foundational │
+│ techniques. The path to Kriya Yoga initiation. │
+│ (yogananda.org/lessons) │
+│ │
 │ → Find a meditation group near you │
+│ → Guided meditations with SRF monastics │
 │ → Online meditation events │
+│ → Kirtan & devotional chanting │
 │ → Visit an SRF temple or retreat │
 │ → SRF Bookstore │
+│ → Self-Realization Magazine │
+│ │
+│ 💬 "Read a little. Meditate more. │
+│ Think of God all the time." │
+│ — Paramahansa Yogananda │
 │ │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -2454,9 +2568,9 @@ The About page serves first-time visitors who don't know Yogananda or SRF. It is
 | **Paramahansa Yogananda** | Brief biography (3–4 paragraphs). Born in India, came to America in 1920, wrote Autobiography of a Yogi, established SRF. | Official portrait — positioned like a book frontispiece |
 | **The Line of Gurus** | The four gurus in sequence: Babaji, Lahiri Mahasaya, Sri Yukteswar, Yogananda. One sentence each. | Official portrait for each guru, displayed in chronological sequence |
 | **Self-Realization Fellowship** | SRF's mission, aims and ideals, global presence. Non-promotional — informational. | None (or a single photo of Mount Washington headquarters) |
-| **Go Deeper** | Links to SRF Lessons, center locator, Online Meditation Center, bookstore, temples and retreats. The answer to "I've read these passages and want more." | None |
+| **Go Deeper** | Enriched Practice Bridge section (ADR-104). 2–3 paragraphs of SRF-approved text: the portal's books are an invitation to practice; SRF's free Beginner's Meditation as an immediate starting point; the SRF Lessons as the formal path (9-month home-study course, three foundational techniques, path to Kriya Yoga initiation); a representative verbatim Yogananda passage about the primacy of practice (with citation). Then the signpost links: center locator, guided meditations with SRF monastics, Online Meditation Center, kirtan and devotional chanting, bookstore, temples and retreats, Self-Realization Magazine (where practitioners share their experiences with meditation and the teachings). Guided meditations and kirtan complement the Quiet Corner's silence — seekers who want instruction or devotional experience are pointed to SRF's existing resources. All framing text reviewed and approved by SRF. The free path is foregrounded: Beginner's Meditation appears before Lessons. | None |
 
-The "Go Deeper" section is the most important part of this page. It is the natural bridge from reading to practice — the moment when the portal fulfills DELTA's Embodiment principle by pointing the seeker back to their physical, spiritual life.
+The "Go Deeper" section is the most important part of this page. It is the natural bridge from reading to practice — the moment when the portal fulfills DELTA's Embodiment principle by pointing the seeker back to their physical, spiritual life. The enriched version (ADR-104) replaces the previous single-link signpost with substantive guidance: what the path of practice looks like, where to begin for free, and where formal instruction leads. This makes the signpost commensurate with what it points toward — without becoming a funnel. The tone matches SRF's own invitational voice on yogananda.org: warm, unhurried, never urgent.
 
 ### Navigation Structure
 
@@ -2481,8 +2595,9 @@ The "Go Deeper" section is the most important part of this page. It is the natur
 │ SRF Resources │
 │ · yogananda.org · SRF Lessons │
 │ · Online Meditation Center · SRF Bookstore │
-│ · Find a Center Near You · SRF/YSS App │
-│ · @YoganandaSRF (YouTube) │
+│ · Find a Center Near You · Request Free Literature │
+│ · SRF/YSS App — study, meditation │
+│ & inspiration · @YoganandaSRF (YouTube) │
 │ │
 │ ─────────────────────────────────────────────────────────── │
 │ │
@@ -2532,7 +2647,7 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - Passage PDF: single A4 page — Merriweather 14pt, warm cream background, citation, lotus watermark (8% opacity, bottom-right), portal URL
 - Chapter PDF (Phase 7): cover page, running headers, page numbers, drop capitals, lotus watermark on first page
 - Book PDF (Phase 7): title page, table of contents, all chapters, colophon
-- API: `GET /api/v1/pdf/passage/{chunk-id}`, `GET /api/v1/pdf/chapter/{book-slug}/{chapter}`, `GET /api/v1/pdf/book/{book-slug}`
+- API: `GET /api/v1/books/{slug}/pdf` (full book), `GET /api/v1/books/{slug}/chapters/{n}/pdf` (chapter), `POST /api/v1/exports/pdf` with `{ "type": "passages", "ids": ["{chunk-id}"] }` (single passage). See ADR-025 — PDFs are sub-paths of their parent resource, not a parallel `/pdf/` namespace.
 
 **Share menu:**
 
@@ -2598,11 +2713,17 @@ The portal has an opening gesture (DES-007, Portal Threshold). It also has closi
 
 **The Quiet Corner departure is special.** After the chime and 3 seconds of stillness, the affirmation crossfades (300ms) to a parting passage about returning to the world. This transforms the timer's end from "session over" to "now begin."
 
+**Practice note after parting passage (ADR-104):** Below the Quiet Corner's parting passage — after a generous whitespace gap — a two-line practice signpost:
+- Line 1: `If you'd like to deepen your meditation practice → yogananda.org/meditate`
+- Line 2: `Experience a guided meditation with SRF monastics → yogananda.org/meditate`
+
+The second line serves seekers who tried silence and want instruction — SRF's guided meditations are complementary to the Quiet Corner's unguided stillness. Styled in `--portal-text-muted`, `--text-sm`, Merriweather 300 — quieter than the parting passage itself. This is the moment of maximum receptivity: the seeker has just experienced stillness and may be most open to understanding that deeper practice exists. Two lines maximum — never a card, never promotional. Both links open in new tabs. Content is in `messages/{locale}.json` for Phase 10+ localization.
+
 **Design constraint:** The parting word appears *below* primary navigation (e.g., below "Next Chapter →"). Seekers continuing to the next chapter never scroll down to it. It exists only for the seeker who has finished for now.
 
 ### ADR-067: Non-Search Seeker Journeys
 
-The portal is equally excellent for seekers who never touch the search bar. Five non-search paths, each with specific design standards:
+The portal is equally excellent for seekers who never touch the search bar. Seven non-search paths, each with specific design standards:
 
 **1. The shared-link recipient** (`/passage/[chunk-id]`) — the portal's ambassador page, mediated by trust (a friend sent this).
 - Above the passage: "A passage from the teachings of Paramahansa Yogananda" — context for unfamiliar seekers
@@ -2626,7 +2747,22 @@ The portal is equally excellent for seekers who never touch the search bar. Five
 - The reading column belongs to the book. Cross-book features (Related Teachings, graph traversal) are in the side panel, never inline.
 - Optional Focus mode (ADR-072) reduces the reader to: reading column + Next Chapter. Everything else suppressed.
 
-**Single-invitation principle:** Each path invites exactly one step deeper — never more. The shared passage → continue reading the chapter. The external chapter arrival → start from the beginning. The Quiet Corner → nothing during timer, then a parting passage. Today's Wisdom → "Show me another" or search.
+**6. The devoted practitioner** (returns daily or weekly, uses search to find half-remembered passages, builds collections, compares across books).
+- This is the portal's highest-frequency user — someone who has practiced Kriya Yoga or studied Yogananda's writings for years and uses the portal as a study companion, not for discovery.
+- Advanced search supports their recall pattern: partial-phrase matching, book-scoped search, cross-book comparison via Related Teachings.
+- Personal collections (Phase 12) and study circle sharing (Phase 14) serve this seeker directly. Until then, browser bookmarks and the reading history (sessionStorage) provide lightweight persistence.
+- The Practice Bridge signposts (ADR-104) are confirmations for this seeker, not introductions — they already know the path. The signpost tone acknowledges this.
+
+**7. The scholar** (citation-driven, cross-referencing, export-oriented).
+- Academic researchers, seminary students, comparative religion faculty, digital humanities scholars who need Yogananda's words in citable form.
+- Stable canonical URLs for every passage (`/passage/[chunk-id]`) serve as persistent citations.
+- Citation export (Chicago, MLA, BibTeX) from the passage detail view (Phase 6 knowledge graph features the cross-reference layer that makes this natural).
+- The Knowledge Graph `/explore` view (ADR-043, ADR-061, ADR-062) is this seeker's primary discovery tool — they navigate by relationship, not by theme or emotion.
+- This path is how Yogananda's teachings enter university syllabi, interfaith anthologies, and peer-reviewed scholarship. The portal's bibliographic integrity directly serves this.
+
+**Single-invitation principle:** Each path invites exactly one step deeper — never more. The shared passage → continue reading the chapter. The external chapter arrival → start from the beginning. The Quiet Corner → nothing during timer, then a parting passage. Today's Wisdom → "Show me another" or search. The devoted practitioner → deeper into the book they're studying. The scholar → the citation they can use.
+
+**Honest absence principle:** When the portal cannot help — no results for a search query, a book unavailable in the seeker's language, a topic outside the corpus — it says so clearly and offers the closest alternative. The "no results" page is not an error state; it is a moment of honesty. It may surface the "Seeking..." empathic entry points, suggest broader theme exploration, or acknowledge that the query falls outside published works. It never fabricates relevance. (Relates to CLAUDE.md constraint #12 — content availability honesty.)
 
 ### DES-015: Self-Revealing Navigation
 
@@ -3188,7 +3324,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Primary platforms:** LINE (not WhatsApp), Google, YouTube, Twitter/X
 - **Script:** CJK (Hiragana, Katakana, Kanji). Requires Noto Serif JP / Noto Sans JP font loading.
 - **Typography:** 38rem line width holds ~30–35 CJK characters per line (within optimal 25–40 range). Line height should tighten from 1.8 to 1.6–1.7. Drop capitals are a Western convention — omit for Japanese. Per-language chunk size validation critical (CJK tokenization differs significantly).
-- **Cultural notes:** "Show me another" may need reframing. The cultural analogue to bibliomancy is omikuji (temple fortune slips), where the expectation is a single, definitive message — not unlimited refreshes. Consider framing as "別の教えを読む" (read a different teaching) rather than inviting endless cycling. Japanese social sharing prefers very short, aphoristic content — optimal shareable unit may be one sentence, not a full paragraph. LINE share support needed alongside WhatsApp (ADR-026). Honorific suffixes required for master names ("パラマハンサ・ヨガナンダ師").
+- **Cultural notes:** "Show me another" may need reframing. The cultural analogue to bibliomancy is omikuji (temple fortune slips), where the expectation is a single, definitive message — not unlimited refreshes. Consider framing as "別の教えを読む" (read a different teaching) rather than inviting endless cycling. Japanese social sharing prefers very short, aphoristic content — optimal shareable unit may be one sentence, not a full paragraph. LINE share support needed alongside WhatsApp (ADR-026). Honorific suffixes required for master names ("パラマハンサ・ヨガナンダ師"). Japanese *ma* (negative space) philosophy and wabi-sabi aesthetic could inform the Quiet Corner's presentation differently from the English version — stillness as active aesthetic principle, not merely absence of clutter. "Seeker" (*tanbōsha*, 探訪者) implies outsider status — "practitioner" or "reader" might feel more respectful in Japanese. Per-locale editorial review should determine the appropriate term.
 - **Open question:** Does SRF/YSS have digital Japanese translations? What is the Japanese SRF community structure?
 
 ### Hindi (hi) — Wave 11b
@@ -3196,15 +3332,19 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Primary platforms:** WhatsApp (dominant), Google, YouTube, JioPhone/KaiOS
 - **Script:** Devanagari (LTR). Requires Noto Serif Devanagari font loading. Base font size may need 10–15% increase vs Latin for equivalent readability.
 - **Cultural notes:** Hindi-speaking seekers know Yogananda through YSS, not SRF. Portal branding must feature YSS prominently for `/hi/` locale (ADR-079). The warm cream aesthetic works but may feel understated compared to Hindi spiritual print traditions (which tend toward more ornate visual treatment). India's device landscape is mobile-first and low-bandwidth — ADR-006 equity features (KaiOS, text-only mode, 2G optimization) are essential, not optional. Test performance specifically on JioPhone with Jio 4G in Uttar Pradesh/Bihar/Bengal network conditions.
-- **Organizational:** YSS branding, YSS bookstore links, YSS event calendar. Portal URL question: `teachings.yogananda.org/hi/` or a YSS-branded domain?
+- **Visual design open question:** Should the Hindi locale carry more visual warmth — deeper gold, more ornamental dividers, more generous use of Devanāgarī calligraphy — to align with Indian spiritual aesthetics? The current "understated" framing should not assume Western minimalism is the universal expression of reverence. YSS-connected Indian designers should participate in this decision, not just review it. (Cross-cultural principle 6)
+- **Typography conventions:** Drop capitals are a Western book convention — omit for Devanāgarī. Decorative opening quotation marks need script-appropriate glyphs. The 65-75 character optimal line length is calibrated for Latin script; Devanāgarī requires per-script validation.
+- **"Seeker" terminology:** In Hindi/Sanskrit, *sādhak* (साधक, practitioner) or *jijñāsu* (जिज्ञासु, one who desires to know) carry different connotations than "seeker" — a *sādhak* is actively practicing, not seeking. Per-locale editorial review should determine the culturally appropriate term. (Relates to ADR-074)
+- **Organizational:** YSS branding, YSS bookstore links, YSS event calendar. Portal URL question: `teachings.yogananda.org/hi/` or a YSS-branded domain? YSS representatives are co-equal design stakeholders for the Hindi locale — see CONTEXT.md § Stakeholders.
 - **Open question:** Does YSS have digital text of Hindi translations? What is YSS's digital infrastructure and approval process?
 
 ### Bengali (bn) — Wave 11b
 
 - **Primary platforms:** WhatsApp, Google, YouTube, Facebook
 - **Script:** Bengali script (LTR). Requires Noto Serif Bengali font loading. Bengali conjuncts and vowel signs require careful font rendering. Base font size may need increase vs Latin.
-- **Cultural notes:** Bengali is Yogananda's mother tongue — including it sends a powerful signal about mission integrity. Bengali devotional culture has strong existing practices (daily meditation, Durga Puja season) and literary traditions (Rabindranath Tagore's influence on spiritual aesthetics). The Quiet Corner could connect to Bengali devotional sensibility — perhaps a more poetic framing. Bengali OCR accuracy is lower than Hindi if digital text is unavailable.
-- **Organizational:** Same YSS branding considerations as Hindi.
+- **Cultural notes:** Bengali is Yogananda's mother tongue — including it sends a powerful signal about mission integrity. Bengali devotional culture has strong existing practices (daily meditation, Durga Puja season) and literary traditions (Rabindranath Tagore's influence on spiritual aesthetics). The Quiet Corner and parting passages may benefit from a more lyrical editorial framing in Bengali — not translation of English framing, but Bengali-authored devotional register. Bengali OCR accuracy is lower than Hindi if digital text is unavailable.
+- **Typography conventions:** Drop capitals are a Western convention — omit for Bengali script. Bengali conjuncts require careful font rendering validation. Decorative quotation marks need script-appropriate glyphs.
+- **Organizational:** Same YSS branding considerations as Hindi. YSS representatives are co-equal design stakeholders for the Bengali locale.
 - **Open question:** Does YSS have digital Bengali text? Bengali script rendering quality validation needed.
 
 ### Future Evaluation Candidates (Wave 11c)
@@ -3220,7 +3360,9 @@ Each supported locale carries cultural, typographic, and platform expectations t
 2. **Platform-aware distribution.** WhatsApp for Latin America, India, Africa. LINE for Japan. WeChat for China. KakaoTalk for Korea. The portal's messaging strategy must be locale-aware.
 3. **Script-aware typography.** Font size, line height, drop capitals, and line width all vary by script family. Design tokens should be locale-overridable.
 4. **Branding-aware identity.** SRF branding for Western locales. YSS branding for Indian locales. The portal's visual identity adapts to the organization the seeker knows.
-5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa), the TTS "Listen" button (Phase 11) is a critical accessibility feature. Consider prioritizing audio-first experiences for Hindi and Bengali locales.
+5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa), the TTS "Listen" button (Phase 11) is a critical accessibility feature. For Hindi and Bengali locales specifically, audio-first entry points should be prioritized earlier than the general TTS schedule. Yogananda's own voice recordings are the most direct form of the teachings. Consider an audio-first pilot alongside the Hindi/Bengali text launch (Phase 10b) rather than deferring all audio to Phase 12. Yogananda's tradition includes kirtan (singing/chanting) and oral storytelling — inherently oral modes that the portal's text-first approach underserves.
+6. **What feels sacred is culturally specific.** The emotional register of the portal — what feels contemplative, welcoming, sacred — is not universal. The warm cream + Merriweather + bibliomantic aesthetic resonates with Western spiritual bookstore sensibility. Hindi spiritual print traditions carry more ornate visual warmth (deeper gold, ornamental dividers, generous Devanāgarī calligraphy). Bengali devotional culture values poetic beauty and literary refinement (Tagore's influence). Japanese *ma* (negative space) philosophy could genuinely inform the Quiet Corner differently. Bhakti traditions express devotion through fervent intensity, not only through stillness. Per-locale adaptation addresses emotional resonance, not just typography and platform preferences. Each locale's visual and editorial adaptation is a *translation of emotional register*, not just a typographic adjustment.
+7. **Unsupported language arrival is a design surface, not an error state.** A seeker arriving from Japan, Korea, Russia, or an Arabic-speaking country will encounter a portal that doesn't yet speak their language. This moment must be designed, not defaulted. The response: (a) detect the browser's `Accept-Language` header; (b) if the language is in the future roadmap (Wave 11c candidates), display a brief, warm message in that language: "We are working to bring Yogananda's teachings to [language]. For now, the portal is available in [list of current languages]." This message is a static string in `messages/{locale}.json`, not a dynamic translation. (c) If the language is not on any roadmap, display the English welcome with no false promise. (d) Never auto-redirect — let the seeker choose. (e) The `[EN]` fallback marker (CLAUDE.md constraint #12) is always visible when English content is shown to a non-English browser locale. This principle extends to in-portal moments: when a seeker navigates to a book page that isn't yet available in their language, the page shows the English version with a clear `[EN]` marker and, if the translation is in progress, a note: "This book is being prepared in [language]." Honest about scope, not apologetic about it.
 
 ---
 
@@ -3454,6 +3596,31 @@ Implementation:
  available_languages: derived from books grouped by canonical_book_id
 ```
 
+### `GET /api/v1/books/{slug}`
+
+```
+Response:
+{
+ "id": "uuid",
+ "title": "Autobiography of a Yogi",
+ "subtitle": null,
+ "author": "Paramahansa Yogananda",
+ "slug": "autobiography-of-a-yogi",
+ "publication_year": 1946,
+ "cover_image_url": "...",
+ "description": "A spiritual classic...",
+ "bookstore_url": "https://bookstore.yogananda.org/...",
+ "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja"],
+ "chapters": [
+   { "number": 1, "title": "My Parents and Early Life" },
+   { "number": 2, "title": "My Mother's Death and the Mystic Amulet" },
+   ...
+ ]
+}
+
+Cache-Control: max-age=86400, stale-while-revalidate=604800
+```
+
 ### `GET /api/v1/books/[slug]/chapters/[number]`
 
 ```
@@ -3518,7 +3685,7 @@ Cache-Control: max-age=86400, stale-while-revalidate=604800
  (relations are stable; only change when new content is ingested)
 ```
 
-### `GET /api/v1/chapters/[book-slug]/[number]/thread`
+### `GET /api/v1/books/[slug]/chapters/[number]/thread`
 
 ```
 Response:
@@ -3552,6 +3719,38 @@ Implementation:
 Cache-Control: max-age=86400, stale-while-revalidate=604800
 ```
 
+### Timestamp Filtering on List Endpoints (ADR-107)
+
+All list endpoints that return content collections support optional `updated_since` and `created_since` query parameters for incremental sync. These enable automation consumers (Zapier, Lambda, partner integrations) to fetch only what changed since their last poll — reducing API calls by orders of magnitude for stable collections.
+
+```
+GET /api/v1/books?updated_since=2026-03-01T00:00:00Z
+GET /api/v1/themes?created_since=2026-03-15T12:00:00Z&language=hi
+GET /api/v1/audio?updated_since=2026-02-28T00:00:00Z
+```
+
+- `updated_since` — items where `updated_at > :timestamp` (new + modified)
+- `created_since` — items where `created_at > :timestamp` (new only)
+- Mutually exclusive — providing both returns 400
+- Results ordered by filtered timestamp ascending (natural incremental sync order)
+
+When active, responses include `sync` metadata with `latest_timestamp` for the consumer's next call:
+
+```json
+{
+  "results": [...],
+  "sync": {
+    "filtered_by": "updated_since",
+    "since": "2026-03-01T00:00:00Z",
+    "result_count": 3,
+    "latest_timestamp": "2026-03-14T09:22:11Z"
+  },
+  "pagination": { "next_cursor": "..." }
+}
+```
+
+See ADR-107 for the full endpoint coverage table, schema requirements (`updated_at` columns and triggers on all content tables), and phasing.
+
 ---
 
 ## DES-020: Platform Parity (Mobile Readiness)
@@ -3567,12 +3766,14 @@ All business logic lives in `/lib/services/` as plain TypeScript functions. Serv
  search.ts → findPassages(query, language, options)
  daily-passage.ts → getDailyPassage(date, language)
  themes.ts → getThemes(language), getThemePassages(slug, language, cursor, limit)
- books.ts → getBooks(language), getChapter(bookSlug, chapterNumber, language)
+ books.ts → getBooks(language), getBook(slug), getChapter(bookSlug, chapterNumber, language)
  quiet.ts → getAffirmation(language)
  relations.ts → getRelatedChunks(chunkId, filters, limit)
  thread.ts → getChapterThread(bookSlug, chapterNumber)
  glossary.ts → getGlossaryTerms(language, category), getTermBySlug(slug, language)
- magazine.ts → getIssues(cursor, limit), getIssue(year, season), getArticle(slug)
+ audio.ts → getRecordings(cursor, limit, filters), getRecording(slug)
+ videos.ts → getVideos(cursor, limit, filters), getVideo(slug)
+ magazine.ts → getIssues(cursor, limit, filters), getIssue(slug), getArticles(cursor, limit, filters), getArticle(slug)
  seeking.ts → getSeekingDashboard, getThemeTrends(period)
  journeys.ts → getJourneys(language), getJourney(slug)
  resonance.ts → getResonanceSignals(type, limit)
@@ -3628,10 +3829,17 @@ export { sql };
 | `/api/v1/search` | `no-store` | Query-dependent, not cacheable |
 | `/api/v1/themes` | `max-age=86400` | Theme list rarely changes |
 | `/api/v1/books` | `max-age=86400` | Book catalog rarely changes |
+| `/api/v1/books/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Book metadata is effectively immutable |
 | `/api/v1/chunks/[id]/related` | `max-age=86400, stale-while-revalidate=604800` | Relations stable; only change on new content ingestion |
-| `/api/v1/chapters/[slug]/[number]/thread` | `max-age=86400, stale-while-revalidate=604800` | Same as related — changes only on new content |
+| `/api/v1/books/[slug]/chapters/[number]/thread` | `max-age=86400, stale-while-revalidate=604800` | Same as related — changes only on new content |
 | `/api/v1/magazine/issues` | `max-age=86400` | Issue catalog changes rarely |
+| `/api/v1/magazine/issues/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Issue metadata is effectively immutable |
+| `/api/v1/magazine/articles` | `max-age=86400` | Article catalog changes rarely |
 | `/api/v1/magazine/articles/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Article text is effectively immutable |
+| `/api/v1/audio` | `max-age=86400` | Audio catalog changes infrequently |
+| `/api/v1/audio/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Audio metadata is effectively immutable |
+| `/api/v1/videos` | `max-age=86400` | Video catalog changes infrequently |
+| `/api/v1/videos/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Video metadata is effectively immutable |
 | `/api/v1/glossary` | `max-age=86400` | Glossary changes infrequently |
 | `/api/v1/seeking` | `max-age=86400` | Aggregated nightly, not real-time |
 
@@ -3953,7 +4161,7 @@ Pre-computed `chunk_relations` can span book chunks and video chunks. When a see
 
 #### Synchronized Transcript Display
 
-The video player page (`/videos/[id]`) shows a synchronized transcript panel alongside the embedded player:
+The video player page (`/videos/[slug]`) shows a synchronized transcript panel alongside the embedded player:
 
 - Transcript text scrolls to follow playback position
 - Each paragraph is clickable — clicking jumps the video to that timestamp
@@ -3970,10 +4178,12 @@ The portal connects seekers to SRF's gatherings without duplicating existing eve
 
 | Element | Content | Source | Update Frequency |
 |---------|---------|--------|-----------------|
-| **World Convocation** | Brief description, dates, hero image | Static text + link to `convocation.yogananda.org` | Annual |
+| **World Convocation** | SRF's annual gathering of seekers from around the world, offered free of charge. Held each August in Los Angeles and simultaneously online, Convocation includes classes on Yogananda's teachings, group meditations, devotional chanting (kirtan), pilgrimage tours to sacred SRF sites, and fellowship with monastics and seekers worldwide. Anyone may attend — no membership required. Hero image, next year's dates. | Static text + link to `convocation.yogananda.org` | Annual |
 | **Commemorations** | Christmas meditation, Mahasamadhi (March 7), Janmashtami, Founder's Day, etc. | Static list with dates and links to SRF event pages | Annual |
-| **Online events** | "Join a live meditation" | Link to `onlinemeditation.yogananda.org` | Static |
+| **Online events** | "Join a live meditation" — SRF's Online Meditation Center offers live group meditations, guided meditations led by SRF monastics, and devotional chanting sessions from the convenience of home. | Link to `onlinemeditation.yogananda.org` | Static |
 | **Retreats** | "Experience a retreat" | Link to SRF retreat information | Static |
+| **Monastic visits** | SRF monastics visit meditation centers worldwide throughout the year for classes, meditations, and fellowship. | Link to SRF events page (`yogananda.org/events`) | Static |
+| **Youth & young adult programs** | SRF offers dedicated programs for young seekers. | Link to SRF youth/young adult pages (`yogananda.org/events`) | Static |
 
 ### Page Design
 
@@ -3984,10 +4194,17 @@ Located at `/events` (dedicated page — consistent with the routes table in § 
 │ Gatherings & Events │
 │ │
 │ ┌─────────────────────────────────────┐ │
-│ │ 🌅 World Convocation 2026 │ │
-│ │ Annual gathering of seekers from │ │
-│ │ around the world. │ │
-│ │ Learn more → convocation.yogananda │ │
+│ │ 🌅 World Convocation 2027 │ │
+│ │ │ │
+│ │ SRF's annual gathering of seekers │ │
+│ │ from around the world — free and │ │
+│ │ open to all. Classes, meditations, │ │
+│ │ kirtan, pilgrimage tours to sacred │ │
+│ │ SRF sites, and fellowship with │ │
+│ │ monastics. In Los Angeles & online. │ │
+│ │ │ │
+│ │ Register free → convocation.yoga.. │ │
+│ │ Explore the sacred places → /places │ │
 │ └─────────────────────────────────────┘ │
 │ │
 │ Upcoming Commemorations │
@@ -4001,6 +4218,11 @@ Located at `/events` (dedicated page — consistent with the routes table in § 
 │ │ Join a Live │ │ Experience a │ │
 │ │ Meditation → │ │ Retreat → │ │
 │ └──────────────────┘ └──────────────────┘ │
+│ │
+│ ┌──────────────────┐ ┌──────────────────┐ │
+│ │ Monastic Visits │ │ Youth & Young │ │
+│ │ Worldwide → │ │ Adult Programs → │ │
+│ └──────────────────┘ └──────────────────┘ │
 └─────────────────────────────────────────────┘
 ```
 
@@ -4009,6 +4231,7 @@ Located at `/events` (dedicated page — consistent with the routes table in § 
 - **Phase 8:** Static content. MDX or hardcoded in a Next.js page. No CMS needed.
 - **Production:** Contentful entry type `event` with fields: `title`, `date`, `description`, `externalUrl`, `image`. Editors update annually.
 - **No dynamic event data.** The portal does not fetch from SRF's event systems. It links to them.
+- **Lightweight calendar awareness (Phase 8):** The Convocation hero card displays the next Convocation date. Since Convocation is always in August, a simple date comparison promotes the card from "annual event" to "upcoming event" when the current date is within a configurable window (e.g., April–August). During this window, the card's description adds "Registration is open" with link. Outside the window: "Held each August." This is not the full DES-028 calendar-aware surfacing system — it's a single date check on a static page. Commemorations can use similar lightweight date proximity when full DES-028 ships (Phase 4+).
 
 ---
 
@@ -4036,6 +4259,7 @@ CREATE TABLE places (
  image_url TEXT, -- Contemplative header image
  visiting_info TEXT, -- Hours, access notes
  external_url TEXT, -- Link to SRF/YSS property page
+ virtual_tour_url TEXT, -- SRF virtual pilgrimage tour URL (nullable; SRF offers tours of Mother Center, Lake Shrine, Hollywood Temple, Encinitas)
  is_active BOOLEAN NOT NULL DEFAULT true,
  display_order INTEGER NOT NULL DEFAULT 0,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
@@ -4077,6 +4301,7 @@ CREATE INDEX idx_chunk_places_chunk ON chunk_places(chunk_id);
 │ │ Autobiography, Chapter 49 │ │
 │ │ │ │
 │ │ Visit → srf.org/lake-shrine │ │
+│ │ Take a Virtual Tour → │ │
 │ │ Get Directions → │ │
 │ │ See This Place (Street View) → │ │
 │ └────────────────────────────────────────────┘ │
@@ -4111,6 +4336,18 @@ CREATE INDEX idx_chunk_places_chunk ON chunk_places(chunk_id);
 │ │ — Autobiography of a Yogi, Chapter 1 │ │
 │ │ │ │
 │ │ 📖 Read Chapter 1 → │ │
+│ └────────────────────────────────────────────┘ │
+│ │
+│ ┌────────────────────────────────────────────┐ │
+│ │ Ranchi, India │ │
+│ │ Yogoda Satsanga Brahmacharya Vidyalaya │ │
+│ │ │ │
+│ │ "A school for boys where yoga was │ │
+│ │ taught along with standard │ │
+│ │ educational subjects." │ │
+│ │ — Autobiography of a Yogi, Chapter 27 │ │
+│ │ │ │
+│ │ 📖 Read Chapter 27 → │ │
 │ └────────────────────────────────────────────┘ │
 │ │
 │ ┌────────────────────────────────────────────┐ │
@@ -4161,7 +4398,8 @@ No embedded map library. Each place card links out to external maps services —
 | Link | Implementation | Rationale |
 |------|---------------|-----------|
 | **"Get Directions"** | `geo:` URI or Apple/Google Maps link (opens native maps app) | Delegates navigation to the user's preferred app |
-| **"See This Place"** | Google Maps Street View URL (opens in new tab) | Virtual visit without embedding Google SDK — no tracking scripts on the portal |
+| **"Take a Virtual Tour"** | SRF virtual pilgrimage tour URL (opens in new tab). Available for Mother Center, Lake Shrine, Hollywood Temple, Encinitas. Uses `virtual_tour_url` column — only displayed when non-null. | SRF's narrated virtual tours are warmer and richer than Street View; preferred when available. Requires SRF to confirm canonical tour URLs (see CONTEXT.md Q110). |
+| **"See This Place"** | Google Maps Street View URL (opens in new tab) | Fallback virtual visit for places without SRF tours. No tracking scripts on the portal. |
 | **Visit** | SRF/YSS property page URL | e.g., "Visit → srf.org/lake-shrine" |
 
 **Street View URL format:** `https://www.google.com/maps/@{lat},{lng},3a,75y,0h,90t/data=!3m6!1e1!3m4!1s...` — a plain link, no JavaScript, no API key. Only included for places where Street View coverage exists.
@@ -4208,6 +4446,7 @@ Response:
  "image_url": "...",
  "visiting_info": "Open Tuesday–Saturday, 9am–4:30pm",
  "external_url": "https://lakeshrine.org",
+ "virtual_tour_url": "https://yogananda.org/...",
  "passages": [
  {
  "chunk_id": "uuid",
@@ -4228,8 +4467,8 @@ Response:
 
 | Phase | Scope |
 |-------|-------|
-| **Phase 8** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." Cross-references with Autobiography passages. No maps. |
-| **Phase 11** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi). "See This Place" Street View links on place cards (ADR-070). Reader ↔ Place cross-reference cards. |
+| **Phase 8** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." "Take a Virtual Tour" links for properties with SRF virtual pilgrimage tours (Mother Center, Lake Shrine, Hollywood Temple, Encinitas). Cross-references with Autobiography passages. Convocation cross-link on LA-area SRF property cards: "This site is part of the annual SRF World Convocation pilgrimage. Learn more → convocation.yogananda.org." No maps. |
+| **Phase 11** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi, Dakshineswar). "See This Place" Street View links on place cards (ADR-070). Reader ↔ Place cross-reference cards. **Indian biographical site note:** Google Street View coverage in rural India (Gorakhpur, Serampore, Ranchi) is patchy or absent. Where Street View is unavailable, commissioned photography or editorial descriptions should be the primary experience, with maps as secondary. Query YSS for photographic archives of these sites (see CONTEXT.md § Open Questions). "Get Directions" for Indian sites serves a pilgrimage context more than a driving-directions context — consider "Visit this place" framing for Indian biographical sites. |
 | **Future** | Dynamic center locator (if SRF provides data). Multi-language place descriptions (Phase 10). |
 
 ---
@@ -4416,6 +4655,8 @@ The `chunk_relations` table (ADR-050) connects passages by semantic similarity. 
 
 **Example:** "Yogananda on Fear" — 8 passages from 4 books, editorially ordered to build a coherent contemplation.
 
+**Example:** "The Path of Practice" (ADR-104) — a curated passage sequence tracing Yogananda's published arc from reading to practice: why meditate → what meditation is → what Kriya Yoga is → the lineage (Babaji, Lahiri Mahasaya, Sri Yukteswar, Yogananda) → the invitation to practice. All passages verbatim, all cited. The final entry signposts SRF's free Beginner's Meditation (`yogananda.org/a-beginners-meditation`) and the SRF Lessons (`yogananda.org/lessons`). This thread is the corpus-grounded version of what SRF's website provides through editorial copy — but here it is Yogananda's own voice making the invitation. Requires multi-book corpus (Phase 5+).
+
 The "Seeking..." entry points already hint at this. Threads make the connection explicit and browsable.
 
 ### Schema
@@ -4527,9 +4768,14 @@ The `daily_passages` pool already supports optional seasonal weighting. Calendar
 | Category | Examples | Passage Source |
 |----------|----------|---------------|
 | **Yogananda's life** | Birth anniversary (Jan 5), Mahasamadhi (Mar 7), Arrival in America (Sep 19) | Editorially curated passages about each event |
-| **Hindu/Indian calendar** | Makar Sankranti, Diwali, Janmashtami | Passages on light/darkness, divine love, Krishna |
-| **Christian calendar** | Christmas, Easter | Yogananda wrote extensively about Christ — rich corpus |
+| **Indian festivals** | Makar Sankranti, Diwali, Janmashtami, Navaratri, Durga Puja | Passages on light/darkness, divine love, Krishna, Divine Mother |
+| **Christian (Western)** | Christmas (Dec 25), Easter (Western date) | Yogananda wrote extensively about Christ — rich corpus |
+| **Christian (Orthodox)** | Christmas (Jan 7), Easter (Orthodox date) | Same corpus, different calendar dates |
+| **Buddhist** | Vesak, Dharma Day | Passages on meditation, consciousness, non-attachment |
+| **Interfaith / contemplative** | Jewish High Holy Days (if Yogananda references), Sufi observances | Passages where Yogananda engages with other traditions |
 | **Universal observances** | International Day of Peace, World Meditation Day | Passages on peace, meditation |
+
+**Taxonomy note:** The previous four-category scheme (`yogananda_life`, `hindu`, `christian`, `universal`) was reductive — "Hindu" collapsed dozens of distinct traditions (Shaivism, Vaishnavism, Shakta) and excluded observances from traditions the worldview pathways (DES-048) explicitly address. The expanded taxonomy uses `indian_festival` (acknowledging the cultural rather than sectarian framing), distinguishes Western and Orthodox Christian dates, and adds `buddhist` and `interfaith` categories. Whether to include Buddhist, Jewish, or Islamic observances is an editorial scope question for SRF — see CONTEXT.md § Open Questions (Stakeholder).
 
 ### Schema
 
@@ -4543,7 +4789,7 @@ CREATE TABLE calendar_events (
  description TEXT, -- brief context
  month INTEGER NOT NULL, -- 1–12
  day INTEGER NOT NULL, -- 1–31
- category TEXT NOT NULL, -- 'yogananda_life', 'hindu', 'christian', 'universal'
+ category TEXT NOT NULL, -- 'yogananda_life', 'indian_festival', 'christian_western', 'christian_orthodox', 'buddhist', 'interfaith', 'universal'
  is_active BOOLEAN NOT NULL DEFAULT true,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -5092,6 +5338,8 @@ The portal is maintained by a broader organizational ecosystem than just "staff.
 | **Philanthropist's foundation** | Quarterly or annually | Low | Impact report (PDF/web) | Pre-formatted, narrative impact report they can share with their board. Generated from Impact Dashboard data, curated into a story. No work required. |
 | **Study circle leader** | Weekly preparation | Moderate | Study Workspace + community collections | Find → collect → arrange → share → present. Power user of community collections and shared links. Weekly satsanga preparation is the primary use case. |
 
+**Study circle leader — expanded profile:** This is the portal's most demanding external power user and the primary driver for Phase 12 (Study Workspace) and Phase 14 (Community Curation) features. The weekly satsanga preparation workflow is: (1) identify a theme or topic for the week, (2) search and browse for relevant passages across multiple books, (3) collect passages into an ordered sequence that builds understanding, (4) add brief contextual notes for group discussion, (5) share the collection with group members via link, (6) present during satsanga using Presentation mode (ADR-006 §5). Until Phase 12, this seeker uses browser bookmarks, manual note-taking, and shared passage links — functional but friction-heavy. The study circle leader also serves as an informal portal evangelist, introducing the portal to group members who may become daily visitors, devoted practitioners, or Quiet Corner seekers. In Indian and Latin American contexts, the study circle leader may be the primary interface between the portal and seekers who are less digitally literate — they project the portal on a shared screen or read passages aloud. Presentation mode's early delivery (consider pulling to Phase 2–3 per CONTEXT.md technical open question) directly serves this population.
+
 **Staffing open question:** Several operational personas (portal coordinator, book ingestion operator, VLD coordinator) are not yet assigned. SRF must determine whether these are monastic roles, AE team roles, or dedicated positions before Phase 4 begins. See CONTEXT.md § Open Questions (Stakeholder).
 
 ### The Editorial Review Portal (`/admin`)
@@ -5106,6 +5354,7 @@ A custom-built section of the Next.js application, protected by Auth0, built wit
 | `reviewer` | Theological review queue (final approval tier) |
 | `translator:{locale}` | Translation review for a specific language only |
 | `social` | Social media asset review and download |
+| `updates` | Portal update note review and publication (ADR-105) |
 | `admin` | All editorial functions + user management |
 | `leadership` | Impact dashboard (read-only) |
 
@@ -5205,6 +5454,32 @@ Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session po
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Portal update review** (Phase 4):
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Portal Update — Review                     AI-drafted       │
+│                                                             │
+│ Season: Spring 2027                                         │
+│ Triggered by: deploy v3.2.0 (2027-04-15)                   │
+│                                                             │
+│ Title:                                                      │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ The Library has grown                        [Edit]     │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Summary:                                                    │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Three new books join the collection: Man's Eternal      │ │
+│ │ Quest, The Divine Romance, and Journey to               │ │
+│ │ Self-Realization.                             [Edit]     │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Category: new_content                                       │
+│                                                             │
+│ [✓ Approve & Publish] [Edit] [Discard]                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### Contentful Custom Apps (Sidebar Panels)
 
 Lightweight React panels that appear in Contentful's entry editor sidebar, keeping editors contextually aware:
@@ -5258,6 +5533,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 - `/lib/services/review.ts` — review queue queries, approval/rejection
 - `/lib/services/curation.ts` — daily passage selection, calendar management
 - `/lib/services/social.ts` — asset generation, caption management
+- `/lib/services/updates.ts` — portal update draft generation, review, publication (ADR-105)
 - `/lib/services/translation.ts` — translation review, locale progress tracking
 - `/lib/services/impact.ts` — aggregated metrics for leadership dashboard
 - `/lib/services/collections.ts` — community collections, visibility management, submission pipeline (ADR-086)
@@ -5268,7 +5544,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 
 | Phase | Staff Experience Work |
 |---|---|
-| **Phase 4** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Auth0 integration. Email digest. |
+| **Phase 4** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check, portal update review (ADR-105). Auth0 integration. Email digest. |
 | **Phase 8** | Social media asset review added. |
 | **Phase 9** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. |
 | **Phase 10** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
@@ -5479,8 +5755,11 @@ The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. Thi
 | `/guide` page drafts (need-based) | Drafts recommendation text for seeker need pathways | Reviews before publication | 4 | DES-048 |
 | `/guide` worldview pathways | Generates corpus-grounded guide sections for 12 worldview perspectives using seed queries, reverse bibliography, and vocabulary bridge | Theological review before publication | 4+ | DES-048, DES-027 |
 | `/guide` life-phase pathways | Generates guide sections for 9 life-phase perspectives using tone filters, accessibility levels, situation themes, and characteristic questions as generation anchors | Editorial + theological review | 4+ | DES-048 |
-| Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search) | Implicit — classification rules are human-authored | 0 | ADR-005 E1 |
+| `/guide` practice pathway | Drafts the "If You Feel Drawn to Practice" pathway framing text, selecting corpus passages about the primacy of practice and Kriya Yoga's public description | Theological review before publication | 4 | DES-048, ADR-104 |
+| Practice bridge candidate tagging | Proposes `practice_bridge: true` on passages where Yogananda explicitly invites the reader to practice | Human approval required for every tag | 4+ | ADR-104 |
+| Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search/practice) | Implicit — classification rules are human-authored | 0 | ADR-005 E1 |
 | Search quality evaluation | Automated judge assessing search result relevance in CI | Sets expected-passage test suite | 0 | ADR-005 E5 |
+| Portal update drafting | Reads deployment metadata and git history, drafts seeker-facing release note in portal voice (ADR-074) | Reviews and edits before publication | 4 | ADR-105 |
 
 ### Additional AI-Assisted Workflows
 
@@ -6327,12 +6606,24 @@ Self-Realization Magazine (published since 1925) is a primary content type along
 ### Magazine API Endpoints
 
 ```
-GET /api/v1/magazine/issues → Paginated issue list (cursor-based)
-GET /api/v1/magazine/issues/{year}/{season} → Single issue with articles
-GET /api/v1/magazine/articles/{slug} → Single article with chunks
-GET /api/v1/magazine/issues/{year}/{season}/pdf → Issue PDF (pre-rendered, S3 + CloudFront)
+GET /api/v1/magazine/issues              → Paginated issue list (cursor-based)
+ ?language=en                            — Filter by language
+ ?updated_since=...                      — Incremental sync (ADR-107)
+ ?created_since=...                      — Incremental sync (ADR-107)
+GET /api/v1/magazine/issues/{slug}       → Single issue (metadata + article summaries)
+GET /api/v1/magazine/issues/{slug}/pdf   → Issue PDF (pre-rendered, S3 + CloudFront)
+
+GET /api/v1/magazine/articles            → Paginated article list (cursor-based)
+ ?issue_id={uuid}                        — Filter to a single issue
+ ?author_type=yogananda                  — Filter by author type
+ ?language=en                            — Filter by language
+ ?updated_since=...                      — Incremental sync (ADR-107)
+ ?created_since=...                      — Incremental sync (ADR-107)
+GET /api/v1/magazine/articles/{slug}     → Single article with chunks
 GET /api/v1/magazine/articles/{slug}/pdf → Article PDF (pre-rendered)
 ```
+
+Issue slugs are single-segment, computed from year + season (e.g., `2025-spring`, `1925-winter`). Article slugs are globally unique (enforced by `UNIQUE(slug)` on `magazine_articles`). See ADR-108.
 
 ### Magazine Page Layout
 
@@ -6342,12 +6633,12 @@ GET /api/v1/magazine/articles/{slug}/pdf → Article PDF (pre-rendered)
 ├── Browse by Year (accordion → issue covers)
 └── Yogananda's Magazine Writings (searchable index, chronological + by theme)
 
-/magazine/{year}/{season} → Single issue view
+/magazine/{issue-slug} → Single issue view (e.g., /magazine/2025-spring)
 ├── Cover image + editorial note
 ├── Article list with author types (gold marks for Yogananda, neutral for others)
 └── "Read full issue PDF →" download
 
-/magazine/{year}/{season}/{slug} → Article reader (same reader component as books)
+/magazine/{issue-slug}/{article-slug} → Article reader (same reader component as books)
 ├── Author byline below title
 ├── Issue citation in reader header
 └── "In this issue" sidebar (replaces Related Teachings when browsing within an issue)
@@ -6649,22 +6940,27 @@ The `/guide` page organizes pathways into three groups: **need-based** (existing
 
 The following catalog defines each perspective, its corpus affinity points, the seed queries and resources Claude uses during generation, and representative bridge vocabulary. Each pathway is a self-contained `/guide` section — seekers may see one, several, or none depending on editorial decisions about which pathways meet SRF's pastoral standards.
 
-| # | Perspective | Key Corpus Affinity | Primary Books | Seed Themes / References | Bridge Vocabulary |
-|---|---|---|---|---|---|
-| 1 | **Christian Contemplative** | Yogananda's 1,600-page Gospel commentary; extensive Bible engagement | *The Second Coming of Christ*, *Autobiography* | Christ (person), Bible (scripture) | prayer ↔ meditation, Holy Spirit ↔ AUM, Kingdom of Heaven ↔ Christ Consciousness |
-| 2 | **Hindu / Vedantic Practitioner** | Gita commentary, yoga philosophy, Sanskrit terminology throughout | *God Talks With Arjuna*, *Autobiography* | Krishna (person), Bhagavad Gita (scripture), yoga_path themes | Home vocabulary — bridge runs in reverse (find which books discuss specific yogic concepts) |
-| 3 | **Buddhist / Zen Meditator** | Scientific meditation descriptions, consciousness states, concentration | *Autobiography* (meditation chapters), *Scientific Healing Affirmations* | Meditation, concentration, non-attachment (principles) | satori ↔ samadhi, nirvana ↔ moksha, sangha ↔ satsanga, dukkha ↔ maya |
-| 4 | **Sufi / Poetry Lover** | Rubaiyat commentary, Kabir/Rumi references, devotional love | *Wine of the Mystic*, *Cosmic Chants* | Omar Khayyam, Kabir (references), Devotion (practice) | dhikr ↔ meditation/chanting, fana ↔ samadhi, the Beloved ↔ Divine Beloved |
-| 5 | **Jewish / Contemplative Seeker** | Old Testament references, mystical unity, ethical teachings | *The Second Coming of Christ* (OT passages), *Man's Eternal Quest* | Bible (scripture — OT subset) | tikkun olam ↔ karma yoga, kavvanah ↔ concentration, devekut ↔ God-communion |
-| 6 | **Science & Consciousness Explorer** | Yogananda's scientific framing of yoga, engagement with scientists | *Autobiography* (science chapters), *Man's Eternal Quest* | Einstein, Luther Burbank (references), scientific category in vocabulary bridge | consciousness ↔ cosmic consciousness, energy ↔ prana/life force, neuroplasticity ↔ will and habit |
-| 7 | **Spiritual But Not Religious** | Universal human themes, no doctrinal prerequisites, empathic entry points | *Autobiography*, *Where There Is Light* | Quality themes (Peace, Joy, Purpose, Courage), Quiet Corner | No bridge needed — entry is through universal emotional language already present in theme names and empathic entry points |
-| 8 | **Yoga Practitioner (Body to Spirit)** | Yoga philosophy beyond asana, pranayama, energy body | *Autobiography*, *God Talks With Arjuna* | yoga_path themes, pranayama/meditation (practices) | asana ↔ (Yogananda rarely discusses postures — this is itself a discovery), pranayama ↔ life force control, chakra ↔ astral centers |
-| 9 | **Grief / Crisis Visitor** | Consolation, the soul's immortality, purpose of suffering | All books (cross-cutting) | Grief & Loss (situation), Quiet Corner, tone: `consoling` | No bridge needed — entry is through raw human need. The most interfaith pathway because grief has no tradition. |
-| 10 | **Psychology / Self-Improvement Seeker** | Willpower, habit formation, concentration, practical life advice | *Man's Eternal Quest*, *Where There Is Light*, *Sayings* | situation themes (Work, Relationships), tone: `practical` | mindfulness ↔ concentration, self-actualization ↔ Self-realization, flow state ↔ superconsciousness |
-| 11 | **Comparative Religion / Academic** | Cross-tradition references, the reverse bibliography as intellectual map | All books | Full reverse bibliography (DES-027), Knowledge Graph, principle themes | No bridge — vocabulary precision is valued; the glossary (ADR-038) and ontology (ADR-043) serve this population |
-| 12 | **Parent / Family-Oriented Seeker** | Practical guidance on raising children, family life, relationships | *Man's Eternal Quest*, *Journey to Self-Realization* | Parenting, Relationships (situations), tone: `practical` | mindful parenting ↔ conscious child-rearing, values ↔ spiritual qualities |
+**Ordering note:** The identifiers below are for reference only, not priority. Pathways are presented in no particular order on the `/guide` page — the editorial team determines grouping and sequence per locale. Different locales may foreground different pathways.
 
-**Generation priority:** Pathways 1, 3, 6, 7, 9 have the strongest corpus affinity and address the largest seeker populations. Generate and review these first. Pathways 2, 4, 8 have deep corpus support but smaller initial audiences. Pathways 5, 10, 11, 12 require multi-book corpus (Phase 3+) for meaningful content.
+| ID | Perspective | Key Corpus Affinity | Primary Books | Seed Themes / References | Bridge Vocabulary |
+|---|---|---|---|---|---|
+| WP-01 | **Christian Contemplative** | Yogananda's 1,600-page Gospel commentary; extensive Bible engagement | *The Second Coming of Christ*, *Autobiography* | Christ (person), Bible (scripture) | prayer ↔ meditation, Holy Spirit ↔ AUM, Kingdom of Heaven ↔ Christ Consciousness |
+| WP-02 | **Hindu / Vedantic Practitioner** | Gita commentary, yoga philosophy, Sanskrit terminology throughout | *God Talks With Arjuna*, *Autobiography* | Krishna (person), Bhagavad Gita (scripture), yoga_path themes | Home vocabulary — the bridge maps *outward*, helping practitioners discover which specific books and chapters address concepts they already know |
+| WP-03 | **Buddhist / Zen Meditator** | Scientific meditation descriptions, consciousness states, concentration | *Autobiography* (meditation chapters), *Scientific Healing Affirmations* | Meditation, concentration, non-attachment (principles) | satori ↔ samadhi, nirvana ↔ moksha, sangha ↔ satsanga, dukkha ↔ maya |
+| WP-04 | **Sufi / Poetry Lover** | Rubaiyat commentary, Kabir/Rumi references, devotional love | *Wine of the Mystic*, *Cosmic Chants* | Omar Khayyam, Kabir (references), Devotion (practice) | dhikr ↔ meditation/chanting, fana ↔ samadhi, the Beloved ↔ Divine Beloved |
+| WP-05 | **Jewish / Contemplative Seeker** | Old Testament references, mystical unity, ethical teachings | *The Second Coming of Christ* (OT passages), *Man's Eternal Quest* | Bible (scripture — OT subset) | tikkun olam ↔ karma yoga, kavvanah ↔ concentration, devekut ↔ God-communion |
+| WP-06 | **Science & Consciousness Explorer** | Yogananda's scientific framing of yoga, engagement with scientists | *Autobiography* (science chapters), *Man's Eternal Quest* | Einstein, Luther Burbank (references), scientific category in vocabulary bridge | consciousness ↔ cosmic consciousness, energy ↔ prana/life force, neuroplasticity ↔ will and habit |
+| WP-07 | **Spiritual But Not Religious** | Universal human themes, no doctrinal prerequisites, empathic entry points | *Autobiography*, *Where There Is Light* | Quality themes (Peace, Joy, Purpose, Courage), Quiet Corner | No bridge needed — entry is through universal emotional language already present in theme names and empathic entry points |
+| WP-08 | **Yoga Practitioner (Body to Spirit)** | Yoga philosophy beyond asana, pranayama, energy body | *Autobiography*, *God Talks With Arjuna* | yoga_path themes, pranayama/meditation (practices) | asana ↔ (Yogananda rarely discusses postures — this is itself a discovery), pranayama ↔ life force control, chakra ↔ astral centers |
+| WP-09 | **Grief / Crisis Visitor** | Consolation, the soul's immortality, purpose of suffering | All books (cross-cutting) | Grief & Loss (situation), Quiet Corner, tone: `consoling` | No bridge needed — entry is through raw human need. The most interfaith pathway because grief has no tradition. |
+| WP-10 | **Psychology / Self-Improvement Seeker** | Willpower, habit formation, concentration, practical life advice | *Man's Eternal Quest*, *Where There Is Light*, *Sayings* | situation themes (Work, Relationships), tone: `practical` | mindfulness ↔ concentration, self-actualization ↔ Self-realization, flow state ↔ superconsciousness |
+| WP-11 | **Comparative Religion / Academic** | Cross-tradition references, the reverse bibliography as intellectual map | All books | Full reverse bibliography (DES-027), Knowledge Graph, principle themes | No bridge — vocabulary precision is valued; the glossary (ADR-038) and ontology (ADR-043) serve this population |
+| WP-12 | **Parent / Family-Oriented Seeker** | Practical guidance on raising children, family life, relationships | *Man's Eternal Quest*, *Journey to Self-Realization* | Parenting, Relationships (situations), tone: `practical` | mindful parenting ↔ conscious child-rearing, values ↔ spiritual qualities |
+| WP-13 | **Muslim / Sufi Seeker** | Yogananda's engagement with Islamic mysticism, Rubaiyat commentary, references to Sufi saints, universal God-consciousness | *Wine of the Mystic*, *Autobiography*, *Man's Eternal Quest* | Omar Khayyam, Kabir (references), Devotion (practice), cosmic consciousness | salat ↔ meditation/prayer, dhikr ↔ chanting/AUM, nafs ↔ ego, tawhid ↔ cosmic consciousness, the Beloved ↔ Divine Beloved |
+| WP-14 | **Agnostic / Skeptical-but-Curious** | Yogananda's engagement with science, his insistence on verifiable experience over blind faith, experimental method in meditation | *Autobiography* (science chapters, "The Law of Miracles"), *Man's Eternal Quest* | Scientific vocabulary bridge, consciousness, practical technique | No tradition-specific bridge — entry is through questions: "Is consciousness more than the brain?", "Can meditation be verified?", "What did Yogananda mean by 'scientific' spirituality?" Distinct from WP-06 (Science Explorer) in that WP-14 does not assume interest in consciousness *per se* — it meets skepticism directly. |
+| WP-15 | **Documentary Viewer ("Awake")** | Discovered Yogananda through the *Awake: The Life of Yogananda* documentary film; may have no prior spiritual reading practice; entry is visual/emotional, not textual | *Autobiography of a Yogi* (the source the film draws from), *Where There Is Light* (accessible entry point), *Man's Eternal Quest* | No tradition-specific themes — entry is biographical and emotional: Yogananda's life story, his journey to America, his legacy | film ↔ book, scenes ↔ chapters, biographical narrative ↔ spiritual autobiography. The pathway bridges from a passive viewing experience to active engagement with Yogananda's own words. "You saw his life on screen — now read it in his voice." The *Autobiography* is the natural first book. The documentary is third-party (Counterpoint Films, SRF-endorsed) and linked via its distribution URLs, not hosted on the portal. |
+
+**Generation priority:** Pathways WP-01, WP-03, WP-06, WP-07, WP-09 have the strongest corpus affinity and address the largest seeker populations. Generate and review these first. WP-02, WP-04, WP-08, WP-13 have deep corpus support but smaller initial English-language audiences (WP-02 becomes high-priority for Hindi/Bengali locales). WP-05, WP-10, WP-11, WP-12, WP-14 require multi-book corpus (Phase 3+) for meaningful content. WP-15 (Documentary Viewer) requires only the *Autobiography* and is high-priority for the film's existing audience — many seekers discover Yogananda through the documentary before encountering his books. Whether to include WP-13 (Muslim/Sufi) and WP-14 (Agnostic) requires SRF editorial approval. Whether to include WP-15 requires confirming SRF's posture toward the *Awake* documentary as an endorsed entry point (see CONTEXT.md § Open Questions).
 
 **What is NOT a worldview pathway:** A pathway that would require the portal to adopt a theological position. "If you believe all religions are one" is a claim; "If you come from a Christian contemplative tradition" is a starting point. The pathways acknowledge where the seeker is, then point to where Yogananda's words are. They do not assert what Yogananda "would say to a Buddhist" — they show where he actually wrote about the themes that tradition cares about.
 
@@ -6781,9 +7077,84 @@ The Autobiography is a special asset here: it is literally a life-phase narrativ
 
 **The Young Seeker consideration:** The portal will be visited by teenagers — a 14-year-old grieving a grandparent, a 17-year-old curious about meditation from a yoga class. The portal's contemplative voice, slow pace, and absence of gamification actually *serve* this population well — it's the opposite of every other digital experience in their life. But the editorial voice should acknowledge their existence without being patronizing. Passages at accessibility level 1 with `practical` or `joyful` tone naturally serve younger readers. See CONTEXT.md § Open Questions for the editorial sensitivity question.
 
+**Youth & young adult signpost on LP-1:** The Young Seeker pathway should include a quiet signpost to SRF's dedicated youth and young adult programs: "SRF offers programs designed for young seekers — classes, events, and fellowship with others your age. Learn more → yogananda.org." This connects Yogananda's written words (what the portal delivers) with the living community (what SRF offers). The signpost appears after the pathway's content recommendations, not before — the portal's gift is the teachings themselves; the community signpost is the natural next step for a young person who resonates. Same visual weight as the Practice Bridge note: `--portal-text-muted`, Merriweather 300. SRF URL for youth programs is a stakeholder question (CONTEXT.md Q112).
+
 **Generation:** Life-phase pathways use the same AI-assisted generation pipeline as worldview pathways (DES-035 § Worldview Guide Pathway Generation). The prompt template differs: instead of tradition-specific seed queries and vocabulary bridges, life-phase prompts use tone filters, accessibility levels, situation theme associations, and the characteristic question as the generation anchor. Claude searches for passages that *answer the question of this season* and selects resources that serve the seeker's temporal context.
 
 **Generation priority:** Pathways 1, 4, 6, 8 address the most acute life-phase needs and have the strongest emotional urgency. Pathway 9 (New to Spiritual Practice) overlaps with the existing "If you are new to Yogananda's teachings" need-based pathway and may not need a separate life-phase version. Pathways 2, 3, 5, 7 have broader corpus support but less acute urgency.
+
+#### Practice Pathway: "If You Feel Drawn to Practice" (ADR-104)
+
+The culminating pathway — the one every other pathway eventually leads to. Every worldview pathway, every life-phase pathway, every need-based pathway eventually arrives at the same question: "I've been reading, and I want to practice. How do I begin?"
+
+This pathway is distinct from the others because it bridges *from the portal to SRF's institutional path*. Where other pathways point inward (to books, themes, threads, the Quiet Corner), this one points both inward and outward — to the portal's resources for understanding and to SRF's resources for doing.
+
+**Structure:**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│   IF YOU FEEL DRAWN TO PRACTICE                              │
+│                                                              │
+│   Yogananda wrote that reading about God is not enough —     │
+│   the deepest response to the teachings is to practice.      │
+│   His published works describe a path from curiosity         │
+│   to meditation to the deepest communion with God.           │
+│                                                              │
+│   → Start now: A Beginner's Meditation                       │
+│     Free instruction from SRF — you can practice             │
+│     today, right now.                                        │
+│     → yogananda.org/a-beginners-meditation                   │
+│                                                              │
+│   → The Quiet Corner                                         │
+│     A moment of stillness on this portal — one               │
+│     affirmation, a gentle timer, silence.                    │
+│                                                              │
+│   → Meditate with others                                     │
+│     Find a meditation group near you, or join                │
+│     a live session at the Online Meditation Center.          │
+│     → yogananda.org (center locator)                         │
+│     → onlinemeditation.yogananda.org                         │
+│                                                              │
+│   → Autobiography of a Yogi, Chapter 26                      │
+│     "The Science of Kriya Yoga" — Yogananda's public         │
+│     account of the technique's ancient lineage               │
+│     and purpose.                                             │
+│                                                              │
+│   → Kriya Yoga — theme page                                  │
+│     Passages about Kriya Yoga from across all                │
+│     published books.                                         │
+│                                                              │
+│   → The SRF Lessons                                          │
+│     A 9-month home-study course in meditation and            │
+│     spiritual living, including preparation for              │
+│     Kriya Yoga initiation.                                   │
+│     → yogananda.org/lessons                                  │
+│                                                              │
+│   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            │
+│                                                              │
+│   Others have shared their experiences with                  │
+│   meditation and the teachings in                            │
+│   Self-Realization Magazine.                                 │
+│   → yogananda.org/self-realization-magazine                  │
+│                                                              │
+│   💬 "You do not have to struggle to reach God,              │
+│      but you do have to struggle to tear away the            │
+│      self-created veil that hides Him from you."             │
+│      — Man's Eternal Quest, p. 119                           │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**What makes this pathway different from LP-9 ("New to Spiritual Practice"):** LP-9 serves the newcomer who has never meditated — its resources are introductory. The Practice pathway serves the seeker who has been *reading Yogananda's teachings on the portal* and feels drawn to formal practice. The two overlap in some resources (the Quiet Corner, the Beginner's Meditation) but differ in editorial framing and depth: the Practice pathway includes Autobiography Ch. 26, the Kriya Yoga theme page, and the SRF Lessons — none of which appear in LP-9.
+
+**Progression mirrors SRF's own site:** Begin free (Beginner's Meditation) → taste stillness (Quiet Corner) → meditate with others (center locator, Online Meditation Center — honoring Yogananda's emphasis on satsanga) → understand the path (Autobiography Ch. 26, Kriya theme) → commit when ready (SRF Lessons). The free resources appear first. The addition of group meditation acknowledges that Yogananda consistently emphasized spiritual fellowship (satsanga) as integral to the path — the practice pathway should not present meditation as exclusively solitary.
+
+**Editorial voice:** Navigational, never promotional. "Yogananda wrote that reading about God is not enough" is a factual description of his published position. The framing text never says "you should enroll" — it says "here is the path, if you want it."
+
+**Provenance:** Same three-state model as all pathways. Claude drafts initial text; theological reviewer approves.
+
+**Phase:** 4 (with the rest of `/guide`). Requires the Kriya Yoga theme page (Phase 5+) for the theme link; until then, the link points to Autobiography Ch. 26 only.
 
 ---
 
@@ -6945,8 +7316,8 @@ Interactive visual map of the entire teaching corpus. Three visualization modes,
 | Theme | Hexagon | SRF Gold | Medium (passage count) | `/themes/[slug]` | 6 |
 | Person | Portrait circle | Warm Cream border | Medium (fixed) | `/people/[slug]` | 6 |
 | Scripture/reference | Diamond | Earth tone | Medium (fixed) | `/references/[slug]` | 6 |
-| Magazine issue | Rectangle | Warm accent | Medium (fixed) | `/magazine/[year]/[season]` | 7 |
-| Magazine chunk | Circle | Warm accent (30%) | Small | `/magazine/[year]/[season]/[slug]` | 7 |
+| Magazine issue | Rectangle | Warm accent | Medium (fixed) | `/magazine/[issue-slug]` | 7 |
+| Magazine chunk | Circle | Warm accent (30%) | Small | `/magazine/[issue-slug]/[article-slug]` | 7 |
 | Ontology concept | Rounded rectangle | SRF Gold (dark) | Medium (relation count) | `/ontology/[slug]` | 7+ |
 | Sacred place | Map pin | Earth green | Medium (fixed) | `/places/[slug]` | 12 |
 | Video | Play-button circle | Teal accent | Medium (fixed) | `/videos/[slug]` | 12 |
@@ -7240,6 +7611,328 @@ Images are stored in S3 and served via CloudFront. At ingestion, the Lambda pipe
 - `original` of sacred images: steganographic watermark (Phase 12)
 
 **Service file:** `/lib/services/images.ts` — image queries, size resolution, download URL generation.
+
+---
+
+## DES-050: Seeker & User Persona Index
+
+A consolidated reference to every persona type defined across the portal's design documents. This section does not duplicate persona details — it indexes them so that any developer, designer, or editorial staff member can find who the portal serves and where the design commitments for each persona live.
+
+### Design Philosophy
+
+The portal's personas are **need-based, not demographic**. A 16-year-old in career crisis and a 45-year-old career-changer both enter through the same life-phase pathway. A Christian contemplative in Atlanta and a Hindu practitioner in Kolkata both find Yogananda's words, but through different worldview entry points. Age, income, education, and geography are treated as *constraints to design around* (performance budgets, accessibility, cultural adaptation), never as audience segments to target.
+
+**The portal intentionally does not design for passive consumption.** There is no algorithmic feed, no infinite scroll, no "recommended for you" engine, no engagement optimization. Every interaction is seeker-initiated. This is not a limitation — it is the Calm Technology principle (CLAUDE.md constraint #3) applied to the entire product. The portal is a library, not a feed. Seekers come with intent; the portal meets that intent and then lets go. (Relates to ADR-095 DELTA-compliant analytics, ADR-071 Quiet Corner.)
+
+### Seeker Personas (External)
+
+| Persona | Entry Pattern | Primary Section | Key ADRs |
+|---|---|---|---|
+| **The curious reader** | Homepage → themes / search / browse | DES-048 seeker archetypes | ADR-051 |
+| **The person in need** | "Seeking..." empathic entry → Quiet Corner / theme page | DES-006, DES-011 | ADR-071 |
+| **The meditation seeker** | Homepage → `/guide` → practice pathways | DES-048 | ADR-104 |
+| **The shared-link recipient** | `/passage/[id]` via friend's message | ADR-067 (#1) | — |
+| **The Google arrival** | `/books/[slug]/[chapter]` from external search | ADR-067 (#2) | — |
+| **The daily visitor** | Homepage → Today's Wisdom → contemplate → leave | ADR-067 (#3) | DES-028 |
+| **The Quiet Corner seeker** | `/quiet` directly, often in crisis | ADR-067 (#4) | ADR-071 |
+| **The linear reader** | Chapter 1 → 2 → ... → N | ADR-067 (#5) | ADR-072 |
+| **The devoted practitioner** | Search for half-remembered passages, cross-book study | ADR-067 (#6) | ADR-104 |
+| **The scholar** | Citation-driven, cross-referencing, export-oriented | ADR-067 (#7) | ADR-043, ADR-061 |
+| **The study circle leader** | Find → collect → arrange → share → present | ADR-082 external personas | ADR-006 §5, ADR-086 |
+| **The crisis seeker** | 2 AM, acute distress, grief, suicidal ideation | DES-011 (Quiet Corner) | ADR-071 |
+| **The Global South seeker** | Rural Bihar, 2G, JioPhone, paying per MB | ADR-006 (Global Equity) | ADR-003 |
+
+### Worldview Pathways (14 entry points)
+
+Seekers arrive from different epistemological and tradition-based starting points. Each worldview pathway (WP-01 through WP-14) is an editorially curated reading path that meets the seeker where they are. Full catalog in DES-048.
+
+| ID | Worldview | Primary Corpus | Status |
+|---|---|---|---|
+| WP-01 | Christian Contemplative | *The Second Coming of Christ* | Approved |
+| WP-02 | Hindu/Vedantic Practitioner | *God Talks With Arjuna* | Approved |
+| WP-03 | Buddhist/Zen Meditator | *Autobiography* meditation chapters | Approved |
+| WP-04 | Sufi/Poetry Lover | *Wine of the Mystic* | Approved |
+| WP-05 | Jewish/Contemplative | *The Second Coming of Christ* (OT) | Approved |
+| WP-06 | Science & Consciousness Explorer | *Autobiography* science chapters | Approved |
+| WP-07 | Spiritual But Not Religious | *Autobiography*, *Where There Is Light* | Approved |
+| WP-08 | Yoga Practitioner (Body to Spirit) | *Autobiography*, *God Talks With Arjuna* | Approved |
+| WP-09 | Grief/Crisis Visitor | Cross-cutting | Approved |
+| WP-10 | Psychology/Self-Improvement | *Man's Eternal Quest* | Approved |
+| WP-11 | Comparative Religion/Academic | All books + Knowledge Graph | Approved |
+| WP-12 | Parent/Family-Oriented | *Man's Eternal Quest*, *Journey to Self-Realization* | Approved |
+| WP-13 | Muslim/Sufi Seeker | *Wine of the Mystic*, *Autobiography* | Requires SRF approval |
+| WP-14 | Agnostic/Skeptical-but-Curious | *Autobiography* science chapters | Requires SRF approval |
+
+### Life-Phase Pathways (9 temporal states)
+
+Seekers are also in a season of life that shapes what they need. Each life-phase pathway (LP-01 through LP-09) uses a universal question, not an age label, as its entry point. Full catalog in DES-048.
+
+| ID | Life Phase | Entry Question | Tone |
+|---|---|---|---|
+| LP-01 | Young Seeker | "What should I do with my life?" | Practical, joyful |
+| LP-02 | Building a Life | "How do I balance inner and outer?" | Practical |
+| LP-03 | Raising a Family | "How do I raise children wisely?" | Practical |
+| LP-04 | The Middle Passage | "Is this all there is?" | Contemplative, challenging |
+| LP-05 | The Caregiver | "Where do I find strength?" | Consoling, practical |
+| LP-06 | Facing Illness | "How do I heal or accept?" | Consoling, practical |
+| LP-07 | The Second Half | "How do I grow old with grace?" | Contemplative, consoling |
+| LP-08 | Approaching the End | "What awaits me?" | Consoling, contemplative |
+| LP-09 | New to Spiritual Practice | "I want to begin, don't know how" | Practical, joyful |
+
+### Situational Themes (8 life circumstances)
+
+Cross-cutting life situations that any seeker may navigate, independent of age or worldview. Implemented as editorial theme groupings in ADR-032.
+
+Work | Relationships | Parenting | Health/Wellness | Loss & Grief | Aging | Facing Illness | Purpose
+
+### Staff & Operational Personas (Internal)
+
+Full profiles in ADR-082. Summary index:
+
+| Persona | Type | Phase Active |
+|---|---|---|
+| Monastic content editor | Core staff | Phase 4+ |
+| Theological reviewer | Core staff | Phase 4+ |
+| AE social media staff | Core staff | Phase 6+ |
+| Translation reviewer | Core staff (or volunteer) | Phase 10+ |
+| AE developer | Core staff | Phase 0+ |
+| Leadership (monastic) | Core staff | Phase 4+ |
+| Portal coordinator | Operational (unstaffed) | Phase 4+ |
+| Book ingestion operator | Operational (unstaffed) | Phase 1+ |
+| VLD coordinator | Operational (unstaffed) | Phase 8+ |
+
+### Volunteer Personas
+
+| Persona | Phase Active |
+|---|---|
+| VLD curation volunteer | Phase 8+ |
+| VLD translation volunteer | Phase 10+ |
+| VLD theme tag reviewer | Phase 8+ |
+| VLD feedback triager | Phase 8+ |
+| VLD content QA reviewer | Phase 8+ |
+
+### External Personas
+
+| Persona | Primary Need |
+|---|---|
+| Philanthropist's foundation | Pre-formatted impact reports |
+| Study circle leader | Find → collect → arrange → share → present (see ADR-082 expanded profile) |
+| Institutional intermediary | Chaplain, therapist, hospice worker accessing on behalf of others (see CONTEXT.md open question) |
+
+### Non-English Seeker Journeys
+
+Three brief empathy narratives for how non-English seekers may discover and use the portal. These are not design specifications — they are grounding artifacts that keep the team oriented toward real human experiences when making UX decisions.
+
+**Priya, Varanasi (Hindi).** Priya is 34, a schoolteacher. Her grandmother kept a Hindi copy of *Autobiography of a Yogi* by the prayer altar — she called Yogananda "Yogananda ji" and read from it during evening prayers. Priya never read it herself. After her grandmother's death, she searches on her phone: "योगानन्द जी मृत्यु के बाद" (Yogananda ji, after death). She finds the portal through Google. She arrives at the Hindi locale, sees the YSS branding she recognizes from her grandmother's prayer room, and finds a passage about the soul's immortality in the same words her grandmother read aloud. She doesn't search again for three weeks. Then she returns for "योगानन्द जी ध्यान कैसे करें" (how to meditate). The Practice Bridge links her to YSS's free beginner meditation page. She has never heard of SRF. The portal does not need her to.
+
+**Carlos, São Paulo (Portuguese).** Carlos is 22, a university student studying philosophy. He finds Yogananda through a yoga studio's Instagram post that links to a portal passage about willpower. He reads in Portuguese, explores the "Purpose" theme, and finds passages from *Man's Eternal Quest*. He doesn't know what SRF or YSS is. He uses the citation export to reference a passage in his philosophy paper on Eastern and Western concepts of will. Six months later, he discovers the Knowledge Graph and spends an afternoon following connections between Yogananda's references to Patanjali, the Gita, and Western science. He still has no interest in meditation. The portal does not try to make him interested.
+
+**Amara, Lagos (English, but not from the Western spiritual tradition).** Amara is 40, a hospital nurse and devout Christian. A colleague shared a portal link to a passage about courage during suffering. Amara is suspicious — is this a Hindu thing that conflicts with her faith? She sees the passage is from a book by "Paramahansa Yogananda" and doesn't know who that is. She reads the passage and finds it moving. The WP-01 (Christian Contemplative) worldview pathway surfaces Yogananda's commentary on the Gospels. She is surprised. She reads one chapter of *The Second Coming of Christ* on her phone during a night shift break, on a hospital Wi-Fi connection that drops every few minutes. The portal's progressive loading means she never loses her place. She never clicks "Learn about meditation." She comes back to read the next chapter the following week. The portal's <100KB JS budget means her data cost is negligible on her Nigerian mobile plan.
+
+### Locale-Specific Cultural Adaptation
+
+The same seeker archetype requires cultural adaptation across locales — not just language translation but emotional register, platform habits, and trust signals. Full cultural notes per language in DES-018. Summary of key design differentiators:
+
+| Locale | Key Adaptation | Platform Priority |
+|---|---|---|
+| Spanish (es) | Emotional warmth, relational tone | WhatsApp |
+| French (fr) | Diacritic-insensitive search, Francophone Africa vs European French | — |
+| German (de) | Compound word search, privacy expectations exceed GDPR | — |
+| Portuguese (pt) | Brazilian vs European variants, university/intellectual framing | WhatsApp |
+| Hindi (hi) | YSS branding, mobile-first, text-only mode essential, *sādhak* terminology | WhatsApp |
+| Bengali (bn) | YSS branding, lyrical editorial register, Tagore's aesthetic influence | WhatsApp |
+
+### Open Persona Questions
+
+These questions are tracked in CONTEXT.md § Open Questions (Stakeholder) and require SRF input:
+
+1. **Young seekers** — should the editorial voice acknowledge teenagers explicitly, or is agelessness the mode of inclusion? (Line 76)
+2. **WP-13 and WP-14** — Muslim/Sufi and Agnostic/Skeptical worldview pathways require SRF editorial approval. (Line 77)
+3. **Institutional intermediaries** — chaplains, therapists, hospice workers accessing on behalf of others. (Line 69)
+4. **Operational role assignment** — portal coordinator, book ingestion operator, VLD coordinator. (Line 85–86)
+5. **"Who *shouldn't* use this portal?"** — The seeker searching for Kriya technique instructions should be redirected to SRF Lessons, not shown Autobiography excerpts that might be misinterpreted as instruction. The Practice Bridge (ADR-104) addresses this, but the persona of "the seeker who needs what we don't offer" could be more explicitly designed for.
+6. **Abuse and misuse patterns** — Automated corpus extraction, quote weaponization, SEO parasitism. (CONTEXT.md technical open question)
+
+*Section added: 2026-02-21, persona consolidation survey*
+
+---
+
+## DES-051: Portal Updates Page — "The Library Notice Board"
+
+A dedicated `/updates` page presenting seeker-facing release notes in the portal's contemplative editorial voice (ADR-074). Linked from the site footer. Governed by ADR-105.
+
+### Data Model
+
+```sql
+-- Portal updates (seeker-facing changelog)
+CREATE TABLE portal_updates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,                          -- seeker-facing title (e.g., "The Library has grown")
+  summary TEXT NOT NULL,                        -- 1–2 sentence summary for RSS and /updates listing
+  body TEXT,                                    -- full update text (Markdown)
+  category TEXT NOT NULL CHECK (category IN (
+    'new_content',                              -- new books, audio, video added
+    'new_language',                             -- new language activated
+    'new_feature',                              -- major new page or capability
+    'improvement'                               -- seeker-noticeable UX improvement
+  )),
+  language TEXT NOT NULL DEFAULT 'en',          -- i18n from the start
+  published_at TIMESTAMPTZ,                    -- NULL = draft, non-NULL = published
+  season_label TEXT NOT NULL,                   -- "Winter 2026", "Spring 2027" — editorial, not computed
+  drafted_by TEXT NOT NULL DEFAULT 'auto',      -- 'auto' (AI-drafted) or 'manual' (human-written)
+  reviewed_by TEXT,                             -- editor who approved for publication
+  deployment_ref TEXT,                          -- git tag or deployment ID that triggered the draft
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_portal_updates_published ON portal_updates(published_at DESC) WHERE published_at IS NOT NULL;
+CREATE INDEX idx_portal_updates_language ON portal_updates(language);
+```
+
+### API
+
+```
+GET /api/v1/updates
+  ?language=en            -- default: en
+  ?cursor=<uuid>          -- cursor-based pagination
+  ?limit=20               -- default: 20
+
+Response: {
+  updates: [{ id, title, summary, body, category, season_label, published_at }],
+  cursor: <next_cursor>
+}
+```
+
+### Page Design
+
+Located at `/updates` — linked from site footer as "What's new in the portal."
+
+```
+┌─────────────────────────────────────────────┐
+│ What's New in the Portal                    │
+│                                             │
+│ Spring 2027                                 │
+│ ─────────────────────────                   │
+│                                             │
+│ The Library has grown                       │
+│ Three new books join the collection:        │
+│ Man's Eternal Quest, The Divine Romance,    │
+│ and Journey to Self-Realization.            │
+│                                             │
+│ The teachings are now connected             │
+│ Explore how Yogananda's ideas flow across   │
+│ books — the Related Teachings panel shows   │
+│ connections as you read.                    │
+│                                             │
+│ Winter 2026                                 │
+│ ─────────────────────────                   │
+│                                             │
+│ The portal opens                            │
+│ Autobiography of a Yogi — free to the       │
+│ world. Search Yogananda's words, read       │
+│ chapter by chapter, find a quiet moment     │
+│ in the Quiet Corner.                        │
+│                                             │
+│             ─── ◊ ───                       │
+│                                             │
+│ RSS: /feed/updates.xml                      │
+└─────────────────────────────────────────────┘
+```
+
+### Typography and Layout
+
+- **Heading:** "What's New in the Portal" — Merriweather 400, `--text-xl`, `--srf-navy`
+- **Season headings:** Merriweather 400 italic, `--text-lg`, `--srf-navy`, with gold rule beneath
+- **Update titles:** Merriweather 400, `--text-base`, `--srf-navy`
+- **Update body:** Lora 400, `--text-sm`, `--text-body`
+- **Max width:** `38rem` (same as reader — this is a reading page)
+- **Generous whitespace** between seasons and between updates — each update breathes
+- **No dates on individual updates** — seasonal grouping provides temporal context without SaaS-like timestamp precision
+- **Lotus divider** between seasons (same `◊` pattern as reader chapter dividers)
+
+### Editorial Workflow
+
+1. **Trigger:** Deployment to production, or portal coordinator identifies a seeker-visible change
+2. **AI drafts:** Claude reads deployment metadata (git tag, commit messages since last update) and drafts a seeker-facing summary following ADR-105 voice standards. Draft enters the `updates` review queue in the editorial portal (DES-033)
+3. **Human review:** Portal coordinator or content editor reviews, edits for voice consistency, and publishes. Same keyboard-driven workflow as other review queues
+4. **Publication:** Update appears on `/updates` page and in `/feed/updates.xml` RSS feed
+
+**Frequency:** Not every deployment generates an update. Only seeker-visible changes warrant a notice. The portal coordinator exercises editorial judgment about what rises to the level of a seeker-facing update. Internal infrastructure changes, bug fixes, and performance improvements are omitted.
+
+### RSS Feed
+
+`/feed/updates.xml` — RSS 2.0, alongside existing content feeds planned in Phase 8 (deliverable 8.6). Each item includes title, summary, category, and portal link.
+
+### Phase Delivery
+
+| Phase | What Ships |
+|-------|-----------|
+| **Phase 4** | `/updates` page, `portal_updates` table, AI draft pipeline, review queue. First entries cover Phases 0–4 retrospectively. |
+| **Phase 8** | `/feed/updates.xml` RSS feed alongside other RSS feeds. |
+| **Phase 10+** | Multilingual update notes via ADR-078 translation workflow. |
+
+### Accessibility
+
+- Semantic HTML heading hierarchy: `<h1>` page title, `<h2>` season headings, `<h3>` update titles
+- Clean, text-first layout — ideal for screen readers (heading-level navigation)
+- RSS feed provides alternative access channel
+- ARIA label: "What's new in the portal — a record of how the library has grown"
+
+*Section added: 2026-02-22, ADR-105*
+
+---
+
+## DES-052: Outbound Webhook Event System
+
+The portal publishes content lifecycle events to registered HTTP subscribers via a lightweight outbound webhook system (ADR-106). This decouples content pipelines from distribution channels — new consumers (Zapier workflows, internal bots, partner integrations) subscribe to events without modifying content code.
+
+### Architecture
+
+```
+Content Lifecycle (book published, passage rotated, asset approved)
+      │
+      ▼
+┌─────────────────────┐
+│ Event Emitter        │  Fires event to webhook_deliveries table
+│ (in content service) │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Delivery Worker      │  Vercel cron (Phase 8) or Lambda (Phase 10+)
+│ (background job)     │  Reads pending deliveries, POSTs to subscribers
+└────────┬────────────┘
+         │
+    ┌────┴────┬──────────┬──────────────┐
+    ▼         ▼          ▼              ▼
+ Zapier    Slack Bot   RSS Regen    CDN Pre-warm
+```
+
+### Event Catalog Summary
+
+| Event | Trigger | Key Consumers |
+|-------|---------|---------------|
+| `daily_passage.rotated` | Midnight UTC | Zapier → email, WhatsApp broadcast |
+| `content.published` | New book/chapter/audio/video | Sitemap regen, CRM update, RSS regen |
+| `content.updated` | Content correction | CDN cache purge, RSS regen |
+| `social_asset.approved` | Staff approves quote image | Social scheduling tools |
+| `portal_update.published` | New portal changelog entry | Internal Slack, RSS regen |
+
+Full catalog, envelope format, delivery semantics, and schema in ADR-106.
+
+### Admin UI (Phase 8, editorial portal)
+
+- Subscriber list with event subscriptions and active/suspended status
+- Delivery log (30-day rolling) with success/failure and response codes
+- "Test" button per subscriber to verify connectivity
+- Suspend/Resume controls for failing endpoints
+
+### DELTA Compliance
+
+Events describe content lifecycle only — never seeker behavior. No PII in any payload. The `email.dispatched` event reports `subscriber_count` (aggregate), not individual addresses.
+
+*Section added: 2026-02-22, ADR-106*
 
 ---
 
