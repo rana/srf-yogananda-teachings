@@ -216,6 +216,19 @@ Be pro-active (that's why OpenClaw may work well). Remember you have vast capabi
 You have complete design autonomy.
 
 ---
+Read through the existing markdown documents (CONTEXT.md, DESIGN.md, 
+ROADMAP.md, DECISIONS.md).
+
+Identify opportunities I may be missing: architectural simplifications, 
+underexploited capabilities, strategic gaps, decisions that should be 
+revisited given current state, or phase transitions that could be 
+accelerated.
+
+Be proactive — propose concrete actions, not just observations.
+
+You have complete design autonomy.
+
+---
 
 Look through the existing markdown documents. 
 
@@ -229,7 +242,16 @@ Deep multi-dimensional cross-reference check.
 
 Deep multi-dimensional (AI picks N choices) check.
 
-Be pro-active (that's why OpenClaw may work well). Remember you have vast capability, intelligence and agency.
+Be pro-active. Remember you have vast capability, intelligence and agency.
+
+You have complete design autonomy.
+
+---
+Deep multi-dimensional scan for coherence.
+
+Are there errors, gaps, mis-references, omissions, etc?
+
+Be proactive — propose concrete actions, not just observations.
 
 You have complete design autonomy.
 
@@ -337,7 +359,8 @@ If this exploration yields something worth keeping, propose where it belongs in 
 31	Consider UX based on spirtual path (new, studying, vetran of 20+ years). Or duration of portal use. Offering an optional account may open features beyond local storage?
 32	Explore Google Storybook (https://gemini.google.com/gem/storybook). "Create a customized picture book, for either children or adults, given a topic, an optional target audience age, and an optional art style for the images." Provide as documentation of available resource for Lay members, Volunteary League of Disciples, and SRF staff. Suppose a Lay member creates a truly sweet and memorable children's book for their daughter and would like to share it with the community. Could there be a community submission which is reviewed VLD/staff and approved for community sharing?
 
-33	Inter-faith/spiritual/agnostic/athiest perspectives. Inhabit each perspective. Consider a section/page/theme/experience/thread/curation/etc for each. What are high resonating approaches that might interest each? What are the affinities?
+33	Inter-faith/spiritual/agnostic/athiest perspectives. Inhabit each perspective. Consider a section/page/theme/experience/thread/curation/etc for each. What are high resonating approaches that might interest each perspective? What are the affinities?
+
 34	What wants to emerge?
 35	Age-centric section/page/theme/experience/thread/curation/etc. What do we have? What would serve?
 
@@ -346,3 +369,9 @@ If this exploration yields something worth keeping, propose where it belongs in 
 ✅ 37	How clear, coherent, explicit is the "verbatim" directives for the master's words? High-fidelity is extremly high on the mission agenda.
 
 38	Consider that AI (you) is architected, designer and implementer. Humans are also in the loop. Is it valuable to document that? Or a distraction?
+
+39	Consider a new INFRASTRUCTURE.md or TECH-STACK.md or similarly named document next to existing markdown documents. What is the value proposition, if any? Would it help you at all?
+
+40	Consider a site/feature/mechanism for SRF Staff to communicate available open tasks for them to complete. Think through workflow of all involved.
+
+41	Consider adding a public overview of kriya yoga teachings and SRF Lessons. These allow public to understand what it is and what is entailed to enroll. Perhaps there is also a kriya theme or section. 

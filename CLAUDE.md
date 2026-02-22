@@ -72,7 +72,7 @@ When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`
 
 ## Document Maintenance
 
-Six documents. Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Five documents. Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
@@ -103,3 +103,5 @@ Once implementation begins, DESIGN.md sections transition from "authoritative sp
 4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 
 DECISIONS.md ADR content is immutable once accepted. Decisions are superseded (new ADR) or withdrawn (with explanation). ADR numbers and ordering may be restructured for readability, but the substance of each decision is never silently changed.
+
+*Last updated: 2026-02-21*

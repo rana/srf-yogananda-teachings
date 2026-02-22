@@ -47,7 +47,7 @@
 | [DES-043: "What Is Humanity Seeking?" Dashboard Architecture](#des-043-what-is-humanity-seeking-dashboard-architecture) | 7+ |
 | [DES-044: Additional New UI Pages](#des-044-additional-new-ui-pages) | 2+ |
 | &emsp;[DES-045: `/journeys` — Calendar Reading Journeys](#des-045-journeys-calendar-reading-journeys) | 5+ |
-| &emsp;[DES-046: `/study` Share — Study Circle Sharing](#des-046-studybook-slugchaptersharehash-study-circle-sharing) | 16+ |
+| &emsp;[DES-046: Study Circle Sharing](#des-046-study-circle-sharing) | 16+ |
 | &emsp;[DES-047: `/browse` — The Complete Index](#des-047-browse-the-complete-index) | 2+ |
 | &emsp;[DES-048: `/guide` — The Spiritual Guide](#des-048-guide-the-spiritual-guide) | 5+ |
 | [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | — |
@@ -6005,7 +6005,9 @@ Interactive visual map of the entire teaching corpus — every content type, eve
 
 Public page listing all books and their per-chapter content hashes. "How to verify" instructions. Statement of textual fidelity.
 
-### DES-046: `/study/[book-slug]/[chapter]/share/[hash]` — Study Circle Sharing
+### DES-046: Study Circle Sharing
+
+**Route:** `/study/[book-slug]/[chapter]/share/[hash]`
 
 Pre-rendered, shareable page with key passages, discussion prompts, and cross-book connections. < 30KB HTML. Optimized for WhatsApp/SMS preview.
 
