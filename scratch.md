@@ -329,7 +329,7 @@ If this exploration yields something worth keeping, propose where it belongs in 
 
 ✅ 17	Usage stats of services. Google analytics as well? How to know who were serving? And where to focus or improve? Useful for executive reports, operations awareness, etc. → Explored. Google Analytics rejected (DELTA-incompatible). Added: `requested_language` + `zero_results` to Amplitude schema, Standing Operational Metrics table in DES-037, Google Search Console evaluation + AI cost alerting + observability cost budget + dashboard cadence questions to CONTEXT.md, standing geographic monitors to Phase 7.7, content availability matrix + unmet language demand to Phase 11.14.
 
-18	Explore developing autonomous research and autonomous design with branching requiring human approval to merge automated design to main branch. Include option to auto-approve. Could copy directory and run Claude Code for each autonomous step. Perhaps way for human to read design proposal and approve. Separate app? Could use with multiple projects. There may be multiple sets of template questions. AI may generate topics to explore and use an appropriate template. A human may provide N topics, AI could explore each topic with a template in an individual fork branch. AI may generate it's own topics without template use as well. 
+✅ 18	Explore developing autonomous research and autonomous design with branching requiring human approval to merge automated design to main branch. Include option to auto-approve. Could copy directory and run Claude Code for each autonomous step. Perhaps way for human to read design proposal and approve. Separate app? Could use with multiple projects. There may be multiple sets of template questions. AI may generate topics to explore and use an appropriate template. A human may provide N topics, AI could explore each topic with a template in an individual fork branch. AI may generate it's own topics without template use as well. 
 
 Potential template may be:
 ```
@@ -355,12 +355,12 @@ Use Claude Code Plugin Ralph Wiggum as example (`https://github.com/anthropics/c
 Would a Claude Code Plugin be appropriate? Another form of running the code?
 
 
-19	Automated end user release notes. Perhaps accessible from the portal itself.
+✅ 19	Automated end user release notes when portal is released and deployed. Perhaps accessible from the portal itself. Menu options to see what's new. Perhaps use AI to summarize and/or list features. Automation is helpful. Could have a historical list of feature improvements? Could also be included in news section.
 
 
 ✅ 22	Comparative analysis of srf tech stack (`docs/reference/SRF Tech Stack Brief-3.md`) with ADR decisions. Why and when Neon or DynamoDB? Alternatives researched. Would we be served by shifting emphasis to DynamoDB use? Other services? What candidate services to survey and consider?
 
-23	Create skills for common prompts. "You have complete design autonomy."
+✅ 23	Create skills for common prompts. "You have complete design autonomy."
 
 24	Consider WebGL, https://spline.design, and others. What would be of service, if anything? Maybe nothing?
 
@@ -368,9 +368,9 @@ Would a Claude Code Plugin be appropriate? Another form of running the code?
 
 ✅ 27	Device form factor support. Are we designing for mobile, tablets, desktop and possible others?
 
-> 28	Phase sizing and organization. Are phases right-sized? Would you segment or combine any phases for a greenfield project? Would you re-order any phases. Greenfield perspective.
+✅ 28	Phase sizing and organization. Are phases right-sized? Would you segment or combine any phases for a greenfield project? Would you re-order any phases. Greenfield perspective.
 
-30	Survey potential personas for the use of the portal.
+✅ 30	Survey potential personas for the use of the portal. Have we already cover this thoroughly?
 
 ✅ 31	Consider UX needs based on spirtual path (new, studying, vetran of 20+ years). Or duration of portal use. Offering an optional account may open features beyond local storage?
 
@@ -382,7 +382,7 @@ Would a Claude Code Plugin be appropriate? Another form of running the code?
 
 ✅ 35	Age-centric section/page/theme/experience/thread/curation/etc. What do we have? What would serve?
 
-36	What cultural in-sensitivity and biases may be present? How are we being coherent for each culture? Are there actionable improvements?
+✅ 36	What cultural in-sensitivity and biases may be present? How are we being coherent for each culture? Are there actionable improvements?
 
 ✅ 37	How clear, coherent, explicit is the "verbatim" directives for the master's words? High-fidelity is extremly high on the mission agenda.
 
@@ -390,8 +390,10 @@ Would a Claude Code Plugin be appropriate? Another form of running the code?
 
 39	Consider a new INFRASTRUCTURE.md or TECH-STACK.md or similarly named document next to existing markdown documents. What is the value proposition, if any? Would it help you at all?
 
-40	Consider a site/feature/mechanism for SRF Staff to communicate available open tasks for them to complete. Think through workflow of all involved.
+40	Consider a site/feature/mechanism for SRF Staff to communicate available open tasks to VLD members for them to complete. Think through workflow of all involved.
 
-41	Consider adding a public overview of kriya yoga teachings and SRF Lessons. These allow public to understand what it is and what is entailed to enroll. Perhaps there is also a kriya theme or section. 
+✅ 41	Consider adding a public overview of kriya yoga teachings and SRF Lessons. These allow public to understand what it is and what is entailed to enroll. Perhaps there is also a kriya theme or section.
 
 ✅ 42 MCP. Does SRF Portal MCP adequately capture portal offerings? For example, Knowledge Graph? Others? Imagine scenarios where AI is generating aggregate based on statemetns or question using MCP to return verbatim content.
+
+43 Architecture patterns. Review architecture patterns in use and omitted. What patterns benefit us? Do we prefer loosly coupled, and are we apply it if relevant?
