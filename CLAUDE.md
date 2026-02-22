@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 109 Architecture Decision Records (ADR-001 through ADR-109) organized into 11 topical groups, with full rationale for every major choice
+3. **DECISIONS.md** — 112 Architecture Decision Records (ADR-001 through ADR-112) organized into 11 topical groups, with full rationale for every major choice
 4. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -65,9 +65,9 @@ Located in `docs/reference/`:
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 109 decisions in DECISIONS.md (ADR-001 through ADR-109), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-109. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 112 decisions in DECISIONS.md (ADR-001 through ADR-112), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-112. Header format: `## ADR-NNN: Title`.
 
-**DES-NNN** (Design Sections) — 52 sections in DESIGN.md (DES-001 through DES-052), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
+**DES-NNN** (Design Sections) — 53 sections in DESIGN.md (DES-001 through DES-053), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
 
@@ -85,12 +85,13 @@ Five documents. Keep them accurate as you work — drift compounds across sessio
 | New technology adopted | Update DESIGN.md tech stack table |
 | Code directory added | Update DESIGN.md code organization section |
 | Cross-cutting concern changed (multilingual, accessibility, DELTA, editorial proximity) | Update CONTEXT.md principle statement, affected DESIGN.md sections, and relevant ADRs |
-| New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR. **Also:** update DESIGN.md § Knowledge Graph node/edge types, add graph evolution deliverable to relevant ROADMAP phase, and address the ADR-062 content-type integration checklist (node shape/color, edge types, JSON schema, Lambda update, phase timing). |
+| New content type added | DESIGN.md § Data Model + relevant API section, ROADMAP.md phase deliverables, new ADR. **Also:** update DESIGN.md § Knowledge Graph node/edge types, add graph evolution deliverable to relevant ROADMAP phase, address the ADR-062 content-type integration checklist (node shape/color, edge types, JSON schema, Lambda update, phase timing), and update DES-053 § Media-Type Variations table. |
 | New seeker persona or usage pattern identified | Update DESIGN.md § DES-050 Persona Index (add to relevant table). If the persona implies a new non-search journey, also update ADR-067. If it requires SRF input, add to CONTEXT.md § Open Questions (Stakeholder). |
 | New staff/organizational role identified | Update DESIGN.md § Staff & Organizational Personas, CONTEXT.md § Operational Staffing. If the role needs Auth0 access, update DESIGN.md § Auth0 Roles. |
 | New AI-assisted workflow added | Update DESIGN.md § AI-Assisted Editorial Workflows. Ensure the workflow follows the "AI proposes, humans approve" pattern. |
 | New editorial review queue type | Update DESIGN.md § Unified Review Queue Abstraction, add to Phase Delivery table, update operational playbook. |
 | Portal update published | Add entry to `portal_updates` table. If RSS feed is active, verify entry appears in `/feed/updates.xml`. |
+| New API endpoint added | Follow response envelope and field naming conventions in DES-019 § API Conventions (ADR-110). Paginated lists use `data`/`pagination`/`meta`; complete collections use `data`/`meta`; single resources return the object directly. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Reference document added or obsoleted | Update this file's § Reference Documents list |
 

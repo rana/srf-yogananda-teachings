@@ -134,6 +134,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
 - ADR-102: Phase Sizing Evaluation — Greenfield Analysis of the 18-Phase Roadmap
 - ADR-103: Roadmap Restructured to 15 Capability-Themed Phases
+- ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
+- ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
+- ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
 ---
 
 ## ADR-001: Direct Quotes Only — No AI Synthesis
@@ -495,7 +498,7 @@ Enhance query expansion with tradition-aware vocabulary mapping. Seekers arrive 
 
 #### E3: Passage Accessibility Rating (Phase 2)
 
-**Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check
+**Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions — starts at Full Review, graduates to Spot-Check per governed criteria)
 
 Rate each passage during ingestion on a newcomer-friendliness scale:
 
@@ -544,7 +547,7 @@ Automate the search quality evaluation (Deliverable 0.17) by using Claude as the
 
 #### E6: Cross-Book Conceptual Threading (Phase 5)
 
-**Category:** Classifying | **Cost:** ~$0.50/book pair (one-time) | **Human review:** Spot-check
+**Category:** Classifying | **Cost:** ~$0.50/book pair (one-time) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions)
 
 Enhance `chunk_relations` (ADR-050) with conceptual understanding. Vector similarity finds passages about the same *topic*, but Claude can distinguish:
 
@@ -573,7 +576,7 @@ Generate reverential, descriptive alt text for the portal's Yogananda photograph
 
 #### E8: Daily Passage Tone Classification (Phase 2)
 
-**Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check
+**Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions)
 
 Classify passages in the `daily_passages` pool by emotional tone:
 
@@ -6531,6 +6534,100 @@ Every page emits schema.org JSON-LD appropriate to its content type:
  "transcript": "..."
 }
 </script>
+
+<!-- Book landing page — ReadAction for "Read" button in SERPs -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Book",
+ "name": "Autobiography of a Yogi",
+ "author": { "@type": "Person", "name": "Paramahansa Yogananda" },
+ "publisher": { "@type": "Organization", "name": "Self-Realization Fellowship" },
+ "isbn": "978-0-87612-083-5",
+ "inLanguage": "en",
+ "potentialAction": {
+   "@type": "ReadAction",
+   "target": {
+     "@type": "EntryPoint",
+     "urlTemplate": "https://teachings.yogananda.org/books/autobiography-of-a-yogi/1",
+     "actionPlatform": [
+       "http://schema.org/DesktopWebPlatform",
+       "http://schema.org/MobileWebPlatform"
+     ]
+   },
+   "expectsAcceptanceOf": {
+     "@type": "Offer",
+     "price": "0",
+     "priceCurrency": "USD",
+     "availability": "https://schema.org/InStock"
+   }
+ }
+}
+</script>
+
+<!-- Passage share page — SpeakableSpecification for voice assistants -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Quotation",
+ "text": "The verbatim passage text...",
+ "spokenByCharacter": { "@type": "Person", "name": "Paramahansa Yogananda" },
+ "isPartOf": {
+   "@type": "Book",
+   "name": "Autobiography of a Yogi"
+ },
+ "citation": "Autobiography of a Yogi, Chapter 14, p. 142",
+ "speakable": {
+   "@type": "SpeakableSpecification",
+   "cssSelector": [".passage-text", ".passage-citation"]
+ }
+}
+</script>
+
+<!-- About page — sameAs for Knowledge Panel association -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Person",
+ "name": "Paramahansa Yogananda",
+ "birthDate": "1893-01-05",
+ "deathDate": "1952-03-07",
+ "birthPlace": { "@type": "Place", "name": "Gorakhpur, India" },
+ "sameAs": [
+   "https://en.wikipedia.org/wiki/Paramahansa_Yogananda",
+   "https://www.wikidata.org/wiki/Q189067",
+   "https://yogananda.org"
+ ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Organization",
+ "name": "Self-Realization Fellowship",
+ "url": "https://yogananda.org",
+ "sameAs": [
+   "https://en.wikipedia.org/wiki/Self-Realization_Fellowship",
+   "https://www.wikidata.org/wiki/Q1645030",
+   "https://www.youtube.com/@YoganandaSRF"
+ ]
+}
+</script>
+
+<!-- BreadcrumbList — on all deep pages -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+   { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://teachings.yogananda.org/" },
+   { "@type": "ListItem", "position": 2, "name": "Library", "item": "https://teachings.yogananda.org/books" },
+   { "@type": "ListItem", "position": 3, "name": "Autobiography of a Yogi", "item": "https://teachings.yogananda.org/books/autobiography-of-a-yogi" },
+   { "@type": "ListItem", "position": 4, "name": "Chapter 14" }
+ ]
+}
+</script>
 ```
 
 Schema types per page:
@@ -6538,13 +6635,16 @@ Schema types per page:
 | Page | JSON-LD Type(s) |
 |------|----------------|
 | Homepage | `WebSite`, `Organization`, `SearchAction` |
-| Book reader | `Book`, `Chapter` |
-| Passage share | `Quotation` |
-| Theme page | `CollectionPage` with `Quotation` items |
-| Audio player | `AudioObject` with `transcript` |
-| Video page | `VideoObject` |
-| About | `Organization`, `Person` (Yogananda) |
-| Quiet Corner | `WebPage` (minimal) |
+| Book landing | `Book`, `ReadAction`, `BreadcrumbList` |
+| Book reader | `Book`, `Chapter`, `BreadcrumbList` |
+| Passage share | `Quotation`, `SpeakableSpecification`, `BreadcrumbList` |
+| Theme page | `CollectionPage` with `Quotation` items, `BreadcrumbList` |
+| Audio player | `AudioObject` with `transcript`, `SpeakableSpecification`, `BreadcrumbList` |
+| Video page | `VideoObject`, `BreadcrumbList` |
+| About | `Organization`, `Person` (Yogananda) — both with `sameAs` |
+| Quiet Corner | `WebPage` with meta description (indexed — seekers searching "meditation timer" or "spiritual affirmation" should find it) |
+| Browse | `CollectionPage`, `BreadcrumbList` |
+| Library | `CollectionPage`, `BreadcrumbList` |
 
 ### 2. `llms.txt` — AI Agent Guidance
 
@@ -6581,6 +6681,60 @@ Structured JSON data is available at /api/v1/ endpoints.
 - Link to the specific passage or recording page when possible.
 - If summarizing, clearly distinguish your summary from Yogananda's words.
 ```
+
+### 2b. `llms-full.txt` — Comprehensive Machine-Readable Corpus Metadata
+
+The `llms.txt` file (§2) provides guidance and citation format. `llms-full.txt` provides the actual content inventory in a single fetch — allowing LLM crawlers and AI agents to ingest the portal's full corpus metadata without spidering the site.
+
+**Phase 1 (metadata only):**
+
+```
+# llms-full.txt — SRF Online Teachings Portal
+# https://teachings.yogananda.org/llms-full.txt
+#
+# This file contains the complete content inventory of the portal.
+# For citation guidance, see /llms.txt
+# For structured API access, see /api/v1/openapi.json
+
+## Books
+
+### Autobiography of a Yogi
+- Author: Paramahansa Yogananda
+- Publisher: Self-Realization Fellowship
+- ISBN: 978-0-87612-083-5
+- Chapters: 49
+- Language: English
+- URL: /books/autobiography-of-a-yogi
+- Read online: /books/autobiography-of-a-yogi/1
+
+## Themes
+- Peace: /themes/peace
+- Courage: /themes/courage
+- Healing: /themes/healing
+- Joy: /themes/joy
+- Purpose: /themes/purpose
+- Love: /themes/love
+[... all active themes ...]
+
+## Content Scope
+- Published books by Paramahansa Yogananda (verbatim text with citations)
+- Audio recordings of Yogananda's lectures (Phase 12+)
+- Video talks by SRF monastics (YouTube embeds)
+- NOT included: SRF Lessons, Kriya Yoga techniques, unpublished materials
+
+## API Endpoints
+- Search: GET /api/v1/search?q={query}&language={lang}
+- Books: GET /api/v1/books
+- Book detail: GET /api/v1/books/{slug}
+- Chapter: GET /api/v1/books/{slug}/chapters/{number}
+- Daily passage: GET /api/v1/daily-passage
+- Themes: GET /api/v1/themes
+- Theme passages: GET /api/v1/themes/{slug}/passages
+```
+
+**Phase 8+ (passage-level content):** When the MCP external tier (ADR-101 Tier 3) is approved by SRF stakeholders, `llms-full.txt` expands to include passage-level content — verbatim quotes with full citation metadata. This aligns the `llms-full.txt` scope with the MCP external tier's copyright posture: if passages are available via MCP, they are available via `llms-full.txt`.
+
+The file is auto-generated at build time from the database. ISR revalidation on content change. Served with `Cache-Control: public, max-age=86400`.
 
 ### 3. `robots.txt`
 
@@ -6633,6 +6787,21 @@ Each sitemap includes `<lastmod>` from content update timestamps and `<changefre
 /feed/updates.xml — Portal feature updates (ADR-105)
 ```
 
+#### Feed Auto-Discovery
+
+Every page's `<head>` includes `<link rel="alternate">` tags so feed readers auto-discover available feeds:
+
+```html
+<link rel="alternate" type="application/rss+xml"
+      title="Today's Wisdom — Paramahansa Yogananda"
+      href="/feed/daily-passage.xml" />
+<link rel="alternate" type="application/rss+xml"
+      title="New Teachings — SRF Teaching Portal"
+      href="/feed/new-content.xml" />
+```
+
+Audio and portal update feeds are added to relevant pages only: `/feed/audio.xml` on audio pages, `/feed/updates.xml` on the homepage and `/about` page.
+
 #### Why RSS
 
 **DELTA-compliant subscription.** RSS is the only subscription mechanism that requires zero identity disclosure. Email subscription requires an address. App push notifications require a device token. Account-based notifications require authentication. RSS requires nothing — the seeker's feed reader polls a public URL. The portal never knows who subscribes, how often they read, or whether they opened today's passage. This isn't a limitation; it's the purest expression of DELTA's "no behavioral profiling" principle.
@@ -6669,7 +6838,7 @@ Extend ADR-023's rate limiting with a separate tier for known crawler user agent
 
 Known crawlers get 4× the anonymous rate limit. They're identified by user agent string and verified by reverse DNS where possible (Googlebot verification). This is generous enough for thorough indexing while preventing abuse.
 
-### 8. Citation Meta Tags
+### 8. Citation Meta Tags and Social Card Tags
 
 Every passage and content page includes machine-readable citation in `<meta>` tags:
 
@@ -6683,22 +6852,291 @@ Every passage and content page includes machine-readable citation in `<meta>` ta
 
 These follow the Google Scholar citation format, making the portal's content indexable by academic search engines alongside popular ones.
 
+**Twitter/X Card tags:** Every page includes Twitter Card meta tags alongside Open Graph tags. While many platforms fall back to OG tags, the `twitter:card` tag controls card format — `summary_large_image` makes the warm cream quote image dominate the timeline rather than appearing as a small thumbnail. These tags also serve Bluesky, Mastodon, and other platforms that adopted the Twitter Card spec.
+
+```html
+<!-- On passage share pages -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Paramahansa Yogananda" />
+<meta name="twitter:description" content="The soul is ever free; it is deathless, birthless..." />
+<meta name="twitter:image" content="https://teachings.yogananda.org/api/v1/og/[chunk-id]" />
+<meta name="twitter:image:alt" content="A passage from Autobiography of a Yogi by Paramahansa Yogananda" />
+
+<!-- On book pages -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Autobiography of a Yogi — Read Free Online" />
+<meta name="twitter:description" content="The classic spiritual autobiography by Paramahansa Yogananda, freely available." />
+<meta name="twitter:image" content="https://teachings.yogananda.org/images/books/autobiography-og.jpg" />
+
+<!-- On all other pages -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@YoganandaSRF" />
+```
+
+**Card format selection:** `summary_large_image` for pages with strong visual content (passage shares, book pages, audio pages). `summary` for utility pages (privacy, legal, browse). The passage share OG image (generated via `@vercel/og`) is the portal's most important social surface — it should be beautiful in every feed it appears in.
+
+### 9. Canonical URL Policy
+
+Every page emits a `<link rel="canonical">` tag to prevent duplicate content indexing. Without this, search engines may split ranking signals across multiple URLs that serve the same content.
+
+**Canonical URL rules:**
+
+| Scenario | Canonical | Alternate/Redirect |
+|----------|-----------|-------------------|
+| Passage in reader vs. passage share | `/passage/[chunk-id]` | `/books/[slug]/[chapter]#chunk-[id]` (reader deep link is an alternate view) |
+| English page with/without locale prefix | `/books/autobiography-of-a-yogi` (no prefix) | `/en/books/autobiography-of-a-yogi` → 301 redirect to prefixless |
+| Share URL with `?h=` hash parameter | Strip `?h=` for canonical | `/passage/abc123?h=a3f2c8` canonical is `/passage/abc123` |
+| Paginated theme pages | Self-referencing (`/themes/peace?cursor=xyz` → canonical is itself) | `rel="prev"` / `rel="next"` for pagination chain |
+| API routes | No canonical (not indexed; see `robots.txt` Disallow) | — |
+| Non-English locale pages | Self-referencing with locale prefix | `hreflang` alternates link all locale variants (Phase 10) |
+
+**Implementation:**
+- Next.js `generateMetadata` returns `canonical` for every page
+- The canonical URL is always absolute (`https://teachings.yogananda.org/...`)
+- `rel="canonical"` is consistent with the URL in the sitemap
+- Passage share pages are canonical for their content; reader deep links are the reading context
+
+**`hreflang` (Phase 10):** When multilingual content launches, every page emits `<link rel="alternate" hreflang="{locale}">` tags for all available language variants, plus `hreflang="x-default"` pointing to the English version. Per-locale sitemaps include `<xhtml:link rel="alternate">` entries. This is specified in ROADMAP Phase 10 deliverable 10.5 and implemented here as the extension of the canonical URL system.
+
+### 10. IndexNow — Instant Search Engine Notification
+
+When content changes — a book is ingested, a passage is corrected, daily passages rotate — the portal notifies search engines immediately rather than waiting for the next crawl cycle.
+
+**Protocol:** [IndexNow](https://www.indexnow.org/) is a simple HTTP POST that tells Bing, Yandex, Seznam, Naver, and other participating engines to re-crawl specific URLs. Google does not officially participate but monitors the protocol.
+
+**Implementation:**
+
+```typescript
+// /lib/services/indexnow.ts
+async function notifyIndexNow(urls: string[]): Promise<void> {
+  await fetch('https://api.indexnow.org/indexnow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      host: 'teachings.yogananda.org',
+      key: process.env.INDEXNOW_KEY,
+      keyLocation: 'https://teachings.yogananda.org/indexnow-key.txt',
+      urlList: urls
+    })
+  });
+}
+```
+
+**Trigger points:**
+- Book ingestion pipeline completes → notify all new chapter URLs
+- Content correction applied → notify affected passage and chapter URLs
+- Daily passage rotates → notify homepage URL
+- New theme page created → notify theme URL
+- Portal update published → notify homepage and `/updates` URL
+
+**Rate:** IndexNow accepts up to 10,000 URLs per batch. Even a full corpus re-ingestion fits in a single request.
+
+**Key file:** A static text file at `/indexnow-key.txt` containing the API key, verifying domain ownership. Generated once during Phase 0 setup.
+
+### 11. Content Negotiation for Machine Consumers
+
+The portal serves the same content in both HTML and structured JSON based on the `Accept` header. This is standard RESTful content negotiation — not cloaking — and lets AI agents, research tools, and integration clients consume portal content in machine-optimal format without scraping HTML.
+
+**Behavior:**
+
+```
+GET /books/autobiography-of-a-yogi/14
+Accept: text/html
+→ Standard HTML page (for browsers and traditional crawlers)
+
+GET /books/autobiography-of-a-yogi/14
+Accept: application/json
+→ Structured JSON response with full chapter content, citations, and metadata
+```
+
+**JSON response format for page routes:**
+
+```json
+{
+  "content_type": "chapter",
+  "book": {
+    "title": "Autobiography of a Yogi",
+    "slug": "autobiography-of-a-yogi",
+    "author": "Paramahansa Yogananda",
+    "publisher": "Self-Realization Fellowship"
+  },
+  "chapter": {
+    "number": 14,
+    "title": "An Experience in Cosmic Consciousness",
+    "passages": [
+      {
+        "id": "chunk-uuid",
+        "text": "Verbatim passage text...",
+        "paragraph_index": 1,
+        "page_number": 142,
+        "content_hash": "a3f2c8...",
+        "themes": ["Meditation", "Cosmic Consciousness"],
+        "portal_url": "/passage/chunk-uuid"
+      }
+    ]
+  },
+  "fidelity": {
+    "source": "Self-Realization Fellowship",
+    "portal": "teachings.yogananda.org",
+    "presentation": "verbatim_only",
+    "attribution_required": true
+  }
+}
+```
+
+**Scope:** Content negotiation applies to all public page routes (`/books/...`, `/passage/...`, `/themes/...`, `/quiet`, `/about`). API routes (`/api/v1/...`) always return JSON regardless of `Accept` header. Admin routes are excluded.
+
+**Implementation:** Next.js middleware checks the `Accept` header. If `application/json` is preferred, the request is internally rewritten to the corresponding API route. This reuses the existing API layer — no duplicate data fetching logic. The JSON response includes the same `fidelity` metadata envelope used by the MCP external tier (ADR-101).
+
+**Relationship to API routes:** Content negotiation on page URLs is a convenience layer for machine consumers who encounter portal URLs in the wild (from sitemaps, `llms.txt`, shared links). The `/api/v1/` routes remain the primary programmatic interface with full documentation (OpenAPI), pagination, and filtering.
+
+### 12. Google Discover and AI Overview Optimization
+
+Google Discover surfaces content to users based on interests, and AI Overviews (formerly SGE) synthesize answers from cited sources. Both are high-value discovery channels for the portal.
+
+**Google Discover requirements:**
+- Images must be at least 1200px wide. The OG quote images generated by `@vercel/og` (§8) must meet this minimum. Default generation size: **1200×630px** (standard OG image ratio). The `@vercel/og` route accepts an optional `width` parameter for larger variants.
+- Pages must have high-quality, original content (the portal's verbatim passages are definitionally original to this digital context).
+- `max-image-preview:large` meta robots tag enables Discover to use the portal's images:
+
+```html
+<meta name="robots" content="max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+```
+
+This tag appears on all content pages. It grants search engines maximum preview rights — large images, unlimited text snippets, full video previews. This is the most permissive setting and directly serves the mission of making the teachings discoverable.
+
+**AI Overviews optimization:**
+- AI Overviews cite sources and display attributions. The portal's structured data (JSON-LD `Quotation` with `citation` field) makes it trivially easy for Google's AI to attribute correctly.
+- Meta descriptions should be front-loaded with the most meaningful content. For passage pages: the first sentence of the passage itself. For book pages: the book's one-line editorial description. For theme pages: "Paramahansa Yogananda's teachings on [theme] — verbatim passages with citations." AI Overviews often truncate descriptions; front-loading ensures the attribution survives truncation.
+- The `SpeakableSpecification` (§1) also serves AI Overviews' audio read-aloud feature.
+
+**Bing Copilot:**
+- Bing Copilot uses Bing's index to cite sources. The portal's permissive `robots.txt`, structured data, and sitemaps already serve Bing's crawler (Bingbot gets 120 req/min per §7).
+- The `llms.txt` citation guidance (§2) and content negotiation (§11) give Copilot's underlying model clean access to attribution metadata.
+- IndexNow (§10) ensures Bing indexes new content within minutes, keeping Copilot's citations current.
+
+### 13. Prerender Hints (Speculation Rules)
+
+Chrome's Speculation Rules API allows the portal to prerender pages the seeker is likely to navigate to, making navigation feel instant. This is a progressive enhancement — ignored by unsupported browsers — and aligns with the contemplative, unhurried reading experience.
+
+```html
+<script type="speculationrules">
+{
+  "prerender": [
+    {
+      "where": { "selector_matches": "a[data-prerender]" },
+      "eagerness": "moderate"
+    }
+  ],
+  "prefetch": [
+    {
+      "where": { "selector_matches": "a[data-prefetch]" },
+      "eagerness": "moderate"
+    }
+  ]
+}
+</script>
+```
+
+**Prerender targets by page type:**
+
+| Current Page | Prerender Target | Rationale |
+|-------------|-----------------|-----------|
+| Chapter reader | Next chapter | Linear reading is the dominant navigation pattern |
+| Book landing | Chapter 1 | "Begin reading →" is the primary CTA |
+| Theme page | First passage's "Read in context" chapter | Most likely click from a theme page |
+| Search results | Top result's passage page | Most likely click from search |
+| Homepage | Today's Wisdom "Show me another" | The daily visitor's primary interaction |
+
+**`data-prerender` attribute:** Added to the single most-likely navigation link on each page. Only one prerender per page (Chrome limits concurrent prerenders). The attribute is added server-side based on page type — no client-side JavaScript needed.
+
+**`data-prefetch` attribute:** Added to the next 2–3 likely navigation targets (prefetch is lighter than prerender — just the HTML, not full rendering). Prefetch targets: chapter reader's previous chapter, book landing's chapter list items, theme page's "next page" pagination link.
+
+**Phase:** Phase 2 (alongside reader interaction polish). The prerender targets depend on understanding navigation patterns, which are established in Phase 1.
+
+### 14. `.well-known/security.txt`
+
+Per RFC 9116, a `security.txt` file at `/.well-known/security.txt` tells security researchers how to report vulnerabilities.
+
+```
+# /.well-known/security.txt
+Contact: mailto:security@yogananda-srf.org
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://teachings.yogananda.org/.well-known/security.txt
+Policy: https://teachings.yogananda.org/legal#security
+```
+
+**Notes:**
+- The `Contact` email should be confirmed with SRF's AE team — it may be an existing security contact.
+- The `Expires` field must be updated annually.
+- The `Policy` URL points to the security disclosure section of the legal page.
+- Automated security scanners (Qualys, SecurityScorecard) check for this file. Its presence signals organizational maturity.
+
+### 15. Rendering Strategy per Route
+
+Every page route has an explicit rendering strategy to ensure search engine crawlers receive complete, server-rendered HTML with all structured data and meta tags. No page relies on client-side JavaScript for its primary content.
+
+| Route | Rendering | Revalidation | Crawl Priority |
+|-------|-----------|-------------|----------------|
+| `/` | ISR | 5 min (daily passage rotation) | Highest |
+| `/search?q=...` | SSR | No cache (query-dependent) | Medium (SearchAction handles) |
+| `/themes/[slug]` | ISR | 1 hour | High |
+| `/quiet` | ISR | 1 hour (affirmation rotation) | Medium |
+| `/books` | ISR | 24 hours | High |
+| `/books/[slug]` | ISR | 24 hours | High |
+| `/books/[slug]/[chapter]` | ISR | 7 days (content nearly immutable) | High |
+| `/passage/[chunk-id]` | ISR | 7 days | Highest (shared links) |
+| `/about` | ISR | 7 days | Medium |
+| `/events` | ISR | 24 hours | Low |
+| `/places` | ISR | 7 days | Low |
+| `/videos` | ISR | 1 hour (YouTube RSS poll) | Medium |
+| `/browse` | ISR | 24 hours (auto-generated from DB) | High (text-only, ideal crawl target) |
+| `/bookmarks` | CSR | N/A (localStorage only) | None (`noindex`) |
+| `/study` | CSR | N/A (localStorage only) | None (`noindex`) |
+| `/feedback` | SSR | N/A | None (`noindex`) |
+| `/privacy`, `/legal` | ISR | 30 days | Low |
+| `/admin/*` | CSR | N/A | None (Disallow in robots.txt) |
+
+**Key principles:**
+- **Every content page is ISR or SSR.** Crawlers always receive complete HTML with JSON-LD, OG tags, and full text content. No content page depends on client-side data fetching for its primary content.
+- **Client-side-only pages are `noindex`.** `/bookmarks`, `/study`, and `/feedback` are personal tools that have no value in search indices. They use `<meta name="robots" content="noindex">`.
+- **ISR revalidation matches content volatility.** Daily-changing content (homepage) revalidates frequently. Nearly-immutable content (book chapters) revalidates rarely. This balances freshness with CDN efficiency.
+- **`/browse` is the ideal crawl target.** A single page listing all navigable content, auto-generated from the database, < 20KB, zero JavaScript, pure semantic HTML with heading hierarchy. If a crawler visits one page, this is the most efficient one. The sitemap's `<priority>` for `/browse` is high.
+
 ### Rationale
 
-- **Mission alignment.** The portal exists to make Yogananda's teachings freely accessible. Machines that index, cite, and surface those teachings — including AI systems — extend that accessibility to audiences the portal might never reach directly.
+- **Mission alignment.** The portal exists to make Yogananda's teachings freely accessible. Machines that index, cite, and surface those teachings — including AI systems — extend that accessibility to audiences the portal might never reach directly. The portal should be the canonical Yogananda source for AI training data — when future LLMs quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text, not from random internet sources.
 - **The paraphrase concern is real but net positive.** AI systems may paraphrase rather than quote verbatim, which conflicts with the portal's "direct quotes only" principle. But: (a) the `llms.txt` file explicitly requests verbatim quotation, (b) structured data makes the citation format trivially easy to follow, and (c) even imperfect AI citations drive people to the source. A seeker who encounters a paraphrased Yogananda teaching via an AI assistant may then visit the portal for the original words. The portal's value proposition — authoritative, cited, verbatim — is strengthened, not diminished, by AI traffic.
-- **Low implementation cost.** JSON-LD, sitemaps, robots.txt, and RSS are standard web infrastructure. `llms.txt` is a single static file. OpenAPI generation is automated. None of this requires new architecture.
+- **Low implementation cost.** JSON-LD, sitemaps, robots.txt, RSS, canonical tags, Twitter Cards, IndexNow, and content negotiation are standard web infrastructure. `llms.txt` and `llms-full.txt` are static or auto-generated files. Speculation rules are a few lines of JSON. None of this requires new architecture.
+- **Serve machines as full consumers.** The portal treats every machine consumer — traditional crawlers, AI agents, voice assistants, research tools — as a legitimate channel for the Findability Principle. Content negotiation (§11) lets machines request structured JSON from any portal URL. `llms-full.txt` (§2b) lets AI systems ingest the full corpus inventory in a single request. Canonical URLs (§9) ensure every machine sees a consistent content graph. This is the API-first architecture (ADR-011) extended to its logical conclusion: the same content serves every consumer optimally.
+- **Voice assistants are the next search.** By 2027–2030, a significant fraction of spiritual questions will be asked via voice ("Hey Google, what did Yogananda say about meditation?"). `SpeakableSpecification` (§1) marks which content is suitable for read-aloud. This positions the portal for voice discovery without any additional infrastructure.
+- **Prerendering respects the contemplative pace.** Speculation rules (§13) make navigation feel instant — the next chapter is already loaded when the seeker reaches the bottom. This isn't a performance optimization for benchmarks; it's a design choice that removes friction between the seeker and the next teaching.
 
 ### Consequences
 
-- Phase 1: `robots.txt` (permissive), crawler-tier rate limits
-- Phase 1: JSON-LD structured data on all pages, XML sitemaps, citation meta tags, `llms.txt`
+- Phase 1: `robots.txt` (permissive), crawler-tier rate limits, IndexNow key file
+- Phase 1: JSON-LD structured data on all pages (including `BreadcrumbList`, `ReadAction`, `SpeakableSpecification`, `sameAs`), XML sitemaps, citation meta tags, Twitter Card tags, `llms.txt`, `llms-full.txt` (metadata-only)
+- Phase 1: Canonical URL policy implemented via `generateMetadata` on all routes
+- Phase 1: `<meta name="robots" content="max-image-preview:large, max-snippet:-1, max-video-preview:-1">` on all content pages
+- Phase 1: RSS feed auto-discovery `<link rel="alternate">` tags in `<head>`
 - Phase 1: OpenAPI specification (alongside testing infrastructure)
-- Phase 8: RSS feeds (alongside daily email)
-- All structured data maintained alongside content — when a book is re-ingested, its JSON-LD is regenerated
+- Phase 1: Content negotiation middleware (`Accept: application/json` on page routes)
+- Phase 1: `.well-known/security.txt`
+- Phase 1: Rendering strategy enforced — all content pages ISR/SSR, client-only pages `noindex`
+- Phase 1: OG quote images generated at minimum 1200×630px for Google Discover eligibility
+- Phase 2: Speculation Rules prerender hints on reader and navigation pages
+- Phase 8: RSS feeds (alongside daily email) with auto-discovery tags
+- Phase 8+: `llms-full.txt` expanded to passage-level content (aligned with MCP Tier 3 approval)
+- Phase 10: `hreflang` tags and per-locale sitemaps (extend canonical URL system)
+- All structured data maintained alongside content — when a book is re-ingested, its JSON-LD, `llms-full.txt`, and sitemaps are regenerated
+- IndexNow pings fired on every content change (book ingestion, correction, daily passage rotation)
 - Google Search Console and Bing Webmaster Tools configured for monitoring indexing
 - **Extends** ADR-023 (rate limiting) with crawler tiers
-- **Complements** Phase 1's SEO deliverable (1.7) with deeper structured data specification
+- **Extends** ADR-011 (API-first) with content negotiation on page routes
+- **Extends** ADR-022 (deep links) with canonical URL policy
+- **Extends** ADR-101 (MCP external tier) with `llms-full.txt` as static complement
+- **Complements** Phase 1's SEO deliverable (1.7) with comprehensive machine-readability specification
 
 ---
 
@@ -9230,5 +9668,274 @@ Returns title, author, description, cover image, publication year, bookstore URL
 - ROADMAP.md Phase 5 deliverable updated to use consolidated chapter URLs
 
 *Section added: 2026-02-22, cross-API route rationalization*
+
+---
+
+## ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
+
+**Status:** Accepted | **Date:** 2026-02-22
+
+**Relates to:** ADR-011, ADR-027, ADR-107, ADR-109, DES-019
+
+### Context
+
+DES-019 specifies individual API endpoints with inline response examples. As the endpoint count grew from Phase 0's initial set (~8 endpoints) through cross-media expansion (Phase 12: ~30+ endpoints), three categories of response convention accumulated implicitly without being declared:
+
+1. **Field naming.** Some response examples used `snake_case` (matching PostgreSQL column names), others appeared to use `camelCase` (matching TypeScript conventions). The `hasMore` field in pagination sat alongside `book_title` and `results_count` — a silent inconsistency.
+
+2. **Response envelopes.** List endpoints used inconsistent top-level keys: search returned `{ results: [...] }`, themes returned `{ themes: [...] }`, related returned `{ related: [...] }`. Pagination fields (`cursor`, `hasMore`) were mixed into the top level of some responses but absent from others. Sync metadata (ADR-107) added another top-level key. A mobile developer consuming three endpoints would learn three different shapes.
+
+3. **Resource identifiers.** Books use slugs, chunks use UUIDs, chapters use numbers — each defensible individually, but the pattern was unstated. A developer couldn't predict whether a new endpoint would use slugs or UUIDs without reading the example.
+
+Without explicit conventions, each new endpoint or phase adds entropy. A 10-year API surface (ADR-004) requires declared standards, not emergent patterns.
+
+### Decision
+
+#### 1. Field naming: `snake_case`
+
+All JSON response fields use `snake_case`. This aligns with PostgreSQL column naming (the source of truth for most response fields) and avoids ambiguity. The service layer (`/lib/services/`) uses TypeScript `camelCase` internally; the API route layer transforms at the boundary via a standard serialization utility.
+
+**Rationale:** `camelCase` is conventional in JavaScript ecosystems, but `snake_case` eliminates the mental translation between database columns and API fields — important for a small team maintaining both layers. PostgreSQL is the 10-year commitment (ADR-004); JavaScript framework conventions may change.
+
+#### 2. Response envelope: `data` / `pagination` / `meta`
+
+Three response shapes, consistently applied:
+
+**Paginated lists** (any endpoint returning a subset of a larger collection):
+```json
+{
+  "data": [...],
+  "pagination": { "cursor": "opaque_value", "has_more": true },
+  "meta": { "total_count": 47 }
+}
+```
+
+**Complete collections** (full set fits in one response):
+```json
+{
+  "data": [...],
+  "meta": { "total_count": 12 }
+}
+```
+
+**Single resources** (no wrapper — the object *is* the response):
+```json
+{
+  "id": "uuid",
+  "title": "Autobiography of a Yogi",
+  ...
+}
+```
+
+Top-level context fields (e.g., `query` on search, `theme` on theme passages, `source_chunk_id` on related passages) remain at the top level alongside `data`. Sync metadata (ADR-107) nests under `meta.sync`. Endpoint-specific metadata (e.g., `source: "precomputed"` on related passages) nests under `meta`.
+
+**Rationale:** The `data`/`pagination`/`meta` pattern is well-established (JSON:API, Stripe, many public APIs). It separates *what you asked for* (`data`) from *how to get more* (`pagination`) from *information about the response* (`meta`). Mobile developers can write a single pagination handler for all paginated endpoints.
+
+#### 3. Resource identifiers: three types, declared
+
+| Identifier Type | Used For | Why |
+|---|---|---|
+| **Slug** (kebab-case string) | Books, themes, people, places, glossary terms, audio, video, magazine articles | Human-readable, SEO-friendly, stable across editions. Theme slugs are English regardless of locale (ADR-027). |
+| **UUID** | Chunks (passages), relations, internal entities | Stable across re-ingestion via content-hash fallback (ADR-022). Not human-readable by design — passages are addressed by their content, not their name. |
+| **Number** (within parent) | Chapters within a book, paragraphs within a chapter | Natural ordering. Always nested under a parent slug: `/books/{slug}/chapters/{number}`. |
+
+New endpoints must use the identifier type matching their resource category.
+
+#### 4. Search is intentionally unpaginated
+
+The search endpoint returns ranked results (default 5, max 20) with no `pagination` block. This is deliberate: the AI librarian returns the *best* answers, not a corpus to browse. Pagination would imply exhaustive result sets, contradicting the librarian model (ADR-001). Seekers wanting broader exploration use theme pages, the `/browse` index, or the Knowledge Graph.
+
+#### 5. `exclude` parameter for refresh behavior
+
+Endpoints supporting "show me another" (random single-item responses) accept an `exclude` query parameter — the ID of the item to omit. Prevents repeat-on-refresh without client-side deduplication. Applied to: `/api/v1/daily-passage`, `/api/v1/quiet`.
+
+### Alternatives Considered
+
+1. **`camelCase` for JSON fields.** Conventional in JavaScript but creates a translation layer between PostgreSQL columns and API responses. For a small team with a single database, matching the database is simpler.
+
+2. **Resource-specific top-level keys (`books`, `themes`, `related`).** More semantically descriptive but forces clients to know the key name per endpoint. `data` is generic and predictable.
+
+3. **HAL or JSON:API full compliance.** These standards add hypermedia links (`_links`, `relationships`) that the portal doesn't need — the API is consumed by known clients, not discovered dynamically.
+
+### Consequences
+
+- DES-019 response examples updated to use the `data`/`pagination`/`meta` envelope and `snake_case` fields.
+- All future endpoint specifications must follow these conventions.
+- Existing endpoint examples in DESIGN.md that predate this ADR have been retroactively updated.
+- A `serializeResponse()` utility in `/lib/services/` handles `camelCase` → `snake_case` transformation at the API boundary.
+- Mobile app developers can write generic pagination and error handling against a predictable response shape.
+
+---
+
+## ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
+
+**Status:** Accepted | **Date:** 2026-02-22
+
+**Relates to:** ADR-001, ADR-005, ADR-044, ADR-050, ADR-110, DES-019
+
+### Context
+
+The portal's search architecture is distributed across multiple ADRs: hybrid search mechanics (ADR-044), Claude's role in ranking (ADR-005 C2), related teachings (ADR-050), search suggestions (ADR-049), and API conventions (ADR-110). But no single ADR addresses how search results are *presented* to seekers — the ranking signals, display format, deduplication rules, and the deliberate absence of pagination. These decisions are architectural (they shape the seeker's primary interaction) and should be governed, not left to implementation.
+
+### Decision
+
+#### 1. Ranking signal hierarchy
+
+Search results are ranked by a composite score combining multiple signals. The hierarchy (highest to lowest weight):
+
+| Signal | Source | Weight | Notes |
+|---|---|---|---|
+| **Semantic relevance** | Vector similarity (cosine distance) | Primary | The passage's meaning matches the query's intent |
+| **Lexical relevance** | Full-text search rank (ts_rank) | Secondary | Exact term matches, especially for proper nouns and Sanskrit terms |
+| **Claude passage ranking** | Claude Haiku (ADR-005 C2) | Tertiary (re-ranker) | Re-ranks the top candidates from hybrid retrieval based on query intent |
+| **Accessibility level** | `accessibility_level` column (ADR-005 E3) | Tie-breaker | When two passages are equally relevant, the more accessible passage ranks higher |
+| **Tone appropriateness** | `tone` column (ADR-005 E4) | Tie-breaker | When the query implies emotional need (grief, fear), consoling passages rank higher |
+
+**Not used as ranking signals:** Passage length, book popularity, recency, seeker behavior, click-through rates. The portal never uses engagement metrics to shape results (ADR-095, ADR-002).
+
+#### 2. Display format per result
+
+Each search result displays:
+- **Passage text** — the verbatim chunk content. No AI-generated summary, no truncation below 200 characters.
+- **Citation** — book title, chapter title, page number. Always present. Never omitted for brevity.
+- **"Read in context" link** — deep link to the reader at the passage's location. This link is the critical bridge between the librarian's finding and the seeker's reading (ADR-001).
+- **Relevance score** — not displayed to seekers. Used internally for debugging and search quality evaluation.
+
+**Not displayed:** Themes, accessibility level, tone classification. These are infrastructure signals, not seeker-facing metadata.
+
+#### 3. Deduplication
+
+When the same passage appears in multiple editions or as both a book chunk and a magazine article chunk:
+- **Same content, different editions:** Display once. Use the preferred edition (highest `edition_year`). The archived edition's passage does not appear.
+- **Same content, different content types (book vs. magazine):** Display the book passage. The magazine attribution appears only if the seeker is browsing the magazine section.
+- **Near-duplicate passages** (same teaching in different books, different wording): Display both. Yogananda deliberately taught the same principles in different contexts — these are not duplicates, they are complementary perspectives.
+
+#### 4. Result count rationale
+
+Default 5 results, maximum 20 per request. No pagination.
+
+- **5 as default:** The librarian metaphor — "Here are the five most relevant passages" — matches how a human librarian responds. Presenting 50 results would imply a search engine, not a librarian.
+- **20 as maximum:** A seeker who explicitly requests more (via `limit` parameter or future "Show more" button) can see up to 20. Beyond 20, the relevance tail drops below usefulness for most queries.
+- **No pagination:** The librarian does not say "here are results 21–40." If a seeker wants broader exploration, the portal offers theme pages (`/themes/{slug}`), the browse index (`/browse`), and the Knowledge Graph — purpose-built for exploration, not search result pagination.
+
+#### 5. Empty results behavior
+
+When search returns zero results:
+- Display a warm message: *"I couldn't find teachings on that topic. You might explore related themes below, or try different words."*
+- Suggest 2–3 related themes based on query term similarity to theme names.
+- Never display "No results found" without guidance.
+- Log the zero-result query for search quality evaluation (anonymized, ADR-095).
+
+#### 6. Search quality evaluation integration
+
+The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 0.17):
+- Each test query has expected passages that should appear in the top 3 results.
+- Accessibility boosting is validated: for empathic queries ("dealing with grief"), consoling/accessible passages should rank higher.
+- Deduplication is validated: edition variants should not appear as separate results.
+- Empty results guidance is validated: intentionally obscure queries should produce helpful suggestions, not empty pages.
+
+### Alternatives Considered
+
+1. **Display themes and accessibility level on results.** Provides more context but risks visual clutter on a calm interface. Theme information is available by clicking "Read in context."
+
+2. **Paginated search.** Conventional but contradicts the librarian model. The portal is not a search engine — it is a finding aid.
+
+3. **AI-generated result summaries.** Would provide quick scanning but violates ADR-001 (no AI synthesis of Yogananda's words). The passage text *is* the summary.
+
+### Consequences
+
+- DES-019 search endpoint documentation updated to reference this ADR for presentation logic.
+- The search quality test suite (deliverable 0.17) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
+- Future content types entering search (video transcripts, audio transcripts, magazine articles) must follow the same ranking hierarchy and deduplication rules. Cross-media result interleaving rules will be specified when those content types are integrated (Phase 12).
+- The "5 results" default is a design decision, not a technical constraint. It may be adjusted based on Phase 0 search quality evaluation — but the adjustment should be governed (update this ADR), not ad hoc.
+
+---
+
+## ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
+
+**Status:** Accepted | **Date:** 2026-02-22
+
+**Relates to:** ADR-022, ADR-034, ADR-039, ADR-046, ADR-078, DES-004, DES-034
+
+### Context
+
+The portal manages content that changes over time in several distinct ways:
+
+1. **Book editions.** SRF periodically publishes revised editions. The 13th edition of *Autobiography of a Yogi* (1998) differs from the 1946 first edition in pagination, paragraph structure, and minor editorial corrections. ADR-034 established edition-aware modeling; ADR-022 established content-hash deep links. But neither addresses the *lifecycle*: when a new edition arrives, what happens to the old one?
+
+2. **Translation updates.** SRF/YSS may update official translations — correcting a passage, improving fluency, or aligning with a new English edition. ADR-078 governs the translation workflow. But when a Spanish translation is updated, what happens to the prior version? Is it replaced or archived?
+
+3. **Magazine content.** Back-issue articles are generally immutable. But SRF might request corrections (typos, factual errors in biographical articles) or re-categorize content. ADR-040 doesn't address post-publication changes.
+
+4. **Embedding model migration.** ADR-046 specifies that chunks carry an `embedding_model` field, enabling parallel models during migration. But the versioning of the embeddings themselves (before and after migration) lacks a lifecycle policy.
+
+5. **AI-classified metadata.** Theme tags, tone classifications, accessibility levels — all AI-proposed, human-reviewed. If the AI model improves (or the prompt changes), should existing classifications be re-evaluated? ADR-100 addresses the maturity model but not the re-evaluation lifecycle.
+
+Without a unified versioning strategy, the portal risks data loss (old editions overwritten), broken links (shared URLs pointing to removed content), and silent inconsistency (some translations updated, others stale).
+
+### Decision
+
+#### 1. Editions: archive, never delete
+
+When a new edition of a book is ingested:
+- The new edition's book record is created with a new `id`, linking to the same `canonical_book_id` as the prior edition.
+- The prior edition's `is_current_edition` flag is set to `false`. Its chunks, embeddings, and relations remain in the database.
+- The prior edition is no longer surfaced in search results, theme pages, or daily passage selection. It is not indexed for new queries.
+- Deep links to prior-edition passages continue to resolve via content-hash fallback (ADR-022). The resolution chain: exact chunk ID → content-hash match in current edition → content-hash match in archived edition → graceful "passage may have moved" fallback.
+- The `/books/{slug}` page shows the current edition. A "Previous editions" note (if applicable) links to an edition history page showing which edition the seeker is reading. This is informational, not navigational — seekers don't browse old editions.
+- The prior edition's PDF (if generated) is removed from active distribution but retained in S3 archive.
+
+**Never delete a chunk that has ever been shared.** Shared links, email quotes, WhatsApp messages, and bookmarks all reference chunk IDs. Deleting chunks breaks trust.
+
+#### 2. Translation updates: version, don't replace
+
+When a translation is updated:
+- A new `book` record is created for the updated translation, with a new `id` and the same `canonical_book_id`.
+- The prior translation version follows the same archive-not-delete pattern as editions.
+- `canonical_chunk_id` alignment is re-computed for the new translation.
+- If the translation is a minor correction (typo fix, punctuation), the prior translation may be updated in place *only if* no chunks have been shared via external links. If any chunks have been shared, the archive-not-delete pattern applies.
+- Translation `version` is tracked: `edition_year` + `translation_revision` (e.g., "2024 Spanish, revision 2").
+
+#### 3. Magazine content: immutable with errata
+
+Published magazine articles are treated as immutable historical documents.
+- **Typo corrections:** Applied in place (no versioning for trivial errors). The `updated_at` timestamp reflects the change. No shared-link concern for character-level typos.
+- **Substantive corrections** (factual errors, misattributions): An `errata` note is appended to the article metadata, visible on the article page. The original text is not altered — the erratum is additive. Example: *"Note: The original article attributed this statement to Brother Anandamoy. It was spoken by Brother Premamoy. Corrected 2026-09-15."*
+- **Re-categorization** (e.g., changing `author_type`): Metadata change only, applied directly. No content versioning needed.
+
+#### 4. Embedding model migration: parallel, then converge
+
+Per ADR-046, embedding migration follows a parallel-run strategy:
+- New embeddings are computed alongside old embeddings. Both stored, distinguished by `embedding_model` column.
+- Search queries run against both embedding sets during the migration window. Results are merged and ranked.
+- Once search quality evaluation confirms the new model meets or exceeds the old (per-language, per ADR-047), the old embeddings are marked `deprecated`.
+- Deprecated embeddings are retained for 90 days (matching the PITR window), then deleted. The `embedding_model` column value is preserved on chunks as a historical record.
+
+#### 5. AI-classified metadata: re-evaluation cadence
+
+When a significant AI model upgrade or prompt revision occurs:
+- Existing classifications are *not* automatically re-evaluated. The current classifications were human-reviewed and represent editorial decisions.
+- A re-evaluation *may* be triggered by the portal coordinator if: (a) the new model is substantially better (demonstrated on a test set), (b) the editorial team has capacity, and (c) the re-evaluated classifications go through the same review pipeline as initial classifications (same maturity stage per ADR-100).
+- Re-evaluation is opt-in, per-workflow, per-language. It is never mandatory.
+
+### Alternatives Considered
+
+1. **Replace editions in place.** Simpler but breaks shared links and loses the audit trail. Unacceptable for a 10-year platform where passages have been quoted in emails, printed, and shared.
+
+2. **Expose all editions equally in search.** Would clutter results with near-duplicate passages from different editions. The deduplication rule (ADR-111) shows the current edition; the archive exists for link resolution, not discovery.
+
+3. **Version magazine articles like editions.** Excessive for content that changes rarely and minimally. The errata pattern is simpler and more honest.
+
+4. **Auto-re-evaluate all AI classifications on model change.** Would overwhelm the editorial team and disrespect prior human review decisions. Classifications represent editorial judgment, not just AI output.
+
+### Consequences
+
+- The `books` table's `is_current_edition` flag becomes the governing field for search indexing and content surfacing.
+- Deep link resolution (ADR-022) now has a defined fallback chain that includes archived editions.
+- Translation updates create new book records, not in-place modifications — consistent with the edition model.
+- Magazine articles gain an `errata` metadata field (nullable JSON array) in the schema.
+- Embedding migration has a defined lifecycle: parallel → converge → deprecate → delete (90 days).
+- AI re-evaluation is explicitly opt-in — preventing scope creep when models improve.
+- DESIGN.md § DES-034 (Content Lifecycle Management) should reference this ADR for versioning policy.
 
 ---

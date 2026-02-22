@@ -1486,30 +1486,34 @@ SENTRY_AUTH_TOKEN= # Source map uploads
 
 ### Pages
 
-| Route | Purpose | Data Source |
-|-------|---------|------------|
-| `/` | Home — Today's Wisdom, search bar, thematic doors, "Seeking..." entry points, latest video | Neon (daily passages) + YouTube RSS |
-| `/search?q=...` | Search results — ranked verbatim quotes | Neon (hybrid search) |
-| `/themes/[slug]` | Topic page — curated passages for a theme, person, principle, or practice | Neon (topic-tagged chunks) |
-| `/quiet` | The Quiet Corner — single affirmation, timer, stillness | Neon (affirmations pool) |
-| `/books` | The Library — book catalog with editorial descriptions | Contentful (SSG) or Neon (Phase 0) |
-| `/books/[slug]` | Book landing page with cover, description, chapter list | Contentful (SSG) or Neon (Phase 0) |
-| `/bookmarks` | Lotus Bookmarks — saved chapters and passages (client-only, `localStorage`) | `localStorage` (no server) |
-| `/books/[slug]/[chapter]` | Chapter reader | Contentful (SSG) or Neon (Phase 0) |
-| `/books/[slug]/[chapter]#chunk-[id]` | Deep link to specific passage | Same as above, scrolled to passage |
-| `/passage/[chunk-id]` | Single passage shareable view (Open Graph optimized) | Neon |
-| `/about` | About SRF, Yogananda, the line of gurus, "Go Deeper" links | Static (ISR) |
-| `/events` | Gatherings & Events — convocation, commemorations, online events, retreats | Static (ISR) |
-| `/places` | Sacred Places — SRF/YSS properties and biographical sites | Neon `places` table (ISR) |
-| `/places/[slug]` | Individual place detail with book cross-references | Neon `places` + `chunk_places` (ISR) |
-| `/videos` | Video library — categorized by playlist | YouTube API (ISR) |
-| `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) |
-| `/study` | Study Workspace — passage collection, teaching arc assembly, export (Phase 7, ADR-083) | `localStorage` (no server) |
-| `/collections` | Community Collections gallery — published/featured curated passage collections (Phase 14, ADR-086) | Neon (`study_outlines` where visibility = published/featured) |
-| `/collections/[share-hash]` | Single community collection view (Phase 7 shared-link, Phase 14 published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) |
-| `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 4, ADR-084) | Neon (`seeker_feedback`) |
-| `/privacy` | Privacy policy — what data is collected, why, how long, sub-processors, data subject rights (Phase 1, ADR-099) | Static (ISR) |
-| `/legal` | Legal information — terms of use, copyright, content licensing (Phase 1, ADR-099) | Static (ISR) |
+| Route | Purpose | Data Source | Rendering | Indexed |
+|-------|---------|------------|-----------|---------|
+| `/` | Home — Today's Wisdom, search bar, thematic doors, "Seeking..." entry points, latest video | Neon (daily passages) + YouTube RSS | ISR (5 min) | Yes |
+| `/search?q=...` | Search results — ranked verbatim quotes | Neon (hybrid search) | SSR | Yes (via `SearchAction`) |
+| `/themes/[slug]` | Topic page — curated passages for a theme, person, principle, or practice | Neon (topic-tagged chunks) | ISR (1 hr) | Yes |
+| `/quiet` | The Quiet Corner — single affirmation, timer, stillness | Neon (affirmations pool) | ISR (1 hr) | Yes |
+| `/books` | The Library — book catalog with editorial descriptions | Contentful (SSG) or Neon (Phase 0) | ISR (24 hr) | Yes |
+| `/books/[slug]` | Book landing page with cover, description, chapter list | Contentful (SSG) or Neon (Phase 0) | ISR (24 hr) | Yes |
+| `/bookmarks` | Lotus Bookmarks — saved chapters and passages (client-only, `localStorage`) | `localStorage` (no server) | CSR | No (`noindex`) |
+| `/books/[slug]/[chapter]` | Chapter reader | Contentful (SSG) or Neon (Phase 0) | ISR (7 days) | Yes |
+| `/books/[slug]/[chapter]#chunk-[id]` | Deep link to specific passage | Same as above, scrolled to passage | ISR (7 days) | Yes (canonical: passage page) |
+| `/passage/[chunk-id]` | Single passage shareable view (OG + Twitter Card optimized) | Neon | ISR (7 days) | Yes |
+| `/about` | About SRF, Yogananda, the line of gurus, "Go Deeper" links | Static (ISR) | ISR (7 days) | Yes |
+| `/events` | Gatherings & Events — convocation, commemorations, online events, retreats | Static (ISR) | ISR (24 hr) | Yes |
+| `/places` | Sacred Places — SRF/YSS properties and biographical sites | Neon `places` table (ISR) | ISR (7 days) | Yes |
+| `/places/[slug]` | Individual place detail with book cross-references | Neon `places` + `chunk_places` (ISR) | ISR (7 days) | Yes |
+| `/videos` | Video library — categorized by playlist | YouTube API (ISR) | ISR (1 hr) | Yes |
+| `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) | ISR (1 hr) | Yes |
+| `/study` | Study Workspace — passage collection, teaching arc assembly, export (Phase 7, ADR-083) | `localStorage` (no server) | CSR | No (`noindex`) |
+| `/collections` | Community Collections gallery — published/featured curated passage collections (Phase 14, ADR-086) | Neon (`study_outlines` where visibility = published/featured) | ISR (1 hr) | Yes |
+| `/collections/[share-hash]` | Single community collection view (Phase 7 shared-link, Phase 14 published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) | ISR (24 hr) | Yes |
+| `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 4, ADR-084) | Neon (`seeker_feedback`) | SSR | No (`noindex`) |
+| `/privacy` | Privacy policy — what data is collected, why, how long, sub-processors, data subject rights (Phase 1, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
+| `/legal` | Legal information — terms of use, copyright, content licensing (Phase 1, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
+| `/browse` | Complete content index — all navigable content by category (Phase 1, DES-047) | Neon (ISR) | ISR (24 hr) | Yes |
+| `/updates` | Portal updates — new books, features, languages (Phase 8+, ADR-105) | Neon `portal_updates` | ISR (1 hr) | Yes |
+
+**Rendering key:** ISR = Incremental Static Regeneration (server-rendered, cached at CDN, revalidated on schedule). SSR = Server-Side Rendered (fresh on every request). CSR = Client-Side Rendered (JavaScript only, no server HTML). All ISR and SSR pages deliver complete HTML with JSON-LD, OG tags, Twitter Card tags, and full content to crawlers — no content page depends on client-side data fetching. Content negotiation (ADR-081 §11): all ISR/SSR routes also respond with structured JSON when the `Accept: application/json` header is sent. See ADR-081 §15 for the full rendering strategy rationale.
 
 ### Search Results Component
 
@@ -2622,11 +2626,25 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - Open Graph meta tags generate a beautiful preview card when pasted into any platform:
 
 ```html
+<!-- Open Graph tags -->
 <meta property="og:title" content="Paramahansa Yogananda" />
 <meta property="og:description" content="The soul is ever free; it is deathless, birthless..." />
-<meta property="og:image" content="/api/v1/og/[chunk-id]" /> <!-- generated image -->
+<meta property="og:image" content="/api/v1/og/[chunk-id]" /> <!-- generated image, min 1200×630px -->
 <meta property="og:url" content="https://teachings.yogananda.org/passage/[chunk-id]" />
 <meta property="og:site_name" content="SRF Teaching Portal" />
+
+<!-- Twitter/X Card tags (also used by Bluesky, Mastodon) -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Paramahansa Yogananda" />
+<meta name="twitter:description" content="The soul is ever free; it is deathless, birthless..." />
+<meta name="twitter:image" content="https://teachings.yogananda.org/api/v1/og/[chunk-id]" />
+<meta name="twitter:image:alt" content="A passage from Autobiography of a Yogi by Paramahansa Yogananda" />
+
+<!-- Canonical URL (ADR-081 §9) -->
+<link rel="canonical" href="https://teachings.yogananda.org/passage/[chunk-id]" />
+
+<!-- Machine content optimization (ADR-081 §12) -->
+<meta name="robots" content="max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 ```
 
 **Quote image generation:**
@@ -3370,6 +3388,67 @@ Each supported locale carries cultural, typographic, and platform expectations t
 
 All API routes use a versioned prefix (`/api/v1/`) from Phase 0 per ADR-011. Language is passed as a query parameter on API routes (`?language=hi`), not as a path prefix — language is a property of content, not a namespace for operations (ADR-027). Frontend pages use locale path prefixes (`/hi/themes/peace`) for SEO and `hreflang` linking. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
 
+### Design Rationale
+
+The API surface exists to make the teachings findable by machines — mobile apps, messaging bots, MCP consumers, Zapier workflows, and future integrations we can't predict (ADR-011). Every design choice serves the 10-year horizon (ADR-004): versioning provides room to evolve without breaking consumers, cursor-based pagination handles data changes gracefully across editions and re-ingestion, and the shared service layer (`/lib/services/`) ensures that the API is never a second-class citizen behind Server Components. The language-as-parameter convention (ADR-027) was chosen because language is a *content filter*, not an operation namespace — the same endpoint returns the same shape regardless of language, and mobile apps pinned to `/api/v1/` never need to know about locale path conventions. The contemplative error messages (ADR-074) apply here because the API is not only consumed by code — seekers see error states in the UI, and those states should carry the same care as the rest of the portal.
+
+### API Conventions
+
+**Field naming: `snake_case`.** All JSON response fields use `snake_case`, matching PostgreSQL column naming and providing consistency across the API surface. Examples: `chunk_id`, `book_title`, `page_number`, `reader_url`, `has_more`, `results_count`. TypeScript interfaces in `/lib/services/` use `camelCase` internally; the API route layer transforms at the boundary.
+
+**Resource identifiers.** Resources use the identifier type natural to their domain:
+- **Books** use slugs (human-readable, SEO-friendly): `/api/v1/books/autobiography-of-a-yogi`
+- **Chapters** use numbers within their book: `/api/v1/books/{slug}/chapters/26`
+- **Chunks (passages)** use UUIDs (stable across re-ingestion via content-hash fallback, ADR-022): `/api/v1/chunks/{uuid}`
+- **Themes** use English slugs (stable across locales, ADR-027): `/api/v1/themes/peace`
+- **People, places, glossary terms** use slugs: `/api/v1/people/sri-yukteswar`, `/api/v1/glossary/samadhi`
+
+**Response envelope.** List endpoints follow one of two patterns:
+
+*Paginated lists* (theme passages, books with sync, editorial threads, magazine articles):
+```json
+{
+  "data": [...],
+  "pagination": { "cursor": "opaque_value", "has_more": true },
+  "meta": { "total_count": 47 }
+}
+```
+When timestamp filtering is active (ADR-107), responses include `sync` metadata in `meta`:
+```json
+{
+  "meta": {
+    "sync": {
+      "filtered_by": "updated_since",
+      "since": "2026-03-01T00:00:00Z",
+      "result_count": 3,
+      "latest_timestamp": "2026-03-14T09:22:11Z"
+    }
+  }
+}
+```
+
+*Complete collections* (themes list, books list, glossary) where the full set fits in one response:
+```json
+{
+  "data": [...],
+  "meta": { "total_count": 12 }
+}
+```
+
+*Single resource* endpoints return the resource object directly (no `data` wrapper):
+```json
+{
+  "id": "uuid",
+  "title": "Autobiography of a Yogi",
+  "slug": "autobiography-of-a-yogi",
+  ...
+}
+```
+
+**Search is intentionally unpaginated.** The search endpoint returns the best-ranked results (default 5, max 20) with no cursor or `has_more`. This is deliberate: the AI librarian returns the *most relevant* passages, not a paginated result set to browse. Pagination would imply browsing a corpus dump, which contradicts the librarian metaphor (ADR-001). If a seeker needs broader exploration, theme pages and the `/browse` index serve that purpose.
+
+**`exclude` parameter.** Endpoints that support "show me another" behavior accept an `exclude` query parameter (a resource ID to omit from results). Used on `/api/v1/daily-passage` and `/api/v1/quiet` for repeat-free refresh without client-side deduplication.
+
 ### Error Response Contract
 
 All API endpoints return errors in a consistent JSON format:
@@ -3401,11 +3480,10 @@ Query params:
  limit (optional) — default 5, max 20
  mode (optional) — 'hybrid' (default), 'fts', 'vector'
 
-Response:
+Response (intentionally unpaginated — see § API Conventions):
 {
  "query": "How do I overcome fear?",
- "results_count": 5,
- "results": [
+ "data": [
  {
  "chunk_id": "uuid",
  "content": "The soul is ever free; it is deathless...",
@@ -3418,7 +3496,8 @@ Response:
  "reader_url": "/books/autobiography-of-a-yogi/26#chunk-uuid"
  },
  ...
- ]
+ ],
+ "meta": { "results_count": 5 }
 }
 ```
 
@@ -3468,9 +3547,9 @@ Query params:
  Homepage "Doors of Entry" uses category=quality.
  "Explore all themes" page omits this parameter.
 
-Response:
+Response (complete collection — see § API Conventions):
 {
- "themes": [
+ "data": [
  {
  "id": "uuid",
  "name": "Paz",
@@ -3480,7 +3559,8 @@ Response:
  "header_citation": "Autobiografía de un Yogui, Capítulo 12"
  },
  ...
- ]
+ ],
+ "meta": { "total_count": 12 }
 }
 
 Implementation:
@@ -3506,11 +3586,10 @@ Query params:
  cursor (optional) — opaque cursor from previous response
  shuffle (optional) — if true, returns a random selection (default for first request)
 
-Response:
+Response (paginated list — see § API Conventions):
 {
  "theme": "Peace",
- "passages_count": 47,
- "results": [
+ "data": [
  {
  "chunk_id": "uuid",
  "content": "The verbatim passage text...",
@@ -3521,8 +3600,8 @@ Response:
  },
  ...
  ],
- "cursor": "eyJpZCI6MTIzfQ",
- "hasMore": true
+ "pagination": { "cursor": "eyJpZCI6MTIzfQ", "has_more": true },
+ "meta": { "total_count": 47 }
 }
 
 Implementation:
@@ -3538,6 +3617,7 @@ Implementation:
 ```
 Query params:
  language (optional) — default 'en'
+ exclude (optional) — affirmation ID to exclude (for "show me another")
 
 Response:
 {
@@ -3553,6 +3633,7 @@ Implementation:
  FROM affirmations
  WHERE is_active = true
  AND language = :language
+ AND (:exclude IS NULL OR id != :exclude)
  ORDER BY random
  LIMIT 1;
 
@@ -3567,9 +3648,9 @@ Query params:
  Phase 10: also returns an "also_available_in_english"
  section for untranslated works (per ADR-075).
 
-Response:
+Response (complete collection — see § API Conventions):
 {
- "books": [
+ "data": [
  {
  "id": "uuid",
  "title": "Autobiography of a Yogi",
@@ -3582,7 +3663,8 @@ Response:
  "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja"]
  }
  ],
- "also_available_in_english": [...]
+ "also_available_in_english": [...],
+ "meta": { "total_count": 1 }
 }
 
 Implementation:
@@ -3656,7 +3738,7 @@ Query params:
 Response:
 {
  "source_chunk_id": "uuid",
- "related": [
+ "data": [
  {
  "chunk_id": "uuid",
  "content": "The verbatim passage text...",
@@ -3669,8 +3751,7 @@ Response:
  },
  ...
  ],
- "total_available": 27,
- "source": "precomputed"
+ "meta": { "total_available": 27, "source": "precomputed" }
 }
 
 Implementation:
@@ -3693,7 +3774,7 @@ Response:
  "book_title": "Autobiography of a Yogi",
  "chapter_number": 14,
  "chapter_title": "An Experience in Cosmic Consciousness",
- "thread": [
+ "data": [
  {
  "chunk_id": "uuid",
  "content": "The soul's nature is infinite bliss...",
@@ -3705,7 +3786,7 @@ Response:
  },
  ...
  ],
- "themes": ["cosmic consciousness", "the soul", "meditation"]
+ "meta": { "themes": ["cosmic consciousness", "the soul", "meditation"] }
 }
 
 Implementation:
@@ -3734,18 +3815,20 @@ GET /api/v1/audio?updated_since=2026-02-28T00:00:00Z
 - Mutually exclusive — providing both returns 400
 - Results ordered by filtered timestamp ascending (natural incremental sync order)
 
-When active, responses include `sync` metadata with `latest_timestamp` for the consumer's next call:
+When active, responses include `sync` metadata within `meta` for the consumer's next call:
 
 ```json
 {
-  "results": [...],
-  "sync": {
-    "filtered_by": "updated_since",
-    "since": "2026-03-01T00:00:00Z",
-    "result_count": 3,
-    "latest_timestamp": "2026-03-14T09:22:11Z"
-  },
-  "pagination": { "next_cursor": "..." }
+  "data": [...],
+  "pagination": { "cursor": "...", "has_more": true },
+  "meta": {
+    "sync": {
+      "filtered_by": "updated_since",
+      "since": "2026-03-01T00:00:00Z",
+      "result_count": 3,
+      "latest_timestamp": "2026-03-14T09:22:11Z"
+    }
+  }
 }
 ```
 
@@ -5233,6 +5316,30 @@ The Knowledge Graph (ADR-062) answers structural queries that text search cannot
 | "What themes cluster around grief?" | `get_graph_neighborhood("grief", 2, ["theme"])` | Related themes and their connection types |
 
 These structural queries are the portal's unique offering via MCP — no other digital representation of Yogananda's teachings encodes relational structure. The graph API (`/api/v1/graph/subgraph`) serves the web client; MCP tools serve AI consumers needing the same relational data in a different access pattern.
+
+### MCP Tool Interface Contract
+
+All MCP tools across all three tiers follow a shared interface contract. This ensures consistency for AI consumers that may graduate from Tier 1 (development) to Tier 2 (internal) or encounter Tier 3 (external) — the tool naming and response shape remain predictable.
+
+**Naming convention:** `snake_case` verbs: `search_corpus`, `get_book_metadata`, `verify_citation`. Prefix indicates action: `search_*` (query-based retrieval), `get_*` (ID-based lookup), `verify_*` (boolean validation), `find_*` (graph traversal).
+
+**Parameter naming:** `snake_case`, matching the API response convention (ADR-110). Common parameters: `language` (ISO 639-1, default `'en'`), `limit` (positive integer), `chunk_id` / `book_slug` / `theme_slug` (resource identifier matching the type conventions in ADR-110).
+
+**Response shape:** MCP tools return the same shape as their corresponding HTTP API endpoints (when one exists), plus tier-specific metadata:
+
+```jsonc
+{
+  // For Tier 3 only: fidelity metadata envelope wraps the response
+  "fidelity": { ... },
+  // The response body matches the HTTP API equivalent
+  "data": [...],
+  "meta": { ... }
+}
+```
+
+Tier 1 and Tier 2 tools return raw service-layer output (matching the HTTP API shape). Tier 3 tools wrap the output in the fidelity envelope. This means a tool like `search_corpus` returns the same `data` array as `GET /api/v1/search`, with identical field names and structure.
+
+**Error shape:** MCP tools return errors using the same `error` / `message` / `request_id` structure as the HTTP API error contract (DES-019). The compassionate error messaging applies equally — an AI consumer's end user may see these messages.
 
 ### MCP Service File
 
@@ -7933,6 +8040,58 @@ Full catalog, envelope format, delivery semantics, and schema in ADR-106.
 Events describe content lifecycle only — never seeker behavior. No PII in any payload. The `email.dispatched` event reports `subscriber_count` (aggregate), not individual addresses.
 
 *Section added: 2026-02-22, ADR-106*
+
+---
+
+## DES-053: Unified Content Pipeline Pattern
+
+Content enters the portal through five media-type-specific pipelines: books (DES-005), magazine articles (ADR-040), video transcripts (ADR-055), audio transcripts (ADR-057), and images (ADR-035). Each is specified independently, but all follow a shared seven-stage pattern. This section names the pattern explicitly, so that Phase 12+ implementations and future content types inherit the structure rather than re-inventing it.
+
+### The Seven Stages
+
+```
+Source → Normalize → Chunk → Embed → QA → Index → Relate
+```
+
+| Stage | What Happens | Governing Decisions |
+|---|---|---|
+| **1. Source** | Raw content acquired: PDF scan, Contentful entry, YouTube caption, audio file, image file. Format varies by media type. | ADR-029 (book priority), ADR-040 (magazine), ADR-055 (video), ADR-057 (audio), ADR-035 (images) |
+| **2. Normalize** | Convert to a uniform text representation. PDFs → structured text with page/paragraph boundaries. Captions → timestamped transcript. Audio → Whisper transcription. Images → editorial description text (images are not directly searchable). | DES-005 (book normalization), ADR-055 (caption → transcript), ADR-057 (audio → Whisper) |
+| **3. Chunk** | Segment normalized text into retrieval units. Books use paragraph-based chunking (ADR-048). Transcripts use speaker-turn or timestamp-window chunking. Image descriptions are single-chunk. | ADR-048 (chunking strategy) — book-specific but principles apply cross-media |
+| **4. Embed** | Generate vector embeddings for each chunk. Same embedding model across all content types (ADR-046). `embedding_model` column tracks the model version. Multilingual benchmarking applies (ADR-047). | ADR-046, ADR-047 |
+| **5. QA** | Mandatory human review gate. Every chunk's text, citation, and metadata are verified before the content reaches seekers. AI-assisted (Claude flags anomalies), human-approved. Review enters the unified review queue (DES-033). | ADR-001 (verbatim fidelity), ADR-078 (human review mandatory), DES-033 (review queue) |
+| **6. Index** | Approved chunks enter the search index: FTS tsvector columns populated, vector embeddings available for similarity queries, content surfaced in browse pages and theme listings. | ADR-044 (hybrid search), DES-019 (API endpoints) |
+| **7. Relate** | Pre-compute cross-content relationships: chunk-to-chunk similarity (ADR-050), theme membership (ADR-032), cross-media relations (ADR-060), Knowledge Graph edges (ADR-062). Relations are computed after indexing, not during — they're a derived layer. | ADR-050, ADR-060, ADR-062 |
+
+### Media-Type Variations
+
+The stages are shared; the implementations differ:
+
+| Media Type | Source Format | Chunking Unit | Special QA | Relation Types |
+|---|---|---|---|---|
+| **Books** | PDF → structured text | Paragraph (ADR-048) | Page number verification, edition alignment | chunk_relations, theme_membership |
+| **Magazine** | Contentful entry or PDF | Article section | Author attribution verification | chunk_relations, theme_membership, issue_membership |
+| **Video** | YouTube caption / Whisper | Speaker turn + timestamp window | Timestamp accuracy, speaker diarization | chunk_relations, cross_media (video ↔ book) |
+| **Audio** | Whisper transcription | Speaker turn + timestamp window | Sacred artifact flag for Yogananda's voice | chunk_relations, cross_media (audio ↔ book), performance_of (chant) |
+| **Images** | Editorial description | Single chunk (description text) | Alt text review, sacred image guidelines (ADR-042) | depicts_person, depicts_place, related_passage |
+
+### When to use this pattern
+
+Any new content type entering the portal in future phases (e.g., letters, unpublished manuscripts, study guides) should follow this seven-stage pattern. The implementation checklist for a new content type:
+
+1. Define source format and normalization process
+2. Choose chunking strategy (or declare single-chunk if the unit is atomic)
+3. Verify embedding model handles the content type adequately (or benchmark alternatives per ADR-047)
+4. Add a QA review queue type to DES-033
+5. Update the search index to include the new content type (DES-019 API, ADR-044 hybrid search)
+6. Define relation types and update the Knowledge Graph node/edge types (ADR-062)
+7. Update this section's Media-Type Variations table
+
+### Not a premature abstraction
+
+Phases 0–6 implement each pipeline independently — books, magazine, then video/audio/images. The unified content hub (ADR-060) arrives in Phase 12 as a deliberate migration. This section documents the *pattern* shared across independent implementations, not a shared codebase. If a shared `ContentPipeline` base class emerges naturally during Phase 12, it should be extracted from working code, not designed in advance.
+
+*Section added: 2026-02-22, ADR-060, ADR-112*
 
 ---
 

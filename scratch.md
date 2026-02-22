@@ -397,3 +397,17 @@ Would a Claude Code Plugin be appropriate? Another form of running the code?
 ✅ 42 MCP. Does SRF Portal MCP adequately capture portal offerings? For example, Knowledge Graph? Others? Imagine scenarios where AI is generating aggregate based on statemetns or question using MCP to return verbatim content.
 
 43 Architecture patterns. Review architecture patterns in use and omitted. What patterns benefit us? Do we prefer loosly coupled, and are we apply it if relevant?
+
+✅ 44 Are we servicing search engines, web crawlers, LLM bots to the fullest extent?
+
+✅ 45 Is the API design surface consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
+
+Is the data model consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
+
+Is the visual design system consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
+
+Is the editorial workflow architecture consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
+
+Is the content pipeline consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
+
+Is the MCP architecture consistent and well-reasoned? Do I explain design and reasons why sufficiently? Can we ask that of other aspects of the portal?
