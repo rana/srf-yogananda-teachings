@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 112 Architecture Decision Records (ADR-001 through ADR-112) organized into 11 topical groups, with full rationale for every major choice
+3. **DECISIONS.md** — 121 Architecture Decision Records (ADR-001 through ADR-121) organized into 11 topical groups, with full rationale for every major choice
 4. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -22,6 +22,7 @@ Located in `docs/reference/`:
 - **overview-youtube.md** — Brother Chidananda's announcement of the portal (YouTube transcript)
 - **SRF Teaching Portal Research & Design (Gemini 3 Pro).md** — Comprehensive theological, pedagogical, and technical analysis
 - **SRF Tech Stack Brief-3.md** — SRF's established technology stack (AWS, Vercel, Contentful, Neon, Auth0, etc.)
+- **RAG_Architecture_Proposal.md** — Comprehensive RAG architecture and feature proposal (Claude Web, Feb 2026). Merge-reviewed: ADR-114–121 and DES-054–056 adopted; Features 10–11 omitted/constrained; stack divergences annotated.
 
 ## Critical Design Constraints
 
@@ -37,11 +38,11 @@ Located in `docs/reference/`:
 10. **Human review as mandatory gate.** No user-facing content reaches seekers without human verification. Auto-tagged themes, AI-drafted translations, generated social assets — all require human approval before publication. AI proposes, humans approve. (ADR-078, ADR-032, ADR-005)
 11. **Signpost, not destination.** The portal points toward deeper SRF practice (Lessons, centers, app, meditation) without tracking conversions or acting as a sales funnel. No engagement metrics that optimize for screen time. No "sign up to access" gates. All content freely available.
 12. **Content availability honesty.** The portal is transparent about what it has. No machine-translated substitutes. English fallback always marked `[EN]`. No fabricated results. If a book isn't available in a language, it isn't listed. Honest about scope, not apologetic about it.
-13. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. Single-database architecture (Neon only, no DynamoDB) — simplicity over ecosystem conformity. (ADR-004, ADR-013)
+13. **10-year architecture horizon.** Data in PostgreSQL, business logic framework-agnostic in `/lib/services/`, migrations in raw SQL, dependencies treated as commitments. Every decision evaluated for a decade of maintainability, not just launch convenience. Two-system architecture: Neon Postgres for content/search, Neptune Analytics for graph intelligence (Phase 4+, ADR-117) — no DynamoDB, no external vector database. (ADR-004, ADR-013)
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), OpenAI text-embedding-3-small, Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Neptune Analytics (graph, Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
@@ -65,9 +66,9 @@ Located in `docs/reference/`:
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 113 decisions in DECISIONS.md (ADR-001 through ADR-113), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-113. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 121 decisions in DECISIONS.md (ADR-001 through ADR-121), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-121. Header format: `## ADR-NNN: Title`.
 
-**DES-NNN** (Design Sections) — 53 sections in DESIGN.md (DES-001 through DES-053), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
+**DES-NNN** (Design Sections) — 56 sections in DESIGN.md (DES-001 through DES-056), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
 

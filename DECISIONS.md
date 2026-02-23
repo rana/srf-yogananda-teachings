@@ -12,6 +12,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-005: Claude AI Usage Policy — Permitted Roles, Prohibited Uses, and Expansion Roadmap
 - ADR-006: Global Equity — Serving Earth's Underserved Seekers
 - ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
+- ADR-121: DELTA-Relaxed Authenticated Experience
 
 **Architecture & Platform**
 - ADR-008: Next.js + Vercel for Frontend
@@ -19,7 +20,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-010: Contentful as Editorial Source of Truth (Production)
 - ADR-011: API-First Architecture for Platform Parity
 - ADR-012: Progressive Web App as Mobile Intermediate Step
-- ADR-013: Single-Database Architecture — No DynamoDB
+- ADR-013: Single-Database Architecture — No DynamoDB (amended by ADR-117)
 - ADR-014: AWS Bedrock Claude with Model Tiering
 - ADR-015: Phase 0 Uses Vercel, Not AWS Lambda/DynamoDB
 - ADR-016: Infrastructure as Code from Phase 1 (Terraform)
@@ -35,6 +36,8 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-026: Low-Tech and Messaging Channel Strategy
 - ADR-027: Language API Design — Locale Prefix on Pages, Query Parameter on API
 - ADR-028: Remove book_store_links Table — Simplify Bookstore Links
+- ADR-117: Neptune Analytics as Graph Intelligence Layer
+- ADR-120: Redis Suggestion Cache Architecture
 
 **Content & Data Model**
 - ADR-029: Autobiography of a Yogi as Phase 0 Focus
@@ -52,18 +55,23 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-041: Phase 0 Bootstrap Ceremony
 - ADR-042: Sacred Image Usage Guidelines
 - ADR-043: Structured Spiritual Ontology — Machine-Readable Teaching Structure
+- ADR-116: Canonical Entity Registry and Sanskrit Normalization
 
 **Search & AI**
 - ADR-044: Hybrid Search (Vector + Full-Text)
 - ADR-045: Claude API for AI Features
-- ADR-046: Embedding Model Versioning and Migration
-- ADR-047: Multilingual Embedding Quality Strategy
+- ADR-046: Embedding Model Versioning and Migration (updated by ADR-118)
+- ADR-047: Multilingual Embedding Quality Strategy (updated by ADR-118)
 - ADR-048: Chunking Strategy Specification
 - ADR-049: Search Suggestions — Corpus-Derived, Not Behavior-Derived
 - ADR-050: Related Teachings — Pre-Computed Chunk Relations and Graph Traversal
 - ADR-051: Terminology Bridge Per-Book Evolution Lifecycle
 - ADR-052: Passage Resonance Signals — Content Intelligence Without Surveillance
 - ADR-053: "What Is Humanity Seeking?" — Anonymized Search Intelligence
+- ADR-114: pg_search / ParadeDB BM25 for Full-Text Search
+- ADR-115: Unified Enrichment Pipeline — Single Index-Time Pass per Chunk
+- ADR-118: Voyage voyage-3-large as Primary Embedding Model
+- ADR-119: Advanced Search Pipeline — HyDE, Cohere Rerank, Three-Path Retrieval
 
 **Cross-Media**
 - ADR-054: YouTube Integration via Hybrid RSS + API with ISR
@@ -4026,7 +4034,20 @@ DESIGN.md specifies chunk relations, storage, embedding, and search in detail. R
 
 ### Decision
 
-Document the chunking strategy as a formal specification. The strategy has two tiers: default (narrative prose) and verse-aware (scriptural commentary).
+Document the chunking strategy as a formal specification. The strategy is document-type-aware — different text types require different chunking approaches.
+
+**Per-Document-Type Chunking:**
+
+| Document Type | Characteristics | Chunking Approach |
+|---------------|----------------|-------------------|
+| Autobiography / narrative | Continuous prose, idea-per-paragraph | Semantic paragraph, 200–400 tokens, no overlap |
+| Scriptural commentary | Verse + interpretation pairs, interdependent | Verse-bound atomic units (see Verse-Aware below) |
+| Discourse / collected talk | Pedagogical arc, builds to conclusion | Section-aware, preserve teaching flow |
+| Poetry / chant / prayer | Complete works, indivisible | Whole-poem chunks, never split |
+| Affirmation | Single-statement units | Individual affirmations as atomic units |
+| Lesson (future, out of scope) | Structured pedagogy, fixed format | Format-aware (deferred) |
+
+Do not apply a single chunking algorithm across all types. Read representative samples from each type before implementing the chunking pipeline. Print 50 chunks and read them as a human researcher would. If they feel fragmentary or orphaned from their context, the algorithm is wrong regardless of benchmarks.
 
 **Default Chunking (Phases 0–5: narrative, collected talks, short works):**
 - **Unit:** Paragraph (defined by typographic paragraph breaks in the source text)
@@ -4094,13 +4115,22 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 1. **Suggestion intelligence is corpus-derived, not behavior-derived.** All suggestion sources are extracted from the content itself, not from user query patterns. This ensures DELTA compliance, guarantees every suggestion leads to results, and aligns with the librarian identity.
 
-2. **Three suggestion types, each with distinct sources:**
+2. **Six-tier suggestion hierarchy** (priority order, highest intent first):
 
- - **Term completion:** Prefix matching against corpus vocabulary (extracted distinctive terms from chunks), theme names, book titles, chapter titles, and spiritual-terms.json canonical entries. User types "med" → "meditation", "Meditations on God" (chapter), "Meditation" (theme). Implementation: PostgreSQL `pg_trgm` trigram index or pre-computed suggestion lists cached at edge. Latency target: < 50ms.
+ | Tier | Type | Source | Example |
+ |------|------|--------|---------|
+ | 1 | **Scoped queries** | Entity co-occurrence from enrichment (ADR-115) | "Yogananda on the nature of God" |
+ | 2 | **Named entities** | Entity registry (ADR-116) | "Autobiography of a Yogi", "Lahiri Mahasaya", "Kriya Yoga" |
+ | 3 | **Domain concept phrases** | Topic and summary mining from enrichment | "cosmic consciousness", "divine love" |
+ | 4 | **Sanskrit terms with definitions** | `sanskrit_terms` table (ADR-116) | "Samadhi — superconscious state" |
+ | 5 | **Learned queries from logs** | Anonymized query log (DELTA-compliant, ADR-053) | (grows over time) |
+ | 6 | **High-value single terms** | Hand-curated, ~200–300 terms | "meditation", "karma" |
 
- - **Query suggestion:** Curated complete question forms seeded from the search quality test suite and editorially expanded. User types "How do I" → "How do I overcome fear?", "How do I meditate?" These are editorially maintained — human review required, consistent with ADR-078. Not derived from user query history.
+ The "Yogananda on X" scoped query pattern (Tier 1) is the highest-value suggestion type for a teacher-centered corpus. It encodes the most precise intent and guarantees high-relevance results.
 
- - **Bridge-powered suggestion:** When the spiritual terminology bridge detects a mapping, surface Yogananda's vocabulary. User types "mindful" → suggestion includes a hint: "Yogananda's terms: concentration, one-pointed attention." This is the differentiator — no other search system has a sacred-text-aware vocabulary mapper as a suggestion engine.
+ The three original suggestion types map into this hierarchy: **term completion** spans Tiers 2, 3, and 6; **query suggestion** spans Tiers 1 and 5; **bridge-powered suggestion** is integrated into Tiers 3 and 4 (Sanskrit terms with definitions, bridged concepts with Yogananda's vocabulary).
+
+ Implementation: Phase 0 uses PostgreSQL `pg_trgm` for prefix and fuzzy matching. The architecture is designed for Redis (ElastiCache) as the target cache layer (ADR-120), with language-namespaced sorted sets for sub-millisecond prefix lookup. Latency target: < 50ms (pg_trgm), < 5ms (Redis).
 
 3. **New API endpoint: `GET /api/v1/search/suggest`.** Accepts `q` (partial query), `language`, and `limit` parameters. Returns typed suggestions with category metadata (term/query/bridge). No Claude API call — pure database/cache lookup for speed.
 
@@ -4162,9 +4192,23 @@ Use **pre-computed chunk relations** stored in a `chunk_relations` table. For ea
 
 This powers three features:
 
-1. **Related Teachings side panel** — while reading, a right-side panel shows the top 3 related passages from other books, updating as the reader scrolls.
+1. **Related Teachings side panel** — while reading, a right-side panel shows the top 3 related passages from other books, updating as the reader scrolls. Related passages are displayed in categories based on the relationship type (see below), so the user sees not just *that* a passage is related but *why*.
 2. **"Continue the Thread"** — at the end of every chapter, a section aggregates the most related cross-book passages for all paragraphs in that chapter.
 3. **Graph traversal** — clicking a related passage navigates to that passage in its reader context, and the side panel updates with *that* passage's relations. The reader follows threads of meaning across the entire library.
+
+**Relationship categorization** (Phase 4+, powered by ADR-117 Neptune Analytics and ADR-115 enrichment):
+
+Each relation is classified into one of five categories, computed at index time by Claude (ADR-115 enrichment pipeline) and refined by graph traversal path:
+
+| Category | Description | Source |
+|----------|-------------|--------|
+| **Same Concept** | Passages about the same topic from different works | Vector similarity + topic overlap |
+| **Deeper in This Theme** | What this state or concept progresses toward | PROGRESSION_TO graph edges |
+| **Another Teacher's Expression** | Same concept expressed by a different lineage teacher | Author-filtered similarity + Teacher graph node |
+| **Parallel Tradition** | Cross-tradition equivalent (Hindu ↔ Christian ↔ other) | CROSS_TRADITION_EQUIVALENT graph edges |
+| **Technique for This State** | Practice instruction toward the described experiential depth | INSTRUCTS_TECHNIQUE + DESCRIBES_STATE graph edges |
+
+The side panel displays related passages grouped by category. The relationship type is information, not just retrieval — an educational and contemplative value beyond search. Phase 0–3 uses similarity-only categorization (from pre-computed relations). Phase 4+ adds graph-derived categorization.
 
 **Incremental update strategy:**
 
@@ -9990,3 +10034,544 @@ Phase 0a has two conversation prerequisites (edition confirmation, PDF source) b
 - References to "Phase 0" deliverable numbers in other documents (DESIGN.md, CONTEXT.md) should use the new 0a/0b numbering.
 
 ---
+
+## ADR-114: pg_search / ParadeDB BM25 for Full-Text Search
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+ADR-044 establishes hybrid search (vector + full-text) as the retrieval strategy. The initial design assumed PostgreSQL's built-in `tsvector` for full-text search. While functional, `tsvector` has limitations for this corpus:
+
+1. **Ranking quality.** `ts_rank` uses a simple frequency-based scoring model. BM25 (Best Matching 25) is the standard ranking algorithm in modern information retrieval, providing significantly better relevance ranking through term frequency saturation, document length normalization, and inverse document frequency weighting.
+
+2. **Multilingual tokenization.** `tsvector` relies on PostgreSQL's built-in text search configurations, which handle Western European languages well but lack specialized tokenization for CJK scripts, Arabic, and other complex writing systems. The portal's multilingual-from-foundation principle (ADR-075) requires tokenization that works across all target languages.
+
+3. **No phrase search.** `tsvector` doesn't support proximity-aware phrase matching. Seekers often remember exact phrases from Yogananda's works ("door of my heart," "ever-new joy"). BM25 with positional indexing enables phrase and proximity search.
+
+pg_search (the ParadeDB extension) is available on Neon in AWS regions. It provides Elasticsearch-quality BM25 entirely within Postgres — no separate service, full SQL JOIN capability, ACID-compliant.
+
+### Decision
+
+Use pg_search / ParadeDB BM25 as the full-text search engine for the portal. This replaces `tsvector` for all full-text retrieval.
+
+**Primary BM25 index:** ICU tokenizer, covering ~90% of target languages with a single index:
+
+```sql
+CREATE INDEX chunks_bm25_icu ON book_chunks
+    USING bm25 (id, content, summary, topics)
+    WITH (
+        key_field = 'id',
+        text_fields = '{
+            "content": {"tokenizer": {"type": "icu"}, "record": "position"},
+            "summary": {"tokenizer": {"type": "icu"}},
+            "topics":  {"tokenizer": {"type": "icu"}}
+        }'
+    );
+```
+
+**Language-specific partial indexes** for scripts that require specialized segmentation:
+
+```sql
+-- Chinese: Jieba dictionary-based segmentation
+CREATE INDEX chunks_bm25_zh ON book_chunks
+    USING bm25 (id, content)
+    WITH (
+        key_field = 'id',
+        text_fields = '{"content": {"tokenizer": {"type": "jieba"}}}'
+    )
+    WHERE script = 'cjk' AND language LIKE 'zh%';
+
+-- Japanese: Lindera morphological analysis
+CREATE INDEX chunks_bm25_ja ON book_chunks
+    USING bm25 (id, content)
+    WITH (
+        key_field = 'id',
+        text_fields = '{"content": {"tokenizer": {"type": "lindera"}}}'
+    )
+    WHERE script = 'cjk' AND language = 'ja';
+```
+
+**Hybrid search via Reciprocal Rank Fusion (RRF):** The BM25 results are merged with pgvector results using RRF in a single SQL query, consistent with ADR-044.
+
+### Rationale
+
+- **BM25 is the industry standard.** Every major search engine (Elasticsearch, Solr, Typesense) uses BM25. It handles term saturation (repeating a word doesn't inflate scores) and document length normalization (short aphorisms aren't penalized relative to long narrative passages).
+- **Multilingual tokenization from day one.** ICU tokenization handles Latin, Cyrillic, Arabic, Devanagari, and most scripts. Jieba and Lindera handle the CJK scripts that require dictionary-based segmentation. No separate search service required.
+- **Stays inside Postgres.** pg_search operates as a Postgres extension. All queries are standard SQL with `@@@` operator. JOINs, CTEs, and transactions work naturally. No data synchronization with an external service.
+- **Phrase search enables "I remember the exact words" queries.** Positional indexing (`"record": "position"`) enables phrase and proximity queries — critical for a corpus where seekers often remember specific formulations.
+
+### Consequences
+
+- `tsvector` columns and indexes are not needed; pg_search BM25 indexes replace them entirely
+- The `hybrid_search` SQL function uses `paradedb.score(id)` and `@@@` operator instead of `ts_rank` and `@@`
+- Phase 0 BM25 index uses ICU tokenizer (English); CJK-specific indexes added in Phase 10
+- DESIGN.md DES-003 (Search Architecture) updated to reflect pg_search in the search flow
+- A `script` column on `book_chunks` routes queries to the appropriate partial index at Phase 10
+
+---
+
+## ADR-115: Unified Enrichment Pipeline — Single Index-Time Pass per Chunk
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+ADR-005 defines eight permitted Claude use cases (E1–E8). Some operate at query time (E1: intent classification, E2: terminology bridge), but several operate at index time on each chunk: E3 (accessibility rating), E4 (ingestion QA), E6 (chunk relation classification), E8 (tone classification). Additionally, the RAG Architecture Proposal identifies further index-time enrichments: topics, entities, domain classification, experiential depth, voice register, emotional quality, cross-references, and relationship extraction.
+
+Running separate Claude calls per chunk for each enrichment type is wasteful and inconsistent — a single prompt seeing the full chunk can produce more coherent, contextually informed outputs than six separate prompts each seeing the chunk in isolation.
+
+### Decision
+
+Consolidate all index-time Claude enrichment into a single prompt per chunk. The enrichment pipeline produces one structured JSON output containing all metadata fields:
+
+```json
+{
+  "summary": "This passage describes Yogananda's experience of cosmic consciousness during meditation...",
+  "topics": ["cosmic consciousness", "samadhi", "divine union"],
+  "entities": {
+    "teachers": ["Paramahansa Yogananda"],
+    "divine_names": ["Divine Mother"],
+    "techniques": ["Kriya Yoga"],
+    "sanskrit_terms": ["samadhi", "nirvikalpa"],
+    "works": [],
+    "concepts": ["cosmic consciousness", "self-realization"],
+    "places": ["Encinitas"],
+    "experiential_states": ["nirvikalpa samadhi"]
+  },
+  "domain": "philosophy",
+  "experiential_depth": 7,
+  "emotional_quality": ["inspiring", "devotional"],
+  "voice_register": "cosmic",
+  "accessibility_level": 4,
+  "semantic_density": "high",
+  "cross_references": [
+    {"type": "scripture", "ref": "Bhagavad Gita IV:35", "explicit": true}
+  ],
+  "relationships": [
+    {
+      "subject": "Paramahansa Yogananda",
+      "relationship": "DESCRIBES_STATE",
+      "object": "nirvikalpa samadhi",
+      "confidence": 0.95
+    }
+  ]
+}
+```
+
+**Enrichment field definitions:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `summary` | TEXT | "This passage is primarily about..." — in the chunk's detected language |
+| `topics` | TEXT[] | Canonical topic labels for thematic indexing |
+| `entities` | JSONB | Typed entity extraction, validated against entity registry (ADR-116) |
+| `domain` | TEXT | philosophy / narrative / technique / devotional / poetry |
+| `experiential_depth` | INT (1–7) | Level of consciousness described: 1=ordinary waking, 2=relaxed concentration, 3=pratyahara, 4=dharana, 5=dhyana, 6=sabikalpa samadhi, 7=nirvikalpa/cosmic consciousness |
+| `emotional_quality` | TEXT[] | consoling / inspiring / instructional / devotional / demanding / celebratory |
+| `voice_register` | TEXT | intimate / cosmic / instructional / devotional / philosophical / humorous |
+| `accessibility_level` | INT (1–5) | Language/concept accessibility (from ADR-005 E3) |
+| `semantic_density` | TEXT | high / medium / low (from ADR-048) |
+| `cross_references` | JSONB | Explicit references to other works, teachers, scriptures |
+| `relationships` | JSONB[] | Extracted entity-relationship triples for graph construction |
+
+**Key constraints:**
+- The enrichment prompt runs in the chunk's detected language
+- Entity names are validated against the canonical entity registry (ADR-116)
+- Confidence < 0.7 on any relationship flags it for human review queue
+- Enrichment output is stored as structured Postgres columns, not raw JSON blobs
+- Claude Opus is used for enrichment (batch tier, ADR-014) — accuracy matters more than speed at index time
+
+**Query-time operations remain separate:** E1 (intent classification) and E2 (terminology bridge) operate at query time and are not part of this pipeline.
+
+### Rationale
+
+- **One prompt is more coherent than six.** Claude seeing the full chunk once can produce internally consistent outputs — the domain classification informs the emotional quality, the entity extraction informs the relationship extraction.
+- **Cost reduction.** One Opus call per chunk instead of multiple Haiku calls. At ~50K chunks, the difference is significant.
+- **The enrichment prompt is the most consequential engineering in the system.** Everything downstream — search quality, suggestion vocabulary, graph construction, related teachings categorization — depends on enrichment quality. A unified prompt with a single, carefully designed output schema is easier to test, iterate, and validate than six separate prompts.
+- **Consistent with "AI proposes, humans approve."** The enrichment pipeline produces structured metadata. Confidence-flagged outputs enter the human review queue. Published content always passes through human verification.
+
+### Consequences
+
+- New enrichment columns added to `book_chunks`: `experiential_depth`, `voice_register`, `emotional_quality`, `cross_references`, `domain` (see DESIGN.md DES-004)
+- The ingestion pipeline (DES-005) is updated to include the unified enrichment step
+- An `extracted_relationships` table logs all relationship triples for graph construction (ADR-117)
+- The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Phase 0a pre-implementation checklist)
+- ADR-005 E3, E4, E6, E8 are folded into this pipeline; E1, E2, E5, E7 remain as separate operations
+
+---
+
+## ADR-116: Canonical Entity Registry and Sanskrit Normalization
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+The SRF corpus contains a rich but bounded set of entities: teachers, divine names, techniques, Sanskrit terms, works, concepts, places, and experiential states. The same entity frequently appears under multiple surface forms — "Master," "Guruji," "Swami Yogananda," and "Paramahansa Yogananda" all refer to the same person. "Divine Mother" must be distinguished from "mother" (a parent). Sanskrit terms appear in multiple transliterations: "samadhi," "Samaadhi," "samahdi."
+
+Without canonical entity resolution, the enrichment pipeline (ADR-115) produces inconsistent entity tags, the suggestion system (ADR-049) surfaces duplicates, and the knowledge graph (ADR-117) creates redundant nodes.
+
+### Decision
+
+Two first-class tables provide canonical entity resolution for the entire system:
+
+**Entity Registry:**
+
+```sql
+CREATE TABLE entity_registry (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    canonical_name  TEXT NOT NULL,
+    entity_type     TEXT NOT NULL,  -- Teacher|DivineName|Work|Technique|SanskritTerm|Concept|Place|ExperientialState
+    aliases         TEXT[],         -- all known surface forms
+    language        CHAR(5),
+    definition      TEXT,
+    srf_definition  TEXT,           -- Yogananda's specific definition if distinct from general usage
+    neptune_node_id TEXT,           -- graph linkage (Phase 4+)
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(canonical_name, entity_type)
+);
+
+CREATE INDEX entity_aliases_idx ON entity_registry USING gin(aliases);
+```
+
+**Sanskrit Normalization:**
+
+```sql
+CREATE TABLE sanskrit_terms (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    canonical_form  TEXT NOT NULL,     -- "samadhi"
+    display_form    TEXT NOT NULL,     -- "Samadhi"
+    devanagari      TEXT,              -- "समाधि"
+    iast_form       TEXT,              -- "samādhi"
+    common_variants TEXT[],            -- ["Samaadhi", "samahdi"]
+    srf_definition  TEXT,
+    domain          TEXT,              -- philosophy|practice|state|quality
+    depth_level     INT,               -- if an experiential state: 1-7 (per ADR-115)
+    weight          INT DEFAULT 100    -- suggestion ranking weight
+);
+```
+
+**Construction sequence:**
+1. **Before ingestion:** Claude generates an initial entity registry seed from domain knowledge (~500 canonical entries covering teachers, major works, core Sanskrit terms, key concepts). Human review closes gaps.
+2. **During ingestion:** The enrichment pipeline (ADR-115) validates all extracted entities against the registry. Unknown entities are flagged for human review and potential registry addition.
+3. **Per-book update:** Each new book ingestion may surface new entities. The registry grows but never shrinks. Provenance tracked per entry.
+
+### Rationale
+
+- **Bounded, manageable vocabulary.** Unlike a general-purpose NER system, the SRF entity space is finite and knowable. A curated registry is more accurate than statistical extraction alone.
+- **Alias resolution is critical for search quality.** A user searching "the Master" must find passages tagged with "Paramahansa Yogananda." Without canonical resolution, the search relies on embedding similarity alone — which works for close synonyms but fails for culturally specific aliases.
+- **Sanskrit normalization respects seeker diversity.** Hindi speakers type Devanagari, Western students type rough transliterations, scholars type IAST. All should reach the same term.
+- **The registry feeds the suggestion system.** Every entity becomes a high-value suggestion (ADR-049, Tier 2). Every Sanskrit term becomes a suggestion with inline definition (Tier 4).
+
+### Consequences
+
+- Entity registry populated before first book ingestion (Phase 0a pre-implementation checklist)
+- All enrichment entity extraction (ADR-115) resolves against the registry
+- Suggestion dictionary (ADR-049, ADR-120) draws Tier 2 and Tier 4 entries from these tables
+- Knowledge graph nodes (ADR-117) are linked to registry entries via `neptune_node_id`
+- DESIGN.md DES-004 (Data Model) updated with both table schemas
+- ADR-080 (Sanskrit Display and Search Normalization) extended by the `sanskrit_terms` table
+
+---
+
+## ADR-117: Neptune Analytics as Graph Intelligence Layer
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+- **Amends:** ADR-013 (Single-Database Architecture)
+
+### Context
+
+ADR-013 established a single-database architecture: Neon PostgreSQL for all content, relational data, and search. This decision was sound for Phase 0 — simplicity over ecosystem conformity.
+
+However, the RAG Architecture Proposal identifies a class of features that require combined vector similarity + graph traversal in a single query — a capability that Postgres alone cannot efficiently serve:
+
+- **Related Teachings with categorized paths** (ADR-050): not just "similar" passages, but passages related by concept neighborhood, cross-tradition parallels, experiential state progression, and teacher lineage
+- **Contemplative Companion:** a user describes an inner state; the system traverses the ExperientialState graph to find the closest match and surfaces Yogananda's verbatim descriptions
+- **Scripture-in-Dialogue:** navigating Yogananda's Gita and Gospel commentaries as a unified cross-tradition conversation via verse-level graph edges
+- **Reading Arc:** graph-guided progressive study sequences computed from concept depth and PROGRESSION_TO edges
+- **GraphRAG:** a third retrieval path that finds passages pure vector and keyword search cannot — passages that never mention the search term but are two concept-hops away in the knowledge graph
+
+These features are not ornamental — they are what distinguishes a world-class spiritual text platform from a search box over books. The knowledge graph and concept graph together make Yogananda's cross-tradition intellectual project computationally navigable.
+
+### Decision
+
+Amend ADR-013 to a **two-system architecture**: Neon Postgres for content, relational data, embeddings, and primary search; Neptune Analytics for graph intelligence (knowledge graph, concept graph, graph algorithms).
+
+**Phasing:**
+- **Phase 0–3:** Single-database (Neon Postgres only). The graph ontology is designed from Phase 0, but Neptune is not provisioned.
+- **Phase 4:** Neptune Analytics introduced. Knowledge graph foundation: teacher, work, chunk, and entity nodes; lineage, authorship, content-relationship, and sequential (NEXT/PREV) edges. PATH C (GraphRAG) activated in the search pipeline.
+- **Phase 8:** Concept/word graph fully constructed: cross-tradition equivalences, progression chains, co-occurrence edges. Graph algorithms running nightly.
+
+**Why Neptune Analytics specifically:** Neptune Analytics persists Voyage embeddings on graph nodes and provides vector similarity algorithms callable from openCypher — meaning a single query can traverse relationships AND retrieve semantically similar content simultaneously. This unification is the core capability. A Postgres adjacency-list graph cannot efficiently combine multi-hop traversal with vector similarity in one query.
+
+**Data synchronization:** Canonical entity IDs (from `entity_registry`, ADR-116) serve as the join key between Postgres and Neptune. Entities are upserted by canonical ID. The ingestion pipeline (DES-005) writes to both systems: Postgres for content and search, Neptune for graph structure.
+
+**Graph algorithms (nightly batch):**
+- **PageRank:** Which concepts are most referenced? Results stored as `centrality_score` on nodes. Feeds suggestion weights and retrieval confidence.
+- **Community Detection:** Which concept clusters naturally co-occur? (Expected: meditation/states, devotion/love, philosophy/maya, technique/practice, Christian-parallels, Hindu-philosophy.) Feeds "conceptual neighborhood" queries.
+- **Betweenness Centrality:** Which concepts bridge otherwise separate clusters? High betweenness = cross-tradition bridge terms — the most important for cross-tradition retrieval.
+
+### Rationale
+
+- **The bounded corpus justifies the graph.** A 50K–100K chunk corpus with ~500 canonical entities is an ideal graph size — large enough for meaningful traversal patterns, small enough for complete PageRank and community detection in seconds.
+- **ADR-013's original reasoning still holds for content.** Neon Postgres remains the single authoritative store for all content, search indexes, and relational data. Neptune adds a graph *intelligence* layer — it does not duplicate content storage.
+- **Neptune Analytics is managed and AWS-native.** No database administration for the graph layer. Compatible with the existing AWS infrastructure (ADR-017, ADR-019). openCypher is an open standard — the graph data model is portable even if Neptune is replaced.
+- **The alternative (Postgres-only graph) was evaluated.** Recursive CTEs over adjacency tables can serve simple 1-2 hop traversals, but combining multi-hop graph patterns with vector similarity in a single query requires imperative code stitching together multiple Postgres queries. Neptune unifies this in one declarative openCypher query.
+
+### Consequences
+
+- ADR-013 is amended: the portal uses two data systems, cleanly separated by concern
+- DES-004 (Data Model) gains graph-linkage columns (`neptune_node_id`) on entities and chunks
+- DES-005 (Content Ingestion Pipeline) gains a graph-load step (Phase 4+)
+- New DESIGN.md sections: DES-054 (Knowledge Graph Ontology) and DES-055 (Concept/Word Graph)
+- DES-003 (Search Architecture) gains PATH C: GraphRAG (Phase 4+)
+- Phase 4 in ROADMAP.md adds Neptune Analytics provisioning and knowledge graph foundation deliverables
+- The graph ontology (node types, edge types, algorithms) is designed from Phase 0 and documented in DES-054/055, even though Neptune itself is introduced in Phase 4
+- Terraform configuration (ADR-016) extended for Neptune Analytics
+
+---
+
+## ADR-118: Voyage voyage-3-large as Primary Embedding Model
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+- **Updates:** ADR-046 (Embedding Model Versioning), ADR-047 (Multilingual Embedding Quality Strategy)
+
+### Context
+
+ADR-046 established embedding model versioning infrastructure. ADR-047 selected OpenAI `text-embedding-3-small` (1536 dimensions) as the Phase 0 embedding model, with planned benchmarking against multilingual-optimized alternatives at Phase 10.
+
+The RAG Architecture Proposal makes a compelling case for starting with a higher-quality embedding model:
+
+1. **Literary and spiritual text quality.** `text-embedding-3-small` is optimized for breadth across all domains, not depth in any. Yogananda's prose is rich in literary allusion, Sanskrit vocabulary, figurative language, and experiential description — domains where specialized models outperform generalists.
+2. **Multilingual-first design.** Voyage `voyage-3-large` embeds 26 languages in a unified space, with multilingual capability as a design goal rather than a side effect. A French query naturally retrieves French text; cross-lingual search is structural, not bolted on.
+3. **Asymmetric encoding.** Voyage supports `input_type = 'document'` at index time and `input_type = 'query'` at query time — optimizing the embedding for its role in retrieval.
+4. **Migration cost is real.** Even with ADR-046 infrastructure, re-embedding the entire corpus is work. Starting with the stronger model avoids a foreseeable migration.
+
+### Decision
+
+Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as the primary embedding model from Phase 0.
+
+**Key changes from previous design:**
+- Vector dimension: 1536 → 1024 (all `VECTOR()` column definitions and HNSW index parameters updated)
+- Asymmetric encoding: `input_type = 'document'` at ingestion, `input_type = 'query'` at search time
+- Hosting: Voyage API by default. At significant volume, evaluate AWS Marketplace SageMaker model packages for Voyage to keep inference AWS-native.
+
+**ADR-046 infrastructure preserved:** The `embedding_model`, `embedding_dimension`, and `embedded_at` columns remain on `book_chunks`. The versioning and migration infrastructure is unchanged — it serves as insurance for future model changes.
+
+**Benchmarking deferred, not abandoned:** Phase 10 benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3, `voyage-multilingual-2` for CJK-heavy text) with the actual multilingual corpus. If a model demonstrably outperforms Voyage on specific languages, the ADR-046 migration path activates.
+
+### Rationale
+
+- **Start with the best available model for this corpus type.** The portal's core offering is semantic search over literary/spiritual text. Starting with a model optimized for that domain means higher quality from launch.
+- **1024 dimensions is sufficient.** Voyage `voyage-3-large` at 1024d outperforms OpenAI at 1536d on literary retrieval benchmarks. Smaller vectors also reduce storage and improve HNSW search speed.
+- **The bounded corpus makes re-embedding cheap.** Even if Voyage proves suboptimal for specific languages at Phase 10, re-embedding ~50K chunks takes hours. The migration friction that justifies starting with the "good enough" model doesn't exist at this corpus scale.
+- **Cost is negligible at corpus scale.** Embedding the full multilingual corpus costs under $10. The embedding model should be selected for quality, not cost (per ADR-047).
+
+### Consequences
+
+- All `VECTOR(1536)` definitions in the schema change to `VECTOR(1024)`
+- HNSW index parameters updated for 1024 dimensions
+- Voyage API key added to environment configuration
+- DESIGN.md tech stack table updated: Voyage `voyage-3-large` replaces OpenAI `text-embedding-3-small`
+- Neptune Analytics nodes (ADR-117) store Voyage embeddings for graph-native vector search
+- Phase 10 benchmarking scope updated: Voyage as baseline rather than OpenAI
+
+---
+
+## ADR-119: Advanced Search Pipeline — HyDE, Cohere Rerank, Three-Path Retrieval
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+The Phase 0 search pipeline (DES-003) uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion, with optional Claude Haiku passage ranking. This is a strong foundation but leaves three well-established retrieval enhancements on the table:
+
+1. **HyDE (Hypothetical Document Embedding).** Instead of embedding the user's query (which lives in "query space"), Claude generates a hypothetical passage that would answer the query, and *that passage* is embedded. The search then operates in "document space" — matching document-like text against documents. Research shows significant lift on literary, philosophical, and domain-specific corpora where query language diverges from document language.
+
+2. **Cross-encoder reranking.** The Phase 0 passage ranking uses Claude Haiku — effective but general-purpose. Cohere Rerank 3.5 is a purpose-built cross-encoder that sees query + passage together and produces a true relevance score. It is multilingual-native and requires no language routing.
+
+3. **Graph-augmented retrieval (GraphRAG).** With the knowledge graph (ADR-117) active in Phase 4+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph.
+
+### Decision
+
+Three enhancements to the search pipeline, phased for implementation:
+
+**Phase 2: HyDE**
+- For complex or experiential queries (not simple keyword lookups), Claude generates a hypothetical passage (~100–200 tokens) that would answer the query
+- The hypothesis is embedded with Voyage (`input_type = 'query'`) and used as an additional vector search input alongside the original query embedding
+- Both vectors contribute candidates to the RRF merge
+- Bypass for simple keyword queries (detected by intent classification, ADR-005 E1)
+
+**Phase 2: Cohere Rerank 3.5**
+- After RRF fusion produces ~50 candidates, Cohere Rerank 3.5 sees query + passage pairs
+- Cross-encoder scoring produces true relevance scores (not just ranking positions)
+- Top 10 returned with confidence scores
+- Replaces Claude Haiku passage ranking for precision; Haiku remains available as fallback
+- Multilingual-native — no language routing needed
+
+**Phase 4+: Three-Path Parallel Retrieval**
+- **PATH A:** Dense vector (pgvector HNSW) — semantic similarity
+- **PATH B:** BM25 keyword (pg_search) — exact term and phrase matching
+- **PATH C:** GraphRAG (Neptune Analytics) — entity-aware graph traversal + vector similarity in a single openCypher query. Traverses concept neighborhoods, lineage relationships, cross-tradition bridges, experiential state graph.
+- All three paths contribute candidates to RRF fusion before reranking
+
+```
+Phase 0–1:  PATH A + PATH B → RRF → Claude Haiku ranking
+Phase 2–3:  PATH A + PATH B + HyDE → RRF → Cohere Rerank
+Phase 4+:   PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
+```
+
+### Rationale
+
+- **HyDE is high-lift for spiritual text.** Seekers often express queries as emotional states ("I feel lost"), questions ("What is the meaning of suffering?"), or experiential descriptions ("a light I saw in meditation"). These live far from Yogananda's document language in embedding space. A hypothetical passage bridges the gap.
+- **Cohere Rerank is purpose-built.** Cross-encoders see query and passage together — they can detect relevance that bi-encoder similarity misses (e.g., a passage that answers a question without using any of the question's words). Cohere Rerank 3.5 is multilingual-native, eliminating language-specific routing.
+- **GraphRAG finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage for a seeker searching "Holy Spirit" — neither vector similarity nor BM25 would find it.
+- **Phased introduction manages complexity.** Each enhancement can be validated independently against the golden retrieval set before the next is added.
+
+### Consequences
+
+- DES-003 (Search Architecture) updated with the full pipeline diagram showing all three phases
+- Cohere Rerank API key added to environment configuration
+- Search latency budget increases: Phase 0 target ~200ms; Phase 2 target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Phase 4 target ~400ms (graph adds ~50ms)
+- The golden retrieval set (Phase 0a) gains HyDE-specific and GraphRAG-specific test queries in later phases
+- Cost per query increases: ~$0.001 for HyDE (Claude) + ~$0.0005 for Cohere Rerank = ~$0.0015/query total AI cost
+
+---
+
+## ADR-120: Redis Suggestion Cache Architecture
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+ADR-049 establishes corpus-derived suggestions with three types (term completion, query suggestion, bridge-powered). The implementation notes mention PostgreSQL `pg_trgm` or pre-computed lists for < 50ms latency.
+
+For a world-class search experience, suggestion latency should be invisible — ideally < 20ms on every keystroke. pg_trgm can achieve < 50ms for trigram similarity queries, but prefix matching on sorted sets in Redis is consistently < 5ms regardless of dictionary size. The suggestion architecture should be designed for Redis from the start, with pg_trgm as the Phase 0 fallback.
+
+### Decision
+
+Design the suggestion architecture with Redis (ElastiCache) as the target cache layer. The implementation is phased: pg_trgm serves Phase 0; Redis is introduced when suggestion latency or volume warrants it.
+
+**Six-tier suggestion hierarchy** (priority order):
+
+| Tier | Type | Source | Example |
+|------|------|--------|---------|
+| 1 | Scoped queries | Entity co-occurrence from enrichment | "Yogananda on the nature of God" |
+| 2 | Named entities | Entity registry (ADR-116) | "Autobiography of a Yogi", "Lahiri Mahasaya" |
+| 3 | Domain concept phrases | Topic and summary mining from enrichment | "cosmic consciousness", "divine love" |
+| 4 | Sanskrit terms with definitions | `sanskrit_terms` table (ADR-116) | "Samadhi — superconscious state" |
+| 5 | Learned queries from logs | Anonymized query log (DELTA-compliant) | (grows over time from ADR-053 signal) |
+| 6 | High-value single terms | Hand-curated, ~200–300 terms | "meditation", "karma" |
+
+**Redis architecture:**
+- Language-namespaced sorted sets: `suggestions:{language}` → `(suggestion, weight)`
+- Prefix lookup: `ZRANGEBYLEX suggestions:en "[Yog" "[Yog\xff"` returns in < 1ms
+- Dictionary built offline from corpus enrichment pipeline
+- Sanskrit variants loaded from `sanskrit_terms.common_variants` — all variant forms point to the canonical suggestion
+- Nightly refresh incorporates query log signal (Tier 5)
+
+**pg_trgm fallback (Phase 0 and always-on backup):**
+When Redis prefix returns < 3 results (misspelling, mid-word prefix), fall back to:
+
+```sql
+SELECT suggestion, weight, suggestion_type
+FROM suggestion_dictionary
+WHERE similarity(suggestion, $partial_query) > 0.3
+  AND language = $detected_language
+ORDER BY weight DESC, similarity(suggestion, $partial_query) DESC
+LIMIT 10;
+```
+
+**Frontend debounce:** Fire suggestion requests after 80–120ms of keystroke inactivity. Reduces request volume ~60% and eliminates out-of-order response issues.
+
+### Rationale
+
+- **Invisible latency is the goal.** Suggestion quality and suggestion speed are not tradeoffs — the architecture should deliver both. Redis prefix lookup is O(log N + M) regardless of dictionary size.
+- **Redis is a proven pattern for autocomplete.** Every major search product uses a sorted set or trie for prefix suggestions. The architecture is well-understood, operationally simple, and horizontally scalable.
+- **pg_trgm remains valuable.** Fuzzy matching catches misspellings that prefix matching misses. The two systems are complementary, not competing.
+- **Designing for Redis from the start avoids redesign.** Language-namespaced sorted sets, weighted scoring, and prefix-based lookup are architectural patterns. Building with these patterns in mind — even if the initial implementation is pg_trgm — means adding Redis later is a configuration change, not a restructuring.
+
+### Consequences
+
+- New `suggestion_dictionary` table in DES-004 (Data Model): `suggestion`, `display_text`, `suggestion_type`, `language`, `script`, `latin_form`, `corpus_frequency`, `weight`, `entity_id`, `book_id`
+- Weight computation: `(corpus_frequency * 0.3) + (query_frequency * 0.5)` — no `click_through` tracking (DELTA compliance)
+- ADR-049 updated with six-tier hierarchy
+- Phase 0: pg_trgm implementation
+- Phase 2+: Redis (ElastiCache) provisioned when suggestion volume warrants
+- Terraform configuration (ADR-016) extended for ElastiCache
+- The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary
+
+---
+
+## ADR-121: DELTA-Relaxed Authenticated Experience
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+DELTA (Dignity, Embodiment, Love, Transcendence, Agency) governs the portal's relationship with seekers (ADR-095). The default experience is anonymous: no user identification, no session tracking, no behavioral profiling. This is correct and foundational.
+
+However, certain features genuinely require persistent user state: synced bookmarks across devices, reading progress that persists across sessions, personal passage collections, and persistent language preferences. Local storage provides some of this, but it is device-bound and fragile.
+
+ADR-085 (Lessons Integration Readiness) already contemplates authenticated users for future Lessons content. ADR-066 (Lotus Bookmark) uses local storage for bookmarks. The question is: when a user *chooses* to create an account, what changes in the portal's behavior, and what doesn't?
+
+### Decision
+
+The portal offers two experience tiers:
+
+**Anonymous (default, full DELTA compliance):**
+- Core search, read, and browse: full access, no account required
+- Bookmarks and reading position: local storage only (device-bound)
+- Language preference: browser setting or session selection
+- No user identification, no session tracking, no behavioral profiling
+- All content freely available — no "sign up to access" gates
+
+**Authenticated (opted-in, expanded features):**
+- Everything anonymous users have, plus:
+- **Bookmarks sync:** Saved passages accessible from any device
+- **Reading progress:** Persistent position across sessions and devices
+- **Personal collections:** Curated passage groups with private notes
+- **Language preference:** Persistent across devices
+- **Practice background** (optional): Tradition background and practice level, user-provided, used only for `/guide` pathway recommendations
+- Auth provider: Auth0 (consistent with SRF's established stack)
+
+**DELTA commitments that do NOT change for authenticated users:**
+
+| Principle | Authenticated Behavior |
+|-----------|----------------------|
+| **Dignity** | No behavioral profiling. Account data is what the user explicitly provides — never inferred. |
+| **Embodiment** | No engagement metrics. No "you've read 47 passages this week" dashboards. No retention nudges. |
+| **Love** | Same compassionate, calm interface. No upsells, no "premium" tiers. |
+| **Transcendence** | No gamification. No streaks, badges, or reading leaderboards. |
+| **Agency** | Account deletion always available. All data exportable. User controls what's stored. |
+
+**What authenticated users do NOT get:**
+- No profile embedding or soft personalization (no algorithmic content recommendation based on reading patterns)
+- No "suggested for you" based on behavioral analysis
+- No reading history analytics visible to staff (aggregate, anonymized usage signals per ADR-052 apply equally to all users)
+- No authenticated-only content (until Phase 13+ Lessons integration per ADR-085)
+
+### Rationale
+
+- **Persistent state genuinely serves seekers.** A practitioner studying Yogananda's works across months wants their bookmarks and reading position to follow them. This is a legitimate need, not an engagement tactic.
+- **DELTA governs the relationship, not the mechanism.** An account is a container for the user's own data. DELTA prohibits using that data against the user's spiritual interests. The same principles apply — the implementation changes, the ethics don't.
+- **Opt-in is the critical distinction.** The anonymous experience is complete. Nothing is withheld. The account adds convenience features, not content access. A user who never creates an account misses nothing of the teaching.
+- **Aligns with SRF's established auth infrastructure.** Auth0 is already in SRF's technology stack. No new vendor required.
+
+### Consequences
+
+- New `user_profiles` table in DES-004: `id`, `auth0_id`, `preferred_language`, `tradition_background` (optional), `practice_level` (optional), `created_at`
+- No `profile_embedding` column — soft personalization explicitly rejected
+- New `user_bookmarks`, `user_collections`, `user_reading_progress` tables
+- Auth0 integration added to DESIGN.md security section (DES-024)
+- CONTEXT.md DELTA framework section updated with authenticated-tier documentation
+- ADR-066 (Lotus Bookmark) extended: local storage for anonymous users, server-synced for authenticated users
+- Phase 13+ Lessons integration (ADR-085) builds on this authentication layer

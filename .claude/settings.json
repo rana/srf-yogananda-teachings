@@ -4,10 +4,10 @@
   },
   "permissions": {
     "allow": [
-      "Bash",
-      "Edit",
       "Read",
       "Write",
+      "Edit",
+      "Bash",
       "WebFetch"
     ]
   },
