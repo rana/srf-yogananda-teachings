@@ -41,9 +41,13 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js on Vercel |
-| Database | Neon PostgreSQL + pgvector (hybrid vector + full-text search) |
+| Database | Neon PostgreSQL + pgvector + pg_search/ParadeDB (hybrid vector + BM25 full-text search) |
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
-| Embeddings | OpenAI text-embedding-3-small (multilingual) |
+| Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
+| Reranking | Cohere Rerank 3.5 (Phase 2+) (ADR-119) |
+| Graph | Neptune Analytics (Phase 4+) (ADR-117) |
+| Cache | Redis/ElastiCache (suggestions, Phase 2+) (ADR-120) |
+| Language detection | fastText (per-query, < 1ms) |
 | CMS | Contentful (Phase 9+) |
 | Auth | Auth0 (Phase 13+) |
 | Edge/CDN | Cloudflare |
@@ -61,7 +65,8 @@ The project is planned across 15 capability-themed phases (0–14), each deliver
 
 | Phase | Name | Focus |
 |-------|------|-------|
-| **0** | Prove | Foundation + single-book search — repo setup, Neon provisioning, Vercel/Sentry config, *Autobiography of a Yogi*, search API + UI, basic reader |
+| **0a** | Prove | Single-book search proof — repo setup, Neon provisioning, PDF ingestion, *Autobiography of a Yogi*, hybrid search API + UI, basic reader, search quality evaluation (ADR-113) |
+| **0b** | Foundation | Deploy + AI librarian layer — Vercel/Sentry config, query expansion, intent classification, passage ranking, homepage, observability, MCP server (ADR-113) |
 | **1** | Build | Complete portal + engineering — all pages, SRF visual identity, accessibility, i18n infrastructure, testing, Terraform, Storybook |
 | **2** | Read | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
 | **3** | Grow | Multi-book corpus — first-wave books, cross-book search, Today's Wisdom pool, batch Lambda |
@@ -85,5 +90,5 @@ This repository contains comprehensive design documentation produced using Claud
 
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
 - [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 103 Architecture Decision Records with full rationale
+- [DECISIONS.md](DECISIONS.md) — 122 Architecture Decision Records with full rationale
 - [ROADMAP.md](ROADMAP.md) — 15 phases (0–14) with deliverables, success criteria, and phase gates

@@ -39,4 +39,4 @@ For online book source material during a proof-of-concept, SRF books are availab
 
 #### Domain name
 
-Teaching portal might eventually be located at https://teachings.yoganada.org.
+Teaching portal might eventually be located at https://teachings.yoganada.org. Possible alternative https://srfteachings.org, similar to existing https://srflessons.org.

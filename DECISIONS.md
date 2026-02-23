@@ -98,6 +98,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-073: Screen Reader Emotional Quality — Warmth in Spoken Interface
 - ADR-074: Micro-Copy as Ministry — Editorial Voice for UI Text
 - ADR-104: Practice Bridge & Public Kriya Yoga Overview — Signpost Enrichment
+- ADR-122: Crisis Query Detection — Safety Interstitial for Acute-Distress Searches
 
 **Internationalization**
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
@@ -404,7 +405,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 - All architectural decisions are evaluated against a 10-year horizon, not just immediate needs
 - The shared service layer convention (ADR-011) is treated as the project's most important structural rule
 - Component replacement is expected and planned for — it's maintenance, not failure
-- The search quality test suite (deliverable 0.17) serves as the acceptance gate for any AI model migration
+- The search quality test suite (deliverable 0a.8) serves as the acceptance gate for any AI model migration
 - Future developers can replace any Tier 3 component without touching Tier 1 or Tier 2 components
 - `pg_dump` export capability is documented as a deliberate architectural feature
 
@@ -528,7 +529,7 @@ Rate each passage during ingestion on a newcomer-friendliness scale:
 
 **Category:** Classifying | **Cost:** ~$0.05/book (one-time) | **Human review:** Yes — every flag reviewed
 
-During the human QA step (Deliverable 0.9), Claude pre-screens ingested text and flags:
+During the human QA step (Deliverable 0a.4), Claude pre-screens ingested text and flags:
 
 - Probable OCR errors ("Ood" → likely "God," "mediiation" → "meditation")
 - Inconsistent formatting (straight quotes mixed with smart quotes, inconsistent dashes)
@@ -544,7 +545,7 @@ During the human QA step (Deliverable 0.9), Claude pre-screens ingested text and
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverable 0.17) by using Claude as the evaluator:
+Automate the search quality evaluation (Deliverable 0a.8) by using Claude as the evaluator:
 
 - Given a benchmark query and the search results, does the expected passage appear in the top 5?
 - Is the ranking reasonable? (A passage directly addressing the query should rank above a tangentially related one.)
@@ -3951,7 +3952,7 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 
 - `book_chunks` schema includes `embedding_model`, `embedding_dimension`, and `embedded_at` columns from Phase 0
 - The ingestion pipeline records which model it used per chunk
-- Search quality test suite (deliverable 0.17) becomes the gate for model migration decisions
+- Search quality test suite (deliverable 0a.8) becomes the gate for model migration decisions
 - Model migration is a maintenance operation, not an architecture change
 - Budget for re-embedding costs when evaluating new models (Phase 10 multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
@@ -3981,7 +3982,7 @@ Three dimensions of embedding quality matter for this portal:
 
 1. **Start with OpenAI text-embedding-3-small** as the Phase 0 embedding model. It provides adequate multilingual support, the architecture is well-understood, and the operational model is simple (symmetric embeddings — same encoding for queries and documents).
 
-2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Phase 10). The Phase 0 English-only evaluation (Deliverable 0.17) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
+2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Phase 10). The Phase 0a English-only evaluation (Deliverable 0a.8) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
 
 3. **Establish domain-adapted embeddings as a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not a Phase 0 deliverable:
  - **Input:** The complete multilingual corpus (available after Phase 10 ingestion)
@@ -4001,7 +4002,7 @@ Three dimensions of embedding quality matter for this portal:
 
 4. **Per-language embedding models** — Use text-embedding-3-small for European languages and a stronger multilingual model for Indic/CJK. ADR-046's `embedding_model` column already supports this. Rejected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Phase 10 benchmarking reveals language-specific deficiencies.
 
-5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Phase 0 evaluation (Deliverable 0.17) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-046.
+5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Phase 0a evaluation (Deliverable 0a.8) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-046.
 
 ### Rationale
 
@@ -4013,7 +4014,7 @@ Three dimensions of embedding quality matter for this portal:
 ### Consequences
 
 - Phase 0 proceeds with text-embedding-3-small as planned
-- Deliverable 0.17 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
+- Deliverable 0a.8 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
 - Phase 10 Deliverable 10.3 includes formal benchmarking of multilingual-optimized models alongside the existing "may trigger first embedding model migration" language
 - Domain-adapted embeddings become a documented research track, scoped after Phase 10 corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
@@ -4160,7 +4161,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 - New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
 - New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions & Autocomplete"
-- ROADMAP.md updated: Deliverable 0.20 (basic prefix matching), 3.12 (multi-book + bridge + curated), 10.15 (per-language indices)
+- ROADMAP.md updated: Deliverable 0b.9 (basic prefix matching), 3.9 (multi-book + bridge + curated), 10.15 (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
 - Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-051 lifecycle)
 - Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-003)
@@ -6143,7 +6144,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
-7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Phase 0's English-only search quality evaluation (Deliverable 0.17) and prevents launching a language with degraded retrieval quality.
+7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Phase 0a's English-only search quality evaluation (Deliverable 0a.8) and prevents launching a language with degraded retrieval quality.
 
 8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Phase 10 ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
 
@@ -8263,7 +8264,7 @@ Adopt a **layered testing strategy** with specific tools for each layer:
 | **Unit / Integration** | **Vitest** + React Testing Library | Service functions, API route handlers, component rendering, database queries | Phase 1 |
 | **End-to-End** | **Playwright** | Full user flows: search → read → share → navigate. Cross-browser (Chrome, Firefox, Safari). | Phase 1 (core flows) |
 | **Accessibility** | **axe-core** (CI) + Playwright a11y assertions | Automated WCAG checks on every page. Keyboard navigation flows. | Phase 1 (basic) / Phase 2 (CI) |
-| **Search quality** | Custom Vitest suite | ~30 representative queries with expected passages. Precision/recall metrics. | Phase 0 (deliverable 0.17) |
+| **Search quality** | Custom Vitest suite | ~30 representative queries with expected passages. Precision/recall metrics. | Phase 0a (deliverable 0a.8) |
 | **Performance** | **Lighthouse CI** | Core Web Vitals thresholds: LCP < 2.5s, CLS < 0.1, INP < 200ms. | Phase 1 |
 | **Visual** | **Storybook** | Component documentation, design token consistency, interactive component states | Phase 1 (design system) |
 | **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes to reading UI, passage cards, Quiet Corner | Phase 11 |
@@ -9873,7 +9874,7 @@ When search returns zero results:
 
 #### 6. Search quality evaluation integration
 
-The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 0.17):
+The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 0a.8):
 - Each test query has expected passages that should appear in the top 3 results.
 - Accessibility boosting is validated: for empathic queries ("dealing with grief"), consoling/accessible passages should rank higher.
 - Deduplication is validated: edition variants should not appear as separate results.
@@ -9890,7 +9891,7 @@ The presentation decisions above are validated by the search quality test suite 
 ### Consequences
 
 - DES-019 search endpoint documentation updated to reference this ADR for presentation logic.
-- The search quality test suite (deliverable 0.17) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
+- The search quality test suite (deliverable 0a.8) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
 - Future content types entering search (video transcripts, audio transcripts, magazine articles) must follow the same ranking hierarchy and deduplication rules. Cross-media result interleaving rules will be specified when those content types are integrated (Phase 12).
 - The "5 results" default is a design decision, not a technical constraint. It may be adjusted based on Phase 0 search quality evaluation — but the adjustment should be governed (update this ADR), not ad hoc.
 
@@ -10575,3 +10576,45 @@ The portal offers two experience tiers:
 - CONTEXT.md DELTA framework section updated with authenticated-tier documentation
 - ADR-066 (Lotus Bookmark) extended: local storage for anonymous users, server-synced for authenticated users
 - Phase 13+ Lessons integration (ADR-085) builds on this authentication layer
+
+---
+
+## ADR-122: Crisis Query Detection — Safety Interstitial for Acute-Distress Searches
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+When a seeker searches "I want to die," "how to end the pain," or similar acute-distress queries, the AI librarian faithfully returns passages about death and the soul's immortality — which, without context, could be read as affirming self-harm. ADR-071 handles crisis resources on grief *content pages*, but the search query surface is higher-risk because the seeker's distress is expressed in the query itself, and the results are algorithmically selected without editorial context.
+
+This concern was identified as an open question in CONTEXT.md. It becomes relevant the moment the search index is live and a seeker can query it. The intent classification system (Deliverable 0b.4) provides the natural integration point.
+
+### Decision
+
+Add a `crisis` intent category to the search intent classification layer (ADR-005 E1). When a query is classified as crisis-intent:
+
+1. **Display a crisis resource interstitial** above search results — not instead of results. The interstitial includes locale-appropriate crisis helpline information (e.g., 988 Suicide and Crisis Lifeline in the US, local equivalents internationally). The interstitial is calm, non-alarmist, and consistent with the portal's warm design language.
+
+2. **Do not suppress search results.** The seeker may be searching for Yogananda's teachings on death for legitimate spiritual study. The interstitial is additive — it provides a safety resource without assuming the seeker is in crisis.
+
+3. **Crisis classification uses a conservative threshold.** False positives (showing the interstitial for a non-crisis query about death) are acceptable and harmless. False negatives (missing a genuine crisis query) are the failure mode to minimize.
+
+4. **Crisis resource list requires SRF review.** The specific helplines, language, and presentation must be approved by SRF before going live. This is not an engineering decision — it's a pastoral care decision.
+
+5. **Sentry event logging.** Crisis-classified queries are logged as `search.crisis_intent` events (anonymized, no query text) for monitoring volume and ensuring the system is functioning.
+
+### Rationale
+
+- **Duty of care.** A spiritual teachings portal that returns passages about death to a distressed seeker without any acknowledgment of the distress fails a basic duty of care. The portal is a *signpost* — and sometimes the right signpost is a crisis helpline.
+- **Additive, not restrictive.** The interstitial adds a resource; it doesn't block access to teachings. This respects seeker agency (DELTA: Agency) while acknowledging that spiritual content about death is complex territory for someone in acute distress.
+- **Integration with existing architecture.** Crisis detection is a new intent category in the existing intent classification layer — not a separate system. It ships as part of Deliverable 0b.4 (search intent classification) with minimal additional complexity.
+- **ADR-071 extension.** ADR-071 established the principle of crisis resource presence on grief content. This ADR extends that principle to the search surface, which is higher-risk because it responds to the seeker's own words.
+
+### Consequences
+
+- New intent category `crisis` added to the intent classification taxonomy (Deliverable 0a.11)
+- Deliverable 0b.11 added to ROADMAP.md: crisis query detection and interstitial
+- CONTEXT.md open question on crisis query detection resolved
+- Crisis resource list (helplines, locale mapping, presentation) requires SRF stakeholder input — added to CONTEXT.md stakeholder questions if not already present
+- Sentry event `search.crisis_intent` added to the observability allowlist (ADR-095)

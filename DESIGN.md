@@ -71,9 +71,48 @@ This portal is a **digital library with an AI librarian**, not a chatbot or cont
 
 ## DES-002: Architecture Overview
 
-### Phase 0 Architecture (Minimal)
+### Phase 0a Architecture (Prove — Pure Hybrid Search)
 
-Three services. One database. One AI provider (via AWS Bedrock).
+Two services. One database. No AI in the search path — pure hybrid retrieval. (ADR-113)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ USERS │
+│ │ │
+│ ▼ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Next.js (local dev) │ │
+│ │ │ │
+│ │ • Search UI (query bar + results) │ │
+│ │ • Book Reader (chapter navigation) │ │
+│ │ • "Read in context" deep links │ │
+│ └──────────┬──────────────┬─────────────┘ │
+│ │ │ │
+│ /api/v1/search /api/v1/books │
+│ │ /api/v1/chapters │
+│ │ │ │
+│ ▼ ▼ │
+│ ┌─────────────────────────────────────┐ │
+│ │ Neon PostgreSQL + pgvector │ │
+│ │ │ │
+│ │ • books, chapters (metadata) │ │
+│ │ • book_chunks (text + embeddings) │ │
+│ │ • Full-text search (pg_search BM25) │ │
+│ │ • Vector similarity (HNSW index) │ │
+│ │ • RRF fusion (vector + BM25) │ │
+│ │ • search_queries (anonymized log) │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+
+Phase 0a has NO Claude API calls in the search path.
+Claude is used only offline: ingestion QA (ADR-005 E4),
+enrichment (ADR-115), and search quality evaluation (ADR-005 E5).
+```
+
+### Phase 0b Architecture (Foundation — AI-Enhanced Search)
+
+Phase 0b adds Claude Haiku to the search path: query expansion,
+intent classification, and passage ranking. Deployed to Vercel. (ADR-113)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -85,6 +124,7 @@ Three services. One database. One AI provider (via AWS Bedrock).
 │ │ │ │
 │ │ • Search UI (query bar + results) │ │
 │ │ • Book Reader (chapter navigation) │ │
+│ │ • Homepage (Today's Wisdom) │ │
 │ │ • "Read in context" deep links │ │
 │ └──────────┬──────────────┬─────────────┘ │
 │ │ │ │
@@ -216,9 +256,13 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  ▼
 5. HyDE — HYPOTHETICAL DOCUMENT EMBEDDING (Phase 2+, ADR-119)
  Claude generates a hypothetical passage that would answer the query,
- written in Yogananda's register. This passage is embedded and searched
- in document-space (asymmetric: query-type embedding for original query,
- document-type embedding for HyDE passage — per Voyage ADR-118).
+ written in Yogananda's register. This generated passage is an
+ intermediate embedding artifact only — it is never stored, displayed,
+ or accessible to seekers. It improves retrieval quality without
+ generating any user-facing content. ADR-001 is not violated.
+ The passage is embedded and searched in document-space (asymmetric:
+ query-type embedding for original query, document-type embedding
+ for HyDE passage — per Voyage ADR-118).
  High lift on literary/spiritual corpora where seeker vocabulary
  diverges from corpus vocabulary.
  │
@@ -486,7 +530,7 @@ Candidate passages:
 {passages_json}
 ```
 
-*These prompts are starting points. Phase 0 empirical testing (deliverable 0.17, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+*These prompts are starting points. Phase 0a empirical testing (deliverable 0a.8, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
 
 ### Search Without AI (Fallback / Simple Queries)
 
@@ -550,7 +594,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
  New embeddings produce different similarity scores.
 
 5. VALIDATE (on branch)
- Run the search quality evaluation test suite (deliverable 0.17).
+ Run the search quality evaluation test suite (deliverable 0a.8).
  Compare results against production baseline.
  Threshold: new model must match or exceed current ≥ 80% pass rate.
 
@@ -618,7 +662,7 @@ BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
 
 **1. Term completion.** Prefix matching against a pre-computed suggestion index. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching, or pre-computed trie exported as static JSON and cached at edge (Vercel Edge Config or CDN). Latency target: < 50ms — no database round-trip on the hot path if edge-cached.
 
-**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 0.17) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 0a.8) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
 
 **3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain.
 
@@ -664,7 +708,7 @@ When the search bar receives focus but the seeker has typed nothing, display cur
 
 - Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
 - One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
-- The search placeholder remains "What are you seeking?" (Deliverable 0.15)
+- The search placeholder remains "What are you seeking?" (Deliverable 0a.6)
 
 Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078).
 
@@ -682,7 +726,7 @@ Book ingestion pipeline (new step after vocabulary extraction):
  Filter: remove stopwords, common English words, terms with < 2 occurrences
  Output: per-book vocabulary contribution to the suggestion index
 
- Merge into suggestion_terms table or static JSON export.
+ Merge into suggestion_dictionary table or static JSON export.
  Index grows with each book — never shrinks.
 ```
 
@@ -745,7 +789,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;  -- diacritics-insensitive search (ADR-
 -- BOOKS
 -- ============================================================
 CREATE TABLE books (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  title TEXT NOT NULL,
  subtitle TEXT,
  author TEXT NOT NULL DEFAULT 'Paramahansa Yogananda',
@@ -770,7 +814,7 @@ CREATE TABLE books (
  -- chant/poetry = whole-unit pages with chant-to-chant nav.
  -- Chant format enables inline media panel for
  -- performance_of relations (deterministic audio/video links).
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  updated_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
 
@@ -792,7 +836,7 @@ CREATE TABLE book_chunks_archive (
  content_hash TEXT,
  language TEXT NOT NULL DEFAULT 'en',
  edition TEXT, -- edition this chunk belonged to
- archived_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  original_created_at TIMESTAMPTZ NOT NULL
 );
 
@@ -808,7 +852,7 @@ CREATE TABLE book_chunks_archive (
 -- CHAPTERS
 -- ============================================================
 CREATE TABLE chapters (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
  chapter_number INTEGER NOT NULL,
  title TEXT,
@@ -823,7 +867,7 @@ CREATE INDEX idx_chapters_book ON chapters(book_id, sort_order);
 -- BOOK CHUNKS (the core search table)
 -- ============================================================
 CREATE TABLE book_chunks (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
  chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
 
@@ -839,7 +883,7 @@ CREATE TABLE book_chunks (
  embedding VECTOR(1024), -- Voyage voyage-3-large embedding vector (ADR-118)
  embedding_model TEXT NOT NULL DEFAULT 'voyage-3-large', -- which model generated this vector (ADR-046)
  embedding_dimension INTEGER NOT NULL DEFAULT 1024, -- vector dimensions for this chunk
- embedded_at TIMESTAMPTZ NOT NULL DEFAULT now, -- when this chunk was last embedded
+ embedded_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- when this chunk was last embedded
  script TEXT, -- latin|cjk|arabic|cyrillic|devanagari — routes BM25 index (ADR-114)
  language_confidence REAL, -- fastText detection confidence
 
@@ -950,7 +994,7 @@ CREATE INDEX idx_chunks_language ON book_chunks(language);
 -- Non-quality categories accessible from "Explore" pages and the Library.
 -- Not shown on the homepage grid to preserve the calm six-door design.
 CREATE TABLE teaching_topics (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  name TEXT NOT NULL UNIQUE, -- English display name: "Peace", "Courage", "Relationships", etc.
  slug TEXT NOT NULL UNIQUE, -- URL slug: "peace", "relationships", etc. (always English for URL stability)
  category TEXT NOT NULL DEFAULT 'quality', -- 'quality', 'situation', 'person', 'principle',
@@ -978,7 +1022,7 @@ CREATE TABLE topic_translations (
  name TEXT NOT NULL, -- localized display name: "Paz", "Mut", "Paix"
  header_quote TEXT, -- localized header quote (from official translation)
  header_citation TEXT, -- localized citation
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  PRIMARY KEY (theme_id, language)
 );
 
@@ -996,7 +1040,7 @@ CREATE TABLE chunk_topics (
  relevance FLOAT DEFAULT 1.0, -- editorial relevance weight (1.0 = normal, higher = more relevant)
  tagged_by TEXT NOT NULL DEFAULT 'manual', -- 'manual', 'auto', or 'reviewed'
  similarity FLOAT, -- cosine similarity score when tagged_by = 'auto' or 'reviewed' (NULL for manual)
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  PRIMARY KEY (chunk_id, theme_id)
 );
 
@@ -1007,7 +1051,7 @@ CREATE INDEX idx_chunk_topics_pending ON chunk_topics(tagged_by) WHERE tagged_by
 -- DAILY PASSAGES (curated pool for "Today's Wisdom")
 -- ============================================================
 CREATE TABLE daily_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  season_affinity TEXT[], -- optional: ['winter', 'renewal'] for seasonal weighting
  tone TEXT, -- 'consoling', 'joyful', 'challenging', 'contemplative', 'practical' (ADR-005 E8)
@@ -1023,7 +1067,7 @@ CREATE INDEX idx_daily_passages_active ON daily_passages(is_active) WHERE is_act
 -- AFFIRMATIONS (curated pool for "The Quiet Corner")
 -- ============================================================
 CREATE TABLE affirmations (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  content TEXT NOT NULL, -- the affirmation text (verbatim from source)
  book_title TEXT NOT NULL, -- source book
  page_number INTEGER,
@@ -1133,7 +1177,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
 -- SEARCH QUERY LOG (anonymized, for understanding seeker needs)
 -- ============================================================
 CREATE TABLE search_queries (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  query_text TEXT NOT NULL,
  query_expanded TEXT[], -- expanded search terms (if AI was used)
  results_count INTEGER,
@@ -1182,7 +1226,7 @@ CREATE TABLE chunk_relations (
  -- ADR-059)
  -- Classified by Claude for top 10 cross-book relations per chunk. Spot-checked.
  -- performance_of relations are editorially curated, not AI-classified.
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  PRIMARY KEY (source_chunk_id, target_chunk_id)
 );
 
@@ -1206,7 +1250,7 @@ CREATE TABLE chunk_references (
  reference_type TEXT NOT NULL DEFAULT 'mention', -- 'mention', 'quote', 'scripture', 'continuation'
  note TEXT, -- editorial note (e.g., "References Bhagavad Gita 2:47")
  created_by TEXT NOT NULL DEFAULT 'editorial', -- 'editorial' or 'auto'
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  PRIMARY KEY (source_chunk_id, target_chunk_id)
 );
 
@@ -1311,10 +1355,14 @@ CREATE TABLE suggestion_dictionary (
  script          TEXT NOT NULL,     -- latin|cjk|arabic|cyrillic|devanagari
  latin_form      TEXT,              -- transliteration for non-latin terms
  corpus_frequency INT DEFAULT 0,
- query_frequency  INT DEFAULT 0,   -- from anonymized query log (ADR-053)
+ query_frequency  INT DEFAULT 0,   -- from anonymized, aggregated query log (ADR-053).
+                                    -- DELTA note: this is aggregated "what the world searches for"
+                                    -- (cf. ADR-090), not individual behavioral profiling.
+                                    -- Acceptable under DELTA because no per-user attribution exists.
+ editorial_boost  REAL DEFAULT 0,  -- 0.0–1.0, set by editors for promoted suggestions
  weight          REAL GENERATED ALWAYS AS (
-  (corpus_frequency * 0.3) + (query_frequency * 0.5)
- ) STORED,
+  (corpus_frequency * 0.3) + (query_frequency * 0.5) + (editorial_boost * 0.2)
+ ) STORED,                          -- weights sum to 1.0: corpus 30%, query 50%, editorial 20%
  entity_id       UUID REFERENCES entity_registry(id),
  book_id         UUID REFERENCES books(id),
  updated_at      TIMESTAMPTZ DEFAULT now()
@@ -1599,7 +1647,7 @@ The path from "no code" to "running search" — the ceremony that transforms des
  └── Verify error capture with test exception
 
 6. First Content
- └── Run ingestion script (deliverable 0.8)
+ └── Run ingestion script (deliverable 0a.3)
  └── Verify: pnpm run ingest -- --book autobiography
  └── Check: book_chunks populated, embeddings present
  └── Run: pnpm run relations -- --full
@@ -4324,7 +4372,7 @@ When monastic talks are transcribed, the transcripts become a new content type a
 -- VIDEO TRANSCRIPTS (Phase 12)
 -- ============================================================
 CREATE TABLE video_transcripts (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  video_id TEXT NOT NULL, -- YouTube video ID
  video_title TEXT, -- cached from YouTube API
  language TEXT NOT NULL DEFAULT 'en',
@@ -4339,7 +4387,7 @@ CREATE TABLE video_transcripts (
 -- Same chunking strategy as book_chunks. Each chunk carries start/end
 -- timestamps enabling direct links to the exact video playback moment.
 CREATE TABLE video_chunks (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  transcript_id UUID NOT NULL REFERENCES video_transcripts(id) ON DELETE CASCADE,
  content TEXT NOT NULL, -- chunk text (same strategy as book_chunks)
  start_seconds FLOAT NOT NULL, -- timestamp where this chunk begins in the video
@@ -4476,7 +4524,7 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 ```sql
 -- Sacred places (SRF properties + biographical sites)
 CREATE TABLE places (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  name TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  category TEXT NOT NULL CHECK (category IN ('srf_property', 'yss_property', 'biographical')),
@@ -4898,18 +4946,18 @@ The "Seeking..." entry points already hint at this. Threads make the connection 
 -- EDITORIAL THREADS (curated multi-book reading paths — Phase 5+)
 -- ============================================================
 CREATE TABLE editorial_threads (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  slug TEXT NOT NULL UNIQUE, -- URL slug: 'yogananda-on-fear'
  title TEXT NOT NULL, -- "Yogananda on Fear"
  description TEXT, -- Brief editorial introduction
  language TEXT NOT NULL DEFAULT 'en',
  is_published BOOLEAN NOT NULL DEFAULT false, -- human review gate
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  updated_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
 
 CREATE TABLE thread_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  thread_id UUID NOT NULL REFERENCES editorial_threads(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  position INTEGER NOT NULL, -- ordering within the thread
@@ -4957,7 +5005,7 @@ This is a "Classifying" category use — JSON output, no prose. Spot-checked by 
 -- EXTERNAL REFERENCES (reverse bibliography — Phase 5+)
 -- ============================================================
 CREATE TABLE external_references (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  name TEXT NOT NULL, -- "Bhagavad Gita", "Albert Einstein"
  slug TEXT NOT NULL UNIQUE, -- URL slug: 'bhagavad-gita'
  type TEXT NOT NULL, -- 'scripture', 'person', 'text', 'tradition'
@@ -4967,7 +5015,7 @@ CREATE TABLE external_references (
 );
 
 CREATE TABLE chunk_external_references (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  reference_id UUID NOT NULL REFERENCES external_references(id) ON DELETE CASCADE,
  nature TEXT NOT NULL DEFAULT 'reference', -- 'quote', 'reference', 'discussion', 'allusion'
@@ -5016,7 +5064,7 @@ The `daily_passages` pool already supports optional seasonal weighting. Calendar
 -- CALENDAR EVENTS (date-to-passage associations — Phase 4+)
 -- ============================================================
 CREATE TABLE calendar_events (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  name TEXT NOT NULL, -- "Mahasamadhi Anniversary"
  description TEXT, -- brief context
  month INTEGER NOT NULL, -- 1–12
@@ -5027,7 +5075,7 @@ CREATE TABLE calendar_events (
 );
 
 CREATE TABLE calendar_event_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  event_id UUID NOT NULL REFERENCES calendar_events(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  position INTEGER, -- optional ordering
@@ -5185,15 +5233,15 @@ Logged-in subscribers choose preferred themes (Peace, Courage, etc.). The daily 
 -- EMAIL SUBSCRIBERS (for Daily Wisdom email)
 -- ============================================================
 CREATE TABLE email_subscribers (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  email TEXT NOT NULL UNIQUE,
  language TEXT NOT NULL DEFAULT 'en',
  is_confirmed BOOLEAN NOT NULL DEFAULT false, -- double opt-in
  is_active BOOLEAN NOT NULL DEFAULT true, -- can unsubscribe
  confirm_token TEXT, -- for double opt-in confirmation
- unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid::TEXT,
+ unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
  theme_preferences TEXT[], -- Phase 13: ['peace', 'courage']
- created_at TIMESTAMPTZ NOT NULL DEFAULT now,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  confirmed_at TIMESTAMPTZ,
  unsubscribed_at TIMESTAMPTZ
 );
@@ -5312,7 +5360,7 @@ The portal has no mechanism for seekers to communicate back without violating DE
 
 ```sql
 CREATE TABLE seeker_feedback (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  feedback_type TEXT NOT NULL CHECK (feedback_type IN (
  'citation_error', 'search_miss', 'general', 'accessibility'
 )),
@@ -6676,7 +6724,7 @@ All must pass before merge.
 
 ### Related Content Quality Evaluation (Phase 5+)
 
-Mirrors the search quality evaluation (deliverable 0.17) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
+Mirrors the search quality evaluation (deliverable 0a.8) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
 
 **Test suite:**
 
@@ -7812,7 +7860,7 @@ VLD members access a dedicated section in the admin portal (Auth0 role: `vld`):
 
 ```sql
 CREATE TABLE curation_briefs (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  title TEXT NOT NULL,
  description TEXT NOT NULL,
  collection_type TEXT NOT NULL,
