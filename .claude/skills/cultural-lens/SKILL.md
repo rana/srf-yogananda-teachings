@@ -36,3 +36,5 @@ If the analysis is extensive, deliver the highest-priority findings first. Keep 
 What questions would I benefit from asking?
 
 What am I not asking?
+
+You have complete design autonomy.
