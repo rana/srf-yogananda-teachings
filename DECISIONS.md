@@ -2,6 +2,8 @@
 
 Each decision is recorded with full context so future contributors understand not just *what* was decided but *why*, and what alternatives were considered.
 
+**Phase navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Phases 0–6 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) remain as architectural commitments but their implementation is distant — treat them as context, not immediate specification.
+
 ### Index by Concern
 
 **Foundational Constraints**

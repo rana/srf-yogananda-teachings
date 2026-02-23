@@ -89,10 +89,6 @@ These are blocking conversations that must happen before ingestion begins:
 | 0a.6 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
 | 0a.7 | **Basic book reader** | Chapter-by-chapter reading view with deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
 | 0a.8 | **Search quality evaluation** | Test suite of ~50 representative queries with expected passages (golden retrieval set). Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Phase 10 when translated content exists (ADR-047). (ADR-005 E5) |
-| 0a.9 | **Entity registry seed** | Claude generates initial canonical vocabulary for `entity_registry` and `sanskrit_terms` tables from domain knowledge. Covers teachers, divine names, techniques, Sanskrit terms, and key concepts appearing in the Autobiography. Human review validates all entries before ingestion begins. Entity registry must be populated BEFORE first book ingestion so enrichment can resolve against it. (ADR-116) |
-| 0a.10 | **Enrichment prompt design sprint** | Design and test the unified enrichment prompt (ADR-115) against 20–30 actual passages spanning all document types present in the Autobiography (narrative, poetry, dialogue, technical meditation instruction). Validate that enrichment output is consistent and useful. Iterate prompt until enrichment quality meets editorial expectations. |
-| 0a.11 | **Query intent taxonomy** | Define 5 example queries per intent category (topical, specific, emotional, definitional, situational, browsing, search). Validate that intent classification routes correctly for all 35+ test queries. Forms the basis of the search quality evaluation golden set. |
-| 0a.12 | **Golden suggestion set** | Hand-write 300 high-quality suggestions spanning all six tiers (ADR-049): scoped queries ("Yogananda on meditation"), named entities, domain concept phrases, Sanskrit terms with definitions, potential learned queries, and single terms. Used to seed `suggestion_dictionary` and evaluate suggestion quality. |
 
 ### Technology
 
@@ -154,6 +150,10 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 | 0b.9 | **Search suggestions — basic prefix matching** | `GET /api/v1/search/suggest` endpoint returning term completions from single-book vocabulary: distinctive terms extracted from Autobiography chunks during ingestion, chapter titles, book title. PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching. Zero-state experience: curated theme names as suggestion chips when search bar is focused but empty. Curated query suggestions seeded from search quality test suite (~30 queries). ARIA combobox pattern for accessibility. Latency target: < 50ms. No Claude API call in suggestion path. (ADR-049) |
 | 0b.10 | **Cultural design consultation** | Identify at least one YSS-connected consultant (designer, devotee, or monastic) who participates in design reviews from Phase 0. Cultural consultation is a posture maintained throughout all phases, not a Phase 10 deliverable. This consultant reviews visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways for cultural sensitivity. Does not require full-time commitment — periodic review sessions. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
 | 0b.11 | **Crisis query detection and interstitial** | Add `crisis` intent category to search intent classification (Deliverable 0b.4). When a query is classified as crisis-intent, display a calm, non-alarmist interstitial above search results with locale-appropriate crisis helpline information. Search results are not suppressed — the interstitial is additive. Conservative threshold: false positives are acceptable, false negatives are the failure mode to minimize. Crisis resource list (helplines, language, presentation) requires SRF review before going live. Sentry event `search.crisis_intent` for monitoring. (ADR-122, ADR-071, ADR-005 E1) |
+| 0b.12 | **Entity registry seed** | Claude generates initial canonical vocabulary for `entity_registry` and `sanskrit_terms` tables from domain knowledge. Covers teachers, divine names, techniques, Sanskrit terms, and key concepts appearing in the Autobiography. Human review validates all entries before ingestion begins. Entity registry must be populated BEFORE first book ingestion so enrichment can resolve against it. (ADR-116) |
+| 0b.13 | **Enrichment prompt design sprint** | Design and test the unified enrichment prompt (ADR-115) against 20–30 actual passages spanning all document types present in the Autobiography (narrative, poetry, dialogue, technical meditation instruction). Validate that enrichment output is consistent and useful. Iterate prompt until enrichment quality meets editorial expectations. |
+| 0b.14 | **Query intent taxonomy** | Define 5 example queries per intent category (topical, specific, emotional, definitional, situational, browsing, search). Validate that intent classification routes correctly for all 35+ test queries. Forms the basis of the search quality evaluation golden set. |
+| 0b.15 | **Golden suggestion set** | Hand-write 300 high-quality suggestions spanning all six tiers (ADR-049): scoped queries ("Yogananda on meditation"), named entities, domain concept phrases, Sanskrit terms with definitions, potential learned queries, and single terms. Used to seed `suggestion_dictionary` and evaluate suggestion quality. |
 
 ### Technology
 
@@ -450,314 +450,164 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 
 ## Phase 7: Empower
 
-**Goal:** Empower monastics, center leaders, and study circles with export and preparation tools that transform portal content into formats for group study, satsangs, and talks.
+**Goal:** Empower monastics, center leaders, and study circles with export and preparation tools.
 
-### Deliverables
+Transform portal content into formats for group study, satsangs, and talks. The Study Workspace becomes a central tool for anyone engaging deeply with the teachings — collecting passages, assembling teaching arcs, and exporting for use. Magazine integration brings monastic articles into the search pipeline.
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 7.1 | **Chapter and book PDF downloads** | Pre-rendered PDF generation for chapters and full books using `@react-pdf/renderer`. Book-like typographic treatment: cover page, table of contents, running headers, page numbers, Merriweather serif, lotus watermark on first page. A4 default, US Letter as option. Generated at ingestion time, served from S3 via CloudFront. Invalidated on content update. Resource-anchored routes: `GET /api/v1/books/{slug}/pdf`, `GET /api/v1/books/{slug}/chapters/{n}/pdf`. Dynamic passage/search PDFs via `POST /api/v1/exports/pdf`. File size displayed on download buttons. (ADR-025) |
-| ~~7.2~~ | ~~**Presentation mode**~~ | *Moved to Phase 2 (Deliverable 2.15). Communal reading should not wait 7 phases. See ADR-006, ADR-123.* |
-| 7.3 | **Study guide view** | "Study Guide" button in reader header. `/books/[slug]/[chapter]/study` route. Generated from existing data: key themes in the chapter, notable passages (highest Related Teachings density), cross-book connections as discussion prompts. Optional editorial content via `chapter_study_notes` table (discussion questions, context notes, practice suggestions). Print-friendly layout. "Start presenting" button transitions to presentation mode. For satsang leaders, study circles, and monastics preparing readings. |
-| 7.4 | **Study Workspace** | Public `/study` route for anyone engaging deeply with the teachings — monastics, study circle leaders, yoga teachers, home meditators, chaplains, parents. Theme-driven passage discovery (uses existing search API), passage collection with full citations, teaching arc assembly (drag passages into sections like "Opening," "Core Teaching," "Practice," "Closing"), speaker/study notes separated from Yogananda's words. All state in localStorage (no account required). Export: print PDF, presentation mode, plain text. Optional server sync in Phase 13. (ADR-083) |
-| 7.5 | **Study circle sharing** | "Share with your circle" button on Study Guide view. Generates a shareable URL (`/study/[book-slug]/[chapter]/share/[hash]`) with key passages, discussion prompts, and cross-book connections. < 30KB HTML, edge-cached, optimized for WhatsApp/SMS preview and OG cards. No authentication, no tracking. (DES-046) |
-| 7.6 | **Magazine integration** | `magazine_issues`, `magazine_articles`, `magazine_chunks` tables. Magazine ingestion pipeline (PDF → chunk → embed → QA, mirroring book ingestion). Yogananda's articles enter full search/theme pipeline. Monastic articles searchable via `include_commentary` filter. `/magazine` landing, `/magazine/{year}/{season}` issue view, `/magazine/{year}/{season}/{slug}` article reader. "Magazine" added to primary navigation. API: `GET /api/v1/magazine/issues`, `/issues/{year}/{season}`, `/articles/{slug}`. Pre-rendered issue and article PDFs via `@react-pdf/renderer`. (ADR-040) |
-| 7.7 | **Shared-link collections** | "Share" button in Study Workspace generates a shareable URL (`/collections/[share-hash]`) for any collection. No account required — works with localStorage collections via a one-time server upload at share time. < 30KB HTML, edge-cached. Visible note: *"This collection was curated by a community member, not by SRF."* No staff review needed for shared-link tier — content is already-public SRF text. Lays the foundation for community curation in Phase 14. (ADR-086) |
-| 7.8 | **Knowledge graph evolution: magazine + constellation + concepts** | Add magazine_issue and magazine_chunk nodes to the Knowledge Graph. Add ontology_concept nodes and ontological relation edges. Add Passage Constellation mode (UMAP 2D reduction of embeddings). Update nightly graph Lambda to query `magazine_chunks` and `ontology_concepts`. Magazine passages cluster near related book passages. Concept map mode available. (ADR-062, ADR-043) |
+- Chapter and book PDF downloads via `@react-pdf/renderer`, served from S3 (ADR-025)
+- Study guide view with key themes, notable passages, and cross-book connections per chapter
+- Study Workspace: theme-driven passage discovery, collection, teaching arc assembly, all in localStorage (ADR-083)
+- Study circle sharing: shareable URLs with key passages and discussion prompts (DES-046)
+- Magazine integration: `magazine_issues/articles/chunks` tables, full search pipeline (ADR-040)
+- Shared-link collections: shareable collection URLs, community disclaimer, foundation for Phase 14 (ADR-086)
+- Knowledge graph evolution: magazine nodes, ontology concepts, Passage Constellation mode (ADR-062, ADR-043)
 
-### Success Criteria
-
-- Chapter and book PDF downloads produce valid, accessible PDFs with correct typography and citations
-- ~~Presentation mode~~ (moved to Phase 2, Deliverable 2.15)
-- Study guide view renders key themes, notable passages, and cross-book connections for every chapter
-- Study Workspace allows any visitor to collect, sequence, and export passages without authentication (ADR-083)
-- Shared-link collections generate stable URLs that render correctly with full citations and community disclaimer
-- Magazine articles by Yogananda appear in search results alongside book passages
-- Knowledge graph shows magazine nodes clustered near related book passages; Passage Constellation renders all embedded content
+**Success criteria:** PDFs render with correct typography and citations. Study Workspace allows passage collection, sequencing, and export without authentication. Magazine articles appear in search results alongside book passages.
 
 ---
 
 ## Phase 8: Distribute
 
-**Goal:** Extend the portal's reach beyond direct visitors through daily email, social media assets, events signposting, Sacred Places, and messaging channels.
+**Goal:** Extend reach beyond direct visitors through daily email, social media, messaging channels, and MCP distribution.
 
-### Deliverables
+The portal becomes a distribution platform — daily email, social media quote images, WhatsApp, RSS, and calendar reading journeys bring teachings to seekers where they already are. The external MCP server (Tier 3) makes the corpus accessible to third-party AI assistants. Graph intelligence features leverage Neptune to surface deep connections across the lineage. Events and Sacred Places sections signpost toward SRF community.
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 8.1 | **Daily email — non-personalized** | Email subscriber infrastructure (double opt-in, unsubscribe). Daily verbatim passage email via Resend or AWS SES. All subscribers receive the same passage. No tracking pixels, no open-rate tracking. (ADR-091) |
-| 8.2 | **Social media asset generation** | Portal generates shareable quote images in multiple aspect ratios (1:1, 9:16, 16:9) via `/api/v1/og/[chunk-id]?format=...`. Admin Retool panel for reviewing and approving generated assets. Human distribution — never auto-post. (ADR-092) |
-| 8.3 | **Events section** | Static events page linking to World Convocation (`convocation.yogananda.org`) with enriched description (free, in-person + online, classes, meditations, kirtan, pilgrimage tours, monastic fellowship), commemorations (Mahasamadhi, Janmashtami, Christmas meditation), Online Meditation Center (live group meditations, guided meditations, devotional chanting), retreats, monastic visits worldwide, and youth/young adult programs. Convocation entry cross-links to Sacred Places ("Explore the sacred places → /places"). Signpost, not destination. (ADR-069) |
-| 8.4 | **Sacred Places — SRF/YSS properties** | Dedicated `/places` page with SRF/YSS centers and temples. Contemplative descriptions, property photographs, "Get Directions" links, "Take a Virtual Tour" links for properties with SRF virtual pilgrimage tours (Mother Center, Lake Shrine, Hollywood Temple, Encinitas), Convocation cross-link on LA-area properties, and cross-references to Autobiography passages via `chunk_places` junction table. No maps. (ADR-069) |
-| 8.5 | **Social media asset review workflow** | Add social media review to the editorial review portal: today's quote image at actual platform dimensions (1:1, 9:16, 16:9), caption with inline editing, per-platform download, weekly lookahead. "Mark as posted" tracking per platform (not automation). (ADR-082, ADR-092) |
-| 8.6 | **RSS feeds** | `/feed/daily-passage.xml` (daily), `/feed/new-content.xml` (new books/recordings/videos), `/feed/audio.xml` (new audio), `/feed/updates.xml` (portal feature updates, ADR-105). Machine syndication alongside human email delivery. (ADR-081, ADR-105) |
-| 8.7 | **WhatsApp Business API integration** | WhatsApp bot for spiritual search: seeker sends a question, receives 1-2 relevant passages with full citations. Daily Wisdom opt-in (send "DAILY"). Audio clip delivery when search matches a recording. Language selection. Lambda + WhatsApp Cloud API. Meta business verification. Shared messaging Lambda with channel-specific formatters. (ADR-026) |
-| 8.8 | **Calendar reading journeys** | `/journeys` page listing available time-bound reading experiences. Initial journeys: "40 Days with Yogananda" (evergreen), seasonal journeys for Christmas and Navratri. Daily email service gains journey-aware delivery: subscribers receive one journey passage per day for the journey's duration. Uses `editorial_threads` journey columns (Phase 5 schema). (DES-045) |
-| 8.9 | **Magazine ↔ "What Is Humanity Seeking?" symbiosis** | `/seeking` dashboard links to published magazine features. Magazine editorial workflow for curating search theme data into narrative features. Each amplifies the other: portal provides data, magazine provides storytelling. (ADR-040) |
-| 8.10 | **External MCP server (Tier 3)** | Production-facing MCP server for third-party AI assistants (ChatGPT, Claude, Gemini, custom agents). Exposes content-serving tools (`search_corpus`, `search_by_theme`, `get_graph_neighborhood`, `find_concept_path`, `get_person_context`, `get_daily_passage`, `verify_citation`, plus metadata tools). Every response wrapped in fidelity metadata envelope (`presentation: "verbatim_only"`, `attribution_required: true`, `context_url` linking to portal). Rate-limited via Cloudflare + application tier (ADR-023). Registered access model — clients acknowledge fidelity contract to receive API key. `/lib/mcp/tools/fidelity.ts` wraps responses. Stakeholder prerequisite: SRF approval of external AI access posture (CONTEXT.md). (ADR-101, DES-031) |
-| 8.11 | **Outbound webhook event system** | `webhook_subscribers` and `webhook_deliveries` tables. Delivery engine (Vercel cron or Lambda) with exponential backoff retry (5 attempts), HMAC-SHA256 signature verification. Initial events: `daily_passage.rotated`, `content.published`, `content.updated`, `social_asset.approved`, `portal_update.published`. Admin UI in editorial portal: subscriber management, delivery log, test button, suspend/resume. Enables SRF Zapier workflows to consume portal events for email campaigns, CRM updates, Slack notifications, and CDN cache purges. (ADR-106, DES-052) |
-| 8.12 | **Timestamp filtering on all list endpoints** | `updated_since` and `created_since` parameters on remaining content list endpoints (`/api/v1/themes`, `/api/v1/audio`, `/api/v1/videos`, `/api/v1/images`, `/api/v1/people`, `/api/v1/collections`). Complements webhooks for reconciliation and backfill. (ADR-107) |
-| 8.13 | **Lineage Voice Comparator** | Compare how Yogananda and his line of gurus discuss the same concept. Graph traversal finds passages where different teachers in the lineage address the same topic, presented side-by-side. Uses LINEAGE edges and TEACHES edges in Neptune. (ADR-117, DES-056) |
-| 8.14 | **Evolution of a Teaching** | Temporal visualization showing how Yogananda's expression of a concept evolved across books written over decades. Uses publication year metadata and TEACHES edges to construct chronological arcs. Staff tool for editorial insight; seeker-facing as curated reading paths. (ADR-117, DES-056) |
-| 8.15 | **Passage Genealogy** | For a given passage, surface the lineage of thought behind it: what Yogananda was referencing, what influenced this teaching, what he taught elsewhere that develops this idea. Uses cross-reference extraction from enrichment and graph traversal. (ADR-117, ADR-115, DES-056) |
-| 8.16 | **Semantic Drift Detection** | Staff/admin tool: detect when the same term shifts meaning across Yogananda's books written in different decades. Uses enrichment metadata and temporal analysis. Flags drift for editorial review — informs glossary entries and terminology bridge updates. Not seeker-facing. (ADR-115, DES-056) |
-| 8.17 | **Concept/Word Graph full construction** | Complete the concept graph (DES-055): cross-tradition extraction from corpus (Yogananda's explicit mappings only), progression chains (concentration → meditation → samadhi), co-occurrence edges (statistical, filtered). Human review validates all edges. Word graph query expansion activated in search pipeline. |
+- Daily email: non-personalized, double opt-in, no tracking pixels (ADR-091)
+- Social media asset generation: quote images in multiple aspect ratios with admin review (ADR-092)
+- Events section and Sacred Places (SRF/YSS properties) with Autobiography cross-references (ADR-069)
+- WhatsApp Business API integration for spiritual search and Daily Wisdom (ADR-026)
+- RSS feeds: daily passage, new content, audio, portal updates (ADR-081, ADR-105)
+- Calendar reading journeys: "40 Days with Yogananda," seasonal journeys (DES-045)
+- External MCP server (Tier 3) with fidelity metadata envelope and registered access (ADR-101, DES-031)
+- Outbound webhook event system with HMAC-SHA256 signatures (ADR-106, DES-052)
+- Graph intelligence: Lineage Voice Comparator, Evolution of a Teaching, Passage Genealogy, Semantic Drift Detection (ADR-117, ADR-115, DES-056)
+- Concept/Word Graph full construction with cross-tradition extraction (DES-055)
 
-### Success Criteria
-
-- Daily email delivers to 100% of confirmed subscribers with correct passage and citation
-- Social media quote images render correctly in all three aspect ratios (1:1, 9:16, 16:9)
-- Events section links resolve to live SRF event pages; Convocation entry includes enriched description and cross-link to Sacred Places
-- Sacred Places page displays at least 5 SRF/YSS properties with cross-referenced book passages and virtual tour links where available
-- WhatsApp bot returns relevant passages for test queries within 5 seconds
-- RSS feeds validate against RSS 2.0 / Atom specification; `/feed/updates.xml` includes portal update entries
-- Outbound webhooks deliver `daily_passage.rotated` test event to a registered subscriber within 30 seconds of passage rotation; delivery log shows successful delivery
-- Webhook admin UI displays subscriber list, delivery log, and test button; suspended subscribers show alert
-- `GET /api/v1/themes?updated_since=...` returns only recently modified themes; `sync.latest_timestamp` is present in response
-- External MCP returns verbatim passages with correct fidelity metadata for test queries; rate limiting enforced
+**Success criteria:** Daily email delivers to 100% of confirmed subscribers. External MCP returns verbatim passages with correct fidelity metadata. WhatsApp bot returns relevant passages within 5 seconds.
 
 ---
 
 ## Phase 9: Integrate
 
-**Goal:** Migrate from PDF-ingested content to Contentful as the editorial source of truth. Establish the Contentful → Neon sync pipeline. Migrate to SRF's GitLab IDP.
+**Goal:** Migrate to Contentful as editorial source of truth and GitLab as SRF's IDP.
 
-### Deliverables
+The PDF-ingested content migrates to Contentful's structured authoring environment. A webhook sync pipeline keeps Neon search data current as editors update text. The portal joins SRF's GitLab-based development infrastructure with four standard environments. Regional distribution (Neon read replicas in EU and Asia-Pacific) reduces search latency globally.
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 9.1 | **Contentful content model** | Book → Chapter → Section → TextBlock content types configured in Contentful. |
-| 9.2 | **Content import to Contentful** | Import the QA'd book text into Contentful entries (possibly from the clean Neon data). |
-| 9.3 | **Webhook sync service** | Contentful publish webhook → serverless function → extract text → embed → upsert Neon → incremental chunk relation update (ADR-050). |
-| 9.4 | **Reader migration to Contentful** | Book reader pages generated via SSG from Contentful API (ISR for updates). |
-| 9.5 | **Admin editorial workflow** | Full editorial bridge between Contentful authoring and portal review queues. Content editors update text in Contentful and see changes reflected in both reader and search. Review workflows in the admin portal link back to Contentful entries for editing. (ADR-082) |
-| 9.6 | **Contentful Custom Apps** | Sidebar panels built with Contentful's App Framework: theme tag status on TextBlock entries, thread preview on editorial thread entries, calendar passage associations on calendar event entries, topic readiness indicators on teaching topic entries. Contextual bridges that keep editors oriented without leaving Contentful. (ADR-082) |
-| 9.7 | **GitLab migration** | Migrate repo from GitHub to GitLab (SRF IDP). Migrate CI/CD from GitHub Actions to GitLab CI. Migrate Terraform state from Terraform Cloud to GitLab Terraform backend. Set up four standard environments (dev/qa/stg/prod) per SRF convention. (ADR-016) |
-| 9.8 | **Terraform expansion** | Add Terraform modules for Contentful (space, content model, webhooks) and Cloudflare (DNS, WAF). Full environment replication via `terraform workspace`. |
-| 9.9 | **Regional distribution expansion** | Neon read replicas in EU and Asia-Pacific for search query latency. S3 Cross-Region Replication for audio/PDF asset disaster recovery. Vercel multi-region function configuration. Terraform modules for all regional resources. (ADR-021) |
-| 9.10 | **Cosmic Chants as Portal** (if chants in scope) | If *Cosmic Chants* is within the corpus scope: verse-by-verse chant presentation with Yogananda's explanations of each chant's spiritual significance, practice instructions, and biographical context. Each chant becomes a contemplative portal — not just text but a gateway to the practice Yogananda intended. Graph links between chants and related teachings in other books. Depends on chant content availability and Phase 12 chant reader infrastructure (12.21). (DES-056) |
+- Contentful content model: Book → Chapter → Section → TextBlock
+- Content import and webhook sync service: Contentful publish → embed → upsert Neon (ADR-050)
+- Reader migration to Contentful SSG/ISR
+- Admin editorial workflow bridging Contentful authoring and portal review queues (ADR-082)
+- Contentful Custom Apps: sidebar panels for theme tags, thread preview, calendar associations (ADR-082)
+- GitLab migration: repo, CI/CD, Terraform state, four environments (ADR-016)
+- Regional distribution: Neon read replicas, S3 cross-region replication (ADR-021)
+- Cosmic Chants as Portal (if in scope): verse-by-verse chant presentation (DES-056)
 
-### Key Challenge
+**Key challenge:** Contentful free tier (10,000 records, 2 locales) may require section-level granularity or a paid space for large books.
 
-Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a large book like The Second Coming (~10,000+ paragraphs across 2 volumes) could approach this limit for a single book. Evaluation needed:
-- Can we use section-level granularity in Contentful (fewer entries) while maintaining paragraph-level chunks in Neon?
-- Is a paid Contentful space necessary?
-
-### Success Criteria
-
-- Contentful → Neon webhook sync produces identical search results to pre-migration PDF-ingested content
-- Reader pages render from Contentful SSG with no visible regressions from PDF-ingested versions
-- GitLab CI/CD pipeline deploys successfully to all four environments (dev/qa/stg/prod)
-- Terraform `plan` for full environment shows zero drift from deployed infrastructure
+**Success criteria:** Contentful → Neon sync produces identical search results to pre-migration content. GitLab CI/CD deploys to all four environments. Terraform plan shows zero drift.
 
 ---
 
 ## Phase 10: Translate
 
-**Goal:** Serve book content and search in multiple languages. Activate the i18n infrastructure built in Phase 1 with real translated content.
+**Goal:** Serve content and search in multiple languages, activating Phase 1's i18n infrastructure. (ADR-075, ADR-076, ADR-077)
 
-(See ADR-075, ADR-076, ADR-077 for architectural rationale.)
+Two parallel language waves — Western (es, de, fr, it, pt, ja) and Indian (hi, bn) — launch simultaneously where resourcing permits. Per-language search quality evaluation ensures no language goes live with degraded retrieval. YSS co-equal design stakeholder participation for Hindi/Bengali cultural adaptation. The impact dashboard provides leadership visibility into global reach and unmet demand. The sequencing commitment (ADR-077): both waves are planned as parallel workstreams; Yogananda's heritage languages (830M speakers) do not wait behind European languages by default.
 
-*Note: Phase 1 builds the i18n infrastructure (externalized strings, locale routing, CSS logical properties). This phase activates it with translated content and UI translations.*
+- AI-assisted UI translations with mandatory human review per locale (ADR-078)
+- Localized book content ingestion with content availability matrix
+- Per-language search: language-specific tsvector, multilingual embedding benchmarking (ADR-047)
+- English fallback passages clearly marked `[EN]`; "Read in English →" links
+- Cross-language passage alignment via `canonical_chunk_id`
+- Per-language presentation adaptations: non-Latin fonts, CJK line-height, cultural "Seeking..." entry points
+- Translation review UI with side-by-side English source and AI draft (ADR-082, ADR-078)
+- Impact dashboard at `/admin/impact`: countries, content growth, "What is humanity seeking?" (ADR-090)
+- Per-language search suggestions with transliteration support for Indic languages (ADR-049)
 
-### Language Waves
-
-| Wave | Languages | Rationale |
-|------|-----------|-----------|
-| **Western** | es, de, fr, it, pt, ja | Matches convocation site. SRF's existing translation infrastructure. Known publication history. |
-| **Indian** | hi, bn | YSS audience. Yogananda's heritage languages. Massive population reach (~830M speakers). |
-| **Evaluation** | Evaluate based on demand, translations, SRF/YSS input | Candidates: zh (Chinese), ko (Korean), ru (Russian), ar (Arabic — requires RTL). |
-
-**Sequencing commitment:** The Western/Indian wave split reflects resourcing realities, not priority. Both waves are planned as parallel workstreams that begin simultaneously. If resourcing constraints force sequential delivery, that is documented as a resource constraint, not as natural ordering — and the gap between waves is minimized. Yogananda's heritage languages (830M speakers) do not wait behind European languages by default. The embedding model benchmark (currently a Phase 10 prerequisite) begins in Phase 1–2 as a parallel research workstream to avoid blocking either wave. ADR-077 documents the tension. See CONTEXT.md § Open Questions (Stakeholder) for the co-launch question. (ADR-006, ADR-123)
-
-### Deliverables
-
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 10.1 | **UI translations (Western wave)** | AI-assisted translation of all UI strings (`messages/*.json`) into es, de, fr, it, pt, ja: Claude drafts → human review by fluent, SRF-aware reviewer → production (ADR-078). Language selector in header. Locale cookie persistence. |
-| 10.2 | **Localized book content (Western wave)** | Ingest officially translated book text into Neon with language-specific chunks. Contentful locale variants in production. Content availability matrix determines which books appear per language. |
-| 10.3 | **Per-language search** | Language-specific tsvector columns with appropriate Postgres dictionaries. Multilingual embedding model benchmarking — benchmark text-embedding-3-small against multilingual-optimized models (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct) using actual translated passages. May trigger first embedding model migration via ADR-046 workflow. Language-aware `hybrid_search` function. (ADR-047) |
-| 10.4 | **English fallback** | When user's language has insufficient results, supplement with clearly marked English passages. `[EN]` tag on fallback content. "Read in English →" links. |
-| 10.5 | **Per-language SEO** | `hreflang` tags on every page. Per-locale sitemaps. Localized meta tags and page titles. JSON-LD `inLanguage` field. |
-| 10.6 | **Non-Latin font support** | Conditional loading of Noto Serif JP / Noto Sans JP (Japanese). Indian wave adds Noto Serif Devanagari, Noto Serif Bengali. |
-| 10.7 | **UI translations + content (Indian wave)** | Hindi and Bengali UI translations (same AI-assisted workflow as 10.1). Ingest YSS-published translations. Devanagari and Bengali font loading. YSS bookstore URL routing for Hindi/Bengali book pages ("Find this book" links to YSS bookstore, not SRF bookstore). Brahmamuhurta circadian override for `hi`/`bn` locales (3:30–5:30 AM → meditation practice passages, not consolation — see DESIGN.md § Circadian content choreography). YSS representatives participate as co-equal design stakeholders for visual design, editorial voice, and cultural adaptation decisions. |
-| 10.8 | **Cross-language passage alignment** | Link translated chunks to their English originals via `canonical_chunk_id`. Enables "Read this passage in Spanish →" navigation between editions. Alignment done during ingestion by matching (canonical_book_id, chapter_number, paragraph_index); edge cases resolved in human QA. |
-| 10.9 | **Language-aware chunk relations** | Recompute `chunk_relations` with per-language strategy: top 30 same-language + top 10 English supplemental relations per non-English chunk. Ensures non-English languages get full related teachings without constant real-time fallback. English supplemental relations are marked with `[EN]` in the UI, consistent with the search fallback pattern. |
-| 10.10 | **Per-language search quality evaluation** | Dedicated search quality test suite per language (15–20 queries with expected passages from that language's corpus). Must pass before that language goes live. Mirrors Phase 0a's English-only evaluation (Deliverable 0a.8). Includes per-language chunk size validation — English-calibrated chunk sizes may need adjustment for CJK and Indic scripts. |
-| 10.11 | **Per-language performance budget validation** | Validate the 50KB homepage budget and FCP < 1.5s constraint for each new language. Hindi/Bengali pages with Devanagari font files (even with unicode-range subsetting) may exceed English-calibrated budgets. Remediate with per-language font subsetting, conditional loading, or text-only-mode defaults for high-cost scripts. |
-| 10.12 | **Per-language presentation adaptations** | Language-conditional reader typography (drop capitals for Latin scripts only; CJK line-height adjustment to 1.6–1.7). Non-Latin font support for OG quote images (`@vercel/og` requires explicit font files per script). Non-Latin print stylesheet font stacks. Non-Latin email font stacks (system fonts, not web fonts — tested across top email clients per market). Cultural adaptation of "Seeking..." entry points (editorial, not mechanical translation). Per-language bookstore links via `books.bookstore_url` column (if per-language routing is needed, add a simple lookup table then — ADR-028). Spiritual terminology glossary per locale (`/messages/glossary-{locale}.json`) built incrementally during first human review cycle (ADR-078). |
-| 10.13 | **Translation review UI** | Add translation review workflow to the editorial review portal: side-by-side English source and AI draft display, UI context notes ("this appears on the search button"), inline editing, `[REVIEW]` flagging, batch view (40–100 strings per session), progress indicator per locale. Auth0 role `translator:{locale}` for scoped volunteer reviewer access — German reviewer sees only German queue. (ADR-082, ADR-078) |
-| 10.14 | **Impact dashboard** | Leadership-facing read-only view at `/admin/impact`: countries reached (warm-toned world map), content growth over time, "What is humanity seeking?" (anonymized search themes), Global South accessibility indicators, content availability matrix by language (books × languages grid showing published/in-pipeline/unavailable status — serves as both an executive reporting artifact and a strategic planning tool for translation prioritization). Unmet language demand summary (aggregated from `requested_language ≠ language` signals in `page_viewed` events — "N seekers per week arrive wanting Hindi"). Auth0 role `leadership`. Refreshed nightly from Neon aggregates. Pre-formatted export for the philanthropist's foundation annual report. (ADR-082, ADR-090) |
-| 10.15 | **Per-language search suggestions** | Per-language suggestion indices: each language gets its own extracted corpus vocabulary, localized theme names (from `topic_translations`), and localized curated queries (from `messages/{locale}.json`). Transliteration support for Indic languages — Hindi/Bengali seekers typing Romanized input (e.g., "samadhi") must match suggestions in both Roman and native script. CJK suggestion strategy (substring matching rather than prefix matching for languages without word boundaries). Sparse-language handling: honest fewer suggestions rather than English fallback padding. (ADR-049) |
-
-### Key Challenges
-
-- **Content availability asymmetry:** Not all books exist in all languages. The portal must gracefully handle sparse content per locale — honest about what's missing, not pretending it doesn't exist.
-- **Embedding model selection:** Does OpenAI text-embedding-3-small produce acceptable retrieval quality for all target languages — especially Hindi, Bengali, and Japanese where its multilingual capability is incidental, not optimized? Benchmark against multilingual-first models (Cohere embed-v3, BGE-M3) with actual translated passages. Fallback: per-language models or domain-adapted embeddings fine-tuned on Yogananda's multilingual corpus (ADR-047).
-- **Per-language chunk size validation:** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts — CJK and Indic tokenization differs significantly. Validate retrieval quality per language before committing to chunk sizes.
-- **Spiritual terminology:** Sanskrit terms (samadhi, karma, dharma, prana) are handled differently across translations. Search must find passages regardless of whether the translation keeps the Sanskrit or uses a local equivalent. The spiritual terminology glossary (`/messages/glossary-{locale}.json`) is a critical dependency.
-- **Digital text availability:** The single highest-impact dependency. If SRF/YSS only has printed translations, per-language OCR with fluent reviewers is required — a major effort.
-- **UI translation quality:** "What are you seeking?" must sound inviting in Japanese, not clinical. Professional human translation required — not machine translation. The "Seeking..." entry points need cultural adaptation, not mechanical translation.
-- **Non-Latin presentation:** OG images, print stylesheets, email templates, and reader typography all need per-script adaptations. Drop capitals are Western; CJK line-height differs; email clients don't support web fonts for non-Latin scripts.
-- **YSS branding:** Hindi/Bengali content may need YSS branding rather than SRF branding. Organizational question with design implications. (Deferred for now.)
-
-### Success Criteria
-
-- At least one non-English language live with search returning relevant localized results
-- Per-language search quality evaluation passes (≥ 80% of 15–20 test queries return relevant passage in top 3)
-- English fallback passages clearly marked with `[EN]` tag; no unlabeled cross-language mixing
-- UI strings reviewed and approved by fluent human reviewer for each live language
-- Per-language homepage payload remains < 50KB (validated including non-Latin font subsetting)
-- `hreflang` tags render correctly for all live locales; per-locale sitemaps submitted
+**Success criteria:** At least one non-English language live with ≥ 80% search quality on 15–20 test queries. English fallback passages clearly marked `[EN]`. Per-language homepage payload < 50KB including font subsetting.
 
 ---
 
 ## Phase 11: Polish
 
-**Goal:** Elevate the UI to a world-class "digital sanctuary" experience. Conduct formal accessibility audit. Implement the contemplative reader features deferred from earlier phases.
+**Goal:** Elevate UI to "digital sanctuary" quality. Formal WCAG audit. Contemplative reader features.
 
-*Note: Core accessibility (semantic HTML, ARIA, keyboard nav, color contrast, screen reader support) is built from Phase 1, not introduced here. This phase adds advanced features, formal audit, the shared design system, and reader polish (circadian reading, chapter transitions, opening moment).*
+Core accessibility has been built since Phase 1 — this phase adds advanced features, formal third-party audit, and the shared Calm Technology design system. Contemplative reader features (circadian color temperature, "Breath Between Chapters," opening moment) create the reading atmosphere. PWA enables offline reading and home screen installation.
 
-### Deliverables
+- Calm Technology design system as shared npm package
+- Formal WCAG 2.1 AA third-party audit with real-user assistive technology testing
+- Reading mode: adjustable font, sepia/dark mode, high-contrast (`prefers-color-scheme`, `prefers-contrast`)
+- Circadian color temperature and "Breath Between Chapters" transitions (DES-011, DES-012)
+- Opening moment — portal threshold: lotus SVG fade on first session visit (DES-007)
+- Progressive Web App: offline book reading, home screen installable (ADR-012)
+- Sacred Places expansion: biographical sites, Street View links (ADR-069, ADR-070)
+- Audio-visual ambiance toggle: temple or nature sounds, off by default
+- Responsive design polish: tablet layout, print stylesheet, touch-friendly (DES-049)
+- Visual regression testing via Playwright screenshots
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 11.1 | **Calm Technology design system** | Shared component library (npm package) implementing SRF's visual language. Reusable across properties. Accessibility baked into every component. |
-| 11.2 | **Formal WCAG 2.1 AA audit** | Third-party accessibility audit. Remediate any gaps. Real-user testing with assistive technology users. Pursue WCAG 2.1 AAA for reading content where achievable. |
-| 11.3 | **Reading mode** | Distraction-free reading view. Adjustable font size. Sepia/dark mode for evening reading (`prefers-color-scheme` support). High-contrast mode (`prefers-contrast` support). |
-| 11.4 | **Time-aware reading — circadian color temperature** | Subtly shifts background warmth by time of day: morning (cooler cream), midday (standard), evening (warmer cream), night (optional `--srf-navy` dark mode). Opt-out via sun/moon toggle, preference in `localStorage`. `prefers-color-scheme: dark` always respected as override. Entirely client-side, DELTA-compliant. (DES-011) |
-| 11.5 | **"Breath Between Chapters"** | 1.2-second pause showing only chapter title on prev/next navigation. Chapter text fades in over 400ms. Skipped for direct URL navigation, deep links, and `prefers-reduced-motion`. (DES-012) |
-| 11.6 | **Opening moment — portal threshold** | First visit per session: warm cream background with small lotus SVG (40px, `--srf-gold` at 30%), fades after 800ms as homepage content appears. Total ~1.2s. Skipped for `prefers-reduced-motion`, deep links, and repeat visits within session. (DES-007) |
-| 11.7 | **Visual regression testing** | Playwright screenshot comparison for reader, passage cards, Quiet Corner, search results. Catches unintended visual changes on every PR. |
-| 11.8 | **Text-to-Speech** | Native TTS integration for the book reader. Synchronized highlighting of spoken text. |
-| 11.9 | **Responsive design polish** | Implement DES-049 responsive strategy across all components. Tablet-specific reader layout (two-column landscape option). Interaction modality detection (`hover`, `pointer` media queries). Print stylesheet. Automatic low-bandwidth suggestion. Touch-friendly search and reading on mobile. Orientation-adaptive layouts for reader, Quiet Corner, and Presentation mode. |
-| 11.10 | **Progressive Web App** | Web App Manifest with SRF branding. Service Worker for offline book reading and Quiet Corner. Cache-first for chapters, stale-while-revalidate for daily passage, network-only for search. Installable on mobile home screens. Offline indicator: "You're reading offline. Search requires a connection." (ADR-012) |
-| 11.11 | **Sacred Places — biographical sites and Street View** | Add biographical/historical sites (Gorakhpur, Serampore, Puri, Varanasi, Dakshineswar). "See This Place" Street View links on place cards (ADR-070). Reader ↔ Place cross-reference cards: margin cards in the reader linking to places, and place pages listing all referencing passages with deep links. (ADR-069, ADR-070) |
-| 11.12 | **Audio-visual ambiance toggle** | Optional ambient audio in reader and Quiet Corner. Off by default, always. Three options: Off / Temple (singing bowl + distant wind) / Nature (birdsong + gentle stream). Two ~200–400KB audio loops on S3. Fixed at ~15% volume. Fades in over 3s. Pauses on tab blur. Disabled in text-only mode. Stored in `localStorage`. Not meditation music — the sound of a quiet temple reading room. |
-
-### Success Criteria
-
-- Third-party WCAG 2.1 AA audit passes with zero critical or serious violations remaining
-- PWA installs on mobile home screens (iOS Safari, Android Chrome) and serves cached chapters offline
-- Circadian color temperature shifts are visually correct at all four time bands; `prefers-color-scheme: dark` override works
-- `prefers-reduced-motion` disables all animations (opening moment, breath between chapters, cross-fades)
-- Keyboard-only navigation completes full reader flow without mouse
-- Lighthouse accessibility score ≥ 95 on all page types
+**Success criteria:** WCAG 2.1 AA audit passes with zero critical violations. PWA installs on mobile and serves cached chapters offline. `prefers-reduced-motion` disables all animations.
 
 ---
 
 ## Phase 12: Multimedia
 
-**Goal:** Deliver cross-media intelligence across video, audio, and images in one coherent phase. Build the platform-agnostic video catalog, transcribe monastic talks, introduce the audio library and image gallery, enable cross-media search across all content types, establish the unified content hub, and activate YSS organizational branding.
+**Goal:** Cross-media intelligence across video, audio, and images in one unified phase.
 
-*Note: Basic YouTube video display (RSS + API, categorized playlists) is delivered in Phase 1. This phase adds video transcription, the platform-agnostic video catalog, audio recordings, photographs, cross-media search, the unified content hub, and YSS branding.*
+The portal becomes a true multimedia platform. Video transcription (YouTube → Whisper) and audio ingestion create searchable, time-synced text for all recordings. Cross-media search interleaves book passages, video segments, and audio clips ranked by unified RRF. The unified content hub (`content_items` + `content_relations`) replaces per-media relation tables. YSS organizational branding activates for Hindi/Bengali locales. The Knowledge Graph reaches 30,000–50,000 nodes across all five content types. Basic YouTube video display (RSS + API) is delivered in Phase 1; this phase adds transcription, audio, images, and cross-media intelligence.
 
-### Deliverables
+- Platform-agnostic video catalog with speaker diarization and content authority hierarchy (ADR-056)
+- YouTube transcript ingestion via Whisper with time-synced playback (ADR-055)
+- Audio library: S3 ingestion, Whisper transcription, browse/player with synchronized transcript (ADR-057)
+- Image ingestion with sacred artifact treatment for Yogananda photographs (ADR-035)
+- Cross-media search and cross-media chunk relations across all content types (ADR-050, ADR-055)
+- Unified content hub: polymorphic `content_items` registry across all media types (ADR-060)
+- Multi-media editorial threads: polymorphic `thread_items` replacing `thread_passages`
+- YSS locale-aware organizational branding (ADR-079)
+- Chant reader and deterministic `performance_of` cross-media linking (ADR-059)
+- Digital watermarking: C2PA Content Credentials on sacred images (ADR-063)
+- Multi-size image downloads in WebP + JPEG (ADR-064)
+- Knowledge Graph: all five content types, 3D WebGL visualization, Consciousness Cartography stretch goal (ADR-061, ADR-062, DES-054)
+- Concept/Word Graph exploration UI (DES-055)
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 12.1 | **Platform-agnostic video catalog** | `videos` table with `platform` (youtube/vimeo/self_hosted), `platform_id`, `platform_url`, `self_hosted_s3_key`. `integration_level` (full/linked) distinguishes SRF-owned content from third-party (e.g., *Awake: The Life of Yogananda*). `video_type` supports talk, documentary, interview, meditation, ceremony, clip, lecture, archival. `rights_holder` and `attribution` fields for third-party content. Content authority hierarchy: Yogananda's words (primary) → monastic talks (secondary) → documentary/third-party (tertiary). Platform-agnostic `<VideoPlayer>` component renders YouTube, Vimeo, or self-hosted via `<video>`. `/videos`, `/videos/[slug]`, `/videos/collections/[slug]`, `/videos/films` routes. (ADR-056) |
-| 12.2 | **YouTube transcript ingestion** | `video_transcripts` and `video_chunks` tables (with `speaker` and `segment_type` columns for speaker diarization — ADR-056). Start with YouTube auto/manual captions (free); upgrade to Whisper API ($0.006/min) where quality is insufficient. Chunk and embed transcripts into Neon using the same embedding model and FTS strategy as book chunks. Word-level timestamps on every chunk enable time-synced playback. Estimated one-time cost for full SRF YouTube library (~500 videos): $150–300 via Whisper. (ADR-055) |
-| 12.3 | **Cross-media search** | Extend `hybrid_search` to query `video_chunks` alongside `book_chunks`. Results interleave book passages and timestamped video segments, ranked by unified RRF. Video results link to `youtube.com/watch?v={id}&t={start_seconds}`. (ADR-055) |
-| 12.4 | **Cross-media chunk relations** | Pre-computed `chunk_relations` span book chunks and video chunks. The reader's Related Teachings panel shows timestamped video segments alongside book passages: *"Brother Chidananda discusses this teaching (12:34)"*. (ADR-050, ADR-055) |
-| 12.5 | **Synchronized transcript display** | Video player page (`/videos/[slug]`) with synchronized transcript panel: text scrolls to follow playback, each paragraph is clickable (jumps to timestamp), book passages referenced in the talk appear as margin cards linking to the reader. (ADR-055) |
-| 12.6 | **Video player with book links** | When a monastic mentions a book, the video player sidebar links directly to those books in the reader. Related Teachings panel in the video player shows book passages related to the current video segment. |
-| 12.7 | **"Wisdom bites"** | Admin tool (Retool) to clip 2-5 minute segments from talks. Serve as daily inspiration on the homepage. |
-| 12.8 | **Unified content hub** | Migrate from per-media-type relation tables to the polymorphic `content_items` registry linking book_chunks, video_chunks, audio_segments, and images. `content_relations` replaces pairwise tables with a single cross-media relation store. `content_topics` and `content_places` provide unified theming and spatial connections across all media. Phases 0–6 use `chunk_relations` directly — this phase introduces the hub as a deliberate migration, not premature abstraction. (ADR-060) |
-| 12.9 | **Knowledge graph evolution: video + places + cross-media** | Add video, video_chunk, and sacred_place nodes to the Knowledge Graph. Add cross-media similarity edges (book ↔ video) via content hub. Add mentions_place and depicts_place edges. "All media" becomes the default graph view mode. Update nightly graph Lambda to consume `content_items` and `content_relations`. Level-of-detail rendering (WebGL) for 20,000–35,000 node scale. (ADR-062) |
-| 12.10 | **Audio library — ingestion pipeline** | Audio recordings uploaded to S3. Lambda triggers Whisper transcription. Human review of transcripts (mandatory gate — ADR-078). Approved segments embedded and indexed. CloudFront distribution for streaming. Special handling for Yogananda's own voice recordings (`is_yogananda_voice` flag). (ADR-057) |
-| 12.11 | **Audio library — browse and player** | `/audio` browse page: filter by speaker, recording type, date, collection. `/audio/[slug]` player: synchronized transcript (text highlights current segment, click to jump), standard playback controls (play/pause, seek, 0.75×–1.5× speed, volume). Sacred artifact treatment for Yogananda's voice — visual provenance indicator. No social features. (ADR-057) |
-| 12.12 | **Audio cross-media search** | Extend `hybrid_search` to query `audio_segments` alongside `book_chunks` and `video_chunks`. Audio results interleave with books and video, ranked by unified RRF. Audio results link to `/audio/[slug]?t={start_ms}`. (ADR-057) |
-| 12.13 | **Image ingestion pipeline** | `images` table with `subject_type` (portrait, group, place, event, artifact, illustration, book_cover, devotional), `is_yogananda_subject` sacred artifact flag. `image_descriptions` table with embedded description text as searchable proxy for vector search (images themselves are not directly searchable — their editorial descriptions are). `image_places` junction table for spatial connections. S3 storage + CloudFront delivery. Sacred artifact treatment for Yogananda photographs: visual provenance indicator, reverential caption style, no casual cropping. Human review mandatory for all descriptions and alt text. (ADR-035) |
-| 12.14 | **Image gallery and detail pages** | `/images` browse page: filter by subject type, era, collection, place. `/images/[slug]` detail page: full-resolution image, description, alt text, photographer credit, related places, related book passages (via content hub). Image search results appear alongside books, video, and audio in cross-media search — ranked by description embedding similarity. (ADR-035) |
-| 12.15 | **Multi-media editorial threads** | `thread_items` table replaces `thread_passages` (introduced in Phase 5) with polymorphic content references supporting book_chunk, video_chunk, audio_segment, and image types. Three continuation modes: single-media (auto-generated, same type as current content), cross-media exploration (auto-generated, all types), editorial multi-media threads (human-curated reading paths combining all media). Migration path: existing `thread_passages` rows migrated to `thread_items` with `item_type='book_chunk'`. |
-| 12.16 | **YSS organizational branding** | Locale-aware branding layer: organization name, logo, footer text, OG images selected by seeker's locale or explicit preference. Content remains unified — only presentation differs. `next-intl` namespace per organization (`/messages/{locale}/org.json`). Brand asset directories (`/public/brand/srf/`, `/public/brand/yss/`). (ADR-079) |
-| 12.17 | **Transcript PDFs** | Pre-rendered PDF transcripts for audio recordings and video talks. Generated when transcript reaches `approved` status. Resource-anchored routes: `GET /api/v1/audio/{slug}/transcript/pdf`, `GET /api/v1/videos/{slug}/transcript/pdf`. Served from S3 via CloudFront. Same `@react-pdf/renderer` pipeline as book PDFs. (ADR-025) |
-| 12.18 | **Digital watermarking (Tiers 2 & 3)** | C2PA Content Credentials on all guru photographs and archival images (cryptographically signed provenance chain). Steganographic watermark on sacred images (`is_yogananda_subject = true`) — invisible bit pattern in DCT frequency domain encoding image ID and portal URL. Verification script: `/scripts/watermark-verify.py`. Both applied during image ingestion Lambda. (ADR-063) |
-| 12.19 | **Multi-size image downloads** | Five named size tiers (thumb 300px, small 640px, medium 1200px, large 2400px, original) generated at ingestion in WebP + JPEG dual format. Download endpoint: `GET /api/v1/images/{slug}/download?size=medium&format=webp`. Image detail page gains download section with size selector, dimensions, and file sizes. Attribution line (not a gate). Per-tier watermarking rules integrated with ADR-063. (ADR-064) |
-| 12.20 | **Knowledge graph evolution: audio + images** | Add audio_recording, audio_segment, and image nodes to the Knowledge Graph. Add photographed_person and photographed_place edges. Sacred artifact styling (golden ring) for Yogananda's own voice recordings and photographs. Full cross-media constellation (all embedded content types in UMAP view). Graph reaches 30,000–50,000 node scale. (ADR-062) |
-| 12.21 | **Chant reader and deterministic cross-media linking** | Chant reader variant for `content_format = 'chant'` books (*Cosmic Chants*, *Songs of the Soul*): whole-unit rendering (one chant per page), chant-to-chant navigation, inline media panel for `performance_of` relations. Editorial mapping of audio/video recordings to specific chants during ingestion. `performance_of` edge type in `chunk_relations` (deterministic, not vector-derived). Poetry variant (`content_format = 'poetry'`) for *Whispers from Eternity* and similar collections. `performance_of` edges added to Knowledge Graph with distinct visual treatment. (ADR-059) |
-| 12.22 | **Knowledge Graph exploration UI** | Upgrade `/explore` from d3-force Canvas rendering (Phase 6) to react-force-graph-3d with WebGL for the full cross-media graph at 30,000–50,000 nodes. Interactive 3D visualization with semantic zoom: cluster → node → passage. Level-of-detail rendering. Path-finding mode: shortest path between two concepts via Neptune shortest-path algorithm, highlighted in the visualization. Special views: Lineage View (directed vertical layout), Depth Progression (experiential depth as vertical axis). (ADR-061, ADR-062, ADR-117, DES-054) |
-| 12.23 | **Concept/Word Graph exploration UI** | Dedicated concept graph visualization (DES-055) as a subview of `/explore`. D3 + WebGL progressive enhancement. Term nodes sized by corpus frequency, edges colored by type. Interactive: click a concept to see all passages that teach it, traverse to related concepts. Sanskrit terms show inline definitions on hover. Accessible: full keyboard navigation, screen reader announcements for graph state changes. |
-| 12.24 | **Consciousness Cartography** (stretch) | Visual map of consciousness states and their relationships as described in Yogananda's teachings. ExperientialState nodes arranged by depth (1–7 scale), connected by PROGRESSION_TO and PRACTICE_LEADS_TO edges. Each state links to passages that describe it. Contemplative, not clinical. Phase 12+ stretch goal — delivers only if graph data quality and UI maturity warrant it. (DES-054, DES-055) |
-
-### Success Criteria
-
-- Cross-media search returns interleaved book passages, video segments, and audio segments for test queries
-- Synchronized transcript scrolls in sync with video and audio playback; click-to-jump works within 1-second accuracy
-- Video and audio chunks appear in Related Teachings panel alongside book passages
-- Unified content hub migration preserves all existing `chunk_relations` data with zero loss
-- Audio player streams recordings with synchronized transcript highlighting
-- Yogananda's own voice recordings display sacred artifact treatment (visual provenance indicator)
-- Image gallery renders all five size tiers; WebP served to supporting browsers, JPEG fallback works
-- Knowledge graph displays all five content types (book, magazine, video, audio, image) with distinct node styling; sacred artifact golden ring visible on Yogananda's voice recordings and photographs
-- YSS branding activates correctly for Hindi/Bengali locales (logo, footer text, OG images)
-- C2PA Content Credentials verify successfully on watermarked guru photographs
-- Chant reader renders whole-unit chants with inline audio/video panel; `performance_of` links are deterministic and editorially verified
+**Success criteria:** Cross-media search returns interleaved book, video, and audio results. Synchronized transcript scrolls with playback. Knowledge graph displays all five content types with sacred artifact golden ring. YSS branding activates for Hindi/Bengali locales.
 
 ---
 
 ## Phase 13: Personalize
 
-**Goal:** Allow seekers to create accounts for personal study features, without requiring registration for basic access. Implements the DELTA-Relaxed Authenticated Experience (ADR-121): two-tier model where anonymous is the default (full DELTA compliance) and authenticated is opt-in (expanded features, still no behavioral profiling).
+**Goal:** Optional accounts for personal study features. Anonymous access remains the default.
 
-### Deliverables
+The DELTA-Relaxed Authenticated Experience (ADR-121) introduces a two-tier model: anonymous is default with full DELTA compliance; authenticated is opt-in for cross-device sync of bookmarks, reading progress, and personal collections. No behavioral profiling. Account deletion always available.
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 13.1 | **Optional authentication** | Evaluate lightest mechanism for cross-device sync: magic links, passkeys, or Auth0 (if SSO with other SRF properties is required). Sign-in is never required for reading or search. `user_profiles` table (ADR-121): bookmarks sync, reading progress, personal collections, language preference, optional practice background (user-provided, never inferred). Account deletion always available. No profile embedding. No behavioral profiling. |
-| 13.2 | **Bookmarks and highlights** | Save favorite passages from search results or the reader. Migrate Phase 2 localStorage bookmarks to server sync on login. |
-| 13.3 | **Reading progress** | Track reading position per book. Cross-device sync. |
-| 13.4 | **Search history** | Personal search history (opt-in, private). |
-| 13.5 | **Personalized daily passage** | Personalized daily quote based on reading history and interests. (Note: the anonymous, non-personalized "Today's Wisdom" is delivered in Phase 0. This adds account-based personalization.) |
-| 13.6 | **Personalized daily email** | Logged-in subscribers choose preferred themes. Daily email selects from theme-tagged passages matching preferences. Extends the non-personalized daily email from Phase 8. (ADR-091) |
+- Optional authentication: magic links, passkeys, or Auth0 — sign-in never required for reading/search (ADR-121)
+- Bookmarks and highlights with localStorage → server migration on login
+- Reading progress sync across devices
+- Personal search history (opt-in, private)
+- Personalized daily passage and email based on chosen themes (ADR-091)
 
-### Success Criteria
-
-- Sign-in works via chosen mechanism (magic links, passkeys, or Auth0) without requiring registration for reading/search
-- Phase 2 localStorage bookmarks migrate to server sync on first login with zero data loss
-- Reading progress syncs across devices within 30 seconds
-- Personalized daily email selects passages matching subscriber's chosen themes
+**Success criteria:** Sign-in works without requiring registration for reading/search. localStorage bookmarks migrate to server on first login with zero data loss. Reading progress syncs across devices within 30 seconds.
 
 ---
 
 ## Phase 14: Community
 
-**Goal:** Bridge the solitary study experience with the global SRF community. Build events, messaging channels, center discovery, community curation, and VLD-powered editorial scaling.
+**Goal:** Bridge solitary study with the global SRF community.
 
-### Deliverables
+Events, center discovery, and messaging channels (SMS, Telegram) bring the portal to seekers who can't browse freely — basic phones, no data plans, non-literate populations. Community curation via VLD members scales editorial capacity. The Community Collections gallery publishes member-curated collections with staff review. The annual "What Is Humanity Seeking?" narrative report transforms portal data into a communications asset.
 
-| # | Deliverable | Description |
-|---|-------------|-------------|
-| 14.1 | **Event calendar** | Time-zone-adjusted display of global SRF events (meditations, convocation, commemorations). |
-| 14.2 | **Local center discovery ("Meditation Near Me")** | Geo-located finder for physical SRF temples, centers, and meditation groups. Map + list view. Requires center data from SRF. (Note: Phase 1 includes an external link to SRF's existing center locator in the About page and footer. This phase builds a native in-portal experience.) |
-| 14.3 | **Live event integration** | Deep links to Zoom/YouTube Live for online meditation events. |
-| 14.4 | **Online meditation resources** | Curated links and schedule for SRF's Online Meditation Center. Time-zone-adjusted display of upcoming live meditations. |
-| 14.5 | **SMS access gateway** | Two-way SMS teaching access via Twilio (global), Africa's Talking (Africa), or Gupshup (India). Seeker texts a topic keyword (e.g., "FEAR") to a phone number and receives a Yogananda passage by SMS. Daily Wisdom subscription (text "DAILY"). No smartphone needed, no data plan needed. Serves the 3+ billion people with basic phones. Passages truncated to 160 chars with citation. Dedicated phone numbers per region. Same messaging Lambda as WhatsApp, different formatter. Cost evaluation per region required before launch. (ADR-026) |
-| 14.6 | **Telegram bot** | Telegram bot for search, daily wisdom, and audio content. Free to operate (no per-message cost). Rich formatting (Markdown), inline keyboards, audio clip delivery. Same messaging Lambda, Telegram-specific formatter. (ADR-026) |
-| 14.7 | **USSD and IVR exploration** | Evaluate USSD menu-based access for Africa (telco partnership via Africa's Talking) and IVR voice access for non-literate seekers. IVR could play Yogananda's own voice recordings — a direct connection no text channel can provide. Requires telco partnerships and cost analysis. (ADR-026) |
-| 14.8 | **"What Is Humanity Seeking?" annual report** | *(Public dashboard moved to Phase 6.)* First annual curated narrative report from `search_theme_aggregates` data. Published in Self-Realization Magazine (ADR-040) and/or by the philanthropist's foundation. Human-curated with data visualizations: rising/falling themes, geographic patterns, seasonal trends, correlation with world events. Not auto-generated — the portal provides the data, humans provide the interpretation. Complements the live `/seeking` dashboard with deeper editorial analysis. |
-| 14.9 | **Community Collections gallery** | `/collections` gallery page displaying published and featured community collections. Filterable by type (theme, study guide, situational, event, cross-media), language, and book. Admin portal review queue for community submissions (extends ADR-082). Staff can approve, reject with feedback, or request revision. Featured collections promoted to homepage and theme pages. Visual distinction from staff-curated Editorial Reading Threads (DES-026). Builds on Phase 7 shared-link foundation. (ADR-086) |
-| 14.10 | **VLD dashboard** | Admin portal section for VLD members (Auth0 role: `vld`). Browse open curation briefs, claim assignments, track submission status, access editorial guidance. No gamification — no leaderboards, no submission counts visible to other members. Service is its own reward. (ADR-087) |
-| 14.11 | **Curation briefs** | Staff-authored structured curation requests. `curation_briefs` table with title, description, collection type, target language, deadline. VLD members claim and fulfill briefs via the Study Workspace. Staff reviews completed briefs through the existing admin portal review queue. (ADR-087) |
-| 14.12 | **Trusted submitter status** | After a threshold of approved collections (TBD, likely 3–5), VLD members earn trusted submitter status. Trusted submissions enter a lighter review queue — staff can batch-approve with a scan rather than detailed review. Not auto-publishing — every collection passes through staff eyes. Trusted status is revocable. (ADR-087) |
-| 14.13 | **Collection remixing** | "Use as starting point" button on published collections. Creates a copy in the seeker's Study Workspace for personal modification. Attribution chain preserved: "Based on [original curator]'s collection." Remixed collections go through the same review pipeline if submitted for publication. |
-| 14.14 | **Multilingual community collections** | Extend community curation to non-English languages. Spanish-speaking center leaders curate from Spanish-edition passages. Language-specific gallery filtering. Curation briefs can target specific languages. Requires Phase 10 multilingual content as prerequisite. |
-| 14.15 | **Community collection analytics (DELTA-compliant)** | Anonymized, aggregated insights for staff editorial decisions: which collection types are most submitted, which themes have gaps, which curation briefs attract the most claims. No individual curator analytics. No seeker-facing metrics. Staff-only dashboard in admin portal. (ADR-095) |
+- Event calendar with time-zone adjustment, live event integration, Online Meditation Center links
+- Local center discovery ("Meditation Near Me") with SRF center data
+- SMS access gateway via Twilio/Africa's Talking/Gupshup — serves 3+ billion basic phone users (ADR-026)
+- Telegram bot for search, daily wisdom, and audio delivery (ADR-026)
+- USSD and IVR exploration for non-literate seekers (ADR-026)
+- "What Is Humanity Seeking?" annual curated narrative report (ADR-040)
+- Community Collections gallery with admin review queue (ADR-086)
+- VLD dashboard: curation briefs, claim assignments, trusted submitter status (ADR-087)
+- Collection remixing with attribution chains
+- Multilingual community collections extending Phase 10 content
+- DELTA-compliant community analytics for staff editorial decisions (ADR-095)
 
-### Success Criteria
-
-- Event calendar displays correctly across time zones for at least 3 global regions
-- SMS gateway delivers passages for keyword queries in at least 2 regions (India, US or Africa)
-- Telegram bot responds to search queries with formatted passages and citations
-- Local center discovery returns nearest SRF centers with correct location data
-- Community Collections gallery displays published collections with filtering by type and language
-- Admin portal review queue processes community submissions with approve/reject/revise workflow
-- VLD members can browse, claim, and fulfill curation briefs through the admin portal
-- Trusted submitter pipeline reduces average staff review time per submission
-- At least one non-English community collection is published through the multilingual pipeline
-- Collection remixing preserves attribution chain and passes through review pipeline
-- DELTA-compliant analytics inform staff editorial strategy without exposing individual curator activity
+**Success criteria:** SMS gateway delivers passages in at least 2 regions. Community Collections gallery displays published collections with filtering. VLD members can browse, claim, and fulfill curation briefs.
 
 ---
 
