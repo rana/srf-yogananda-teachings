@@ -105,4 +105,4 @@ Once implementation begins, DESIGN.md sections transition from "authoritative sp
 3. **When implementation diverges from design:** Update DESIGN.md to reflect the actual decision. DESIGN.md is a living document, not a historical artifact.
 4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 
-DECISIONS.md ADR content is immutable once accepted. Decisions are superseded (new ADR) or withdrawn (with explanation). ADR numbers and ordering may be restructured for readability, but the substance of each decision is never silently changed.
+DECISIONS.md ADRs are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.

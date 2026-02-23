@@ -247,11 +247,17 @@ Be pro-active. Remember you have vast capability, intelligence and agency.
 You have complete design autonomy.
 
 ---
+I'm preparing for implementation.
+
+AI is architect. AI is implementer.
+
 Deep multi-dimensional scan for coherence.
 
-Are there errors, gaps, mis-references, omissions, etc?
+Are there errors, gaps, mis-references, omissions, etc (if any)?
 
 Be proactive — propose concrete actions, not just observations.
+
+Would you use as is? Push back as needed. No changes is equally appropriate.
 
 You have complete design autonomy.
 
