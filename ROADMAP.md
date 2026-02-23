@@ -7,7 +7,7 @@
 | [0a](#phase-0a-prove) | Prove | Ingest one book, prove semantic search works |
 | [0b](#phase-0b-foundation) | Foundation | Deployment, observability, AI librarian, homepage |
 | [1](#phase-1-build) | Build | All pages, engineering infrastructure, accessibility |
-| [2](#phase-2-read) | Read | Dwell, bookmarks, keyboard nav, typography |
+| [2](#phase-2-read) | Read | Dwell, bookmarks, keyboard nav, typography, presentation mode, low-bandwidth detection |
 | [3](#phase-3-grow) | Grow | Multi-book corpus, cross-book search |
 | [4](#phase-4-operate) | Operate | Theme tagging, editorial portal, staffing, Neptune graph |
 | [5](#phase-5-connect) | Connect | Related Teachings, chunk relations, graph traversal |
@@ -31,6 +31,8 @@
 ## Phasing Philosophy
 
 Each phase delivers a working, demonstrable increment organized around a single capability theme. 15 phases total (0–14). Phase 0 proves that semantic search works. Phase 1 builds the complete portal with engineering infrastructure alongside it (CI/CD, testing, Terraform — not deferred to a later phase). Phase 2 refines the contemplative reader. Phases 3–4 decompose the multi-book expansion: Phase 3 (Grow) expands the corpus independently of organizational decisions, while Phase 4 (Operate) establishes editorial operations once SRF staffing is confirmed — this split makes the most critical organizational dependency visible as its own phase gate. Phases 5–6 build cross-book intelligence and complete the library. Phases 7–8 extend reach through tools and distribution channels. Phases 9–11 add Contentful CMS, multi-language support, and accessibility polish. Phase 12 delivers cross-media intelligence across video, audio, and images in one coherent phase. Phase 13 adds optional user accounts. Phase 14 combines community events and curation at scale.
+
+**Parallel workstreams and feature-flag activation (ADR-123):** Phases are *capability themes*, not strictly sequential gates. Where deliverables within a phase have no technical dependency on another phase's organizational prerequisites, they proceed in parallel. Specifically: Phase 5 algorithmic computation proceeds alongside Phase 4 editorial tooling; Phase 9 infrastructure (GitLab, Terraform) proceeds independently of Contentful contract; Phase 10 language waves run in parallel where resources permit; Phase 13 localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, Contentful contract, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
 ---
 
@@ -277,6 +279,8 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 2.12 | **HyDE search enhancement** | Implement Hypothetical Document Embedding (ADR-119): Claude generates a hypothetical passage answering the query in Yogananda's register, embedded via Voyage asymmetric encoding (document input type), searched in document-space. Evaluate lift on literary/spiritual queries vs. standard vector search. Feature-flagged for A/B evaluation against golden retrieval set. |
 | 2.13 | **Cohere Rerank integration** | Replace Claude Haiku passage ranking with Cohere Rerank 3.5 cross-encoder (ADR-119). Multilingual native. Benchmark precision against Claude Haiku ranking using golden retrieval set. Graceful degradation: falls back to RRF scores if Cohere is unavailable. |
 | 2.14 | **Redis suggestion cache** (when latency warrants) | ElastiCache Redis for sub-millisecond autocomplete (ADR-120). Language-namespaced sorted sets. Six-tier suggestion hierarchy from `suggestion_dictionary`. pg_trgm continues as fallback. Deploy when suggestion latency or volume exceeds pg_trgm comfort zone. Architecture is Redis-shaped from Phase 0. |
+| 2.15 | **Presentation mode** | "Present" button in reader header. Enlarges text to 24px+, hides all chrome, swipe/arrow-key chapter navigation only. Warm cream fills viewport. For group reading, satsang, study circles, family devotions. A CSS mode (`data-mode="present"`), not a separate feature. Pulled from Phase 7 because communal reading is the primary mode of engagement with spiritual texts in Indian, African, and Latin American cultures — deferring it reproduced a Western individual-reading default as the baseline for ~7 phases. (ADR-006) |
+| 2.16 | **Automatic low-bandwidth detection** | When `navigator.connection.effectiveType` reports `2g` or `slow-2g`, display a gentle banner: "Your connection is slow. Switch to text-only mode?" One-tap enable, dismiss to keep images. Persists in `localStorage`. Seekers on fast connections never see it. Progressive enhancement — ignored when API unavailable. Complements the manual text-only footer toggle. (ADR-006) |
 
 ### Success Criteria
 
@@ -292,6 +296,8 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 - Shared passage page (`/passage/[chunk-id]`) includes framing context and book invitation (ADR-067)
 - Dwell mode triggers haptic confirmation on mobile
 - Speculation Rules active: next chapter prerenders from reader page (verified in Chrome DevTools → Application → Speculative loads)
+- Presentation mode fills viewport with readable text, no chrome visible, arrow-key navigation works (ADR-006)
+- Low-bandwidth detection banner appears when `navigator.connection.effectiveType` reports 2g; one-tap enables text-only mode (ADR-006)
 
 ---
 
@@ -336,7 +342,9 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 
 ## Phase 4: Operate
 
-**Goal:** Establish editorial operations, build the theme navigation system, and deliver the staff tooling that transforms the portal from a technical project into a running content operation. This phase requires SRF editorial staffing decisions.
+**Goal:** Establish editorial operations, build the theme navigation system, and deliver the staff tooling that transforms the portal from a technical project into a running content operation.
+
+**Feature-flag activation pattern (ADR-123):** Phase 4 infrastructure ships on schedule regardless of SRF editorial staffing status. All editorial queues, review workflows, and curation tools are built and deployed behind feature flags. When SRF identifies editorial staff, queues activate via environment configuration — no code changes, no redeployment. The AE team can serve as lightweight interim editors until monastics are assigned. This decouples the build timeline from organizational readiness. (See Phase Sizing Analysis § Open Question 5.)
 
 ### Deliverables
 
@@ -384,6 +392,8 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 ## Phase 5: Connect
 
 **Goal:** Launch the Related Teachings system — pre-computed chunk relations, reader side panel, "Continue the Thread" end-of-chapter suggestions, and graph traversal across the library. This is the feature that makes the portal irreplaceable: no physical book, PDF, or ebook can surface cross-book connections while you read. (ADR-050)
+
+**Parallel workstream note:** Chunk relation computation (5.1), the related content API (5.2), and the quality evaluation suite (5.5) are purely algorithmic — they depend on the multi-book corpus (Phase 3), not on Phase 4's editorial portal. These deliverables can proceed in parallel with Phase 4. Human quality review of relations (5.5) is validated via the test suite; editorial portal integration enhances but does not gate the computation. (ADR-123)
 
 ### Deliverables
 
@@ -447,7 +457,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | # | Deliverable | Description |
 |---|-------------|-------------|
 | 7.1 | **Chapter and book PDF downloads** | Pre-rendered PDF generation for chapters and full books using `@react-pdf/renderer`. Book-like typographic treatment: cover page, table of contents, running headers, page numbers, Merriweather serif, lotus watermark on first page. A4 default, US Letter as option. Generated at ingestion time, served from S3 via CloudFront. Invalidated on content update. Resource-anchored routes: `GET /api/v1/books/{slug}/pdf`, `GET /api/v1/books/{slug}/chapters/{n}/pdf`. Dynamic passage/search PDFs via `POST /api/v1/exports/pdf`. File size displayed on download buttons. (ADR-025) |
-| 7.2 | **Presentation mode** | "Present" button in reader header. Enlarges text to 24px+, hides all chrome, swipe/arrow-key chapter navigation only. Warm cream fills viewport. For group reading, satsang, study circles. A CSS mode (`data-mode="present"`), not a separate feature. **Timing consideration:** Group/communal reading (satsang, study circles, family devotions) is the primary mode of engagement with spiritual texts in Indian, African, and Latin American cultures. Presentation mode is described as "a CSS mode, not a separate feature" — implementation cost is low. Consider pulling this deliverable to Phase 2 or 3 to avoid ~7 phases where individual silent reading (the Western default) is the only available mode. See CONTEXT.md § Open Questions (Technical). (ADR-006) |
+| ~~7.2~~ | ~~**Presentation mode**~~ | *Moved to Phase 2 (Deliverable 2.15). Communal reading should not wait 7 phases. See ADR-006, ADR-123.* |
 | 7.3 | **Study guide view** | "Study Guide" button in reader header. `/books/[slug]/[chapter]/study` route. Generated from existing data: key themes in the chapter, notable passages (highest Related Teachings density), cross-book connections as discussion prompts. Optional editorial content via `chapter_study_notes` table (discussion questions, context notes, practice suggestions). Print-friendly layout. "Start presenting" button transitions to presentation mode. For satsang leaders, study circles, and monastics preparing readings. |
 | 7.4 | **Study Workspace** | Public `/study` route for anyone engaging deeply with the teachings — monastics, study circle leaders, yoga teachers, home meditators, chaplains, parents. Theme-driven passage discovery (uses existing search API), passage collection with full citations, teaching arc assembly (drag passages into sections like "Opening," "Core Teaching," "Practice," "Closing"), speaker/study notes separated from Yogananda's words. All state in localStorage (no account required). Export: print PDF, presentation mode, plain text. Optional server sync in Phase 13. (ADR-083) |
 | 7.5 | **Study circle sharing** | "Share with your circle" button on Study Guide view. Generates a shareable URL (`/study/[book-slug]/[chapter]/share/[hash]`) with key passages, discussion prompts, and cross-book connections. < 30KB HTML, edge-cached, optimized for WhatsApp/SMS preview and OG cards. No authentication, no tracking. (DES-046) |
@@ -458,7 +468,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 ### Success Criteria
 
 - Chapter and book PDF downloads produce valid, accessible PDFs with correct typography and citations
-- Presentation mode fills viewport with readable text, no chrome visible, arrow-key navigation works
+- ~~Presentation mode~~ (moved to Phase 2, Deliverable 2.15)
 - Study guide view renders key themes, notable passages, and cross-book connections for every chapter
 - Study Workspace allows any visitor to collect, sequence, and export passages without authentication (ADR-083)
 - Shared-link collections generate stable URLs that render correctly with full citations and community disclaimer
@@ -558,7 +568,7 @@ Contentful free tier (10,000 records, 2 locales). At paragraph granularity, a la
 | **Indian** | hi, bn | YSS audience. Yogananda's heritage languages. Massive population reach (~830M speakers). |
 | **Evaluation** | Evaluate based on demand, translations, SRF/YSS input | Candidates: zh (Chinese), ko (Korean), ru (Russian), ar (Arabic — requires RTL). |
 
-**Sequencing tension:** The Western/Indian wave split is a resourcing decision — SRF's existing translation infrastructure supports the Western wave more readily. It is not an assertion that Western languages are higher priority than Yogananda's heritage languages. ADR-077 documents this tension explicitly. The gap between 10a and 10b should be minimized; ideally the waves are parallelized if resources permit. See CONTEXT.md § Open Questions (Stakeholder) for the co-launch question.
+**Sequencing commitment:** The Western/Indian wave split reflects resourcing realities, not priority. Both waves are planned as parallel workstreams that begin simultaneously. If resourcing constraints force sequential delivery, that is documented as a resource constraint, not as natural ordering — and the gap between waves is minimized. Yogananda's heritage languages (830M speakers) do not wait behind European languages by default. The embedding model benchmark (currently a Phase 10 prerequisite) begins in Phase 1–2 as a parallel research workstream to avoid blocking either wave. ADR-077 documents the tension. See CONTEXT.md § Open Questions (Stakeholder) for the co-launch question. (ADR-006, ADR-123)
 
 ### Deliverables
 
@@ -786,16 +796,16 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | **1 (Build)** | Phase 0b complete | Embedding model benchmarks started |
 | **2 (Read)** | Phase 1 complete | — |
 | **3 (Grow)** | Phase 2 complete | — |
-| **4 (Operate)** | Phase 3 complete, editorial governance decided, portal coordinator identified | Theme taxonomy reviewed by theological advisor |
-| **5 (Connect)** | Phase 4 theme tagging populated | Phase 4 editorial review portal operational |
+| **4 (Operate)** | Phase 3 complete | Theme taxonomy reviewed by theological advisor. Editorial governance decided and portal coordinator identified are *activation* prerequisites (feature-flag pattern, ADR-123), not *build* prerequisites. Infrastructure ships on schedule; queues activate when staffed. |
+| **5 (Connect)** | Phase 3 multi-book corpus available | Phase 4 editorial review portal operational. Algorithmic deliverables (5.1–5.4, 5.6) can proceed in parallel with Phase 4. |
 | **6 (Complete)** | Phase 5 chunk relations computed | — |
 | **7 (Empower)** | Phase 3 multi-book corpus available | Phase 6 observability operational |
 | **8 (Distribute)** | Phase 4 editorial workflows operational | Phase 7 PDF generation available |
-| **9 (Integrate)** | Contentful contract signed, content model approved | Phase 6 complete, GitLab access provisioned |
-| **10 (Translate)** | Phase 9 Contentful operational, embedding model benchmarked for multilingual, translation reviewers identified | Phase 1 i18n infrastructure validated against multilingual test cases |
+| **9 (Integrate)** | Phase 6 complete | Contentful contract signed (required for 9.1–9.6 only; infrastructure deliverables 9.7–9.10 proceed independently). GitLab access provisioned. (ADR-123) |
+| **10 (Translate)** | Embedding model benchmarked for multilingual (research begins Phase 1–2), translation reviewers identified | Phase 9 Contentful operational (enhances but does not gate translation work — PDF pipeline remains functional). Phase 1 i18n infrastructure validated. (ADR-123) |
 | **11 (Polish)** | Phase 10 at least one non-English language live | Third-party accessibility auditor engaged |
 | **12 (Multimedia)** | Phase 6 complete (unified search operational) | Phase 11 PWA evaluation complete, audio/image source material available from SRF |
-| **13 (Personalize)** | Phase 12 complete, SRF decision on user accounts | Auth0 configuration aligned with SRF identity standards |
+| **13 (Personalize)** | Phase 12 complete | SRF decision on user accounts (required for server-sync features 13.5–13.6 only; localStorage-based features 13.2–13.4 proceed independently). Auth0 configuration aligned with SRF identity standards. (ADR-123) |
 | **14 (Community)** | Phase 13 account infrastructure (if applicable), VLD roster available from SRF | Regional SMS partner contracts negotiated |
 
 **Critical decision gates** (require SRF input before the phase begins):

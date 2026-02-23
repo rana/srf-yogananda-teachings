@@ -1,6 +1,8 @@
 # SRF Online Teachings Portal — Technical Design
 
 > **Navigation guide.** 56 sections organized by concern. The **Phase** column indicates when each section becomes relevant to implementation. Sections marked "—" are cross-cutting principles.
+>
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 | Section | Phase |
 |---------|-------|
@@ -288,7 +290,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
 
  RECIPROCAL RANK FUSION (RRF):
  - Merge results from all active paths (A+B in Phase 0–3; A+B+C in Phase 4+)
- - score = Σ 1/(k + rank_in_path) across all paths, k=60
+ - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Phase 0a.8 golden set at k=40/60/80]*
  - Deduplicate, producing top 20 candidates
  │
  ▼
@@ -2216,7 +2218,7 @@ The right side panel displays passages from *other books* that are semantically 
 **Reading focus detection — the "settled paragraph" model:**
 - Intersection Observer watches all paragraphs within a **focus zone** (upper-middle 45% of the viewport, `rootMargin: "-20% 0px -35% 0px"` — biased toward where readers' eyes naturally rest)
 - Each visible paragraph gets a **prominence score**: `intersectionRatio × elementHeight` — favors the paragraph the reader is immersed in, not a one-liner passing through
-- A **1.2-second debounce** prevents updates during active scrolling. Only when scrolling stops for 1.2s does the highest-prominence paragraph become the "settled paragraph"
+- A **1.2-second debounce** prevents updates during active scrolling. Only when scrolling stops for 1.2s does the highest-prominence paragraph become the "settled paragraph" *[Parameter — default: 1200ms, evaluate: Phase 2 user testing]*
 - If the settled paragraph changes, the side panel crossfades (300ms) to the new relations
 - **Source indication:** the side panel header shows the first ~40 characters of the settled paragraph (*"Related to: 'My body became immovably...'"*) — closing the feedback loop without adding any chrome to the main text column
 

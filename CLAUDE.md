@@ -8,7 +8,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 122 Architecture Decision Records (ADR-001 through ADR-122) organized into 11 topical groups, with full rationale for every major choice
+3. **DECISIONS.md** — 123 Architecture Decision Records (ADR-001 through ADR-123) organized into 11 topical groups, with full rationale for every major choice
 4. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 ## Ignore
@@ -66,7 +66,7 @@ Located in `docs/reference/`:
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 122 decisions in DECISIONS.md (ADR-001 through ADR-122), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-122. Header format: `## ADR-NNN: Title`.
+**ADR-NNN** (Architecture Decision Records) — 123 decisions in DECISIONS.md (ADR-001 through ADR-123), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-123. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
 
 **DES-NNN** (Design Sections) — 56 sections in DESIGN.md (DES-001 through DES-056), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
 
@@ -95,6 +95,7 @@ Five documents. Keep them accurate as you work — drift compounds across sessio
 | New API endpoint added | Follow response envelope and field naming conventions in DES-019 § API Conventions (ADR-110). Paginated lists use `data`/`pagination`/`meta`; complete collections use `data`/`meta`; single resources return the object directly. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Reference document added or obsoleted | Update this file's § Reference Documents list |
+| Parameter tuned based on evidence (ADR-123) | Annotate the DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts` constant. |
 
 ## Documentation–Code Transition
 

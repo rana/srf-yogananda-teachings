@@ -147,6 +147,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
 - ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
 - ADR-113: Phase 0 Split — Prove Before Foundation
+- ADR-123: Principle vs. Parameter — Decision Classification and Governance Flexibility
 ---
 
 ## ADR-001: Direct Quotes Only — No AI Synthesis
@@ -10618,3 +10619,74 @@ Add a `crisis` intent category to the search intent classification layer (ADR-00
 - CONTEXT.md open question on crisis query detection resolved
 - Crisis resource list (helplines, locale mapping, presentation) requires SRF stakeholder input — added to CONTEXT.md stakeholder questions if not already present
 - Sentry event `search.crisis_intent` added to the observability allowlist (ADR-095)
+
+---
+
+## ADR-123: Principle vs. Parameter — Decision Classification and Governance Flexibility
+
+- **Status:** Accepted
+- **Date:** 2026-02-23
+
+### Context
+
+After a comprehensive review of the project's 122 ADRs, 56 design sections, and 15-phase roadmap, a structural pattern emerged: the documents frequently conflate *principles* (immutable commitments that define the project's identity) with *parameters* (tunable defaults that should adapt to real data). Both are recorded at the same authority level in DECISIONS.md and DESIGN.md, which creates a ratchet effect — every mechanism decision accumulates the weight of a principle decision, and relaxing any parameter *feels* like violating a principle even when it doesn't.
+
+This matters because: (1) no code exists yet; (2) many specific values (cache TTLs, debounce timers, chunk sizes, rate limits, fusion parameters) are pre-production guesses that need validation against real data; (3) the 10-year horizon (ADR-004) demands that future maintainers can tune operational parameters without navigating the full ADR governance process.
+
+### Decision
+
+Classify every decision and design specification into one of two categories:
+
+**Principles** — Immutable commitments. Changing these changes the project's identity. Require full ADR-level deliberation to modify.
+
+Examples:
+- Direct quotes only, no AI synthesis (ADR-001)
+- Human review as mandatory gate (ADR-005, ADR-032, ADR-078)
+- DELTA-compliant analytics (ADR-095)
+- Sacred text fidelity (ADR-075)
+- Global Equity (ADR-006)
+- Calm Technology (ADR-065)
+- Signpost, not destination (ADR-104)
+- 10-year architecture horizon (ADR-004)
+- API-first architecture (ADR-011)
+- Accessibility from Phase 1 (ADR-003)
+- Multilingual from the foundation (ADR-075)
+
+**Parameters** — Tunable defaults. Ship with the documented value. Adjust based on evidence. Changes are configuration updates, not architectural decisions. Document the current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration).
+
+Examples:
+- RRF fusion k=60 (DES-003) — tune after Phase 0a.8 search quality evaluation
+- Dwell debounce 1200ms (DES-009) — tune after Phase 2 user testing
+- Chunk size 200–300 tokens (ADR-048) — tune per language after ingestion
+- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Phase 0a.8
+- Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
+- Email purge delay: 90 days (DES-030) — adjust based on legal review
+- Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
+- ISR revalidation intervals (DES-006) — adjust based on Vercel/Cloudflare metrics
+- Circadian color band boundaries (DES-011) — adjust after Phase 11 user feedback
+- Quiet Index texture count: 5 (DES-029) — adjust after Phase 4 usage data
+
+### Implementation
+
+1. **Annotation convention:** Parameters in DESIGN.md are annotated with `*[Parameter — default: {value}, evaluate: {trigger}]*` inline after the value. This signals to implementers that the value should be a configuration constant, not a hardcoded literal.
+
+2. **Configuration constants:** All parameters are implemented as named constants in `/lib/config.ts` (or environment variables for deployment-specific values), never as magic numbers in application code.
+
+3. **Evaluation log:** When a parameter is tuned based on data, add a brief note to the relevant DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*`
+
+4. **Phase gate integration:** Phase 0a.8 (search quality evaluation) and Phase 2 success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Phase 0a.8" are reviewed during that gate.
+
+### Rationale
+
+- **Reduces governance friction.** Future maintainers can adjust a cache TTL without feeling they're violating an architectural decision.
+- **Makes assumptions explicit.** Every parameter documents what would trigger reconsideration — a form of intellectual honesty about what we don't yet know.
+- **Preserves architectural integrity.** Principles remain firm. The distinction *protects* principles by preventing parameter-level fatigue from eroding respect for the governance process.
+- **Serves the 10-year horizon.** In year 7, a new developer can identify what's tunable vs. what's sacred without reading 122 ADRs.
+
+### Consequences
+
+- All existing magic numbers in DESIGN.md to be annotated with the parameter convention during Phase 0 implementation
+- `/lib/config.ts` created as the canonical location for runtime parameters
+- Phase 0a.8 success criteria updated to include parameter validation
+- Future ADRs specify whether each specific value is a principle or parameter
+- CLAUDE.md updated to reference this classification in the document maintenance guidance
