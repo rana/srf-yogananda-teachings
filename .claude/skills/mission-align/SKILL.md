@@ -33,7 +33,7 @@ Present as an action list. No changes to files — document only.
 
 ## Output Management
 
-If the analysis produces extensive findings, segment output by section. Complete one section fully, then pause and confirm before continuing to the next. Do not attempt to deliver all findings in a single response.
+If the analysis is extensive, deliver the highest-priority findings first. Keep output concise — dense observations, not expansive prose. Note remaining sections available on request.
 
 What questions would I benefit from asking?
 
