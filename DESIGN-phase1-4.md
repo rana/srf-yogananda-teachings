@@ -771,7 +771,7 @@ When a chant has `performance_of` relations in `chunk_relations`, audio/video re
 
 *Section added: 2026-02-21, ADR-059*
 
-#### DES-008: Reader Typography Refinements
+### DES-008: Reader Typography Refinements
 
 The reader's typographic details signal care and reverence for the words. These are the micro-details that distinguish a sacred text presentation from a blog post:
 
@@ -805,7 +805,7 @@ The reader's typographic details signal care and reverence for the words. These 
 ```
 Open Sans 400, `--portal-text-muted`. Small, precise, always present. Never omitted.
 
-#### DES-009: "Dwell" Interaction — Passage Contemplation Mode
+### DES-009: "Dwell" Interaction — Passage Contemplation Mode
 
 When reading a physical book, a profound passage stops you mid-page. The reader needs a way to dwell *within* the reading experience — not leave it.
 
@@ -852,7 +852,7 @@ When reading a physical book, a profound passage stops you mid-page. The reader 
 - Screen readers announce "Passage focused for contemplation" / "Returned to reading" (ADR-073)
 - `prefers-reduced-motion`: transitions are instant (0ms), dimming still occurs, haptic feedback suppressed
 
-#### DES-010: Layered Passage Depth — "Go Deeper Within the Text"
+### DES-010: Layered Passage Depth — "Go Deeper Within the Text"
 
 A passage about concentration means something different on the first reading versus the twentieth. The Related Teachings side panel (ADR-050) shows passages from *other books*. Layered Passage Depth shows depth *within* the same passage's context — what surrounds it, what echoes it across the library.
 
@@ -883,7 +883,7 @@ A passage about concentration means something different on the first reading ver
 
 ---
 
-#### DES-011: Time-Aware Reading — Circadian Color Temperature
+### DES-011: Time-Aware Reading — Circadian Color Temperature
 
 The portal subtly shifts its warmth based on the time of day. **On by default, opt-out via a toggle.**
 
@@ -913,7 +913,7 @@ Meditation Mode activates automatically on `/quiet`. In the book reader, it is a
 
 *Adopted from Visual Design Language Enhancement proposal (2026-02-23). The deep blue field echoes Yogananda's description of the spiritual eye's infinite blue — the color of deep meditation.*
 
-#### DES-012: "Breath Between Chapters" — Chapter Transition Pacing
+### DES-012: "Breath Between Chapters" — Chapter Transition Pacing
 
 When navigating between chapters via prev/next (not deep links):
 
@@ -938,7 +938,7 @@ A lightweight, private bookmarking system using `localStorage`:
 
 **Phase 13 migration:** When optional accounts arrive, `localStorage` bookmarks are offered for import and server sync.
 
-#### DES-013: Keyboard-First Reading Navigation
+### DES-013: Keyboard-First Reading Navigation
 
 All shortcuts are single-key (no modifier), active only when no input/textarea is focused:
 
@@ -1601,7 +1601,7 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
 | Time-aware background | Shifts warmth by time of day — opt-out, on by default (DES-011) |
 | Sacred space boundaries | Scripture quotes, guru passages, meditation instructions: soft inset shadow, thin `--srf-gold` top border (1px), `--portal-quote-bg` background, `--leading-relaxed` (1.8em) paragraph spacing. Creates a reverent visual container for holy words — felt as warmth, not as decoration. |
 
-#### DES-016: Lotus as Unified Visual Motif
+### DES-016: Lotus as Unified Visual Motif
 
 A **single simplified lotus design** (geometric, 3-petal, SVG) serves as the portal's unified visual motif. The same design everywhere:
 

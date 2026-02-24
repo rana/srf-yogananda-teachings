@@ -61,7 +61,7 @@ Business logic lives in `/lib/services/` (framework-agnostic TypeScript). A thre
 
 ## Phasing
 
-The project is planned across 15 capability-themed phases (0–14), each delivering a single coherent capability. Reorganized from the original 18-phase plan via ADR-103 — merging small phases, splitting oversized ones, and aligning engineering infrastructure with the phases that need it.
+The project is planned across 15 capability-themed phases (0a–14), each delivering a single coherent capability. Reorganized from the original 18-phase plan via ADR-103 — merging small phases, splitting oversized ones, and aligning engineering infrastructure with the phases that need it.
 
 | Phase | Name | Focus |
 |-------|------|-------|
@@ -84,11 +84,12 @@ The project is planned across 15 capability-themed phases (0–14), each deliver
 
 ## Current Status
 
-**Design complete. Ready to begin Phase 0 (Prove).**
+**Design complete. Ready to begin Phase 0a (Prove).**
 
-This repository contains comprehensive design documentation produced using Claude Code:
+This repository contains comprehensive design documentation across twelve files, produced using Claude Code. See CLAUDE.md for the full navigation guide.
 
+- [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project, with rationale
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
-- [DESIGN.md](DESIGN.md) — Technical architecture, data model, content pipeline, UI design tokens, API design
-- [DECISIONS.md](DECISIONS.md) — 122 Architecture Decision Records with full rationale
-- [ROADMAP.md](ROADMAP.md) — 15 phases (0–14) with deliverables, success criteria, and phase gates
+- [DESIGN.md](DESIGN.md) — Technical architecture split across four files by phase (DESIGN.md + DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md)
+- [DECISIONS.md](DECISIONS.md) — 123 Architecture Decision Records split across three files by concern (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md)
+- [ROADMAP.md](ROADMAP.md) — 15 phases (0a–14) with deliverables, success criteria, and phase gates

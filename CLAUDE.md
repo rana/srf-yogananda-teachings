@@ -18,15 +18,16 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–053, 114–121). Phase 0+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Phase 1+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–103, 105–113, 123). Phase 4+.
-8. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
+8. **ROADMAP.md** — 15 phases (0a–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 **Phase-gated reading.** Do not read front-to-back. Load what the task requires:
 - **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current phase
-- **When implementing Phase 0:** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS-core.md (ADRs referenced by those sections)
+- **When implementing Phase 0a (Prove):** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS-core.md (ADRs referenced by those sections)
+- **When implementing Phase 0b (Foundation):** Same as 0a, plus DES-037 (Observability) and DES-038 (Testing) from DESIGN.md
 - **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + DECISIONS-core.md + DECISIONS-experience.md
 - **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + all DECISIONS files as needed
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
-- **Not needed for Phase 0:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md
+- **Not needed for Phase 0a/0b:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md
 
 ## Ignore
 
