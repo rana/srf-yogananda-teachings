@@ -1,15 +1,17 @@
 # SRF Yogananda Teachings — Explorations
 
 ---
-What is resonating at the highest octaves of expression?
+Future self in 10 years would say what about each decision? What if anything would I wish I had done differently in 10 years?
 ---
-What is resonating at the lowest octaves of expression?
+Future self in 10 years would say what about each decision? What if anything would I wish I had done differently in 10 years?
 ---
-What is contributing to cognitive dissonance?
+Let's focus on reducing Phases. Explore 7 phases. Each phase has a theme. Consider a "Deferred" section where features wait for phase inclusion.
 ---
-What is not earning it's place?
+Let's focus on reducing Phases. Explore 7 phases. Each phase has a theme. Consider a "Deferred" section where features wait for phase inclusion.
 ---
-What is contributing to cognitive load?
+Let's focus on reducing Phases. Explore 7 phases. Each phase has a theme. Consider a "Deferred" section where features wait for phase inclusion.
 ---
-What are the legal liabilities, if any?
+Let's focus on reducing Phases. Explore 7 phases. Each phase has a theme. Consider a "Deferred" section where features wait for phase inclusion.
+---
+Let's focus on reducing Phases. Explore 7 phases. Each phase has a theme. Consider a "Deferred" section where features wait for phase inclusion.
 ---
