@@ -151,4 +151,8 @@ After execution, report:
 
 ## Output Management
 
-Present all artifacts before writing. Maximum 7 artifacts per theme. If the theme naturally decomposes into sub-themes (e.g., "self-worth" + "abundance" + "scientific view"), ask the user whether to integrate as one compound theme or as separate themes with cross-links.
+Present all artifacts before writing. Segment into groups of up to 7 artifacts per theme.
+
+If the theme naturally decomposes into sub-themes (e.g., "self-worth" + "abundance" + "scientific view"), ask the user whether to integrate as one compound theme or as separate themes with cross-links.
+
+After each approved group of artifacts is written, proceed immediately to present the next group. Continue until all artifacts for the theme are processed. State the total count when complete.

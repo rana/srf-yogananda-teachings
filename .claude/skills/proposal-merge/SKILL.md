@@ -86,6 +86,8 @@ After all edits:
 
 ## Output Management
 
-If the proposal decomposes into more than 12 discrete edits, present the decomposition in two batches: high-priority items first (new ADRs, schema changes, phase deliverables), then lower-priority items (open questions, cross-reference wiring, editorial notes). Execute each batch with separate approval.
+Segment edits into batches of up to 10 items, ordered by priority: high-priority items first (new ADRs, schema changes, phase deliverables), then lower-priority items (open questions, cross-reference wiring, editorial notes).
 
-Present the decomposition. Do not execute without explicit approval.
+Present each batch for approval before executing. After each approved batch is executed, proceed immediately to present the next batch. Continue until all edits are processed. State the total count when complete.
+
+Present the full decomposition before executing any batch. Do not execute without explicit approval.

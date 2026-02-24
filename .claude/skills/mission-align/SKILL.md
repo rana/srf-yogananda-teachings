@@ -34,16 +34,16 @@ Present as an action list. No changes to files — document only.
 ## Output Management
 
 **Hard constraints:**
-- Maximum 8 findings per run. Prioritize by severity.
+- Segment output into groups of up to 8 findings, ordered by severity.
 - If no $ARGUMENTS focus area is given, audit only the top 3 most at-risk principles rather than all 11.
 - Write findings to MISSION-ALIGN-AUDIT.md incrementally. Do not accumulate a single large response.
+- After completing each segment, continue immediately to the next. Do not wait for user input.
+- Continue until ALL principles in the focus area are audited. State the total count when complete.
+- If the analysis surface is too large to complete in one session, state what was covered and what remains.
 
 **Document reading strategy:**
 - CONTEXT.md and ROADMAP.md: read fully (short documents).
 - DESIGN.md and DECISIONS.md: read the index/overview sections first. Only read specific ADR or design sections relevant to the focused principle(s).
-
-**If output would exceed comfortable length:**
-Stop. Write what you have to MISSION-ALIGN-AUDIT.md. Tell the user which principles remain unaudited and offer to continue.
 
 What questions would I benefit from asking?
 

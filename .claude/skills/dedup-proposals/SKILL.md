@@ -112,3 +112,5 @@ On approval, produce a single merged document:
 ## Output Management
 
 Present the structural alignment before writing anything. The user approves, edits, or rejects the synthesis plan before the merged document is produced.
+
+If multiple clusters need deduplication, segment into groups. Present each cluster's synthesis plan for approval. After each approved synthesis is executed, proceed immediately to present the next cluster. Continue until all clusters are processed. State the total count when complete.
