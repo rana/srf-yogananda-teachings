@@ -1,290 +1,140 @@
-# Image Optimization for Constrained-Resource Phones
+# Copyright and Content Licensing Strategy Proposal
 
 ## Summary
 
-Implement a comprehensive responsive image delivery system that serves optimally-sized images based on device capabilities, network conditions, and viewport dimensions. This goes beyond the existing five-tier system (ADR-064) to include dynamic image transformation, format negotiation, quality adaptation, and special handling for sacred images like the Guru's photo. The system ensures dignified experiences on 2G JioPhones while delivering full-resolution beauty on fiber-connected desktops, with particular attention to the Guru's image defaulting to screen-appropriate sizes.
+Establish a clear copyright stance that balances SRF's retention of all rights with a generous accessibility posture that welcomes search engines, AI models, researchers, and seekers worldwide. This proposal defines both the technical implementation (legal pages, API headers, machine-readable declarations) and the theological framing that makes "freely available" meaningful without implying public domain or relinquishment of rights.
 
 ## Analysis
 
-The current architecture establishes strong foundations but lacks critical adaptive features for constrained environments:
+The current documentation contains scattered references to copyright but lacks a unified stance. CONTEXT.md lists it as an open question requiring stakeholder input. ADR-081 (Machine-Readable Content and AI Citation Strategy) enthusiastically welcomes AI crawlers and establishes llms.txt/llms-full.txt files but doesn't address the copyright implications. The tension is clear: how can content be "freely available to all" (the philanthropist's vision) while SRF retains copyright (organizational necessity)?
 
-**Current state (ADR-035, ADR-063, ADR-064):**
-- Five pre-generated size tiers (thumb 300px, small 640px, medium 1200px, large 2400px, original)
-- Dual format (WebP + JPEG fallback)
-- Watermarking strategy (EXIF metadata, C2PA, steganographic)
-- S3 storage with CloudFront CDN
-- Download endpoint with size/format selection
+Three key insights emerged:
 
-**Gaps for constrained devices:**
-- No network-aware quality adaptation (2G vs 4G)
-- No client hints integration for automatic size selection
-- No progressive JPEG for slow connections
-- No AVIF format (30% smaller than WebP)
-- No special handling for Guru images vs decorative images
-- Pre-generated sizes may not match actual viewport needs
-- No bandwidth estimation for automatic quality selection
-- Missing Save-Data header support
+1. **"Available" ≠ "Public Domain"** — Content can be freely accessible for reading, reference, and citation while remaining under copyright. Libraries do this daily. The portal can follow this established model.
 
-**Evidence from exploration:**
-- DES-049 mentions automatic low-bandwidth suggestion when `navigator.connection.effectiveType` reports '2g'
-- ADR-006 establishes Global Equity as fundamental (JioPhone, 2G, paying per MB)
-- The "Global South seeker" persona explicitly calls out "Rural Bihar, 2G, JioPhone"
-- Text-only mode exists but doesn't address sacred images that seekers want to see
-- CONTEXT.md emphasizes "A seeker in rural Bihar on a JioPhone over 2G" must have full claim
+2. **Machine consumers matter** — The portal already welcomes GPTBot, ClaudeBot, and other AI crawlers (ADR-081). These systems need explicit guidance about acceptable use. The portal should tell them not just *how* to cite but *that citation is required*.
+
+3. **Theological alignment** — The mission is making teachings "available freely throughout the world." This availability serves a spiritual purpose: reaching seekers at their moment of need. Copyright retention ensures the teachings remain unaltered and properly attributed — protecting their integrity, not restricting their reach.
 
 ## Proposed Changes
 
-### 1. Adaptive Image Service Layer
-**What:** New service that selects optimal image variant based on device signals
-**Where:** `/lib/services/adaptive-images.ts`
-**Why:** Automatic optimization without seeker intervention
-**How:**
-```typescript
-interface AdaptiveImageService {
-  getOptimalImage(imageId: string, context: ImageContext): ImageVariant {
-    // Priority order of signals:
-    // 1. Save-Data header (explicit user preference)
-    // 2. Network Information API (2g, 3g, 4g)
-    // 3. Client Hints (viewport, DPR, width)
-    // 4. User-Agent device detection (fallback)
+### 1. Create `/legal` Page with Clear Copyright Statement
+- **What:** Add a legal information page with copyright notice, content licensing terms, and usage guidelines
+- **Where:** `/app/legal/page.tsx` (Next.js page route)
+- **Why:** Provides human-readable legal clarity linked from every page footer
+- **How:**
+  - Copyright notice: "© [current year] Self-Realization Fellowship. All rights reserved."
+  - Usage statement explaining permitted uses (reading, personal study, non-commercial sharing with attribution)
+  - Explicit permissions for search engines and AI systems to index and cite with proper attribution
+  - Prohibition on commercial use, derivative works, or redistribution without permission
 
-    if (context.saveData || context.effectiveType === '2g') {
-      return this.getLowBandwidthVariant(imageId);
-    }
-
-    if (context.isGuruImage && !context.explicitSize) {
-      return this.getScreenOptimizedGuruImage(imageId, context);
-    }
-
-    return this.getStandardVariant(imageId, context);
-  }
+### 2. Add `/copyright.json` Machine-Readable Endpoint
+- **What:** JSON endpoint declaring copyright status and permitted uses for automated systems
+- **Where:** `/app/api/v1/copyright/route.ts`
+- **Why:** Machine consumers need structured data, not HTML pages
+- **How:**
+```json
+{
+  "rights_holder": "Self-Realization Fellowship",
+  "copyright_year_start": 1920,
+  "copyright_status": "in_copyright",
+  "license_type": "all_rights_reserved_with_permissions",
+  "permitted_uses": [
+    "indexing_for_search",
+    "citation_with_attribution",
+    "personal_study",
+    "non_commercial_sharing_with_link"
+  ],
+  "required_attribution": {
+    "format": "[Quote] — Paramahansa Yogananda, [Book], Ch. [N] via teachings.yogananda.org",
+    "include_url": true
+  },
+  "prohibited_uses": [
+    "commercial_reproduction",
+    "derivative_works",
+    "ai_training_without_attribution",
+    "paraphrasing_as_original"
+  ],
+  "contact": "legal@yogananda.org"
 }
 ```
 
-### 2. Dynamic Image Transformation Pipeline
-**What:** On-demand image transformation via Cloudflare Images or AWS Lambda@Edge
-**Where:** CloudFront behavior rules + Lambda@Edge function
-**Why:** Pre-generating all possible variants wastes storage; dynamic serves exact needs
-**How:**
+### 3. Enhance `llms.txt` with Explicit Copyright Declaration
+- **What:** Add copyright and attribution requirements to the existing llms.txt guidance
+- **Where:** Modify ADR-081 section 2 in DECISIONS.md
+- **Why:** AI systems reading llms.txt need to understand the content's legal status
+- **How:** Add section after "Preferred Behavior":
 ```
-Request: /images/{id}/dynamic?w=320&q=60&format=avif
-         ↓
-CloudFront cache check
-         ↓ (miss)
-Lambda@Edge transforms from S3 original
-         ↓
-Cached for 30 days
-         ↓
-Served with proper headers
+## Copyright and Attribution
+- All content © Self-Realization Fellowship. All rights reserved.
+- You may quote for reference with proper attribution.
+- Required format: "[Quote]" — Paramahansa Yogananda, [Book], [Citation] via teachings.yogananda.org
+- Do not imply content is public domain or freely reusable.
+- Commercial use prohibited without permission.
 ```
 
-Parameters:
-- `w`: width (automatic height preservation)
-- `q`: quality (10-100, default varies by connection)
-- `format`: avif, webp, jpeg, auto (Accept header negotiation)
-- `blur`: progressive loading placeholder
-- `save-data`: honor Save-Data header
-
-### 3. Guru Image Special Handling
-**What:** Sacred images (Yogananda, gurus) default to screen-appropriate sizes
-**Where:** `/lib/services/sacred-images.ts` and frontend components
-**Why:** Seekers visiting guru images deserve optimal experience by default
-**How:**
+### 4. Add X-Copyright HTTP Headers to API Responses
+- **What:** Include copyright metadata in HTTP response headers for all content APIs
+- **Where:** Middleware in `/lib/middleware/copyright-headers.ts`
+- **Why:** Ensures copyright notice travels with content even when accessed programmatically
+- **How:**
 ```typescript
-// When rendering guru images
-function GuruImage({ imageId, alt, className }) {
-  const { width: screenWidth } = useViewport();
-  const connection = useNetworkStatus();
-
-  // Smart defaults for sacred images
-  const defaultSize = useMemo(() => {
-    if (connection.saveData) return 'small'; // 640px
-    if (connection.effectiveType === '2g') return 'small';
-    if (screenWidth <= 640) return 'medium'; // 1200px for retina phones
-    if (screenWidth <= 1024) return 'large'; // 2400px for tablets
-    return 'original'; // Desktop gets full quality
-  }, [screenWidth, connection]);
-
-  return (
-    <picture>
-      <source
-        srcSet={getAdaptiveUrl(imageId, { format: 'avif' })}
-        type="image/avif"
-      />
-      <source
-        srcSet={getAdaptiveUrl(imageId, { format: 'webp' })}
-        type="image/webp"
-      />
-      <img
-        src={getAdaptiveUrl(imageId, { size: defaultSize })}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        className={className}
-      />
-    </picture>
-  );
-}
+headers.set('X-Copyright', '© Self-Realization Fellowship');
+headers.set('X-License', 'All rights reserved - Citation permitted with attribution');
+headers.set('X-Attribution-Required', 'true');
 ```
 
-### 4. Progressive Enhancement Strategy
-**What:** Multi-layer loading strategy from blur to full quality
-**Where:** Frontend image components
-**Why:** Perceived performance on slow connections
-**How:**
-1. **Inline SVG blur** (20x20 base64 in HTML, <1KB)
-2. **Tiny WebP** (50px width, ~2KB via separate request)
-3. **Appropriate size** (based on viewport/connection)
-4. **Full quality** (on interaction or when network allows)
+### 5. Update Privacy Policy with Content Rights Section
+- **What:** Add section to privacy policy explaining the portal's content rights position
+- **Where:** `/app/privacy/page.tsx` (specified in ROADMAP Phase 1.20)
+- **Why:** Seekers need to understand what they can do with content they read
+- **How:** New section "Content and Copyright" explaining that:
+  - All content remains under SRF copyright
+  - Personal use and sharing with attribution is encouraged
+  - The portal exists to serve seekers, not to release content into public domain
 
-### 5. Network-Aware Quality Selection
-**What:** Automatic quality adjustment based on connection speed
-**Where:** `/lib/hooks/useImageQuality.ts`
-**Why:** Balance quality with load time
-**How:**
-```typescript
-function useImageQuality(): number {
-  const connection = (navigator as any).connection;
+### 6. Add Copyright Notice to Every Content Display
+- **What:** Unobtrusive copyright line on passage displays, book pages, and PDFs
+- **Where:** Component updates in `/components/PassageDisplay.tsx`, `/components/BookReader.tsx`
+- **Why:** Gentle reminder of copyright without disrupting reading experience
+- **How:** Small text at bottom: "© Self-Realization Fellowship • [Book Title]"
 
-  if (!connection) return 85; // Default quality
+### 7. Create "Sharing Guidelines" Help Section
+- **What:** User-friendly explanation of how to share portal content appropriately
+- **Where:** `/app/help/sharing/page.tsx` linked from About page
+- **Why:** Empowers seekers to share teachings while respecting copyright
+- **How:**
+  - Examples of proper attribution
+  - Explanation of why attribution matters (preserving authenticity)
+  - Invitation to share freely with proper credit
+  - Social media sharing best practices
 
-  // Map connection speed to quality
-  const qualityMap = {
-    'slow-2g': 40,
-    '2g': 50,
-    '3g': 70,
-    '4g': 85,
-    'wifi': 90,
-    'ethernet': 95
-  };
-
-  return qualityMap[connection.effectiveType] || 85;
-}
-```
-
-### 6. Client Hints Integration
-**What:** Use browser-provided hints for optimal serving
-**Where:** Vercel Edge Middleware + CloudFront headers
-**Why:** Browser knows viewport, pixel density, and user preferences
-**How:**
-```typescript
-// Edge middleware
-export function middleware(request: Request) {
-  const response = NextResponse.next();
-
-  // Request client hints on next navigation
-  response.headers.set('Accept-CH',
-    'Viewport-Width, DPR, Width, Save-Data, ECT, Device-Memory');
-  response.headers.set('Permissions-Policy',
-    'ch-viewport-width=*, ch-dpr=*, ch-width=*');
-
-  return response;
-}
-```
-
-### 7. AVIF Format Support
-**What:** Add AVIF as primary format (30% smaller than WebP)
-**Where:** Image pipeline + frontend picture elements
-**Why:** Significant bandwidth savings for constrained devices
-**How:**
-- Ingestion pipeline generates AVIF variants
-- Picture element with format fallback cascade
-- CloudFront Accept header vary for format negotiation
-
-### 8. Sacred Image Viewport Optimization
-**What:** When seekers tap a guru image, default to screen-fitted size
-**Where:** Image detail page (`/images/[slug]`)
-**Why:** Sacred images deserve immediate, appropriate display
-**How:**
-```typescript
-// On image detail page load
-const screenFitSize = calculateScreenFitSize(
-  image.dimensions,
-  viewport,
-  devicePixelRatio
-);
-
-// Preload screen-fitted version
-<link
-  rel="preload"
-  as="image"
-  href={getImageUrl(image.id, screenFitSize)}
-  type="image/avif"
-/>
-```
-
-### 9. Bandwidth Estimation and Adaptation
-**What:** Estimate available bandwidth and adapt strategy
-**Where:** `/lib/services/bandwidth-estimator.ts`
-**Why:** Network Information API not available on all devices
-**How:**
-- Measure small asset load time
-- Calculate bandwidth estimate
-- Store in sessionStorage
-- Adapt subsequent image quality/size
-
-### 10. Save-Data Mode Enhancements
-**What:** Respect Save-Data header with graceful degradation
-**Where:** Throughout image serving pipeline
-**Why:** Explicit user preference for data conservation
-**How:**
-- Detect via `navigator.connection.saveData` or header
-- Serve smallest viable size (thumb 300px for galleries)
-- Skip decorative images entirely
-- Sacred images get small (640px) not thumb
-- Show "Tap to load full size" for manual upgrade
-
-### 11. Regional CDN Optimization
-**What:** Configure CloudFront origins by geography
-**Where:** Terraform CloudFront configuration
-**Why:** Serve from nearest edge location
-**How:**
-- Primary origin: S3 US-East-1
-- Failover origins in Mumbai, São Paulo, Lagos
-- GeoDNS routing for optimal edge selection
-
-### 12. JioPhone-Specific Optimizations
-**What:** Detect and optimize for KaiOS browser
-**Where:** User-agent detection in Edge Middleware
-**Why:** JioPhone is explicitly mentioned as target device
-**How:**
-- Detect KaiOS user agent
-- Force JPEG format (WebP support varies)
-- Max width 240px for feature phones
-- Aggressive quality reduction (q=40)
-- Inline critical images as base64
+### 8. Document Formal Permissions for AI Training
+- **What:** Clear statement in ADR-081 about AI training corpus inclusion
+- **Where:** New section in ADR-081 "Copyright Posture for AI Training"
+- **Why:** The portal wants to be the authoritative source when AI quotes Yogananda
+- **How:** "SRF grants permission for AI training systems to include portal content in their training corpora, provided: (1) Yogananda's words are marked as copyrighted material requiring attribution, (2) The portal URL is preserved as the source, (3) No implication that the content is public domain."
 
 ## Open Questions
 
-1. **Dynamic transformation cost:** Lambda@Edge vs Cloudflare Images vs self-hosted? What's the cost at scale?
-2. **Original access control:** Should original full-resolution images require sign-in to prevent bulk scraping?
-3. **Guru image detection:** How to identify sacred images? Database flag, filename pattern, or AI classification?
-4. **Quality thresholds:** What quality level maintains dignity while serving 2G? Need user testing.
-5. **AVIF browser support:** ~75% global support. Is progressive enhancement sufficient or need explicit fallback messaging?
-6. **Bandwidth measurement accuracy:** Network Information API is imperfect. How much to trust it?
-7. **Regional variant serving:** Should Indian visitors get different compression settings than US visitors?
-8. **Storage multiplication:** 5 sizes × 3 formats × watermark variants = significant S3 cost. Acceptable?
-9. **Cache invalidation:** When an image is updated, how to purge all variant caches globally?
-10. **Print quality:** Should "original" tier be print-optimized (300 DPI) or screen-optimized?
+1. **Enforcement stance:** Should the portal actively monitor for copyright violations or focus only on proper attribution in its own systems?
+
+2. **API terms of service:** Should authenticated API access (Phase 13+) require explicit acceptance of terms?
+
+3. **Translation rights:** How do copyright notices work for official translations? Does each translation need its own copyright statement?
+
+4. **Community collections:** When Phase 14 enables community curation, what rights do contributors have to their arrangements of SRF content?
+
+5. **MCP external tier implications:** Should the MCP external tier (ADR-101 Tier 3) require registration to ensure copyright acknowledgment?
 
 ## What's Not Being Asked
 
-**The spiritual dimension of image viewing:** Viewing Yogananda's photograph is not just information consumption — it's darshan (sacred viewing). The proposal focuses on technical optimization but hasn't addressed the contemplative experience. Should guru images have a "dwell mode" like passages? Should they default to fullscreen? Should there be a moment of pause before display?
+**Revenue protection:** The copyright discussion focuses on attribution and integrity, not monetization. This aligns with the mission but may not align with traditional organizational copyright concerns.
 
-**Cultural expectations vary:** Indian seekers may expect guru images to be decorated (garland borders, om symbols). Western seekers prefer clean presentation. The same image may need cultural variant presentations, not just size variants.
+**Competitive moats:** The proposal makes content maximally available rather than creating exclusive access. This serves seekers but doesn't create competitive advantage.
 
-**Offline sacred images:** In areas with intermittent connectivity, seekers may want to save guru images for offline viewing. The current download system provides files but doesn't address the "sacred image on my phone" use case. Should there be a PWA feature for offline image gallery?
+**Future content strategy:** What happens when unpublished materials become available? The current stance assumes all portal content should be equally accessible.
 
-**Accessibility beyond alt text:** How do visually impaired seekers experience sacred images? Is alt text sufficient for describing Yogananda's spiritual presence in a photograph? Should there be audio descriptions by monastics?
+**International copyright complexity:** Different jurisdictions have different copyright terms and fair use concepts. The portal takes a single global stance rather than jurisdiction-specific policies.
 
-**Group viewing scenarios:** A temple displaying images on a projector, a study circle sharing on a TV, a family gathering around a tablet. The responsive system assumes individual viewing. Group scenarios may need different optimization strategies.
-
-**The tension between quality and access:** Every byte saved helps a 2G seeker, but sacred images deserve beauty. The proposal optimizes for access, but has the pendulum swung too far from quality? Where is the line between "accessible" and "degraded"?
-
-**Image discovery:** The proposal assumes seekers know which image they want. But how do they discover sacred images? Is search sufficient? Should there be curated galleries, "Image of the Day," or themed collections?
-
-**Seasonal and commemorative images:** Certain images gain significance on holy days (Yogananda's birthday, mahasamadhi). Should these get pre-cached or promoted during their season?
-
-**The environmental cost:** Serving optimized images saves bandwidth (good for users) but requires compute (carbon cost). Has this trade-off been considered? Should there be a "green mode" that serves pre-generated only?
-
-**What happens when the connection improves:** If someone starts browsing on 2G then moves to WiFi, do images automatically upgrade? Is there a "refresh for better quality" prompt? Or does the initial quality stick for consistency?
+**Derivative works policy:** The portal prohibits derivative works, but what about translations by devoted seekers? Study guides? Commentaries? The line between sharing and derivation needs clearer definition.
