@@ -8450,24 +8450,37 @@ The portal needs a design tool for screen mockups, component design, and eventua
 
 ### Decision
 
-Use **Figma** for design, starting with the **free Starter plan** in Phase 1, upgrading to **Professional** when the design system work begins in Phase 11.
+Use **Figma** for design, starting with the **free Starter plan** in Phase 1, upgrading to **Professional** when the design system work begins in Phase 11. During AI-led phases (0–8), code is the design source of truth; Figma serves as a collaboration mirror. When human designers join, Figma becomes the upstream source.
 
-#### Phase 1 (Free Starter Plan — $0)
+#### Phases 0–8: Code-First Design (AI-Led)
 
-- 3 Figma design files (sufficient for: homepage/search, reader/passage, Quiet Corner/About)
-- Unlimited personal drafts
-- Core screens designed and available for developer reference
-- Design tokens (colors, typography, spacing) documented in Figma and exported to `tailwind.config.ts`
+During AI-led development, the design token pipeline flows **code → Figma**:
 
-#### Phase 11+ (Professional Plan — $15/editor/month)
+```
+DESIGN.md specs (source of truth)
+ │
+ ▼
+ Claude generates components + tokens.json
+ │
+ ▼
+ tailwind.config.ts consumes tokens
+ │
+ ▼
+ Components rendered in browser + Storybook
+ │
+ ▼
+ Figma updated from tokens.json (collaboration mirror)
+```
 
-- Unlimited files
-- Shared component library (Calm Technology design system)
-- Design token synchronization via Figma Tokens plugin
-- Branching for design exploration
-- Team collaboration
+Visual design emerges through code iteration: generate CSS/components, render in browser, evaluate, refine. The browser rendering — not a Figma file — is the design artifact. Figma files are maintained as a communication surface for SRF stakeholders and future designers, not as the authoritative design spec.
 
-#### Figma-to-Code Pipeline
+- No Figma files required for Phase 0a (search validation)
+- Phase 0b/1: Figma free tier documents core screens *after* they exist in code
+- Storybook is the primary component reference during AI-led phases
+
+#### Phase 9+: Figma-First Design (Human Designers Active)
+
+When human designers join the project, the pipeline inverts to **Figma → code**:
 
 ```
 Figma design tokens (colors, typography, spacing, radii)
@@ -8482,10 +8495,19 @@ Figma design tokens (colors, typography, spacing, radii)
  Components use Tailwind classes
  │
  ▼
- Storybook documents the components (Phase 1+)
+ Storybook documents the components
 ```
 
 This ensures the design language stays synchronized between Figma and the codebase. A change to `--portal-gold` in Figma propagates to `tailwind.config.ts` and is automatically reflected in all components.
+
+#### Phase 11+ (Professional Plan — $15/editor/month)
+
+- Unlimited files
+- Shared component library (Calm Technology design system)
+- Design token synchronization via Figma Tokens plugin
+- Branching for design exploration
+- Team collaboration
+- Multi-property reuse (portal, convocation site, future SRF projects)
 
 ### Alternatives Considered
 
@@ -8495,22 +8517,44 @@ This ensures the design language stays synchronized between Figma and the codeba
 | **Penpot** (open-source) | Free; self-hostable; no vendor lock-in; AGPL license | Smaller community; fewer plugins; less mature component/token system; higher setup overhead if self-hosted |
 | **Sketch** | Mature; good design system features; native macOS performance | Mac only; no real-time collaboration; shrinking market share |
 | **Adobe XD** | Adobe ecosystem integration | Being sunset by Adobe; not a viable long-term choice |
-| **No design tool — code-first** | Zero cost; design in browser | Harder to explore layouts; no stakeholder preview; design decisions embedded in code |
+| **No design tool — code-first** | Zero cost; design in browser; AI can iterate directly | Harder to explore layouts; no stakeholder preview without deployment; design decisions embedded in code |
 
 ### Rationale
 
 - **Industry standard.** Figma is what most designers and frontend developers know. Hiring or onboarding someone who uses Figma is trivially easy.
 - **Free tier covers Phase 1.** Three files and unlimited drafts is sufficient for Phase 1. No cost until the design system requires shared libraries.
 - **Design token pipeline.** The Figma Tokens → Tailwind pipeline ensures design and code stay synchronized. This is critical when the Calm Technology design system is reused across SRF properties.
-- **Stakeholder communication.** Figma prototypes allow SRF leadership and the philanthropist's foundation to preview the portal before code is written. This is especially valuable for the Calm Technology aesthetic, which is easier to evaluate visually than to describe in words.
+- **Stakeholder communication.** Figma files allow SRF leadership and the philanthropist's foundation to preview the portal design. However, during AI-led phases, deployed prototypes and Storybook serve this purpose more effectively than static Figma mockups.
+- **Code-first during AI-led phases.** When the primary designer is an AI that generates code directly, the natural design artifact is the rendered browser output, not a visual design tool file. Figma's value increases when human designers need a native collaboration surface — not before.
 
 ### Consequences
 
-- Phase 1: Figma free tier for core screen design
-- Phase 11: Upgrade to Professional when Calm Technology design system begins
-- Figma Tokens plugin configured to export to `tokens.json`
-- `tailwind.config.ts` imports from `tokens.json` for design token synchronization
-- Storybook (Phase 1+) references Figma component designs for visual parity
+- Phase 0a: No Figma files. Design validation happens through search functionality, not visual design.
+- Phase 0b/1: Figma free tier documents core screens after they are built in code. Code → Figma direction.
+- Phase 9+: When human designers are active, Figma becomes upstream. Figma → code direction.
+- Phase 11: Upgrade to Professional when Calm Technology design system begins.
+- Figma Tokens plugin configured for bidirectional synchronization with `tokens.json`.
+- `tailwind.config.ts` imports from `tokens.json` for design token synchronization.
+- Storybook (Phase 0b+) is the primary component reference during AI-led phases.
+
+*Revised: 2026-02-23, dual-direction token flow for AI-led vs. designer-led phases.*
+
+### Visual Design Language Enhancement Proposal — Disposition (2026-02-23)
+
+A proposal to incorporate spiritual eye (kutastha) symbolism into the portal's visual design language was evaluated. The portal's existing palette (navy, gold, cream) already maps to Yogananda's description of the spiritual eye (deep blue field, golden ring, white star). The symbolism is universal in Yogananda's teachings — not esoteric knowledge for advanced practitioners, but the aspiration of all seekers.
+
+| Proposal Item | Disposition | Location |
+|---------------|------------|----------|
+| Enhanced color system (Meditation Mode tokens) | **Adopted** — functional token names, spiritual origin in comments | DESIGN.md color palette, DES-011 extension |
+| Sacred Space Boundaries | **Adopted** | DESIGN.md Calm Technology UI Rules |
+| Responsive Aura System | **Adopted** — localStorage-only, DELTA-compliant | DESIGN.md Reader Accessibility section |
+| Meditation Mode visual theme | **Adopted** — as DES-011 extension with 4th toggle state | DESIGN.md DES-011 |
+| Golden-ratio type scale | **Evaluate** — noted for Phase 1 design QA comparison | DESIGN.md Typography |
+| Animated Lotus-Eye Hybrid | **Deferred** — conflicts with Calm Technology rules (no decorative animation). DES-007 opening moment is sufficient. |
+| Dawn/Dusk color temperature | **Already designed** — DES-011 is more sophisticated (solar-position aware, locale-sensitive). No action. |
+| Sacred Geometry components | **Deferred** — no current functional need. Revisit if loading states or progress indicators need design. |
+| Figma component library | **Deferred** — code-first during AI-led phases. Figma mirrors code, not the reverse. |
+| Typography hierarchy (golden ratio) | **Evaluate** — Phase 1 design QA (see above) |
 
 ---
 

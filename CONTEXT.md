@@ -52,6 +52,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Young seekers and editorial voice: should the portal explicitly welcome young seekers, or is agelessness the mode of inclusion? (DES-048, ADR-095)
 - [ ] Design intent preservation across staff turnover: should a companion document explain *why the portal feels the way it feels*? (ADR-098)
 - [ ] Portal updates page posture: visible evolution (`/updates` page) or timeless atmosphere? (ADR-105, ADR-074)
+- [ ] Visual design language: should the portal feel timeless or contemporary? The spiritual eye symbolism (navy=infinite blue, gold=divine ring, cream=star-white) is already latent in the palette — how explicitly should it be acknowledged in design documentation and token naming? (DES-006, DES-011)
 
 ### Tier 3: Resolve During Phases 0b–2
 

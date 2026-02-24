@@ -2575,6 +2575,19 @@ The portal subtly shifts its warmth based on the time of day. **On by default, o
 
 **Interaction with OS preferences:** If `prefers-color-scheme: dark` is active, it overrides time-banding — the user's OS preference is always respected.
 
+**Meditation Mode (Quiet Corner + deep reading):** The Night band's `--srf-navy` palette extends into a dedicated meditation visual theme for `/quiet` and an optional reader mode. Deeper than the standard Night band:
+
+| Property | Night Band | Meditation Mode |
+|----------|-----------|-----------------|
+| Background | `--srf-navy` | `--portal-bg-deep` (#0a1633) — darker, stiller |
+| Contrast | Standard cream text | Reduced contrast for gentle viewing — `#d4cfc7` text |
+| Accents | Standard `--srf-gold` | Golden text highlights on key phrases (editorial, `--srf-gold` at 60%) |
+| Interactive elements | Standard | Subtle star-point highlights — `--srf-white` at 8% on focus/hover |
+
+Meditation Mode activates automatically on `/quiet`. In the book reader, it is available as a fourth toggle state: Auto → Light → Dark → **Meditate**. Stored in `localStorage`. The deeper palette creates a visual environment that supports contemplation — like reading by candlelight rather than under fluorescent light.
+
+*Adopted from Visual Design Language Enhancement proposal (2026-02-23). The deep blue field echoes Yogananda's description of the spiritual eye's infinite blue — the color of deep meditation.*
+
 #### DES-012: "Breath Between Chapters" — Chapter Transition Pacing
 
 When navigating between chapters via prev/next (not deep links):
@@ -2632,6 +2645,26 @@ All shortcuts are single-key (no modifier), active only when no input/textarea i
 - `prefers-reduced-motion`: side panel updates without animation, dwell transitions instant, breath between chapters skipped, opening moment skipped
 - Dwell mode: screen reader announcements on enter/exit
 - All keyboard shortcuts suppressed when input elements have focus
+
+#### Responsive Aura — Visual Warmth from Reading State
+
+The reader responds to the seeker's engagement with subtle visual warmth. All state is `localStorage`-only — structurally identical to lotus bookmarks (ADR-066). No server transmission, no tracking, no profiling.
+
+| Interaction | Visual Response | Opacity | Storage |
+|-------------|----------------|---------|---------|
+| Passage hover | Subtle `--srf-gold` left border fades in | 15% → 40% | None (CSS `:hover`) |
+| Lotus-bookmarked passage | Persistent soft golden glow on left border | 30% | `localStorage` (`srf-portal:bookmarks`) |
+| Recently read chapter (in book TOC) | Faint warm tint on chapter row | 8% `--srf-gold` bg | `localStorage` (`srf-portal:reading-state`) |
+
+**Design intent:** The portal subtly acknowledges where the seeker has been — like a well-loved book that falls open to familiar pages. The visual signals are whisper-quiet: a seeker who doesn't notice them loses nothing; a seeker who does feels recognized.
+
+**Constraints:**
+- All effects at ≤ 40% opacity. Felt, not seen.
+- `prefers-reduced-motion`: hover transitions instant, static states preserved.
+- Reading state stored under `srf-portal:reading-state` — chapter IDs only, no timestamps, no duration, no scroll position. Clearing browser data removes all state.
+- Phase 13 migration: when optional accounts arrive, reading state is offered for import alongside bookmarks.
+
+*Adopted from Visual Design Language Enhancement proposal (2026-02-23). Inspired by spiritual eye symbolism — the golden ring of awareness that deepens with attention.*
 
 ### The Quiet Corner (`/quiet`)
 
@@ -3095,6 +3128,10 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  /* --portal-bg-morning, --portal-bg-evening, --portal-bg-night, --portal-text-night
  are introduced when circadian color temperature is implemented. */
 
+ /* === Meditation Mode (DES-011 extension) === */
+ --portal-bg-deep: #0a1633; /* Deeper than navy — the blue field of the spiritual eye */
+ --portal-text-meditate: #d4cfc7; /* Reduced contrast cream for contemplative reading */
+
  /* === Semantic Colors === */
  --color-error: #d32f2f; /* Errors (refined from raw "red") */
  --color-error-bg: rgba(242, 38, 19, 0.1); /* Error background (softened) */
@@ -3129,6 +3166,12 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --font-bengali: 'Noto Sans Bengali', sans-serif; /* Phase 10 */
 
  /* === Font Scale === */
+ /* Current scale: manually tuned for readability at each level.
+    Evaluate golden-ratio alternative (1.618 ratio) during Phase 1 design QA:
+    base 1.125rem → 1.819rem → 2.943rem → 4.761rem.
+    The golden ratio produces naturally harmonious proportions that echo
+    sacred geometry — but only adopt if it serves readability. The current
+    scale may already be superior for screen reading. (ADR-123: parameter.) */
  --text-xs: 0.75rem; /* 12px — labels, fine print */
  --text-sm: 0.9375rem; /* 15px — captions, metadata */
  --text-base: 1.125rem; /* 18px — body text, standard reading */
@@ -3231,6 +3274,7 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
 | Drop capitals | Merriweather 700, `--srf-navy`, 3-line span at chapter starts (DES-008) |
 | Section dividers | Small lotus SVG (16px, `--srf-gold` at 25%) instead of `<hr>` (DES-016) |
 | Time-aware background | Shifts warmth by time of day — opt-out, on by default (DES-011) |
+| Sacred space boundaries | Scripture quotes, guru passages, meditation instructions: soft inset shadow, thin `--srf-gold` top border (1px), `--portal-quote-bg` background, `--leading-relaxed` (1.8em) paragraph spacing. Creates a reverent visual container for holy words — felt as warmth, not as decoration. |
 
 #### DES-016: Lotus as Unified Visual Motif
 
@@ -6863,11 +6907,29 @@ Terraform manages deployed environments. Local development uses direct Neon conn
 
 ## DES-040: Design Tooling
 
-The portal uses Figma for design, with a token export pipeline to Tailwind CSS. See ADR-096.
+The portal uses a **code-first design process** during AI-led phases, with Figma as a collaboration mirror. See ADR-096.
 
-### Phase 1: Figma Free Tier
+### Phases 0–8: Code-First (AI-Led)
 
-Three design files covering the core screens:
+Design emerges through code iteration: generate CSS/components from DESIGN.md tokens, render in browser and Storybook, evaluate, refine. The browser rendering is the design artifact.
+
+```
+DESIGN.md specs (source of truth)
+ │
+ ▼
+ Claude generates components + tokens.json
+ │
+ ▼
+ tailwind.config.ts imports tokens
+ │
+ ▼
+ Components rendered in browser + Storybook (Phase 0b+)
+ │
+ ▼
+ Figma updated from tokens.json (collaboration mirror, Phase 1)
+```
+
+Three Figma design files document the core screens *after* they exist in code:
 
 | File | Screens |
 |------|---------|
@@ -6875,7 +6937,9 @@ Three design files covering the core screens:
 | **Portal — Reader & Content** | Book reader, chapter navigation, Sacred Places, Events, About |
 | **Portal — Quiet & Utility** | Quiet Corner, error states, email subscription flow, language selector |
 
-### Design Token Pipeline
+### Phase 9+: Figma-First (Human Designers Active)
+
+When human designers join, the pipeline inverts. Figma becomes the upstream source:
 
 ```
 Figma design tokens (via Figma Tokens plugin)
@@ -6890,7 +6954,7 @@ Figma design tokens (via Figma Tokens plugin)
  Components use Tailwind classes
  │
  ▼
- Storybook documents components (Phase 1+)
+ Storybook documents components
 ```
 
 Changes to design tokens in Figma propagate to `tokens.json`, which updates `tailwind.config.ts`, which is reflected in all components. The design language stays synchronized between design and code.
@@ -6902,6 +6966,8 @@ When the shared component library begins (Phase 11), Figma Professional ($15/edi
 - Design system documentation alongside Storybook
 - Branching for design exploration
 - Multi-property reuse (portal, convocation site, future SRF projects)
+
+*Section revised: 2026-02-23, code-first design process for AI-led phases (ADR-096 revision).*
 
 ---
 
