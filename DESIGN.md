@@ -83,12 +83,12 @@ This portal is a **digital library with an AI librarian**, not a chatbot or cont
 
 ## DES-002: Architecture Overview
 
-### Phase 0a Architecture (Prove — Pure Hybrid Search)
+### Phase 0a Architecture (Prove — Pure Hybrid Search + Contentful)
 
-Two services. One database. No AI in the search path — pure hybrid retrieval. (ADR-113)
+Two content stores. No AI in the search path — pure hybrid retrieval. Contentful is the editorial source of truth from Phase 0 (ADR-010). (ADR-113)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────┐
 │ USERS │
 │ │ │
 │ ▼ │
@@ -100,34 +100,46 @@ Two services. One database. No AI in the search path — pure hybrid retrieval. 
 │ │ • "Read in context" deep links │ │
 │ └──────────┬──────────────┬─────────────┘ │
 │ │ │ │
-│ /api/v1/search /api/v1/books │
-│ │ /api/v1/chapters │
-│ │ │ │
+│ /api/v1/search │ │
+│ │ Book reader pages │
 │ ▼ ▼ │
-│ ┌─────────────────────────────────────┐ │
-│ │ Neon PostgreSQL + pgvector │ │
-│ │ │ │
-│ │ • books, chapters (metadata) │ │
-│ │ • book_chunks (text + embeddings) │ │
-│ │ • Full-text search (pg_search BM25) │ │
-│ │ • Vector similarity (HNSW index) │ │
-│ │ • RRF fusion (vector + BM25) │ │
-│ │ • search_queries (anonymized log) │ │
-│ └─────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+│ ┌────────────────────┐ ┌────────────────────────┐ │
+│ │ Neon PostgreSQL │ │ Contentful │ │
+│ │ + pgvector │ │ (editorial source) │ │
+│ │ │ │ │ │
+│ │ • book_chunks │ │ Book → Chapter │ │
+│ │ (text + embeddings)│ │ → Section → TextBlock │ │
+│ │ • BM25 (pg_search) │ │ │ │
+│ │ • HNSW vector index │ │ Rich Text AST │ │
+│ │ • RRF fusion │ │ per locale │ │
+│ │ • search_queries │ │ │ │
+│ └────────────────────┘ └────────────────────────┘ │
+│ ▲ │ │
+│ └──────── Batch sync ────────────┘ │
+│ (chunk + embed + insert) │
+└──────────────────────────────────────────────────────────────────┘
+
+One-time ingestion:
+
+ PDF ──► marker (PDF→Markdown) ──► Human QA ──► Contentful (import)
+                                                    │
+                                          Batch sync script
+                                                    │
+                                          Chunk ──► Embed ──► Neon
 
 Phase 0a has NO Claude API calls in the search path.
 Claude is used only offline: ingestion QA (ADR-005 E4),
 enrichment (ADR-115), and search quality evaluation (ADR-005 E5).
 ```
 
-### Phase 0b Architecture (Foundation — AI-Enhanced Search)
+### Phase 0b Architecture (Foundation — AI-Enhanced Search + Contentful Webhooks)
 
 Phase 0b adds Claude Haiku to the search path: query expansion,
-intent classification, and passage ranking. Deployed to Vercel. (ADR-113)
+intent classification, and passage ranking. Deployed to Vercel.
+Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────┐
 │ USERS │
 │ │ │
 │ ▼ │
@@ -135,25 +147,25 @@ intent classification, and passage ranking. Deployed to Vercel. (ADR-113)
 │ │ Next.js on Vercel │ │
 │ │ │ │
 │ │ • Search UI (query bar + results) │ │
-│ │ • Book Reader (chapter navigation) │ │
+│ │ • Book Reader (SSG/ISR from │ │
+│ │ Contentful Delivery API) │ │
 │ │ • Homepage (Today's Wisdom) │ │
 │ │ • "Read in context" deep links │ │
 │ └──────────┬──────────────┬─────────────┘ │
 │ │ │ │
-│ /api/v1/search /api/v1/books │
-│ /api/v1/suggest /api/v1/chapters │
-│ /api/v1/expand │
-│ │ │ │
+│ /api/v1/search Book reader │
+│ /api/v1/suggest (Contentful) │
+│ /api/v1/expand │ │
 │ ▼ ▼ │
-│ ┌─────────────────────────────────────┐ │
-│ │ Neon PostgreSQL + pgvector │ │
-│ │ │ │
-│ │ • books, chapters (metadata) │ │
-│ │ • book_chunks (text + embeddings) │ │
-│ │ • Full-text search (pg_search BM25) │ │
-│ │ • Vector similarity (HNSW index) │ │
-│ │ • search_queries (anonymized log) │ │
-│ └─────────────────────────────────────┘ │
+│ ┌────────────────────┐ ┌────────────────────────┐ │
+│ │ Neon PostgreSQL │ │ Contentful │ │
+│ │ + pgvector │◄─── webhook ───│ (editorial source) │ │
+│ │ │ sync │ │ │
+│ │ • book_chunks │ service │ Book → Chapter │ │
+│ │ • BM25 (pg_search) │ │ → Section → TextBlock │ │
+│ │ • HNSW vector index │ │ │ │
+│ │ • search_queries │ │ Locales: en │ │
+│ └────────────────────┘ └────────────────────────┘ │
 │ │ │
 │ ▼ (query expansion + passage ranking only) │
 │ ┌─────────────────────────────────────┐ │
@@ -165,14 +177,14 @@ intent classification, and passage ranking. Deployed to Vercel. (ADR-113)
 │ │ • Classify search intent [Haiku] │ │
 │ │ • NEVER generate/paraphrase text │ │
 │ └─────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────┘
 
-One-time ingestion (offline script):
+Contentful webhook sync (event-driven, Phase 0b+):
 
- PDF ──► marker (PDF→Markdown) ──► Chunking ──► Enrichment ──► Embeddings ──► Neon
+ Contentful publish ──► Webhook ──► Serverless fn ──► Chunk ──► Embed ──► Neon
 ```
 
-### Production Architecture (Contentful Integration — Phase 9+)
+### Production Architecture (Full Stack — Phase 9+)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -217,7 +229,7 @@ One-time ingestion (offline script):
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Key principle (Phase 9+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Phases 0–8 use PDF-ingested content in Neon directly; Contentful becomes the editorial source of truth when adopted in Phase 9.
+**Key principle (Phase 0+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Phase 0 (ADR-010). The production diagram above adds services that arrive in later phases (Cohere Rerank, graph pipeline, Retool, Cloudflare CDN) but the Contentful → Neon → Next.js architecture is established from Phase 0a.
 
 ---
 
@@ -708,7 +720,7 @@ All services that process data on the portal's behalf, with their roles, data to
 | **OpenAI** | Processor | Corpus text at embedding time (one-time, not retained) | US | 0+ |
 | **Resend/SES** | Processor | Subscriber email addresses | US | 8+ |
 | **Auth0** | Processor | User accounts (if implemented) | US | 13+ |
-| **Contentful** | Processor | Editorial content (no personal data) | EU | 9+ |
+| **Contentful** | Processor | Editorial content (no personal data) | EU | 0+ |
 
 EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. Review when services are added or changed.
 
@@ -971,8 +983,8 @@ The portal's content — book text, theme tags, translations, editorial threads,
 
 ### Book Ingestion Workflow
 
-**Phase 0–8:** PDF → marker → chunk → embed → Claude QA flags → human review → publish.
-**Phase 9+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
+**Phase 0a:** PDF → marker → Human QA → Contentful (import via Management API) → batch sync → chunk → embed → Neon.
+**Phase 0b+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
 
 #### Pre-Ingestion Planning
 
@@ -1002,8 +1014,8 @@ After automated processing but before human QA, the operator sees a pipeline sum
 
 New book content is reviewable in a "preview" state before going live:
 
-- **Phases 0–8:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
-- **Phase 9+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries.
+- **Phase 0a:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
+- **Phase 0b+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries. The Neon `is_published` flags remain as a cache of Contentful state.
 
 The operator publishes chapter-by-chapter or the whole book at once. Publication triggers chunk relation computation for the new content.
 
@@ -1027,7 +1039,7 @@ Errors will be found — by staff, by seekers (via feedback, ADR-084), or during
 1. Seeker or staff reports incorrect page number, chapter, or book attribution
 2. Report enters the QA queue at high priority (citation errors affect the portal's fidelity guarantee)
 3. Reviewer verifies against physical book
-4. Correction applied in Neon (Phases 0–8) or Contentful (Phase 9+)
+4. Correction applied in Contentful (syncs to Neon via webhook)
 5. Content hash updates. Chunk relations unaffected (text unchanged). Shared links remain stable.
 
 #### Text Correction Path
@@ -2064,7 +2076,7 @@ The stages are shared; the implementations differ:
 
 | Media Type | Source Format | Chunking Unit | Special QA | Relation Types |
 |---|---|---|---|---|
-| **Books** | PDF → structured text | Paragraph (ADR-048) | Page number verification, edition alignment | chunk_relations, theme_membership |
+| **Books** | Contentful Rich Text (imported from PDF or digital text) | Paragraph (ADR-048) | Page number verification, edition alignment | chunk_relations, theme_membership |
 | **Magazine** | Contentful entry or PDF | Article section | Author attribution verification | chunk_relations, theme_membership, issue_membership |
 | **Video** | YouTube caption / Whisper | Speaker turn + timestamp window | Timestamp accuracy, speaker diarization | chunk_relations, cross_media (video ↔ book) |
 | **Audio** | Whisper transcription | Speaker turn + timestamp window | Sacred artifact flag for Yogananda's voice | chunk_relations, cross_media (audio ↔ book), performance_of (chant) |

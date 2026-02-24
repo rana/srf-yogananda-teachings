@@ -246,22 +246,22 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 
 ### Content Flow by Type
 
-| Content Type | Phases 0–2 | Phases 3–8 | Production (Phase 9+) | Why |
+| Content Type | Phase 0 | Phases 1–3 | Phase 4+ (Editorial Portal) | Why |
 |---|---|---|---|---|
-| **Book text, chapters** | PDF ingestion script → Neon | Same | Contentful (editorial source of truth) → webhook sync → Neon | Editorial workflow with drafts, review, publish, locale variants |
-| **Theme tag review** | — | Admin portal review queue | Admin portal (bridged via Contentful sidebar) | AI proposes, humans approve — needs focused review UI |
-| **Daily passage curation** | Script-populated in Neon | Admin portal curation view | Contentful entries → sync → Neon + admin portal for curation | Content editors curate via the tool that best fits the task |
-| **Calendar events** | — | Admin portal management | Contentful entries + admin portal for passage associations | Event definitions in Contentful; passage associations in admin portal |
-| **Social media assets** | — | Admin portal asset review | Admin portal asset review | Visual review + caption editing + per-platform download |
-| **Translation review** | — | — | Admin portal side-by-side review | Non-technical reviewers (possibly volunteers) need a focused UI, not Git |
+| **Book text, chapters** | PDF → Contentful (import) → batch sync → Neon | Contentful → webhook sync → Neon | Same + Contentful Custom Apps sidebar | Editorial source of truth from Phase 0 (ADR-010). Webhook sync replaces batch in Phase 0b. |
+| **Theme tag review** | — | — | Admin portal review queue (bridged via Contentful sidebar) | AI proposes, humans approve — needs focused review UI |
+| **Daily passage curation** | Script-populated in Neon | Same | Admin portal curation view + Contentful entries | Content editors curate via the tool that best fits the task |
+| **Calendar events** | — | — | Contentful entries + admin portal for passage associations | Event definitions in Contentful; passage associations in admin portal |
+| **Social media assets** | — | — | Admin portal asset review | Visual review + caption editing + per-platform download |
+| **Translation review** | — | — | Admin portal side-by-side review (Phase 10) | Non-technical reviewers (possibly volunteers) need a focused UI, not Git |
 | **Sacred Places** | — | Static MDX or hardcoded | Contentful entries → sync → Neon | Editorial content with images |
 | **Search analytics** | — | Retool dashboard | Retool dashboard | Data-heavy, technical audience |
 | **Pipeline monitoring** | — | Retool dashboard | Retool dashboard | Technical operations |
-| **Impact reporting** | — | — | Admin portal `/admin/impact` | Beautiful, narrative, read-only — for leadership |
+| **Impact reporting** | — | — | Admin portal `/admin/impact` (Phase 10+) | Beautiful, narrative, read-only — for leadership |
 
 ### Contentful → Neon Sync
 
-The webhook sync service (Phase 9, deliverable 9.3) is the primary coupling point. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
+The sync service is the primary coupling point between Contentful and Neon. Phase 0a uses a batch sync script; Phase 0b+ uses webhook-driven sync on Vercel. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
 
 ```
 Contentful (editorial) ──webhook──→ Serverless function ──→ Neon (search index)

@@ -1204,7 +1204,9 @@ CREATE TABLE user_profiles (
 );
 ```
 
-### Contentful Content Model (Production)
+### Contentful Content Model (Phase 0+)
+
+Created in Phase 0a as part of Contentful space setup. The content model is the editorial source of truth from the first phase (ADR-010).
 
 ```
 Content Type: Book
@@ -1241,16 +1243,33 @@ Content Type: TextBlock
 └── metadata (JSON Object) — flexible field for verse refs, etc.
 ```
 
-**Webhook pipeline (production):**
+**Phase 0a sync (batch script):**
+```
+Contentful import complete (all TextBlocks published)
+ │
+ ▼
+Batch sync script (run locally or via CI)
+ │
+ ├── Fetch all TextBlocks from Contentful Delivery API
+ ├── Extract plain text from Rich Text JSON AST
+ ├── Chunk by paragraph boundaries (ADR-048)
+ ├── Unified enrichment pass (Claude, ADR-115)
+ ├── Generate embedding via Voyage voyage-3-large (ADR-118)
+ ├── Upsert into Neon book_chunks table
+ │ (matched by contentful_id)
+ └── Log sync event
+```
+
+**Phase 0b+ sync (webhook-driven):**
 ```
 Contentful publish event
  │
  ▼
-Webhook → Serverless Function (Lambda or Vercel Function)
+Webhook → Vercel Function
  │
  ├── Fetch updated TextBlock from Contentful API
  ├── Extract plain text from Rich Text JSON AST
- ├── Generate embedding via OpenAI API
+ ├── Chunk, enrich, generate embedding
  ├── Upsert into Neon book_chunks table
  │ (matched by contentful_id)
  └── Log sync event
@@ -1260,11 +1279,15 @@ Webhook → Serverless Function (Lambda or Vercel Function)
 
 ## DES-005: Content Ingestion Pipeline
 
-### Phase 0 Pipeline (PDF → Neon)
+### Phase 0 Pipeline (PDF → Contentful → Neon)
+
+Contentful is the editorial source of truth from Phase 0 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide non-PDF digital text that goes directly into Contentful.
 
 ```
 Step 1: Download PDF
  └── Autobiography of a Yogi from spiritmaji.com
+ └── Pre-launch: SRF provides digital text (non-PDF) — goes
+     directly to Step 3.5 (Contentful import)
 
 Step 2: Convert PDF → Structured Markdown
  └── Using `marker` (open-source, Python)
@@ -1291,6 +1314,18 @@ Step 3: Human Review / QA
  └── Flag Sanskrit diacritics that may have been mangled
  by PDF extraction (ADR-005 E4, ADR-080)
  └── This step is NON-NEGOTIABLE for sacred texts
+
+Step 3.5: Import into Contentful (ADR-010)
+ └── Import reviewed text into Contentful via Management API
+ └── Create Book → Chapter → Section → TextBlock entries
+ └── Map chapter/page boundaries to content model structure
+ └── Rich Text AST preserves formatting (bold, italic,
+     footnotes, verse numbers, poetry line breaks)
+ └── Each TextBlock carries pageNumber for citation
+ └── Verify import: spot-check 10% of TextBlocks against
+     source markdown for formatting fidelity
+ └── Contentful is now the editorial source of truth —
+     all subsequent corrections happen here
 
 Step 4: Chunk by Natural Boundaries
  └── Split at paragraph level
@@ -1339,8 +1374,10 @@ Step 8: Generate Embeddings
  └── Cost: ~$0.06 per 1M tokens
  └── Entire Autobiography of a Yogi: < $0.30
 
-Step 9: Insert into Neon
+Step 9: Insert into Neon (sync from Contentful)
  └── Populate books, chapters, book_chunks tables
+ └── Each book_chunk row carries contentful_id linking to
+     the source TextBlock in Contentful
  └── BM25 index (pg_search) automatically updated on INSERT
  └── Verify: test searches return expected passages
 
@@ -1374,7 +1411,7 @@ Step 12: Graph Metrics (Phase 4+, ADR-117 — nightly batch, not per-ingestion)
  └── extracted_relationships (Step 7) feed graph structure automatically
 ```
 
-### Production Pipeline (Contentful → Neon)
+### Webhook Sync Pipeline (Contentful → Neon, Phase 0b+)
 
 ```
 Step 1: Content editors enter/import book text into Contentful
@@ -1581,11 +1618,13 @@ MCP (Model Context Protocol) serves three tiers of AI consumer, all wrapping the
 |------------|----------|-------------|
 | **Neon MCP** | Database schema management, SQL execution, migrations during development | Available now |
 | **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Phase 0 |
-| **Contentful MCP** | Content model design, entry management during development | Phase 9+ (evaluate) |
+| **Contentful MCP** | Content model design, entry management during development | Phase 0b (evaluate) |
 
 See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
 
 ### SRF Corpus MCP — Three-Tier Architecture (ADR-101)
+
+**Status: Unscheduled.** All three SRF Corpus MCP tiers moved to ROADMAP.md § Unscheduled Features (2026-02-24). The architecture below is preserved as design reference for when scheduling is decided. Third-party MCP servers (Neon, Sentry, Contentful) remain on schedule.
 
 ```
 Seeker (browser) → API Route → Service Layer → Neon

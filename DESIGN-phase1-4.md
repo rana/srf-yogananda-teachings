@@ -16,10 +16,10 @@
 | `/search?q=...` | Search results — ranked verbatim quotes | Neon (hybrid search) | SSR | Yes (via `SearchAction`) |
 | `/themes/[slug]` | Topic page — curated passages for a theme, person, principle, or practice | Neon (topic-tagged chunks) | ISR (1 hr) | Yes |
 | `/quiet` | The Quiet Corner — single affirmation, timer, stillness | Neon (affirmations pool) | ISR (1 hr) | Yes |
-| `/books` | The Library — book catalog with editorial descriptions | Contentful (SSG) or Neon (Phase 0) | ISR (24 hr) | Yes |
-| `/books/[slug]` | Book landing page with cover, description, chapter list | Contentful (SSG) or Neon (Phase 0) | ISR (24 hr) | Yes |
+| `/books` | The Library — book catalog with editorial descriptions | Contentful (SSG/ISR) | ISR (24 hr) | Yes |
+| `/books/[slug]` | Book landing page with cover, description, chapter list | Contentful (SSG/ISR) | ISR (24 hr) | Yes |
 | `/bookmarks` | Lotus Bookmarks — saved chapters and passages (client-only, `localStorage`) | `localStorage` (no server) | CSR | No (`noindex`) |
-| `/books/[slug]/[chapter]` | Chapter reader | Contentful (SSG) or Neon (Phase 0) | ISR (7 days) | Yes |
+| `/books/[slug]/[chapter]` | Chapter reader | Contentful (SSG/ISR) | ISR (7 days) | Yes |
 | `/books/[slug]/[chapter]#chunk-[id]` | Deep link to specific passage | Same as above, scrolled to passage | ISR (7 days) | Yes (canonical: passage page) |
 | `/passage/[chunk-id]` | Single passage shareable view (OG + Twitter Card optimized) | Neon | ISR (7 days) | Yes |
 | `/about` | About SRF, Yogananda, the line of gurus, "Go Deeper" links | Static (ISR) | ISR (7 days) | Yes |
@@ -1653,7 +1653,7 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 | Layer | What | Approach | Phase |
 |-------|------|----------|-------|
 | **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-078). | Infrastructure in Phase 1. Translations in Phase 10. |
-| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales in production. **Never machine-translate sacred text.** | Phase 10 |
+| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Phase 0, activated in Phase 10). **Never machine-translate sacred text.** | Phase 10 |
 | **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | Phase 10 |
 
 ### Phase 1 — English Only, i18n-Ready
@@ -1952,14 +1952,14 @@ export { sql };
 
 | Trigger | Mechanism | Scope |
 |---------|-----------|-------|
-| Content correction (Phase 9+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
+| Content correction (Phase 0b+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
 | Daily passage rotation | TTL-based (`max-age=3600`) | No explicit invalidation — 1-hour cache is acceptable for daily content |
 | Theme tag changes | Manual Cloudflare purge via API or dashboard | Theme pages and related API responses |
 | New book ingestion | Automated purge of `/books` catalog and search index | Book catalog, search results |
 | Static assets (JS/CSS) | Content-hashed filenames (`main.abc123.js`) | Infinite cache, new deploy = new hash |
 | Emergency content fix | Cloudflare "Purge Everything" via API | Last resort — clears entire CDN cache |
 
-**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The sync service (Phase 9+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Phases 0–8 (no Contentful), cache invalidation is manual via Cloudflare dashboard — acceptable given the low frequency of content changes.
+**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The webhook sync service (Phase 0b+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Phase 0a (batch sync, no webhooks), cache invalidation is manual — acceptable given the low frequency of content changes during initial ingestion.
 
 ### Deep Link Readiness
 
@@ -3015,7 +3015,7 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 |---|---|
 | **Phase 4** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check, portal update review (ADR-105). Auth0 integration. Email digest. |
 | **Phase 8** | Social media asset review added. |
-| **Phase 9** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. |
+| **Phase 4** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. (Contentful available from Phase 0; Custom Apps ship with editorial portal.) |
 | **Phase 10** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
 | **Phase 10+** | Impact dashboard for leadership. |
 | **Phase 14** | VLD dashboard, curation briefs, trusted submitter workflow. VLD expansion to translation, theme tag, feedback, and QA tiers (as VLD capacity and SRF governance allow). |

@@ -13,8 +13,8 @@
 | [5](#phase-5-connect) | Connect | Related Teachings, chunk relations, graph traversal |
 | [6](#phase-6-complete) | Complete | Final books, observability, Knowledge Graph |
 | [7](#phase-7-empower) | Empower | Study Workspace, PDF export, staff tools |
-| [8](#phase-8-distribute) | Distribute | Email, social, WhatsApp, RSS, webhooks, MCP |
-| [9](#phase-9-integrate) | Integrate | Contentful CMS, GitLab, regional distribution |
+| [8](#phase-8-distribute) | Distribute | Email, social, WhatsApp, RSS, webhooks |
+| [9](#phase-9-integrate) | Integrate | GitLab, regional distribution, Contentful Custom Apps |
 | [10](#phase-10-translate) | Translate | 9 languages, translation workflow |
 | [11](#phase-11-polish) | Polish | WCAG audit, design system, PWA, TTS |
 | [12](#phase-12-multimedia) | Multimedia | Video, audio, images, cross-media hub |
@@ -30,9 +30,9 @@
 
 ## Phasing Philosophy
 
-Each phase delivers a working, demonstrable increment organized around a single capability theme. 15 phases total (0a–14). Phase 0 is split into 0a (Prove) and 0b (Foundation) per ADR-113. Phase 0a proves that semantic search works. Phase 1 builds the complete portal with engineering infrastructure alongside it (CI/CD, testing, Terraform — not deferred to a later phase). Phase 2 refines the contemplative reader. Phases 3–4 decompose the multi-book expansion: Phase 3 (Grow) expands the corpus independently of organizational decisions, while Phase 4 (Operate) establishes editorial operations once SRF staffing is confirmed — this split makes the most critical organizational dependency visible as its own phase gate. Phases 5–6 build cross-book intelligence and complete the library. Phases 7–8 extend reach through tools and distribution channels. Phases 9–11 add Contentful CMS, multi-language support, and accessibility polish. Phase 12 delivers cross-media intelligence across video, audio, and images in one coherent phase. Phase 13 adds optional user accounts. Phase 14 combines community events and curation at scale.
+Each phase delivers a working, demonstrable increment organized around a single capability theme. 15 phases total (0a–14). Phase 0 is split into 0a (Prove) and 0b (Foundation) per ADR-113. Phase 0a proves that semantic search works with Contentful as the editorial source of truth from day one (ADR-010). Phase 1 builds the complete portal with engineering infrastructure alongside it (CI/CD, testing, Terraform — not deferred to a later phase). Phase 2 refines the contemplative reader. Phases 3–4 decompose the multi-book expansion: Phase 3 (Grow) expands the corpus independently of organizational decisions, while Phase 4 (Operate) establishes editorial operations once SRF staffing is confirmed — this split makes the most critical organizational dependency visible as its own phase gate. Phases 5–6 build cross-book intelligence and complete the library. Phases 7–8 extend reach through tools and distribution channels. Phase 9 integrates with SRF's GitLab infrastructure and adds regional distribution. Phases 10–11 add multi-language support and accessibility polish. Phase 12 delivers cross-media intelligence across video, audio, and images in one coherent phase. Phase 13 adds optional user accounts. Phase 14 combines community events and curation at scale.
 
-**Parallel workstreams and feature-flag activation (ADR-123):** Phases are *capability themes*, not strictly sequential gates. Where deliverables within a phase have no technical dependency on another phase's organizational prerequisites, they proceed in parallel. Specifically: Phase 5 algorithmic computation proceeds alongside Phase 4 editorial tooling; Phase 9 infrastructure (GitLab, Terraform) proceeds independently of Contentful contract; Phase 10 language waves run in parallel where resources permit; Phase 13 localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, Contentful contract, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
+**Parallel workstreams and feature-flag activation (ADR-123):** Phases are *capability themes*, not strictly sequential gates. Where deliverables within a phase have no technical dependency on another phase's organizational prerequisites, they proceed in parallel. Specifically: Phase 5 algorithmic computation proceeds alongside Phase 4 editorial tooling; Phase 9 GitLab migration proceeds independently of other Phase 9 deliverables; Phase 10 language waves run in parallel where resources permit; Phase 13 localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
 **Unscheduled features:** Not every idea belongs in a phase immediately. Features that emerge from proposals, stakeholder conversations, or development experience but aren't ready for phase assignment live in the [Unscheduled Features](#unscheduled-features) section below. They are reviewed at every phase boundary and either graduate to a phase, remain unscheduled, or are explicitly omitted. The backlog does not grow forever — omission with rationale is a valid outcome.
 
@@ -56,8 +56,8 @@ Restructured from 18 to 15 capability-themed phases (ADR-102, ADR-103; 2026-02-2
 
 These are blocking conversations that must happen before ingestion begins:
 
-1. **Edition confirmation:** Confirm with SRF which edition of Autobiography of a Yogi is the canonical page-number reference (1946 first edition, 1998 13th edition, or current printing). All portal citations depend on this. (ADR-034)
-2. **PDF source confirmation:** Confirm PDF source for Autobiography with SRF AE team.
+1. **~~Edition confirmation:~~** *(Resolved 2026-02-24.)* Use edition indicated in PDF source (spiritmaji.com). Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition.
+2. **~~PDF source confirmation:~~** *(Resolved 2026-02-24.)* spiritmaji.com PDF accepted for Phase 0 proof. Non-PDF digital text will replace before launch.
 
 ### Deliverables
 
@@ -65,18 +65,20 @@ These are blocking conversations that must happen before ingestion begins:
 |---|-------------|-------------|
 | 0a.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-041) |
 | 0a.2 | **Neon project + initial schema** | Create Neon project with pgvector, pg_search, pg_trgm, and unaccent extensions enabled. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116) |
-| 0a.3 | **PDF ingestion script** | Download Autobiography PDF → convert with marker → chunk by paragraphs → generate embeddings → insert into Neon. Chunking follows the formal strategy in DESIGN.md § Chunking Strategy (ADR-048): paragraph-based, 100–500 token range, special handling for epigraphs and poetry. Typographic normalization applied during ingestion (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter during ingestion and store in `chapters.content_hash` (ADR-039) — the `/integrity` page and verification API ship in Phase 1, but hashes are computed here so the data exists from day one. |
-| 0a.4 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. Review mechanism for Phases 0–2 is lightweight (Retool view or CLI pager over ingested chunks) — the full editorial review portal ships in Phase 4. |
-| 0a.5 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. Claude-based enhancements added in Phase 0b. (ADR-011, ADR-044) |
-| 0a.6 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
-| 0a.7 | **Basic book reader** | Chapter-by-chapter reading view with deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
-| 0a.8 | **Search quality evaluation** | Test suite of ~50 representative queries with expected passages (golden retrieval set). Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Phase 10 when translated content exists (ADR-047). (ADR-005 E5) |
+| 0a.3 | **Contentful space + content model** | Create Contentful space (free tier). Configure content types: Book → Chapter → Section → TextBlock per DESIGN-phase0.md § Contentful Content Model. Enable English locale. Configure Contentful Personal Access Token in `.env`. Verify content model by creating a test Book entry. Contentful is the editorial source of truth from Phase 0 (ADR-010). |
+| 0a.4 | **PDF ingestion + Contentful import** | Download Autobiography PDF → convert with marker → human QA → import into Contentful via Management API (Book → Chapter → Section → TextBlock entries). Typographic normalization applied during extraction (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter and store in `chapters.content_hash` (ADR-039). Then batch sync from Contentful to Neon: read TextBlocks from Delivery API → chunk by paragraphs (ADR-048: paragraph-based, 100–500 token range, special handling for epigraphs and poetry) → generate embeddings → insert into Neon with `contentful_id` linkage. |
+| 0a.5 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. QA happens on Contentful entries (editors can review in the Contentful web UI). The full editorial review portal ships in Phase 4. |
+| 0a.6 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. Claude-based enhancements added in Phase 0b. (ADR-011, ADR-044) |
+| 0a.7 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
+| 0a.8 | **Basic book reader** | Chapter-by-chapter reading view serving content from Contentful Delivery API. Deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
+| 0a.9 | **Search quality evaluation** | Test suite of ~50 representative queries with expected passages (golden retrieval set). Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Phase 10 when translated content exists (ADR-047). (ADR-005 E5) |
 
 ### Technology
 
 | Component | Service | Cost |
 |-----------|---------|------|
 | Frontend | Next.js (local dev; Vercel in 0b) | $0 |
+| CMS | Contentful (free tier: 10K records, 2 locales) | $0 |
 | Database | Neon PostgreSQL + pgvector + pg_search (free tier) | $0 |
 | Embeddings | Voyage voyage-3-large (1024d, ADR-118) | ~$0.30 one-time |
 | Enrichment | Claude via AWS Bedrock (batch, ADR-115) | ~$5-10 one-time |
@@ -89,6 +91,7 @@ These are blocking conversations that must happen before ingestion begins:
 
 - `pnpm dev` starts a working Next.js application locally
 - `dbmate status` shows migration 001 applied
+- Contentful space contains Autobiography content (Book, Chapters, Sections, TextBlocks)
 - A seeker can type "How do I overcome fear?" and receive 3–5 relevant, verbatim Yogananda quotes with accurate book/chapter/page citations
 - "Read in context" links navigate to the correct passage in the reader
 - Simple keyword searches ("divine mother") work without any LLM involvement
@@ -111,7 +114,7 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 ## Phase 0b: Foundation
 
-**Goal:** Deploy to Vercel, add the AI librarian layer (query expansion, intent classification, passage ranking), build the homepage, establish observability, and provision the development-time MCP server. Phase 0b transforms the working local proof into a deployed, observable, AI-enhanced portal.
+**Goal:** Deploy to Vercel, add the AI librarian layer (query expansion, intent classification, passage ranking), build the homepage, establish observability, and activate Contentful webhook sync. Phase 0b transforms the working local proof into a deployed, observable, AI-enhanced portal.
 
 *Phase 0b depends on Phase 0a's search quality evaluation passing. If the core search doesn't work, everything built here is premature.* (ADR-113)
 
@@ -128,7 +131,7 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 | 0b.5 | **Minimal homepage** | Today's Wisdom (random passage on each visit), "Show me another" link (new random passage, no page reload). Search bar with prompt "What are you seeking?" Styled with SRF design tokens. Cross-fade animation added in Phase 1. |
 | 0b.6 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-095) |
 | 0b.7 | **Search API rate limiting** | Two-layer rate limiting: Cloudflare WAF rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-081). Rate-limited searches fall back to database-only (no Claude API call) — graceful degradation. Claude API monthly budget cap as cost protection. `/scripts/` directory with CI-agnostic deployment scripts. Permissive `robots.txt` (allow all, block `/admin/`). (ADR-023, ADR-018, ADR-081) |
-| 0b.8 | **Custom SRF Corpus MCP server** | Development-time MCP server allowing Claude Code to search the book corpus during development (e.g., "find all passages about meditation in Autobiography"). Connects to Neon, exposes search and chunk-retrieval tools. Registered in `.claude/` config. (ADR-097) |
+| 0b.8 | **Contentful webhook sync service** | Event-driven sync replacing Phase 0a batch script: Contentful publish → Vercel Function → extract plain text from Rich Text AST → chunk → enrich → embed → upsert Neon (matched by `contentful_id`). Handles create, update, and unpublish events. Logs sync events for monitoring. (ADR-010, DES-005) |
 | 0b.9 | **Search suggestions — basic prefix matching** | `GET /api/v1/search/suggest` endpoint returning term completions from single-book vocabulary: distinctive terms extracted from Autobiography chunks during ingestion, chapter titles, book title. PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching. Zero-state experience: curated theme names as suggestion chips when search bar is focused but empty. Curated query suggestions seeded from search quality test suite (~30 queries). ARIA combobox pattern for accessibility. Latency target: < 50ms. No Claude API call in suggestion path. (ADR-049) |
 | 0b.10 | **Cultural design consultation** | Identify at least one YSS-connected consultant (designer, devotee, or monastic) who participates in design reviews from Phase 0. Cultural consultation is a posture maintained throughout all phases, not a Phase 10 deliverable. This consultant reviews visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways for cultural sensitivity. Does not require full-time commitment — periodic review sessions. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
 | 0b.11 | **Crisis query detection and interstitial** | Add `crisis` intent category to search intent classification (Deliverable 0b.4). When a query is classified as crisis-intent, display a calm, non-alarmist interstitial above search results with locale-appropriate crisis helpline information. Search results are not suppressed — the interstitial is additive. Conservative threshold: false positives are acceptable, false negatives are the failure mode to minimize. Crisis resource list (helplines, language, presentation) requires SRF review before going live. Sentry event `search.crisis_intent` for monitoring. (ADR-122, ADR-071, ADR-005 E1) |
@@ -345,10 +348,9 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 4.10 | **`/guide` — The Spiritual Guide** | Editorially curated recommendation page organized by seeker context: "If you are new to Yogananda's teachings," "If you are exploring meditation," "If you are dealing with loss," etc. 20–30 pathways, each with 2–3 specific recommendations and brief editorial framing (never paraphrasing Yogananda). Three-state provenance: Claude drafts initial text (`auto`), human review required (`reviewed`/`manual`). Linked from footer ("Where to begin") and "Start Here" newcomer path. Cultural adaptation deferred to Phase 10. (DES-047, ADR-074) |
 | 4.11 | **Operational playbook** | `/docs/operational/playbook.md` documenting procedural knowledge: how to add a new book (pre-ingestion checklist through post-publication verification), how to handle a citation error, how to create a curation brief, how to onboard a new staff member to `/admin`. Written alongside the editorial portal it documents. Updated as new workflows are added in subsequent phases. Referenced from the admin portal's help section. |
 | 4.12 | **Queue health monitoring** | Editorial home screen includes queue health indicators: oldest unreviewed item per queue, items exceeding age thresholds (48 hours for citation errors, 7 days for standard items), queue depth trend (14-day rolling window). Email digest highlights overdue items. Portal coordinator receives separate notification if any queue exceeds 2× its age threshold. `/lib/services/queue-health.ts`. |
-| 4.13 | **Internal MCP tools — editorial tier** | Extend the SRF Corpus MCP (Phase 0 development tier) with Tier 2 internal tools: `get_chunk_with_context`, `get_similar_passages`, `get_glossary_terms_in_passage`, `get_content_coverage`, `verify_citation`, `get_pending_reviews`, `get_daily_passage`. Service-to-service authentication (API key). All DES-035 AI workflows access the corpus through these MCP tools — canonical, auditable interface for every AI proposal. `/lib/mcp/tools/editorial.ts`. (ADR-101, DES-031) |
-| 4.14 | **Portal updates page + AI draft pipeline** | `/updates` page ("The Library Notice Board") with `portal_updates` table. AI drafts seeker-facing release notes from deployment metadata in portal voice (ADR-074); human review mandatory before publication. `updates` review queue in editorial portal. Retrospective entries for Phases 0–4. Footer link: "What's new in the portal." (ADR-105, DES-051) |
-| 4.15 | **Graph intelligence batch pipeline** | Python + NetworkX/igraph batch job loads full graph from Postgres tables (entity_registry, extracted_relationships, concept_relations). Runs PageRank, community detection, and betweenness centrality. Writes results to centrality_score, community_id, bridge_score columns on entity and chunk rows. Scheduled as Lambda or Vercel cron (nightly). Community detection outputs inform theme tagging proposals. (ADR-117, DES-054) |
-| 4.16 | **Three-path retrieval activation** | Activate Path C (graph-augmented retrieval) in the search pipeline: entity recognition in queries via entity_registry → SQL traversal across extracted_relationships → pgvector similarity ranking → merge with Path A (vector) and Path B (BM25) via RRF. Search pipeline evolves from two-path to three-path. Monitor retrieval quality: Path C must improve relevance on entity-rich queries without degrading keyword queries. (ADR-117, ADR-119, DES-003) |
+| 4.13 | **Portal updates page + AI draft pipeline** | `/updates` page ("The Library Notice Board") with `portal_updates` table. AI drafts seeker-facing release notes from deployment metadata in portal voice (ADR-074); human review mandatory before publication. `updates` review queue in editorial portal. Retrospective entries for Phases 0–4. Footer link: "What's new in the portal." (ADR-105, DES-051) |
+| 4.14 | **Graph intelligence batch pipeline** | Python + NetworkX/igraph batch job loads full graph from Postgres tables (entity_registry, extracted_relationships, concept_relations). Runs PageRank, community detection, and betweenness centrality. Writes results to centrality_score, community_id, bridge_score columns on entity and chunk rows. Scheduled as Lambda or Vercel cron (nightly). Community detection outputs inform theme tagging proposals. (ADR-117, DES-054) |
+| 4.15 | **Three-path retrieval activation** | Activate Path C (graph-augmented retrieval) in the search pipeline: entity recognition in queries via entity_registry → SQL traversal across extracted_relationships → pgvector similarity ranking → merge with Path A (vector) and Path B (BM25) via RRF. Search pipeline evolves from two-path to three-path. Monitor retrieval quality: Path C must improve relevance on entity-rich queries without degrading keyword queries. (ADR-117, ADR-119, DES-003) |
 
 ### Key Challenges
 
@@ -393,7 +395,6 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 5.11 | **Calendar reading journey schema** | Extend `editorial_threads` with journey columns: `journey_type` (evergreen/seasonal/annual), `journey_duration_days`, `journey_start_month`, `journey_start_day`. Foundation for time-bound reading experiences delivered via daily email in Phase 8. (DES-045) |
 | 5.12 | **People Library — spiritual figures and monastics as entities** | `people` table with biographical metadata (name, slug, role, era, description, image) and monastic/lineage extensions: `person_type` enum (`spiritual_figure`, `guru_lineage`, `monastic`, `historical`), `honorific`, `is_living`. `person_relations` extended with `start_year`, `end_year`, `description`, `display_order` for temporal relationships. New relation types: `succeeded_by`, `preceded_by`, `mentored_by`, `edited_works_of`, `collaborated_with`. `chunk_people` junction table linking passages to persons mentioned or quoted. Person pages at `/people/[slug]` showing biography, In Memoriam presentation (birth–passing years for applicable figures), all referencing passages, and cross-links to themes and external references. `/people` index gains "Lineage of SRF Presidents" vertical timeline section using `succeeded_by` relations with service dates. `/api/v1/people/lineage` endpoint for presidential succession. Seed entities: Sri Yukteswar, Lahiri Mahasaya, Krishna, Christ, Divine Mother, Babaji, Anandamayi Ma, plus presidential succession entries (Yogananda, Rajarsi Janakananda, Daya Mata, Mrinalini Mata, Brother Chidananda) with service periods. Same three-state tagging pipeline as themes (auto → reviewed → manual). Linked from exploration theme categories (person type). (ADR-036, ADR-037) |
 | 5.13 | **`/browse` grows — people, references, threads** | Auto-generated `/browse` page expands to include People library entries, External References (reverse bibliography), and Editorial Reading Threads. All auto-generated from database. `/browse` now covers the full content space and serves as the text-mode alternative to the Knowledge Graph (ADR-061). Bidirectional link between `/browse` and `/explore`. (DES-047) |
-| 5.14 | **Internal MCP tools — relations and people** | Extend Tier 2 MCP with Phase 5 tools: `get_cross_book_connections(chunk_id)` and `get_person_context(person_slug)`. Enables reading thread drafting AI and editorial workflows that need cross-book relational context and People Library data. (ADR-101, DES-031) |
 
 ### Key Challenges
 
@@ -421,7 +422,6 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 6.9 | **Scripture-in-Dialogue** | For Yogananda's scriptural commentaries (*God Talks with Arjuna*, *The Second Coming of Christ*): verse-level Scripture entities in entity_registry, CROSS_TRADITION_EQUIVALENT relationships in extracted_relationships between Gita and Gospel verses where Yogananda draws explicit parallels. Dual-commentary navigation: original verse pinned alongside Yogananda's interpretation. Extends the side-by-side commentary view (6.8) with graph-powered cross-tradition linking. (ADR-117, DES-056) |
 | 6.10 | **Living Commentary** | Enrichment pipeline extracts internal cross-references from Yogananda's commentaries ("as I explained in Chapter X"). Cross-references become navigable inline reference cards: verbatim preview of the referenced passage without leaving the current reading position. Hypertext-ified cross-references transform dense commentaries into a connected web of teachings. (ADR-115, ADR-050, DES-056) |
 | 6.11 | **Knowledge graph visualization** | Interactive visual map of the teaching corpus at `/explore`. Phase 6 nodes: books, passages, themes, persons, scriptures. Edges: chunk relations, theme memberships, external references. Client-side rendering (`d3-force` with Canvas) from pre-computed graph JSON (nightly Lambda, served from S3). **Extensible JSON schema** with `schema_version`, `node_types`, and `edge_types` arrays — designed to accommodate magazine, video, audio, and image nodes in later phases without visualization code changes (ADR-062). **Lineage filter mode:** shows only person nodes connected by `guru_of`, `disciple_of`, `succeeded_by`, `preceded_by` edges, rendered as a directed vertical layout — visualizes both the spiritual lineage and presidential succession (ADR-037). Warm tones, contemplative animation, `prefers-reduced-motion` static layout. ~50-80KB JS, loaded only on `/explore`. Graph Data API: `GET /api/v1/graph`, `/graph/subgraph`, `/graph/cluster`, `/graph.json`. Linked from Library and themes pages. (ADR-061, ADR-062, ADR-037) |
-| 6.12 | **Knowledge Graph MCP tools** | Extend internal MCP (Tier 2) with graph traversal tools: `get_graph_neighborhood(node_id, depth, types[])` and `get_search_trends(period, min_count)`. Wraps `/lib/services/graph.ts` and `/lib/services/analytics.ts`. Enables editorial AI workflows to use structural graph queries — theme tag proposals with graph context, impact narrative generation from search trend clusters. `/lib/mcp/tools/graph.ts`. (ADR-101, DES-031) |
 
 ### Key Challenges
 
@@ -449,9 +449,9 @@ Transform portal content into formats for group study, satsangs, and talks. The 
 
 ## Phase 8: Distribute
 
-**Goal:** Extend reach beyond direct visitors through daily email, social media, messaging channels, and MCP distribution.
+**Goal:** Extend reach beyond direct visitors through daily email, social media, messaging channels, and webhooks.
 
-The portal becomes a distribution platform — daily email, social media quote images, WhatsApp, RSS, and calendar reading journeys bring teachings to seekers where they already are. The external MCP server (Tier 3) makes the corpus accessible to third-party AI assistants. Graph intelligence features leverage the Postgres-native graph batch pipeline (ADR-117) to surface deep connections across the lineage. Events and Sacred Places sections signpost toward SRF community.
+The portal becomes a distribution platform — daily email, social media quote images, WhatsApp, RSS, and calendar reading journeys bring teachings to seekers where they already are. Graph intelligence features leverage the Postgres-native graph batch pipeline (ADR-117) to surface deep connections across the lineage. Events and Sacred Places sections signpost toward SRF community.
 
 - Daily email: non-personalized, double opt-in, no tracking pixels (ADR-091)
 - Social media asset generation: quote images in multiple aspect ratios with admin review (ADR-092)
@@ -459,33 +459,29 @@ The portal becomes a distribution platform — daily email, social media quote i
 - WhatsApp Business API integration for spiritual search and Daily Wisdom (ADR-026)
 - RSS feeds: daily passage, new content, audio, portal updates (ADR-081, ADR-105)
 - Calendar reading journeys: "40 Days with Yogananda," seasonal journeys (DES-045)
-- External MCP server (Tier 3) with fidelity metadata envelope and registered access (ADR-101, DES-031)
 - Outbound webhook event system with HMAC-SHA256 signatures (ADR-106, DES-052)
 - Graph intelligence: Lineage Voice Comparator, Evolution of a Teaching, Passage Genealogy, Semantic Drift Detection (ADR-117, ADR-115, DES-056)
 - Concept/Word Graph full construction with cross-tradition extraction (DES-055)
 
-**Success criteria:** Daily email delivers to 100% of confirmed subscribers. External MCP returns verbatim passages with correct fidelity metadata. WhatsApp bot returns relevant passages within 5 seconds.
+**Success criteria:** Daily email delivers to 100% of confirmed subscribers. WhatsApp bot returns relevant passages within 5 seconds.
 
 ---
 
 ## Phase 9: Integrate
 
-**Goal:** Migrate to Contentful as editorial source of truth and GitLab as SRF's IDP.
+**Goal:** Join SRF's GitLab infrastructure, add Contentful Custom Apps for editorial workflows, and enable regional distribution.
 
-The PDF-ingested content migrates to Contentful's structured authoring environment. A webhook sync pipeline keeps Neon search data current as editors update text. The portal joins SRF's GitLab-based development infrastructure with four standard environments. Regional distribution (Neon read replicas in EU and Asia-Pacific) reduces search latency globally.
+Contentful has been the editorial source of truth since Phase 0 (ADR-010). This phase adds Contentful Custom Apps (sidebar panels) that bridge editorial authoring with portal review queues. The portal joins SRF's GitLab-based development infrastructure with four standard environments. Regional distribution (Neon read replicas in EU and Asia-Pacific) reduces search latency globally.
 
-- Contentful content model: Book → Chapter → Section → TextBlock
-- Content import and webhook sync service: Contentful publish → embed → upsert Neon (ADR-050)
-- Reader migration to Contentful SSG/ISR
-- Admin editorial workflow bridging Contentful authoring and portal review queues (ADR-082)
 - Contentful Custom Apps: sidebar panels for theme tags, thread preview, calendar associations (ADR-082)
+- Admin editorial workflow bridging Contentful authoring and portal review queues (ADR-082)
 - GitLab migration: repo, CI/CD, Terraform state, four environments (ADR-016)
 - Regional distribution: Neon read replicas, S3 cross-region replication (ADR-021)
 - Cosmic Chants as Portal (if in scope): verse-by-verse chant presentation (DES-056)
 
-**Key challenge:** Contentful free tier (10,000 records, 2 locales) may require section-level granularity or a paid space for large books.
+**Key challenge:** GitLab migration requires CI/CD pipeline rewrite and Terraform state migration. Regional Neon read replicas require connection routing logic.
 
-**Success criteria:** Contentful → Neon sync produces identical search results to pre-migration content. GitLab CI/CD deploys to all four environments. Terraform plan shows zero drift.
+**Success criteria:** GitLab CI/CD deploys to all four environments. Terraform plan shows zero drift. Contentful Custom Apps surface review status in editor sidebar.
 
 ---
 
@@ -604,6 +600,7 @@ Architecturally sound, principle-checked, has governing references. Needs a sche
 
 | Feature | Source | Governing Refs | Dependencies | Notes |
 |---------|--------|----------------|--------------|-------|
+| **SRF Corpus MCP — Three-Tier Architecture** | ADR-101, DES-031 | ADR-097, ADR-101, ADR-011 | Tier 1: `/lib/services/` operational. Tier 2: Phase 4 editorial portal. Tier 3: Corpus complete (Phase 6+). | Three tiers: Development (Claude Code corpus search), Internal (editorial AI workflows), External (third-party AI assistants with fidelity metadata). Service layer wrapping — no new business logic. Full architecture preserved in DESIGN-phase0.md § DES-031. Descheduled 2026-02-24 to focus on core delivery. |
 | **SRF Lessons Integration** | Stakeholder vision | ADR-085, ADR-121 | Auth0 custom claims, `access_level` content model | Not scheduled. SRF's decision. Architecture ready (content-level access control, separate reading experience, technique instructions always out of scope). May never happen. |
 
 ### Proposed — Awaiting Evaluation
@@ -651,7 +648,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 
 | Phase | Hard Prerequisites | Soft Prerequisites |
 |-------|---|---|
-| **0a (Prove)** | Edition confirmed, PDF source confirmed | — |
+| **0a (Prove)** | ~~Edition confirmed, PDF source confirmed~~ *(Resolved 2026-02-24)* | — |
 | **0b (Foundation)** | Phase 0a search quality evaluation passes | SRF AE team availability for kickoff |
 | **1 (Build)** | Phase 0b complete | Embedding model benchmarks started |
 | **2 (Read)** | Phase 1 complete | — |
@@ -661,8 +658,8 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | **6 (Complete)** | Phase 5 chunk relations computed | — |
 | **7 (Empower)** | Phase 3 multi-book corpus available | Phase 6 observability operational |
 | **8 (Distribute)** | Phase 4 editorial workflows operational | Phase 7 PDF generation available |
-| **9 (Integrate)** | Phase 6 complete | Contentful contract signed (required for 9.1–9.6 only; infrastructure deliverables 9.7–9.10 proceed independently). GitLab access provisioned. (ADR-123) |
-| **10 (Translate)** | Embedding model benchmarked for multilingual (research begins Phase 1–2), translation reviewers identified | Phase 9 Contentful operational (enhances but does not gate translation work — PDF pipeline remains functional). Phase 1 i18n infrastructure validated. (ADR-123) |
+| **9 (Integrate)** | Phase 6 complete | GitLab access provisioned. Contentful Custom Apps scope defined. (ADR-123) |
+| **10 (Translate)** | Embedding model benchmarked for multilingual (research begins Phase 1–2), translation reviewers identified | Phase 1 i18n infrastructure validated. Contentful locales activated for target languages. (ADR-123) |
 | **11 (Polish)** | Phase 10 at least one non-English language live | Third-party accessibility auditor engaged |
 | **12 (Multimedia)** | Phase 6 complete (unified search operational) | Phase 11 PWA evaluation complete, audio/image source material available from SRF |
 | **13 (Personalize)** | Phase 12 complete | SRF decision on user accounts (required for server-sync features 13.5–13.6 only; localStorage-based features 13.2–13.4 proceed independently). Auth0 configuration aligned with SRF identity standards. (ADR-123) |
@@ -670,7 +667,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 
 **Critical decision gates** (require SRF input before the phase begins):
 - **Phase 4 (Operate):** Who owns editorial governance? Who is the portal coordinator? (See CONTEXT.md § Operational Staffing)
-- **Phase 9 (Integrate):** Contentful tier and content model granularity
+- **Phase 9 (Integrate):** GitLab migration scope and timeline
 - **Phase 10 (Translate):** YSS branding strategy for Hindi/Bengali locales
 - **Phase 13 (Personalize):** Whether to implement user accounts at all
 - **Phase 14 (Community):** VLD role assignment process, VLD coordinator identified, community curation governance model
@@ -687,7 +684,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | Phases 0b–2 | ~$5-10 | Vercel free, minimal Claude API usage. S3 backup < $1/mo. |
 | Phases 3–5 | ~$10-20 | More embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
 | Phases 6–8 | ~$20-40 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. |
-| Phase 9 | ~$50-100+ | Contentful paid tier likely needed, Lambda functions for Contentful webhooks. |
+| Phase 9 | ~$20-50 | GitLab CI/CD, regional Neon read replicas. Contentful paid tier may be needed by Phase 3 (multi-book) — evaluate then. |
 | Phase 10+ | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
 | Phase 12 | +$30-80 | Audio hosting on S3 + CloudFront streaming. Whisper transcription one-time cost (~$0.006/min). Audio file storage scales with archive size. |
 | Phase 14 | +$600-1,250 | SMS gateway costs vary by region (India: ~$0.002/msg, US: ~$0.04/msg). Telegram bot: free. USSD/IVR: requires telco negotiation. Community collections gallery and VLD dashboard: negligible incremental cost (existing infrastructure). |
@@ -698,8 +695,8 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| **PDF OCR quality** | Corrupted text → bad search results | Human QA step (0.9) is mandatory. Budget review time. SRF has original text for production use. |
-| **Contentful free tier limits** | Cannot model full corpus at paragraph level | Evaluate hybrid: section-level in Contentful, paragraph-level in Neon only |
+| **PDF OCR quality** | Corrupted text → bad search results | Human QA step (0a.5) is mandatory. Budget review time. SRF provides non-PDF digital text before launch. |
+| **Contentful free tier limits** | Cannot model full corpus at paragraph level | Free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks). Evaluate paid tier at Phase 3 (multi-book). Hybrid option: section-level in Contentful, paragraph-level in Neon only. |
 | **Embedding model quality** | Poor retrieval for Yogananda's vocabulary | Benchmark multiple models (Phase 0 task). Yogananda uses precise, sometimes archaic spiritual terminology. |
 | **Chunk size sensitivity** | Too small = orphaned fragments. Too large = imprecise retrieval. | Empirical testing in Phase 0 with diverse query types. |
 | **Stakeholder expectation** | "AI search" may imply a chatbot | Clear communication: this is a librarian, not an oracle. No synthesis. |

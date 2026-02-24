@@ -775,7 +775,7 @@ Use **Neon PostgreSQL with the pgvector extension** for both relational data and
 
 ---
 
-## ADR-010: Contentful as Editorial Source of Truth (Production)
+## ADR-010: Contentful as Editorial Source of Truth
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
@@ -793,7 +793,7 @@ Book text needs to live somewhere with editorial management: version control, re
 
 ### Decision
 
-Use **Contentful** as the editorial source of truth for production. Book text is authored and managed in Contentful, then synced to Neon (via webhooks) for search indexing. For Phases 0–8, books are ingested directly into Neon from PDFs, but the schema is designed to accommodate Contentful IDs for future integration.
+Use **Contentful** as the editorial source of truth from Phase 0. Contentful is a hard requirement — the portal adopts it from the first phase, not as a later migration. Book text is imported into Contentful during ingestion and synced to Neon (via batch script in Phase 0a, webhook-driven from Phase 0b) for search indexing. The book reader serves content from Contentful; search queries Neon.
 
 ### Rationale
 
@@ -802,13 +802,19 @@ Use **Contentful** as the editorial source of truth for production. Book text is
 - Content editors work in a familiar, managed environment
 - Multi-language support via Contentful locales
 - Separation of concerns: Contentful for authoring, Neon for searching
+- Adopting from Phase 0 avoids a costly Phase 9 migration of 15+ books and all editorial workflows
+- Free tier (10K records, 2 locales) is sufficient for single-book Phase 0; evaluate at Phase 3 (multi-book)
 
 ### Consequences
 
-- Production requires a Contentful → Neon sync service (webhook-driven)
-- The Neon schema includes `contentful_id` columns for linkage
-- Phases 0–8 operate without Contentful (PDF → Neon direct) but the schema is designed for easy Contentful integration later
-- Contentful pricing must be evaluated for the full corpus (may exceed free tier)
+- Phase 0a requires Contentful space setup and content model creation (Book → Chapter → Section → TextBlock)
+- Ingestion pipeline imports processed text into Contentful via Management API, then syncs to Neon for search
+- The Neon schema includes `contentful_id` columns for linkage — populated from Phase 0, not deferred
+- A Contentful → Neon sync service is needed: batch script in Phase 0a, webhook-driven from Phase 0b on Vercel
+- Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks); paid tier evaluation needed at Phase 3 (multi-book corpus)
+- When SRF provides non-PDF digital text prior to launch, it goes directly into Contentful — no pipeline change required
+
+*Revised: 2026-02-24, Contentful moved from Phase 9 to Phase 0 per stakeholder hard requirement.*
 
 ---
 

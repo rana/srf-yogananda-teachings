@@ -55,17 +55,17 @@ Eleven principles define the project's identity and directly constrain code gene
 7. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-095, ADR-099)
 8. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 9. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Phase 13+). Cursor-based pagination. (ADR-011)
-10. **10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Every Tier 3 component (Next.js, Vercel, Contentful, Auth0) is replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
+10. **10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
 11. **Parameters as named constants.** Specific numeric values throughout the documents (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. (ADR-123)
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Python + NetworkX graph batch pipeline (Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Contentful (Phase 0+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Python + NetworkX graph batch pipeline (Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
 /lib/services/ — Business logic (framework-agnostic TypeScript)
-/lib/mcp/ — MCP server (three-tier corpus access layer, ADR-101)
+/lib/mcp/ — MCP server (unscheduled; ADR-101)
 /lib/logger.ts — Structured JSON logging
 /app/ — Next.js Server Components + Route Handlers
 /app/api/v1/ — Versioned API routes
@@ -80,7 +80,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 **Design tokens:** Merriweather + Lora + Open Sans. SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
-**MCP servers:** Neon (now), Sentry (Phase 0), Contentful (Phase 9+), SRF Corpus (custom three-tier: development Phase 0, internal editorial Phase 4, external distribution Phase 8; ADR-101). Details in DESIGN.md § MCP Server Strategy.
+**MCP servers:** Neon (now), Sentry (Phase 0), Contentful (Phase 0b+), SRF Corpus (unscheduled — see ROADMAP.md § Unscheduled Features; ADR-101). Details in DESIGN-phase0.md § MCP Server Strategy.
 
 ## Identifier Conventions
 

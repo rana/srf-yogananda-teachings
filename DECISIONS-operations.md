@@ -164,7 +164,7 @@ The editorial review portal is introduced incrementally, matching the content wo
 |---|---|
 | **Phase 4** | Minimal editorial review portal: theme tag review queue, daily passage curation, calendar event management, content preview, tone/accessibility spot-check. Email digest for review notifications. Auth0 roles: `editor`, `reviewer`. |
 | **Phase 8** | Social media asset review workflow added to the admin portal. |
-| **Phase 9** | Contentful integration. Contentful Custom Apps (sidebar panels). Full admin editorial workflow connecting Contentful authoring with portal review queues. |
+| **Phase 4** | Contentful Custom Apps (sidebar panels). Full admin editorial workflow connecting Contentful authoring (available since Phase 0) with portal review queues. |
 | **Phase 10** | Translation review UI added to admin portal. Auth0 role: `translator:{locale}`. Volunteer reviewer access with minimal permissions. |
 | **Phase 10+** | Impact dashboard for leadership. |
 
@@ -1311,7 +1311,7 @@ Three tiers of MCP server adoption, phased with the project:
 
 | MCP Server | Phase | Purpose | Why Valuable |
 |------------|-------|---------|-------------|
-| **Contentful** | Phase 11+ | Content model queries, entry management, webhook debugging | When Contentful becomes the editorial source of truth, the content model is tightly coupled to code. Prevents drift between what code expects and what CMS provides. |
+| **Contentful** | Phase 0b+ | Content model queries, entry management, webhook debugging | Contentful is the editorial source of truth from Phase 0 (ADR-010). The content model is tightly coupled to code from the start. Prevents drift between what code expects and what CMS provides. |
 
 **Evaluate (try, keep if useful):**
 
@@ -1331,19 +1331,21 @@ Three tiers of MCP server adoption, phased with the project:
 | **New Relic** | APM data (slow queries, endpoint latency) is useful during the Phase 6 observability work, but that's a narrow window. Dashboards handle ongoing monitoring. |
 | **Auth0** | Auth is configured once and rarely touched. When it breaks, the Auth0 CLI or dashboard is adequate for the low frequency of interaction. |
 
-**Custom MCP server (Phase 0):**
+**Custom MCP server (unscheduled):**
 
-The **SRF Corpus MCP** server (planned since the original design) gives the AI development-time access to the book corpus — "find all passages about meditation in Autobiography." This enables the AI to reference actual content when building search features, theme pages, and test fixtures.
+The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI development-time access to the book corpus — "find all passages about meditation in Autobiography." All three tiers were moved to Unscheduled Features (2026-02-24) to focus on core delivery. The architecture is preserved in DESIGN-phase0.md § DES-031.
 
 ### Consequences
 
 - Sentry MCP added to project configuration at Phase 0 alongside existing Neon MCP
-- Contentful MCP evaluated and added when Phase 11 Contentful migration begins
+- Contentful MCP evaluated and added at Phase 0b when Contentful webhook sync activates
 - GitHub MCP evaluated during Phase 0; kept or dropped based on actual utility versus `gh` CLI
-- SRF Corpus MCP server built as a Phase 0 deliverable (custom, queries Neon directly)
+- SRF Corpus MCP server moved to Unscheduled Features (2026-02-24). Architecture preserved in DES-031.
 - AWS MCP explicitly not adopted — Terraform + Sentry + `aws` CLI is sufficient
 - MCP server configuration documented in CLAUDE.md for all future AI sessions
-- This decision is revisited at Phase 9 (Contentful), Phase 12 (cross-media), and Phase 13 (user accounts) when new services enter the stack
+- This decision is revisited at Phase 12 (cross-media) and Phase 13 (user accounts) when new services enter the stack
+
+*Revised: 2026-02-24, Contentful MCP moved to Phase 0b (from Phase 11+). SRF Corpus MCP descheduled.*
 
 ---
 
@@ -1481,7 +1483,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 | **OpenAI** | Processor | Corpus text at embedding time (one-time) | US | Yes |
 | **Resend/SES** | Processor | Subscriber email addresses | US | Yes (Phase 8+) |
 | **Auth0** | Processor | User accounts (if implemented) | US | Yes (Phase 13+) |
-| **Contentful** | Processor | Editorial content (no personal data) | EU | Yes (Phase 9+) |
+| **Contentful** | Processor | Editorial content (no personal data) | EU | Yes (Phase 0+) |
 
 EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. The sub-processor inventory is reviewed when services are added or changed, and published as part of the privacy policy.
 
@@ -1626,7 +1628,7 @@ When an upstream workflow's output changes (e.g., an OCR correction alters passa
 
 ## ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
 
-**Status:** Accepted | **Date:** 2026-02-21
+**Status:** Accepted (all tiers unscheduled as of 2026-02-24; architecture preserved as design reference) | **Date:** 2026-02-21
 
 ### Context
 
@@ -1779,16 +1781,17 @@ If a seeker's AI assistant tracks their queries and accesses the portal MCP on t
 ### Consequences
 
 - DES-031 expanded from a summary table to a full three-tier MCP architecture specification
-- Internal MCP tools added to development backlog: Phase 4 (editorial tools), Phase 5 (relation/people tools), Phase 6 (graph tools), Phase 7 (ontology tools)
-- External MCP tools added as Phase 8 deliverable alongside WhatsApp, email, and social media distribution
-- Fidelity metadata schema defined and included in every external response
-- DES-035 updated to reference MCP tools as the canonical corpus access path for AI workflows
+- All three tiers moved to ROADMAP.md § Unscheduled Features (2026-02-24) to focus on core delivery
+- Architecture preserved in DESIGN-phase0.md § DES-031 as design reference for future scheduling
+- Fidelity metadata schema defined and included in every external response (when scheduled)
+- DES-035 editorial AI workflows access the corpus through `/lib/services/` directly until MCP tiers are scheduled
 - New stakeholder questions added to CONTEXT.md: SRF's posture on external AI access, copyright implications, and sacred text in AI context
-- Access governance model (open/registered/partner) deferred to stakeholder decision before Phase 8
+- Access governance model (open/registered/partner) deferred to stakeholder decision
 - This decision supersedes the external-facing aspects of ADR-097 (which remains valid for the development tier). ADR-097's evaluation of third-party MCP servers (Sentry, Contentful, etc.) is unchanged.
-- Knowledge Graph MCP tools (`get_graph_neighborhood`, `find_concept_path`) require the graph service layer (`/lib/services/graph.ts`) to support these query patterns — verify during Phase 6 graph implementation
+- Knowledge Graph MCP tools (`get_graph_neighborhood`, `find_concept_path`) require the graph service layer (`/lib/services/graph.ts`) to support these query patterns — verify when scheduling
 
 *Section added: 2026-02-21, MCP three-tier exploration*
+*Revised: 2026-02-24, all three tiers moved to Unscheduled Features. Architecture preserved as design reference.*
 
 ---
 
@@ -1813,7 +1816,7 @@ Five structural observations emerged:
 
 3. **Phase 5 (23 deliverables) is the roadmap's riskiest phase** — simultaneously delivering content expansion, AI/ML pipeline, editorial portal, ~10 new features, organizational playbook, and requiring SRF staffing decisions that gate everything. The transition from "building software" to "running a content operation" is buried inside a feature sprint.
 
-4. **The Contentful migration at Phase 10 carries rework cost** — 15+ books ingested via PDF pipeline must be re-imported. Every editorial workflow built against Neon-direct in Phase 5 must be bridged to Contentful.
+4. **~~The Contentful migration at Phase 10 carries rework cost~~** *(Resolved 2026-02-24: Contentful adopted from Phase 0, eliminating migration cost.)* — The original risk of 15+ books requiring re-import is avoided by adopting Contentful from the first phase.
 
 5. **The Knowledge Graph is built incrementally across four phases** (7, 8, 13, 14) — the "complete" graph doesn't exist until Phase 14, four phases after introduction.
 
@@ -1834,7 +1837,7 @@ Five structural observations emerged:
 - The current phasing was designed deliberately and reflects real dependency chains. Resequencing in the abstract — before Phase 0 begins, before team size is known, before SRF confirms their availability — is premature.
 - The observations and proposals are preserved in ROADMAP.md § Phase Sizing Analysis as decision-quality material for when Phase 0 planning begins with real constraints.
 - The strongest observations — that engineering infrastructure should precede the portal build-out, and that Phase 5 should be decomposed — are actionable without formal resequencing. During Phase 0, the team can pull CI/CD and Terraform forward. During Phase 5 planning, the team can decompose into sub-sprints aligned with the 5A/5B/5C split.
-- New open questions added to CONTEXT.md: calendar timeline, minimum lovable product, Phase 5 staffing gate failure mode, Contentful migration timing, parallel workstream identification.
+- New open questions added to CONTEXT.md: calendar timeline, minimum lovable product, Phase 5 staffing gate failure mode, parallel workstream identification. *(Contentful migration timing resolved 2026-02-24: Phase 0.)*
 
 ### Consequences
 
@@ -1857,7 +1860,7 @@ Five structural observations emerged:
 
 ### Context
 
-ADR-102 analyzed the 18-phase roadmap and identified five structural problems: Phase 2 spans three workstreams, engineering infrastructure arrives too late, Phase 5 is the riskiest phase, the Contentful migration carries high rework cost, and the Knowledge Graph is built incrementally across four phases. ADR-102 preserved three resequencing proposals but deferred adoption. Upon further review, Proposal C was selected for immediate implementation.
+ADR-102 analyzed the 18-phase roadmap and identified five structural problems: Phase 2 spans three workstreams, engineering infrastructure arrives too late, Phase 5 is the riskiest phase, the Contentful migration carries high rework cost (resolved 2026-02-24: Contentful adopted from Phase 0), and the Knowledge Graph is built incrementally across four phases. ADR-102 preserved three resequencing proposals but deferred adoption. Upon further review, Proposal C was selected for immediate implementation.
 
 ### Decision
 
@@ -1957,7 +1960,7 @@ A library notice board, not a SaaS changelog. The notice board says "The poetry 
 | Major new pages (Sacred Places, Knowledge Graph, Quiet Corner textures) | Yes | New ways to explore the teachings |
 | Seeker-noticeable UX improvements | Selectively | Only when meaningful — "The reader now remembers where you left off" |
 | Bug fixes, performance | No | Developer concerns, not seeker concerns |
-| Infrastructure changes (Contentful, GitLab) | No | Internal, invisible |
+| Infrastructure changes (GitLab migration, regional distribution) | No | Internal, invisible |
 | Security patches | No | Standard maintenance |
 
 ### Automation Pipeline
@@ -2200,7 +2203,7 @@ Webhook payloads never contain seeker data. Events describe *content* lifecycle 
 | Phase | What Ships |
 |-------|-----------|
 | **Phase 8** | Webhook schema, subscriber management, delivery engine. Initial events: `daily_passage.rotated`, `content.published`, `content.updated`, `social_asset.approved`, `portal_update.published`. Admin UI in editorial portal. |
-| **Phase 9** | Contentful webhook *inbound* (already planned, deliverable 9.3) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
+| **Phase 0b+** | Contentful webhook *inbound* (deliverable 0b.8) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
 | **Phase 10+** | Additional events as channels mature: `journey.step`, `email.dispatched`. SQS fan-out if subscriber count exceeds ~20. |
 | **Phase 13+** | Self-service webhook registration with API key auth for external consumers. |
 

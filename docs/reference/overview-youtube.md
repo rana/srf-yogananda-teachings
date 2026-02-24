@@ -45,4 +45,11 @@ For online book source material during a proof-of-concept, SRF books are availab
 
 Teaching portal might eventually be located at https://srfteachings.org, similar to existing https://srflessons.org. 
 
-Possible alternative https://teachings.yoganada.org.
+Current state:
+- https://srflessons.org redirect to https://yogananda.org/lessons.
+
+Possible alternatives: 
+- https://teachings.yoganada.org (main site)
+    - https://srfteachings.org redirects to https://teachings.yoganada.org 
+- https://lessons.yoganada.org (main site)
+    - https://srflessons.org redirects to https://lessons.yoganada.org

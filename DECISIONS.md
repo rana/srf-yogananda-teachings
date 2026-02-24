@@ -25,7 +25,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 
 - ADR-008: Next.js + Vercel for Frontend
 - ADR-009: Neon + pgvector for Vector Search
-- ADR-010: Contentful as Editorial Source of Truth (Production)
+- ADR-010: Contentful as Editorial Source of Truth
 - ADR-011: API-First Architecture for Platform Parity
 - ADR-012: Progressive Web App as Mobile Intermediate Step
 - ADR-013: Single-Database Architecture — No DynamoDB
