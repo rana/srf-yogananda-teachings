@@ -172,10 +172,10 @@ Specifies how the portal is built, tested, and monitored. Engineering standards 
 
 **Governance**
 
-Controls how the project governs its own decisions, documents, and evolution. The eight-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md, ROADMAP.md) is designed for AI-first navigation with phase-gated loading; DELTA serves as a GDPR superstructure for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+Controls how the project governs its own decisions, documents, and evolution. The twelve-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md) is designed for AI-first navigation with phase-gated loading; DELTA serves as the primary framework for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Eight-Document System with Phase-Gated Loading
-- ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
+- ADR-098: Documentation Architecture — Twelve-Document System with Phase-Gated Loading
+- ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 - ADR-102: Phase Sizing Evaluation — Greenfield Analysis of the 18-Phase Roadmap
 - ADR-103: Roadmap Restructured to 15 Capability-Themed Phases
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
@@ -194,5 +194,5 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 |------|--------|------|-----------------|
 | [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–053, 114–121 | Phase 0+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Phase 1+ (experience design) |
-| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–113, 123 | Phase 4+ (operations and governance) |
+| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–103, 105–113, 123 | Phase 4+ (operations and governance) |
 

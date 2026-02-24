@@ -1349,7 +1349,7 @@ The **SRF Corpus MCP** server (planned since the original design) gives the AI d
 
 ---
 
-## ADR-098: Documentation Architecture — Eight-Document System with Phase-Gated Loading
+## ADR-098: Documentation Architecture — Twelve-Document System with Phase-Gated Loading
 
 - **Status:** Accepted
 - **Date:** 2026-02-20
@@ -1365,7 +1365,7 @@ Key tensions:
 
 ### Decision
 
-Maintain an eight-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
+Maintain a twelve-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
 
 | Document | Role | Primary Audience |
 |----------|------|-----------------|
@@ -1376,7 +1376,10 @@ Maintain an eight-document system with explicit roles, a routing document (CLAUD
 | DESIGN-phase0.md | Search, data model, ingestion, chunking, MCP, infrastructure | Developers, AI |
 | DESIGN-phase1-4.md | Frontend, accessibility, video, events, staff tools | Developers, AI |
 | DESIGN-phase5-plus.md | Cultural design, email, CMS, magazine, dashboard, community | Developers, AI |
-| DECISIONS.md | Architecture Decision Records with navigational group summaries | Developers, AI |
+| DECISIONS.md | ADR navigational index with group summaries | Developers, AI |
+| DECISIONS-core.md | ADR bodies: Foundational, Architecture, Content, Search | Developers, AI |
+| DECISIONS-experience.md | ADR bodies: Cross-Media, Seeker Experience, Internationalization | Developers, AI |
+| DECISIONS-operations.md | ADR bodies: Staff, Brand, Operations, Governance | Developers, AI |
 | ROADMAP.md | Phased delivery plan with deliverables and success criteria | All audiences |
 
 **Conventions:**
@@ -1408,7 +1411,7 @@ Maintain an eight-document system with explicit roles, a routing document (CLAUD
 - Future documentation changes should follow the conventions established here
 - This ADR should be revised if the documentation system undergoes further restructuring
 
-*Revised: 2026-02-23, document architecture restructured from 5 to 8 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase into 4 files (root + phase0 + phase1-4 + phase5-plus); DECISIONS.md index enhanced with navigational group summaries; CLAUDE.md updated with phase-gated reading guidance.*
+*Revised: 2026-02-23, document architecture restructured from 5 to 12 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase into 4 files (root + phase0 + phase1-4 + phase5-plus); DECISIONS.md split into navigational index + 3 phase-scoped body files (core, experience, operations); CLAUDE.md updated with phase-gated reading guidance.*
 
 ---
 

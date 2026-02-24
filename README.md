@@ -45,7 +45,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
 | Reranking | Cohere Rerank 3.5 (Phase 2+) (ADR-119) |
-| Graph | Neptune Analytics (Phase 4+) (ADR-117) |
+| Graph | Postgres-native + Python/NetworkX batch pipeline (Phase 4+) (ADR-117) |
 | Cache | Redis/ElastiCache (suggestions, Phase 2+) (ADR-120) |
 | Language detection | fastText (per-query, < 1ms) |
 | CMS | Contentful (Phase 9+) |

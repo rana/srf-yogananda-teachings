@@ -80,7 +80,7 @@ Screen reader quality goes beyond mere compliance. ADR-073 specifies that the sp
 
 **No user identification, no session tracking, no behavioral profiling.** Amplitude event allowlist only. (ADR-095, ADR-099)
 
-The DELTA framework (Dignity, Embodiment, Luminosity, Transcendence, Agency) produces privacy protections that exceed any single regulation. The crosswalk is documented in ADR-099: DELTA Dignity maps to GDPR Art. 5(1)(a) fairness; DELTA Embodiment maps to Art. 5(1)(b) purpose limitation. Ethics came first; legal compliance follows naturally from the theological framework.
+The DELTA framework (Dignity, Embodiment, Love, Transcendence, Agency) produces privacy protections that exceed any single regulation. The crosswalk is documented in ADR-099: DELTA Dignity maps to GDPR Art. 5(1)(a) fairness; DELTA Embodiment maps to Art. 5(1)(b) purpose limitation. Ethics came first; legal compliance follows naturally from the theological framework.
 
 The portal collects approximately five event types: page view (anonymized), search query (anonymized, no user association), book opened, chapter read, Quiet Corner timer started. No user identification, no session stitching, no behavioral profiles, no cross-device tracking. The measurement question "Is this portal succeeding?" is answered not by engagement metrics but by "What Is Humanity Seeking?" — aggregated, anonymized search trends that reveal what the world is asking.
 

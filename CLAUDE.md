@@ -17,7 +17,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 7. **DECISIONS.md** — Index and navigational summaries for 123 ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–053, 114–121). Phase 0+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Phase 1+.
-   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–113, 123). Phase 4+.
+   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–103, 105–113, 123). Phase 4+.
 8. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 **Phase-gated reading.** Do not read front-to-back. Load what the task requires:
@@ -45,13 +45,13 @@ Located in `docs/reference/`:
 
 Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
 
-1. **Direct quotes only.** The AI is a librarian, not an oracle. It finds and ranks Yogananda's verbatim words — it NEVER generates, paraphrases, or synthesizes content. (ADR-001)
+1. **Direct quotes only.** The AI is a librarian, not an oracle. It finds and ranks Yogananda's verbatim words — it NEVER generates, paraphrases, or synthesizes content. (ADR-001, ADR-005)
 2. **Sacred text fidelity.** Every displayed passage must include book, chapter, and page citation. No orphaned quotes. AI translation of Yogananda's words is never acceptable — only official SRF/YSS translations. (ADR-075, ADR-078)
-3. **Signpost, not destination.** The portal leads seekers toward practice — it never substitutes for it. Practice Bridge routes technique queries to SRF Lessons information. Crisis query detection provides safety interstitials. The AI never interprets meditation techniques or spiritual practices. (ADR-104, ADR-122)
+3. **Signpost, not destination.** The portal leads seekers toward practice — it never substitutes for it. Practice Bridge routes technique queries to SRF Lessons information. Crisis query detection provides safety interstitials. The AI never interprets meditation techniques or spiritual practices. (ADR-104, ADR-122, ADR-069)
 4. **Global Equity.** A seeker in rural Bihar on 2G and a seeker in San Francisco on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Performance budgets enforce this. (ADR-006)
 5. **Calm Technology.** No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI. The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
 6. **Accessibility from Phase 1.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
-7. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-095)
+7. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-095, ADR-099)
 8. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 9. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Phase 13+). Cursor-based pagination. (ADR-011)
 10. **10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Every Tier 3 component (Next.js, Vercel, Contentful, Auth0) is replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
@@ -109,7 +109,7 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Eleven documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|

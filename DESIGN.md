@@ -294,7 +294,7 @@ All API endpoints return errors in a consistent JSON format:
 interface ErrorResponse {
  error: string; // Machine-readable code (e.g., "RATE_LIMITED", "NOT_FOUND", "INVALID_PARAMETER")
  message: string; // Human-readable description (compassionate tone per DELTA Love principle)
- requestId: string; // UUID for Sentry correlation and support debugging
+ request_id: string; // UUID for Sentry correlation and support debugging
 }
 ```
 
@@ -303,7 +303,7 @@ interface ErrorResponse {
 | 400 | `INVALID_PARAMETER` | Missing required parameter, invalid cursor, malformed query |
 | 404 | `NOT_FOUND` | Book, chapter, chunk, theme, or place does not exist |
 | 429 | `RATE_LIMITED` | Rate limit exceeded. Response includes `Retry-After` header (seconds) |
-| 500 | `INTERNAL_ERROR` | Unexpected failure. Logged to Sentry with `requestId` |
+| 500 | `INTERNAL_ERROR` | Unexpected failure. Logged to Sentry with `request_id` |
 
 Error messages use the same compassionate, clear language as the rest of the portal. Example: `"We couldn't find that passage. It may have been moved when a new edition was added."` — never terse HTTP-speak.
 
