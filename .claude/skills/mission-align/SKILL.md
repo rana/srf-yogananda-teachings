@@ -33,7 +33,17 @@ Present as an action list. No changes to files — document only.
 
 ## Output Management
 
-If the analysis is extensive, deliver the highest-priority findings first. Keep output concise — dense observations, not expansive prose. Note remaining sections available on request.
+**Hard constraints:**
+- Maximum 8 findings per run. Prioritize by severity.
+- If no $ARGUMENTS focus area is given, audit only the top 3 most at-risk principles rather than all 11.
+- Write findings to MISSION-ALIGN-AUDIT.md incrementally. Do not accumulate a single large response.
+
+**Document reading strategy:**
+- CONTEXT.md and ROADMAP.md: read fully (short documents).
+- DESIGN.md and DECISIONS.md: read the index/overview sections first. Only read specific ADR or design sections relevant to the focused principle(s).
+
+**If output would exceed comfortable length:**
+Stop. Write what you have to MISSION-ALIGN-AUDIT.md. Tell the user which principles remain unaudited and offer to continue.
 
 What questions would I benefit from asking?
 

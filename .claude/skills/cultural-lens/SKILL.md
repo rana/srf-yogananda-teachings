@@ -31,7 +31,18 @@ Present as an action list. No changes to files — document only.
 
 ## Output Management
 
-If the analysis is extensive, deliver the highest-priority findings first. Keep output concise — dense observations, not expansive prose. Note remaining sections available on request.
+**Hard constraints:**
+- Maximum 8 findings per run. Prioritize by severity of cultural impact.
+- $ARGUMENTS (the perspective) is effectively required for this skill. If omitted, ask the user rather than attempting all perspectives.
+- Write findings to CULTURAL-LENS-AUDIT.md incrementally. Do not accumulate a single large response.
+
+**Document reading strategy:**
+- CONTEXT.md and ROADMAP.md: read fully (short documents).
+- DESIGN.md: read sections relevant to the cultural dimension — visual design, content strategy, accessibility. Skip API and infrastructure sections.
+- DECISIONS.md: read the index first. Only read specific ADRs touching internationalization, accessibility, or content policy.
+
+**If output would exceed comfortable length:**
+Stop. Write what you have to CULTURAL-LENS-AUDIT.md. Tell the user which dimensions remain unreviewed and offer to continue.
 
 What questions would I benefit from asking?
 

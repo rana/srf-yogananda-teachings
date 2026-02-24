@@ -33,7 +33,18 @@ Present as an action list. No changes to files — document only.
 
 ## Output Management
 
-If the analysis is extensive, deliver the highest-priority findings first. Keep output concise — dense observations, not expansive prose. Note remaining sections available on request.
+**Hard constraints:**
+- Maximum 8 findings per run. Prioritize by impact on the seeker's experience.
+- If no $ARGUMENTS focus area is given, evaluate only the top 3 most impactful dimensions rather than all 10.
+- Write findings to SEEKER-UX-AUDIT.md incrementally. Do not accumulate a single large response.
+
+**Document reading strategy:**
+- CONTEXT.md and ROADMAP.md: read fully (short documents).
+- DESIGN.md: read UX, typography, and interaction sections relevant to the focused dimension(s). Skip infrastructure sections.
+- DECISIONS.md: read the index first. Only read specific ADRs relevant to the focused dimension(s).
+
+**If output would exceed comfortable length:**
+Stop. Write what you have to SEEKER-UX-AUDIT.md. Tell the user which dimensions remain unreviewed and offer to continue.
 
 What questions would I benefit from asking?
 
