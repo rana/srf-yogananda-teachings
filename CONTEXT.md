@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 0a (Prove).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture + 56 design sections DES-001 through DES-056), DECISIONS.md (123 ADRs, numbered 001–123, organized into 11 topical groups), ROADMAP.md (15 phases, 0a–14). RAG Architecture Proposal merged into project documents (2026-02-23). 15 elmer proposals in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting merge into canonical documents. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23. No code yet.
+**What exists:** Comprehensive design documentation across eight files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture, 19 sections) + three phase-scoped design files (DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (123 ADRs with 11 navigational group summaries), ROADMAP.md (15 phases, 0a–14). Document architecture restructured 2026-02-23: PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase for context-window efficiency; DECISIONS.md index enhanced with group summaries. RAG Architecture Proposal merged into project documents (2026-02-23). 15 elmer proposals in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting merge into canonical documents. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23. No code yet.
 
 **What's next:** Phase 0a — Prove. Confirm edition + PDF source with SRF, then: repo setup, Neon + schema (pgvector + pg_search), PDF ingestion, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader, search quality evaluation (50-query golden set). Eight deliverables answering one question: does semantic search work over Yogananda's text? Phase 0b (Foundation) adds entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
@@ -12,7 +12,7 @@
 
 ## Project Methodology
 
-This portal is designed and implemented through AI-human collaboration. The human principal directs strategy, makes stakeholder decisions, and provides editorial judgment. The AI (Claude) serves as architect, implementer, and maintainer across sessions. The documentation volume — CONTEXT.md, DESIGN.md, DECISIONS.md, ROADMAP.md, and CLAUDE.md — is intentional: it is the project's institutional memory, enabling continuity across AI context windows where no persistent memory exists.
+This portal is designed and implemented through AI-human collaboration. The human principal directs strategy, makes stakeholder decisions, and provides editorial judgment. The AI (Claude) serves as architect, implementer, and maintainer across sessions. The documentation volume — CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md (+ phase files), DECISIONS.md, and ROADMAP.md — is intentional: it is the project's institutional memory, enabling continuity across AI context windows where no persistent memory exists. Phase-gated reading guidance in CLAUDE.md ensures each session loads only what the task requires.
 
 Roles the AI cannot fill: editorial judgment on sacred text, theological review, SRF stakeholder decisions, community relationship management, and the inner orientation described in the Spiritual Design Principles below. These require human presence and spiritual sensitivity that architecture cannot substitute.
 
@@ -372,7 +372,7 @@ What this means in practice:
 - **Migrations are raw SQL.** dbmate, not an ORM's migration generator. SQL is readable, debuggable, and will outlive any ORM.
 - **Dependencies are commitments.** Every npm package, every API integration, every SaaS tool is a maintenance obligation for 10 years. Choose fewer, more durable dependencies.
 - **Components are tiered by replaceability.** Tier 1 (permanent): PostgreSQL, the service layer, the data model. Tier 2 (stable): Next.js, Vercel, Contentful. Tier 3 (replaceable): specific npm packages, Claude model versions, embedding model versions.
-- **Documentation is a permanent artifact.** CLAUDE.md, CONTEXT.md, DESIGN.md, DECISIONS.md, ROADMAP.md — these files are as important as the code. New maintainers in year 7 should understand every decision.
+- **Documentation is a permanent artifact.** Eight documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + phase files, DECISIONS.md, ROADMAP.md) are as important as the code. New maintainers in year 7 should understand every decision.
 
 ### Curation as Interpretation: The Fidelity Boundary
 

@@ -8,16 +8,22 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 ## Read These Files
 
-1. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
-2. **DESIGN.md** — Technical architecture, data model, content pipeline, UI design tokens, API design, observability, testing
-3. **DECISIONS.md** — 123 Architecture Decision Records (ADR-001 through ADR-123) organized into 11 topical groups, with full rationale for every major choice
-4. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
+1. **PRINCIPLES.md** — The 11 immutable commitments that define the project, with rationale. Always load this.
+2. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
+3. **DESIGN.md** — Cross-cutting architecture, API design, observability, testing, personas, editorial patterns
+4. **DESIGN-phase0.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
+5. **DESIGN-phase1-4.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
+6. **DESIGN-phase5-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
+7. **DECISIONS.md** — 123 Architecture Decision Records (ADR-001 through ADR-123) organized into 11 topical groups with navigational summaries. Read the index + group summaries first; load full ADRs on demand.
+8. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
-**Phase-gated reading.** The full document set exceeds 1.4MB. Do not read front-to-back. Load what the task requires:
-- **Always:** This file (CLAUDE.md) + CONTEXT.md § Current State + ROADMAP.md § current phase
-- **When implementing:** DESIGN.md sections relevant to the task + DECISIONS.md ADRs referenced by those sections
+**Phase-gated reading.** Do not read front-to-back. Load what the task requires:
+- **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current phase
+- **When implementing Phase 0:** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS.md ADRs referenced by those sections
+- **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + relevant ADRs
+- **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + relevant ADRs
 - **When making decisions:** The relevant ADR group from the DECISIONS.md index (Foundational, Architecture, Content, Search, etc.)
-- **Not needed for Phase 0:** Cross-Media (ADR-054–064), Staff & Community (ADR-082–087), Brand & Communications (ADR-088–092, 105), Internationalization content (ADR-077–081 — infrastructure in ADR-075–076 is needed)
+- **Not needed for Phase 0:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, Cross-Media ADRs (054–064), Staff & Community ADRs (082–087), Brand & Communications ADRs (088–092, 105)
 
 ## Ignore
 
@@ -34,7 +40,7 @@ Located in `docs/reference/`:
 
 ## Principles (Code-Affecting)
 
-Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
+Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
 
 1. **Direct quotes only.** The AI is a librarian, not an oracle. It finds and ranks Yogananda's verbatim words — it NEVER generates, paraphrases, or synthesizes content. (ADR-001)
 2. **Sacred text fidelity.** Every displayed passage must include book, chapter, and page citation. No orphaned quotes. AI translation of Yogananda's words is never acceptable — only official SRF/YSS translations. (ADR-075, ADR-078)
@@ -76,7 +82,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 **ADR-NNN** (Architecture Decision Records) — 123 decisions in DECISIONS.md (ADR-001 through ADR-123), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-123. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
 
-**DES-NNN** (Design Sections) — 56 sections in DESIGN.md (DES-001 through DES-056), numbered by document order. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Header format: `## DES-NNN: Title`, `### DES-NNN: Title`, or `#### DES-NNN: Title` (level reflects nesting depth).
+**DES-NNN** (Design Sections) — 56 sections (DES-001 through DES-056) split across four files: DESIGN.md (cross-cutting), DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
 
@@ -98,10 +104,11 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Five documents. Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Eight documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
+| Principle added or revised | Update PRINCIPLES.md (expanded rationale) and CLAUDE.md § Principles (compressed form) |
 | New decision made | Add ADR to DECISIONS.md and update the domain index at top of file |
 | Open question resolved | Move from "Open Questions" to "Resolved Questions" in CONTEXT.md |
 | Open question added | Add to CONTEXT.md § Open Questions (appropriate tier). Cross-reference from relevant DESIGN.md section if applicable. |

@@ -7,6 +7,9 @@ Each decision is recorded with full context so future contributors understand no
 ### Index by Concern
 
 **Foundational Constraints**
+
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Accessibility is a Phase 1 requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
+
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
 - ADR-003: Accessibility as Phase 1 Foundation
@@ -17,6 +20,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-121: DELTA-Relaxed Authenticated Experience
 
 **Architecture & Platform**
+
+Defines the technology stack and infrastructure topology. The frontend runs Next.js on Vercel; the database is Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB); AI calls go through AWS Bedrock Claude with model tiering; infrastructure is Terraform-managed with CI-agnostic deployment scripts. Also covers PWA strategy, content-addressable deep links, rate limiting, PDF generation, low-tech channel support, language URL design, Postgres-native graph intelligence, and Redis suggestion caching.
+
 - ADR-008: Next.js + Vercel for Frontend
 - ADR-009: Neon + pgvector for Vector Search
 - ADR-010: Contentful as Editorial Source of Truth (Production)
@@ -42,6 +48,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-120: Redis Suggestion Cache Architecture
 
 **Content & Data Model**
+
+Specifies what content the portal holds and how it is structured in the database. Autobiography of a Yogi is the Phase 0 focus book; ingestion priority follows life-impact over scholarly significance; the data model is edition-aware with teaching topics taxonomy, exploration themes, a living glossary, a people library (including monastic lineage), and a canonical entity registry with Sanskrit normalization. Content integrity verification, sacred image guidelines, and a structured spiritual ontology ensure fidelity and machine-readability.
+
 - ADR-029: Autobiography of a Yogi as Phase 0 Focus
 - ADR-030: Book Ingestion Priority — Life-Impact Over Scholarly Significance
 - ADR-031: Teaching Topics — Curated Thematic Entry Points
@@ -60,6 +69,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-116: Canonical Entity Registry and Sanskrit Normalization
 
 **Search & AI**
+
+Governs how seekers find passages and how AI assists retrieval. Search uses hybrid vector + BM25 retrieval fused via Reciprocal Rank Fusion, with Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text, and an advanced pipeline adding HyDE query expansion and Cohere Rerank 3.5. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The terminology bridge maps modern phrasing to Yogananda's vocabulary across books.
+
 - ADR-044: Hybrid Search (Vector + Full-Text)
 - ADR-045: Claude API for AI Features
 - ADR-046: Embedding Model Versioning and Migration (updated by ADR-118)
@@ -76,6 +88,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-119: Advanced Search Pipeline — HyDE, Cohere Rerank, Three-Path Retrieval
 
 **Cross-Media**
+
+Decides how video, audio, image, and cross-media content integrate into the portal. YouTube videos use hybrid RSS + API ingestion; transcripts are time-synced for passage-level linking; the video model is platform-agnostic to support future migration. Audio gets its own library with cross-media search; AI-generated audio is policy-controlled. The knowledge graph evolves to treat all content types as nodes, with visualization, digital watermarking for SRF images, and multi-size image serving.
+
 - ADR-054: YouTube Integration via Hybrid RSS + API with ISR
 - ADR-055: Video Transcript Time-Synced Architecture
 - ADR-056: Platform-Agnostic Video Model and Documentary Integration
@@ -89,6 +104,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-064: Multi-Size Image Serving and Download Options
 
 **Seeker Experience**
+
+Shapes how the portal feels and behaves for readers. The design system derives from SRF's visual identity with Calm Technology principles — quiet, unhurried, spiritually resonant. Features include lotus bookmarks (no account required), non-search discovery journeys, passage sharing as organic growth, events and sacred places as signposts, crisis resources as a gentle safety net, cognitive accessibility for all seekers, screen reader emotional quality, and micro-copy treated as ministry. Practice Bridge provides signpost enrichment linking teachings to spiritual practice.
+
 - ADR-065: SRF-Derived Design System with Calm Technology Principles
 - ADR-066: Lotus Bookmark — Account-Free Reading Bookmarks
 - ADR-067: Non-Search Seeker Journeys — Equal Excellence for Every Path
@@ -103,6 +121,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-122: Crisis Query Detection — Safety Interstitial for Acute-Distress Searches
 
 **Internationalization**
+
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Phase 1 for RTL readiness; Hindi and Bengali are on the locale roadmap. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
+
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
 - ADR-076: CSS Logical Properties from Phase 1
 - ADR-077: Hindi and Bengali in Locale Roadmap
@@ -112,6 +133,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-081: Machine-Readable Content and AI Citation Strategy
 
 **Staff & Community**
+
+Defines editorial tools and community participation features. Staff get a five-layer editorial system (from bulk operations to AI-assisted enrichment); seekers get a study workspace with universal teaching tools that require no authentication. Feedback is DELTA-compliant (no user profiling), lessons integration is designed for future readiness, community collections use tiered visibility for public curation, and VLD editorial delegation enables a volunteer curation pipeline.
+
 - ADR-082: Staff Experience Architecture — Five-Layer Editorial System
 - ADR-083: Study Workspace — Universal Teaching Tools Without Authentication
 - ADR-084: DELTA-Compliant Seeker Feedback Mechanism
@@ -120,6 +144,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-087: VLD Editorial Delegation — Volunteer Curation Pipeline
 
 **Brand & Communications**
+
+Governs the portal's public identity and outreach channels. SRF imagery follows specific usage guidelines; the AI search feature is branded as "The Librarian" to reinforce the non-oracle role; "What Is Humanity Seeking?" repurposes anonymized search intelligence as a communications asset. Distribution includes daily email with verbatim passage delivery, social media with portal-generated assets and human distribution, and a seeker-facing changelog for portal updates.
+
 - ADR-088: SRF Imagery Strategy in the Portal
 - ADR-089: "The Librarian" — AI Search Brand Identity
 - ADR-090: "What Is Humanity Seeking?" as Strategic Communications Asset
@@ -128,6 +155,9 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-105: Portal Updates — Seeker-Facing Changelog
 
 **Operations & Engineering**
+
+Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
+
 - ADR-093: Engineering Standards for SRF Projects
 - ADR-094: Testing Strategy
 - ADR-095: Observability Strategy
@@ -141,7 +171,10 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-109: Cross-API Route Rationalization — Consistent Identifiers, Consolidated Namespaces, Complete CRUD
 
 **Governance**
-- ADR-098: Documentation Architecture — Five-Document System with AI-First Navigation
+
+Controls how the project governs its own decisions, documents, and evolution. The eight-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md, ROADMAP.md) is designed for AI-first navigation with phase-gated loading; DELTA serves as a GDPR superstructure for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+
+- ADR-098: Documentation Architecture — Eight-Document System with Phase-Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as GDPR Superstructure
 - ADR-102: Phase Sizing Evaluation — Greenfield Analysis of the 18-Phase Roadmap
 - ADR-103: Roadmap Restructured to 15 Capability-Themed Phases
@@ -8622,7 +8655,7 @@ The **SRF Corpus MCP** server (planned since the original design) gives the AI d
 
 ---
 
-## ADR-098: Documentation Architecture — Five-Document System with AI-First Navigation
+## ADR-098: Documentation Architecture — Eight-Document System with Phase-Gated Loading
 
 - **Status:** Accepted
 - **Date:** 2026-02-20
@@ -8638,14 +8671,18 @@ Key tensions:
 
 ### Decision
 
-Maintain a five-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
+Maintain an eight-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
 
 | Document | Role | Primary Audience |
 |----------|------|-----------------|
-| CLAUDE.md | AI routing, constraints, maintenance protocol | AI collaborators |
+| CLAUDE.md | AI routing, compressed principles, maintenance protocol | AI collaborators |
+| PRINCIPLES.md | 11 immutable commitments with expanded rationale | All audiences |
 | CONTEXT.md | Project background, open questions, stakeholder context | All audiences |
-| DESIGN.md | Technical architecture, data model, API, frontend design | Developers, AI |
-| DECISIONS.md | Architecture Decision Records (immutable history) | Developers, AI |
+| DESIGN.md | Cross-cutting architecture, API, observability, testing, personas | Developers, AI |
+| DESIGN-phase0.md | Search, data model, ingestion, chunking, MCP, infrastructure | Developers, AI |
+| DESIGN-phase1-4.md | Frontend, accessibility, video, events, staff tools | Developers, AI |
+| DESIGN-phase5-plus.md | Cultural design, email, CMS, magazine, dashboard, community | Developers, AI |
+| DECISIONS.md | Architecture Decision Records with navigational group summaries | Developers, AI |
 | ROADMAP.md | Phased delivery plan with deliverables and success criteria | All audiences |
 
 **Conventions:**
@@ -8675,7 +8712,9 @@ Maintain a five-document system with explicit roles, a routing document (CLAUDE.
 - CLAUDE.md maintenance table is expanded from 6 rows to 12 rows
 - CLAUDE.md gains a "Documentation–Code Transition" section
 - Future documentation changes should follow the conventions established here
-- This ADR should be superseded if the documentation system undergoes fundamental restructuring (e.g., splitting DESIGN.md into sub-documents as it grows beyond navigability)
+- This ADR should be revised if the documentation system undergoes further restructuring
+
+*Revised: 2026-02-23, document architecture restructured from 5 to 8 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase into 4 files (root + phase0 + phase1-4 + phase5-plus); DECISIONS.md index enhanced with navigational group summaries; CLAUDE.md updated with phase-gated reading guidance.*
 
 ---
 

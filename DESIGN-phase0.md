@@ -1,0 +1,1945 @@
+# SRF Online Teachings Portal — Phase 0 Design (Prove + Foundation)
+
+> **Scope.** This file contains the technical design sections relevant to **Phase 0** — proving the AI librarian concept and establishing the data foundation. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For later phases, see [DESIGN-phase1-4.md](DESIGN-phase1-4.md) and [DESIGN-phase5-plus.md](DESIGN-phase5-plus.md).
+>
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+
+---
+
+## DES-003: The AI Librarian: Search Architecture
+
+### Core Principle
+
+The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it never speaks for him. All results shown to users are verbatim quotes from published works with precise citations.
+
+### ADR-089: Brand Identity
+
+"The Librarian" is the portal's external brand identity for its AI search capability. In a world where every AI product synthesizes content, the portal's refusal to generate is a radical differentiator. The About page explains: *"This is not an AI that speaks for Yogananda. It is a librarian that finds his words for you. Every passage you see is exactly as he wrote it."* The `llms.txt` file includes this framing. Search results may include a subtle footer: *"Every passage shown is Yogananda's own words."*
+
+### Search Flow
+
+The search pipeline has evolved through three phase tiers. Phase 0–1 uses a two-path retrieval core (vector + BM25). Phase 2+ adds HyDE and Cohere Rerank. Phase 4+ adds a third retrieval path via Postgres-native graph traversal (ADR-117).
+
+```
+1. USER QUERY
+ "How do I overcome fear?"
+ │
+ ▼
+2. LANGUAGE DETECTION (fastText — per-query, < 1ms)
+ Detect query language → route to language-appropriate indexes.
+ Short queries (< 3 words) use session language or Accept-Language header as tiebreaker.
+ │
+ ▼
+3. INTENT CLASSIFICATION (Claude Haiku via Bedrock — lightweight, ADR-014)
+ Classify intent: topical / specific / emotional / definitional / situational / browsing / search.
+ Route non-search intents to theme pages, reader, or daily passage.
+ Falls back to standard search if uncertain.
+ │
+ ▼
+4. QUERY EXPANSION (Claude Haiku via Bedrock — optional, for complex queries)
+ a) Terminology Bridge (ADR-005 E2):
+    Map cross-tradition and modern terms to Yogananda's vocabulary
+    "mindfulness" → "concentration", "one-pointed attention"
+
+ b) Claude expands the query into semantic search terms:
+    ["fear", "courage", "anxiety", "fearlessness", "divine protection",
+     "dread", "worry", "soul immortal", "overcome terror"]
+
+    Strict instructions:
+    - Output ONLY a JSON array of search terms
+    - Do not answer the question
+    - Do not generate any teaching content
+ │
+ ▼
+5. HyDE — HYPOTHETICAL DOCUMENT EMBEDDING (Phase 2+, ADR-119)
+ Claude generates a hypothetical passage that would answer the query,
+ written in Yogananda's register. This generated passage is an
+ intermediate embedding artifact only — it is never stored, displayed,
+ or accessible to seekers. It improves retrieval quality without
+ generating any user-facing content. ADR-001 is not violated.
+ The passage is embedded and searched in document-space (asymmetric:
+ query-type embedding for original query, document-type embedding
+ for HyDE passage — per Voyage ADR-118).
+ High lift on literary/spiritual corpora where seeker vocabulary
+ diverges from corpus vocabulary.
+ │
+ ▼
+6. MULTI-PATH PARALLEL RETRIEVAL (Neon PostgreSQL, Phase 4+ adds PATH C)
+
+ PATH A — Dense Vector (pgvector, HNSW):
+ - Embed the original query using Voyage voyage-3-large (ADR-118)
+ - Find top 20 chunks by cosine similarity
+ - If HyDE active: also search with HyDE embedding, merge via RRF
+
+ PATH B — BM25 Keyword (pg_search/ParadeDB, ADR-114):
+ - Search expanded terms against the BM25 index (ICU tokenizer)
+ - BM25 scoring produces better relevance ranking than tsvector ts_rank
+ - Find top 20 chunks by keyword relevance
+
+ PATH C — Graph-Augmented Retrieval (Postgres, Phase 4+, ADR-117):
+ - Identify entities/concepts in query via entity registry (ADR-116)
+ - SQL traversal across extracted_relationships and concept_relations
+ - Return top 20 chunks reachable within 2–3 hops
+ - pgvector similarity applied to graph-retrieved candidates
+ - Multi-step queries composed in /lib/services/graph.ts
+
+ RECIPROCAL RANK FUSION (RRF):
+ - Merge results from all active paths (A+B in Phase 0–3; A+B+C in Phase 4+)
+ - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Phase 0a.8 golden set at k=40/60/80]*
+ - Deduplicate, producing top 20 candidates
+ │
+ ▼
+7. RERANKING (Cohere Rerank 3.5, Phase 2+, ADR-119)
+ Cross-encoder reranker sees query + passage together.
+ Multilingual native. Replaces Claude Haiku passage ranking for precision.
+ Selects and ranks top 5 from 20 candidates.
+
+ Phase 0–1 fallback: Claude Haiku passage ranking (ADR-014).
+ │
+ ▼
+8. CONTEXT EXPANSION
+ For each top-5 result, fetch surrounding chunks for
+ "read in context" display. Attach enrichment metadata:
+ book, chapter, page, experiential depth, voice register.
+ │
+ ▼
+9. RESULT PRESENTATION
+ Display ranked passages as verbatim quotes:
+
+ ┌──────────────────────────────────────────────┐
+ │ "The soul is ever free; it is deathless, │
+ │ birthless, ever-existing..." │
+ │ │
+ │ — Autobiography of a Yogi, Chapter 26 │
+ │ Page 312 │
+ │ [Read in context →] │
+ └──────────────────────────────────────────────┘
+
+ Each result includes:
+ - The verbatim passage text (highlighted relevant portion)
+ - Book title, chapter, page number
+ - A deep link to the book reader positioned at that passage
+ - Related teachings (Phase 3+, ADR-050) grouped by relationship type
+```
+
+**Phase progression of the search pipeline:**
+
+| Phase | Retrieval Paths | Reranker | Enhancements |
+|-------|----------------|----------|-------------|
+| 0–1 | Vector (pgvector) + BM25 (pg_search) | Claude Haiku passage ranking | Basic query expansion, terminology bridge |
+| 2–3 | Vector + BM25 | Cohere Rerank 3.5 | HyDE, improved query expansion |
+| 4+ | Vector + BM25 + Graph (Postgres) | Cohere Rerank 3.5 | Three-path RRF, entity-aware retrieval |
+
+### Search Intent Classification (ADR-005 E1)
+
+Before query expansion, a lightweight Claude call classifies the seeker's intent:
+
+```
+User types: "I'm scared"
+ │
+ ▼
+INTENT CLASSIFICATION (Claude Haiku via Bedrock — lightweight, ~$0.0005/query, ADR-014)
+ Claude classifies the query:
+ { "intent": "emotional", "route": "theme", "theme_slug": "courage" }
+
+ Intent types:
+ topical → redirect to /themes/[slug] if theme exists
+ specific → redirect to reader (/books/[slug]/[chapter])
+ emotional → empathic entry: theme-filtered search with compassionate framing
+ definitional → search with boost for passages where Yogananda defines the term
+ situational → search with situation-theme boost
+ browsing → route to Today's Wisdom / random passage
+ search → standard hybrid search (default fallback)
+
+ Returns JSON only. Falls back to standard search if uncertain.
+```
+
+### Spiritual Terminology Bridge (ADR-005 E2)
+
+The query expansion system prompt includes a tradition-aware vocabulary mapping maintained at `/lib/data/spiritual-terms.json`:
+
+```
+Seeker searches: "mindfulness meditation anxiety"
+ │
+ ▼
+TERMINOLOGY BRIDGE (integrated into query expansion prompt)
+ Maps cross-tradition and modern terms to Yogananda's vocabulary:
+ "mindfulness" → "concentration", "one-pointed attention", "interiorization"
+ "anxiety" → "restlessness", "mental disturbance", "nervous agitation"
+ "meditation" → "meditation" (direct match — also expands to "stillness", "going within")
+
+ Expanded query:
+ ["mindfulness", "concentration", "one-pointed attention", "interiorization",
+ "anxiety", "restlessness", "mental disturbance", "meditation", "stillness",
+ "going within", "calm", "peace of mind"]
+```
+
+The terminology mapping is a versioned JSON glossary reviewed by SRF-aware editors. It bridges the vocabulary gap between seekers who have never read Yogananda and the specific language of his published works.
+
+#### ADR-051: Per-Book Evolution Lifecycle
+
+The terminology bridge is not a static artifact — it deepens with each book ingested. When a new book enters the pipeline, a dedicated Claude "Classifying" step extracts Yogananda's distinctive vocabulary from the new content and proposes updates to the bridge:
+
+```
+Book ingestion pipeline (new step after chunking, before embedding):
+ 1. VOCABULARY EXTRACTION
+ Claude Opus scans the book's full chunk set (Classifying category, JSON output; ADR-014 batch tier)
+ → Extracts distinctive terms, phrases, and metaphors specific to this book
+ → Output: vocabulary inventory for the new book
+
+ 2. DIFF AGAINST EXISTING BRIDGE
+ Compare extracted terms against current spiritual-terms.json
+ → Identify new terms not yet in the bridge
+ → Identify new synonyms for existing modern-term mappings
+ → Identify book-specific usages of existing terms
+
+ 3. HUMAN REVIEW
+ The diff is presented to an SRF-aware editor
+ → Editor approves, modifies, or rejects each proposed addition
+ → Consistent with "AI proposes, humans approve" constraint
+
+ 4. MERGE AND VERSION
+ Approved additions merge into spiritual-terms.json
+ → Committed with provenance: which book prompted the update
+ → Bridge grows richer with each new book — never shrinks
+```
+
+**Data structure with provenance:**
+
+```json
+{
+ "mindfulness": {
+ "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
+ "sources": ["autobiography-of-a-yogi", "mans-eternal-quest"],
+ "added": "2026-03"
+ },
+ "trauma": {
+ "yogananda_terms": ["past suffering", "karmic burden", "mental wounds"],
+ "sources": ["where-there-is-light"],
+ "added": "2026-06"
+ }
+}
+```
+
+Provenance tracking enables source-aware expansion: when a seeker is reading *Man's Eternal Quest*, expansion terms sourced from that book can be boosted in relevance. The bridge file remains a single versioned JSON artifact in git — no schema migration required.
+
+#### Schema: `/lib/data/spiritual-terms.json`
+
+```typescript
+interface SpiritualTermsFile {
+ version: string; // Schema version (e.g., "1.0")
+ lastReviewed: string; // ISO date of last human review
+ terms: SpiritualTerm[];
+}
+
+interface SpiritualTerm {
+ canonical: string; // Yogananda's preferred term (e.g., "samadhi")
+ alternates: string[]; // Cross-tradition equivalents (e.g., ["enlightenment", "cosmic consciousness"])
+ modern: string[]; // Modern seeker vocabulary (e.g., ["spiritual awakening", "peak experience"])
+ category: "sanskrit" | "yogic" | "christian" | "universal" | "scientific";
+ books: string[]; // Book slugs where this term appears prominently
+ notes?: string; // Editorial note on Yogananda's specific usage
+}
+```
+
+Phase 0 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-051) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
+
+### Claude System Prompts (Draft — Refine During Phase 0)
+
+These are the initial system prompts for the three Claude API calls in the search pipeline. All prompts enforce the "librarian, not oracle" constraint: Claude processes queries and selects passages but never generates teaching content.
+
+#### Query Expansion Prompt
+
+```
+You are a search query expansion assistant for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query, generate a JSON array of 8-15 semantically related search terms that would help find relevant passages in Yogananda's writings. Include:
+- Direct synonyms and related concepts
+- Yogananda's specific vocabulary (e.g., "Self-realization", "cosmic consciousness", "Kriya Yoga")
+- Cross-tradition equivalents (e.g., "mindfulness" → "concentration", "one-pointed attention")
+- Emotional resonances (e.g., "scared" → "fear", "courage", "divine protection")
+
+RULES:
+- Output ONLY a valid JSON array of strings. No explanation, no prose.
+- Do NOT answer the seeker's question.
+- Do NOT generate any teaching content or quotes.
+- Do NOT paraphrase Yogananda's words.
+- If the query is already a specific term (e.g., "samadhi"), return a small array of closely related terms.
+
+Spiritual terminology mappings are provided below for reference:
+{terminology_bridge_json}
+
+Query: "{user_query}"
+```
+
+#### Intent Classification Prompt
+
+```
+You classify spiritual search queries for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query, classify its intent and return a JSON object.
+
+Intent types:
+- "topical": Seeker wants information on a theme (route to theme page if exists)
+- "specific": Seeker wants a specific passage, chapter, or book
+- "emotional": Seeker is expressing a feeling or seeking comfort
+- "definitional": Seeker wants Yogananda's definition of a concept
+- "situational": Seeker describes a life situation
+- "browsing": Seeker wants to explore without a specific target
+- "search": General search (default fallback)
+
+RULES:
+- Output ONLY a valid JSON object: {"intent": "...", "route": "...", "theme_slug": "..."}
+- "route" is one of: "theme", "reader", "search", "daily"
+- "theme_slug" is only present when route is "theme" and a matching theme exists
+- If uncertain, default to {"intent": "search", "route": "search"}
+- Do NOT answer the query. Do NOT generate any content.
+
+Available theme slugs: {theme_slugs_json}
+
+Query: "{user_query}"
+```
+
+#### Passage Ranking Prompt
+
+```
+You are a passage relevance judge for a library of Paramahansa Yogananda's published books.
+
+Given a seeker's query and a list of candidate passages (each with an ID), select and rank the 5 most relevant passages.
+
+Relevance criteria:
+- The passage directly addresses the seeker's question or emotional state
+- The passage contains Yogananda's most authoritative teaching on the topic
+- Prefer passages that are complete thoughts (not fragment mid-sentence)
+- Prefer passages that would be meaningful to a seeker reading them in isolation
+
+RULES:
+- Output ONLY a valid JSON array of passage IDs in ranked order (most relevant first).
+- Return at most 5 IDs. Return fewer if fewer are relevant.
+- If NO passages are relevant to the query, return an empty array: []
+- Do NOT modify, summarize, or paraphrase any passage text.
+- Do NOT generate any teaching content.
+- Judge based on the passage text provided — do not infer or assume content.
+
+Query: "{user_query}"
+
+Candidate passages:
+{passages_json}
+```
+
+*These prompts are starting points. Phase 0a empirical testing (deliverable 0a.8, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+
+### Search Without AI (Fallback / Simple Queries)
+
+For straightforward keyword queries, the system can operate without any LLM calls:
+
+```
+User types: "divine mother"
+ → Full-text search only (no query expansion needed)
+ → Results ranked by pg_search BM25 score (ADR-114)
+ → No Claude API call required
+ → Fast, free, reliable
+```
+
+The LLM is invoked only when the query is conceptual/semantic and benefits from expansion or re-ranking. This keeps costs low and latency minimal for simple searches.
+
+### Claude API Graceful Degradation
+
+When Claude (via AWS Bedrock, ADR-014) is unavailable (timeout, error, rate limit, or monthly budget cap), search degrades gracefully through four levels. No seeker ever sees an error — quality decreases silently.
+
+| Level | Trigger | What Works | What Doesn't | User Impact |
+|-------|---------|-----------|--------------|-------------|
+| **Full** | All services healthy | Query expansion + HyDE (Phase 2+) + multi-path retrieval + Cohere Rerank (Phase 2+) | — | Best results: conceptual queries understood, top 5 precisely ranked |
+| **No rerank** | Cohere Rerank unavailable | Query expansion, HyDE, multi-path RRF | Cross-encoder reranking | Top 5 from RRF scores; slightly less precise ordering |
+| **No HyDE** | HyDE generation fails | Query expansion, multi-path RRF, Cohere Rerank | Hypothetical document embedding | Marginal loss on literary/metaphorical queries |
+| **No expansion** | Claude query expansion fails | Raw query → hybrid search (vector + BM25) | Conceptual query broadening | Keyword-dependent; "How do I find peace?" works less well than "peace" |
+| **Database only** | All AI services fail | Pure hybrid search (pgvector + pg_search BM25) | All AI enhancement | Still returns relevant verbatim passages via vector similarity + BM25 |
+
+**Implementation:** `/lib/services/search.ts` wraps each external service call in a try-catch with a 5-second timeout. Failure at any level falls through to the next. Sentry captures each degradation event (`search.degradation` with `level` and `service` tags) for monitoring. The search API response includes a `searchMode` field (`"full"`, `"no_rerank"`, `"no_hyde"`, `"no_expansion"`, `"database_only"`) for observability — not exposed in the seeker-facing UI.
+
+### ADR-046: Embedding Model Migration Procedure
+
+When the embedding model changes (e.g., from `voyage-3-large` to a successor, or to a per-language model for Phase 10), re-embedding the full corpus is required. The `embedding_model`, `embedding_dimension`, and `embedded_at` columns on `book_chunks` enable safe, auditable migration.
+
+**Procedure:**
+
+```
+1. CREATE NEON BRANCH
+ Branch from production. All re-embedding work happens on the branch.
+ Production search continues uninterrupted.
+
+2. RE-EMBED ALL CHUNKS (on branch)
+ Lambda batch job (ADR-017, ADR-014 batch tier):
+ - Read all chunks where embedding_model != new_model
+ - Generate new embeddings in batches of 100
+ - Use Voyage asymmetric encoding: document input type for chunks
+ - UPDATE embedding, embedding_model, embedding_dimension, embedded_at
+ - Log progress to CloudWatch
+
+ Estimated cost: Voyage voyage-3-large ~$0.06 per 1M tokens
+ Estimated time: ~50K chunks ≈ 15-30 minutes at API rate limits
+
+3. REBUILD HNSW INDEX (on branch)
+ DROP INDEX idx_chunks_embedding;
+ CREATE INDEX idx_chunks_embedding ON book_chunks
+ USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+ -- If dimension changed, ALTER TABLE first:
+ -- ALTER TABLE book_chunks ALTER COLUMN embedding TYPE VECTOR(new_dim);
+
+4. RECOMPUTE CHUNK RELATIONS (on branch)
+ Re-run the chunk_relations batch job (ADR-050).
+ New embeddings produce different similarity scores.
+
+5. VALIDATE (on branch)
+ Run the search quality evaluation test suite (deliverable 0a.8).
+ Compare results against production baseline.
+ Threshold: new model must match or exceed current ≥ 80% pass rate.
+
+6. PROMOTE
+ If validation passes: merge branch to production via Neon.
+ If validation fails: delete branch, keep current model.
+
+7. UPDATE CONFIG
+ Update .env EMBEDDING_MODEL and EMBEDDING_DIMENSION.
+ Update default values in schema for new chunks.
+```
+
+**Cost estimate for full corpus re-embedding:** < $15 for Voyage voyage-3-large at 50K chunks (~25M tokens). The operational cost is primarily developer time for validation, not API spend. At significant volume, evaluate AWS Marketplace SageMaker model packages for Voyage to reduce per-call costs.
+
+**Multilingual embedding quality (ADR-047, ADR-118).** Voyage voyage-3-large is multilingual-first by design: 1024 dimensions, 26 languages, unified cross-lingual embedding space, 32K token input window. For European languages (es, de, fr, it, pt) and major Asian languages (ja, zh, ko, hi), this provides strong baseline retrieval. For CJK-heavy corpora, benchmark Voyage `voyage-multilingual-2` as an alternative — it may excel on languages with fundamentally different morphology. Phase 10 includes formal benchmarking with actual translated passages (Deliverable 10.3) across Voyage voyage-3-large, Cohere embed-v3, and BGE-M3.
+
+**Domain-adapted embeddings (ADR-047, later-stage research).** The highest-ceiling path to world-class retrieval: fine-tune a multilingual base model on Yogananda's published corpus across languages. A domain-adapted model would understand spiritual vocabulary, metaphorical patterns, and cross-tradition concepts at a depth no general model matches. Prerequisites: multilingual corpus (Phase 10 ingestion) and per-language evaluation suites (Deliverable 10.10). The same migration procedure above applies — the architecture imposes no constraints on model provenance.
+
+### ADR-049: Search Suggestions & Autocomplete
+
+The search architecture above handles what happens *after* a query is submitted. This section covers what happens *as the seeker types* — autocomplete suggestions that reduce friction, show what the corpus contains, and extend the librarian metaphor.
+
+**Core principle:** Suggestion intelligence is corpus-derived, not behavior-derived. All suggestions are extracted from the content itself, not from user query patterns. This ensures DELTA compliance (ADR-095), guarantees every suggestion leads to results, and aligns with the Calm Technology principle — suggestions show what's available, not what's popular.
+
+#### Suggestion Types
+
+Three distinct suggestion types, each with different sources and behavior:
+
+```
+Seeker types: "med"
+ │
+ ▼
+TERM COMPLETION (PostgreSQL pg_trgm — < 50ms)
+ Prefix match against suggestion index:
+ ┌─────────────────────────────────────────────────┐
+ │ 🔤 meditation (theme) │
+ │ 📖 Meditations on God (chapter) │
+ │ 📖 Meditation Promises Richest Results (chapter) │
+ │ 🔤 medical intuition (corpus) │
+ └─────────────────────────────────────────────────┘
+
+Seeker types: "How do I"
+ │
+ ▼
+QUERY SUGGESTION (curated, editorially maintained)
+ Match against curated question templates:
+ ┌─────────────────────────────────────────────────┐
+ │ ❓ How do I overcome fear? (curated) │
+ │ ❓ How do I meditate? (curated) │
+ │ ❓ How do I find peace? (curated) │
+ └─────────────────────────────────────────────────┘
+
+Seeker types: "mindful"
+ │
+ ▼
+BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
+ Terminology bridge detects a mapping:
+ ┌─────────────────────────────────────────────────┐
+ │ 🔤 mindfulness (corpus) │
+ │ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+ │ Yogananda's terms: concentration, │
+ │ one-pointed attention, interiorization │
+ └─────────────────────────────────────────────────┘
+```
+
+**1. Term completion.** Prefix matching against a pre-computed suggestion index. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching, or pre-computed trie exported as static JSON and cached at edge (Vercel Edge Config or CDN). Latency target: < 50ms — no database round-trip on the hot path if edge-cached.
+
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 0a.8) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
+
+**3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain.
+
+#### API Specification
+
+```
+GET /api/v1/search/suggest?q=med&language=en&limit=7
+
+Response:
+{
+ "suggestions": [
+ { "text": "meditation", "type": "term", "category": "theme" },
+ { "text": "Meditations on God", "type": "term", "category": "chapter" },
+ { "text": "How do I meditate?", "type": "query", "category": "curated" },
+ { "text": "medical intuition", "type": "term", "category": "corpus" }
+ ],
+ "bridge_hint": null
+}
+```
+
+When the bridge activates:
+
+```
+GET /api/v1/search/suggest?q=mindful&language=en&limit=7
+
+{
+ "suggestions": [
+ { "text": "mindfulness", "type": "term", "category": "corpus" }
+ ],
+ "bridge_hint": {
+ "seeker_term": "mindfulness",
+ "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
+ "source_books": ["autobiography-of-a-yogi", "mans-eternal-quest"]
+ }
+}
+```
+
+No Claude API call in the suggestion path — pure database/cache lookup. Zero cost per suggestion request.
+
+#### Zero-State Experience
+
+When the search bar receives focus but the seeker has typed nothing, display curated entry points rather than an empty dropdown:
+
+- Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
+- One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
+- The search placeholder remains "What are you seeking?" (Deliverable 0a.6)
+
+Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078).
+
+#### Suggestion Index Construction
+
+The suggestion index is built during book ingestion (extending the ADR-051 lifecycle):
+
+```
+Book ingestion pipeline (new step after vocabulary extraction):
+ 5. SUGGESTION INDEX EXTRACTION
+ From the book's chunks, extract:
+ → Distinctive terms (nouns, proper nouns, spiritual vocabulary)
+ → Chapter titles
+ → Book-specific phrases
+ Filter: remove stopwords, common English words, terms with < 2 occurrences
+ Output: per-book vocabulary contribution to the suggestion index
+
+ Merge into suggestion_dictionary table or static JSON export.
+ Index grows with each book — never shrinks.
+```
+
+#### Multilingual Suggestions (Phase 10)
+
+Per-language suggestion indices are required. Each language gets:
+- Its own extracted corpus vocabulary (from language-specific chunks)
+- Localized theme names (from `topic_translations`)
+- Localized curated queries (from `messages/{locale}.json`)
+- Language-specific `pg_trgm` or edge-cached index
+
+**Transliteration challenge:** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). CJK languages have no word boundaries, making prefix matching fundamentally different. The suggestion system must handle both native script and Romanized input for Indic languages. This is an open design question — see CONTEXT.md.
+
+**Sparse-language graceful handling:** If a language has few books, its suggestion index will be thin. When suggestions are sparse, the response should be honest (fewer suggestions, not padded with irrelevant terms) rather than falling back to English suggestions unprompted.
+
+#### Accessibility
+
+The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
+- `role="combobox"` on the search input
+- `role="listbox"` on the suggestion dropdown
+- `role="option"` on each suggestion
+- `aria-activedescendant` tracks keyboard-selected suggestion
+- Arrow keys navigate suggestions, `Enter` selects, `Escape` dismisses
+- Screen reader announces suggestion count on open ("7 suggestions available")
+- Screen reader announces each suggestion as arrow keys navigate
+- Bridge hints announced as supplementary text
+- High contrast mode: suggestion categories distinguished by prefix text, not color alone
+
+#### Phase Progression
+
+| Phase | Suggestion Capability | Source |
+|-------|----------------------|--------|
+| 0 | Basic prefix matching on single-book vocabulary + chapter titles | Corpus extraction from Autobiography, pre-computed |
+| 3 | Multi-book vocabulary + theme names + bridge-powered suggestions + curated queries | Expanded corpus + spiritual-terms.json + editorial |
+| 10 | Per-language suggestion indices + transliteration support | Language-specific indices |
+| 13 | Optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
+
+#### Interaction with Intent Classification
+
+Suggestions and intent classification (ADR-005 E1) are complementary, not redundant:
+- **Suggestions** operate *before* query submission (as-you-type, < 50ms, no LLM)
+- **Intent classification** operates *after* query submission (routes the final query, uses Claude Haiku)
+
+When a seeker selects a suggestion, intent classification still runs on the selected text. The suggestion narrows the query; intent classification routes it. A seeker who selects "meditation" (term suggestion) gets routed to the meditation theme page by intent classification. A seeker who selects "How do I meditate?" (curated query) gets routed to search with appropriate expansion.
+
+---
+
+## DES-004: Data Model
+
+### Neon PostgreSQL Schema
+
+```sql
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS vector;    -- pgvector (dense vector search)
+CREATE EXTENSION IF NOT EXISTS pg_search; -- ParadeDB BM25 full-text search (ADR-114)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;   -- trigram similarity (fuzzy matching, suggestion fallback)
+CREATE EXTENSION IF NOT EXISTS unaccent;  -- diacritics-insensitive search (ADR-080)
+
+-- ============================================================
+-- BOOKS
+-- ============================================================
+CREATE TABLE books (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ title TEXT NOT NULL,
+ subtitle TEXT,
+ author TEXT NOT NULL DEFAULT 'Paramahansa Yogananda',
+ publication_year INTEGER,
+ language TEXT NOT NULL DEFAULT 'en',
+ isbn TEXT,
+ source_url TEXT, -- PDF URL for Phase 0 ingestion
+ contentful_id TEXT, -- Contentful entry ID (production)
+ cover_image_url TEXT,
+ bookstore_url TEXT, -- SRF Bookstore URL for "Find this book" link.
+ -- Points to SRF Bookstore for all books. If per-language bookstore
+ -- routing is needed in Phase 10 (YSS for Hindi/Bengali), add a simple
+ -- lookup then — zero schema changes required now. (ADR-028)
+ edition TEXT, -- e.g., "13th Edition", "Revised 2024" (ADR-034)
+ edition_year INTEGER, -- year of this specific edition (ADR-034)
+ canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
+ -- NULL for originals. Enables "Available in 6 languages"
+ -- on library page and cross-language navigation.
+ content_format TEXT NOT NULL DEFAULT 'prose' -- 'prose' (default), 'chant', 'poetry' (ADR-059).
+ CHECK (content_format IN ('prose', 'chant', 'poetry')),
+ -- Controls reader rendering: prose = continuous scroll,
+ -- chant/poetry = whole-unit pages with chant-to-chant nav.
+ -- Chant format enables inline media panel for
+ -- performance_of relations (deterministic audio/video links).
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+-- ============================================================
+-- BOOK CHUNKS ARCHIVE (edition transitions — ADR-034)
+-- ============================================================
+-- When SRF publishes a revised edition, old edition data is archived here
+-- (not deleted) to preserve historical citations and audit trail.
+CREATE TABLE book_chunks_archive (
+ id UUID PRIMARY KEY,
+ book_id UUID NOT NULL REFERENCES books(id),
+ chapter_id UUID REFERENCES chapters(id),
+ content TEXT NOT NULL,
+ page_number INTEGER,
+ section_heading TEXT,
+ paragraph_index INTEGER,
+ embedding VECTOR(1024), -- matches current model dimension (ADR-118)
+ embedding_model TEXT NOT NULL,
+ content_hash TEXT,
+ language TEXT NOT NULL DEFAULT 'en',
+ edition TEXT, -- edition this chunk belonged to
+ archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ original_created_at TIMESTAMPTZ NOT NULL
+);
+
+-- ============================================================
+-- BOOK STORE LINKS — REMOVED (ADR-028)
+-- ============================================================
+-- The book_store_links table was removed as over-designed for a portal
+-- that is not an e-commerce gateway. The books.bookstore_url column
+-- points to the SRF Bookstore. If per-language bookstore routing is
+-- needed in Phase 10, a simple table or column can be added then.
+
+-- ============================================================
+-- CHAPTERS
+-- ============================================================
+CREATE TABLE chapters (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+ chapter_number INTEGER NOT NULL,
+ title TEXT,
+ contentful_id TEXT, -- Contentful entry ID (production)
+ sort_order INTEGER NOT NULL,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+CREATE INDEX idx_chapters_book ON chapters(book_id, sort_order);
+
+-- ============================================================
+-- BOOK CHUNKS (the core search table)
+-- ============================================================
+CREATE TABLE book_chunks (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+ chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
+
+ -- The actual text (verbatim from the book)
+ content TEXT NOT NULL,
+
+ -- Location metadata
+ page_number INTEGER,
+ section_heading TEXT,
+ paragraph_index INTEGER, -- position within chapter
+
+ -- Search infrastructure
+ embedding VECTOR(1024), -- Voyage voyage-3-large embedding vector (ADR-118)
+ embedding_model TEXT NOT NULL DEFAULT 'voyage-3-large', -- which model generated this vector (ADR-046)
+ embedding_dimension INTEGER NOT NULL DEFAULT 1024, -- vector dimensions for this chunk
+ embedded_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- when this chunk was last embedded
+ script TEXT, -- latin|cjk|arabic|cyrillic|devanagari — routes BM25 index (ADR-114)
+ language_confidence REAL, -- fastText detection confidence
+
+ -- Contentful linkage (production)
+ contentful_id TEXT, -- Contentful entry ID of source block
+
+ -- Chunk context (for overlap / windowing)
+ prev_chunk_id UUID, -- previous chunk for context continuity
+ next_chunk_id UUID, -- next chunk for "read more"
+
+ -- Cross-language alignment (Phase 10)
+ canonical_chunk_id UUID REFERENCES book_chunks(id), -- links translated chunk to its English original;
+ -- NULL for originals. Enables "Read this in Spanish →".
+
+ -- Unified enrichment output (ADR-115)
+ summary TEXT, -- "This passage is primarily about..." — in chunk's detected language
+ summary_en TEXT, -- English translation for cross-lingual UI (async, non-English only)
+ topics TEXT[], -- canonical topic labels for thematic indexing
+ entities JSONB, -- typed entity extraction, validated against entity_registry (ADR-116)
+ domain TEXT, -- philosophy|narrative|technique|devotional|poetry
+ experiential_depth SMALLINT, -- 1-7: ordinary waking → nirvikalpa samadhi (ADR-115)
+ emotional_quality TEXT[], -- consoling|inspiring|instructional|devotional|demanding|celebratory
+ voice_register TEXT, -- intimate|cosmic|instructional|devotional|philosophical|humorous
+ cross_references JSONB, -- explicit refs to other works, teachers, scriptures
+ semantic_density TEXT, -- high|medium|low (ADR-048)
+
+ -- Metadata
+ language TEXT NOT NULL DEFAULT 'en',
+ accessibility_level SMALLINT, -- 1=universal, 2=accessible, 3=deep (ADR-005 E3)
+ -- NULL until classified. Computed by Claude at ingestion, spot-checked by reviewer.
+ -- Used for Today's Wisdom (prefer 1–2), theme pages (default 1–2, "Show deeper" shows all).
+ centrality_score REAL,  -- PageRank from graph batch (Phase 4+, ADR-117)
+ community_id TEXT,      -- community detection cluster (Phase 4+, ADR-117)
+ metadata JSONB DEFAULT '{}',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+-- Vector similarity search (HNSW for fast approximate nearest neighbor)
+CREATE INDEX idx_chunks_embedding ON book_chunks
+ USING hnsw (embedding vector_cosine_ops)
+ WITH (m = 16, ef_construction = 64);
+
+-- BM25 full-text search (pg_search / ParadeDB — ADR-114)
+-- Primary: ICU tokenizer covers ~90% of languages
+CREATE INDEX chunks_bm25_icu ON book_chunks
+ USING bm25 (id, content, summary, topics)
+ WITH (
+  key_field = 'id',
+  text_fields = '{
+   "content": {"tokenizer": {"type": "icu"}, "record": "position"},
+   "summary": {"tokenizer": {"type": "icu"}},
+   "topics":  {"tokenizer": {"type": "icu"}}
+  }'
+ );
+
+-- Phase 10: Chinese (Jieba) and Japanese (Lindera) partial indexes
+-- CREATE INDEX chunks_bm25_zh ON book_chunks USING bm25 (id, content)
+--  WITH (key_field = 'id', text_fields = '{"content": {"tokenizer": {"type": "jieba"}}}')
+--  WHERE script = 'cjk' AND language LIKE 'zh%';
+-- CREATE INDEX chunks_bm25_ja ON book_chunks USING bm25 (id, content)
+--  WITH (key_field = 'id', text_fields = '{"content": {"tokenizer": {"type": "lindera"}}}')
+--  WHERE script = 'cjk' AND language = 'ja';
+
+-- Trigram index for fuzzy/partial matching (suggestion fallback, ADR-120)
+CREATE INDEX idx_chunks_trgm ON book_chunks USING GIN (content gin_trgm_ops);
+
+-- Enrichment metadata indexes
+CREATE INDEX idx_chunks_domain ON book_chunks(domain);
+CREATE INDEX idx_chunks_depth ON book_chunks(experiential_depth);
+CREATE INDEX idx_chunks_topics ON book_chunks USING GIN(topics);
+CREATE INDEX idx_chunks_quality ON book_chunks USING GIN(emotional_quality);
+
+-- Lookup by book
+CREATE INDEX idx_chunks_book ON book_chunks(book_id, chapter_id, paragraph_index);
+
+-- Lookup by Contentful ID (for webhook-driven updates)
+CREATE INDEX idx_chunks_contentful ON book_chunks(contentful_id) WHERE contentful_id IS NOT NULL;
+
+-- Language-filtered search (critical for multilingual — ensures search
+-- stays within the user's locale unless cross-language is requested)
+CREATE INDEX idx_chunks_language ON book_chunks(language);
+
+-- ============================================================
+-- FULL-TEXT SEARCH NOTE (ADR-114)
+-- ============================================================
+-- pg_search / ParadeDB BM25 replaces tsvector for all full-text search.
+-- The BM25 index (chunks_bm25_icu above) handles tokenization, stemming,
+-- and relevance ranking internally. No tsvector column or trigger needed.
+-- ICU tokenizer handles diacritics (ā→a, ṇ→n, ś→s, etc.) and most
+-- languages. CJK-specific indexes (Jieba, Lindera) added in Phase 10.
+-- The unaccent extension is still loaded for pg_trgm fuzzy matching.
+```
+
+> **Terminology note:** The database table `teaching_topics` is exposed as `themes` in the API (`/api/v1/themes`) and displayed as "Doors of Entry" in the seeker-facing UI. The related junction table `chunk_topics` links passages to themes. These terms all refer to the same concept: curated thematic groupings of Yogananda's teachings (e.g., Peace, Courage, Healing). See ADR-031 and ADR-032.
+
+```sql
+-- ============================================================
+-- LIFE THEMES (curated thematic entry points)
+-- ============================================================
+-- Multi-category theme taxonomy (ADR-032, ADR-033):
+-- 'quality' — spiritual/emotional states: Peace, Courage, Healing, Joy, Purpose, Love
+-- Displayed as "Doors of Entry" on the homepage (6 cards).
+-- 'situation' — life circumstances: Relationships, Parenting, Loss & Grief, Work, etc.
+-- 'person' — spiritual figures Yogananda discusses: Christ, Krishna, Lahiri Mahasaya, etc.
+-- 'principle' — yogic ethical principles: Ahimsa, Satya, Brahmacharya, Tapas, etc. (Yama/Niyama)
+-- 'scripture' — scriptural frameworks Yogananda interprets: Yoga Sutras, Bhagavad Gita, Bible
+-- 'practice' — spiritual practices: Meditation, Concentration, Pranayama, Affirmation
+-- 'yoga_path' — yoga paths: Kriya, Raja, Bhakti, Karma, Jnana, Hatha, Mantra, Laya
+-- Non-quality categories accessible from "Explore" pages and the Library.
+-- Not shown on the homepage grid to preserve the calm six-door design.
+CREATE TABLE teaching_topics (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ name TEXT NOT NULL UNIQUE, -- English display name: "Peace", "Courage", "Relationships", etc.
+ slug TEXT NOT NULL UNIQUE, -- URL slug: "peace", "relationships", etc. (always English for URL stability)
+ category TEXT NOT NULL DEFAULT 'quality', -- 'quality', 'situation', 'person', 'principle',
+ -- 'scripture', 'practice', 'yoga_path' (ADR-032, ADR-033)
+ description TEXT, -- brief editorial description used for auto-tagging and internal reference
+ description_embedding VECTOR(1024), -- embedding of `description` for auto-tagging (same model as book_chunks, ADR-118)
+ header_quote TEXT, -- a Yogananda quote encapsulating this theme (displayed on theme page)
+ header_citation TEXT, -- citation for the header quote
+ sort_order INTEGER NOT NULL DEFAULT 0, -- display order within category
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+CREATE INDEX idx_teaching_topics_category ON teaching_topics(category);
+
+-- ============================================================
+-- LIFE THEME TRANSLATIONS (localized theme names and header quotes)
+-- ============================================================
+-- Slugs stay in English for URL stability (/es/themes/peace, not /es/temas/paz).
+-- Display names and header quotes are localized per language.
+-- Phase 1: table created (empty). Phase 10: populated via AI-assisted workflow (ADR-078).
+
+CREATE TABLE topic_translations (
+ theme_id UUID NOT NULL REFERENCES teaching_topics(id) ON DELETE CASCADE,
+ language TEXT NOT NULL, -- locale code: 'es', 'de', 'fr', etc.
+ name TEXT NOT NULL, -- localized display name: "Paz", "Mut", "Paix"
+ header_quote TEXT, -- localized header quote (from official translation)
+ header_citation TEXT, -- localized citation
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY (theme_id, language)
+);
+
+-- ============================================================
+-- CHUNK-THEME JOIN (many-to-many: passages belong to themes)
+-- ============================================================
+-- tagged_by values (three-state provenance):
+-- 'manual' — human placed this tag directly (editorial curation)
+-- 'auto' — machine proposed via embedding similarity, not yet reviewed
+-- 'reviewed' — machine proposed, human approved (distinguishes "human created" from "human verified")
+-- Only 'manual' and 'reviewed' tags are served to users. 'auto' tags are candidates awaiting review.
+CREATE TABLE chunk_topics (
+ chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ theme_id UUID NOT NULL REFERENCES teaching_topics(id) ON DELETE CASCADE,
+ relevance FLOAT DEFAULT 1.0, -- editorial relevance weight (1.0 = normal, higher = more relevant)
+ tagged_by TEXT NOT NULL DEFAULT 'manual', -- 'manual', 'auto', or 'reviewed'
+ similarity FLOAT, -- cosine similarity score when tagged_by = 'auto' or 'reviewed' (NULL for manual)
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY (chunk_id, theme_id)
+);
+
+CREATE INDEX idx_chunk_topics_theme ON chunk_topics(theme_id);
+CREATE INDEX idx_chunk_topics_pending ON chunk_topics(tagged_by) WHERE tagged_by = 'auto'; -- fast lookup for review queue
+
+-- ============================================================
+-- DAILY PASSAGES (curated pool for "Today's Wisdom")
+-- ============================================================
+CREATE TABLE daily_passages (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ season_affinity TEXT[], -- optional: ['winter', 'renewal'] for seasonal weighting
+ tone TEXT, -- 'consoling', 'joyful', 'challenging', 'contemplative', 'practical' (ADR-005 E8)
+ -- Classified by Claude at curation time, spot-checked by reviewer.
+ -- Selection algorithm ensures tonal variety across the week.
+ is_active BOOLEAN NOT NULL DEFAULT true,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+CREATE INDEX idx_daily_passages_active ON daily_passages(is_active) WHERE is_active = true;
+
+-- ============================================================
+-- AFFIRMATIONS (curated pool for "The Quiet Corner")
+-- ============================================================
+CREATE TABLE affirmations (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ content TEXT NOT NULL, -- the affirmation text (verbatim from source)
+ book_title TEXT NOT NULL, -- source book
+ page_number INTEGER,
+ section_heading TEXT,
+ chunk_id UUID REFERENCES book_chunks(id) ON DELETE SET NULL, -- link to full chunk if applicable
+ language TEXT NOT NULL DEFAULT 'en', -- required for Quiet Corner language filtering
+ is_active BOOLEAN NOT NULL DEFAULT true,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+CREATE INDEX idx_affirmations_active ON affirmations(is_active) WHERE is_active = true;
+
+-- ============================================================
+-- INITIAL THEME DATA
+-- ============================================================
+-- Phase 0: six spiritual quality themes (displayed as "Doors of Entry" on homepage)
+INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
+ ('Peace', 'peace', 'quality', 1, 'Inner peace, calmness, stillness of mind, overcoming restlessness and anxiety, mental tranquility, equanimity in the face of difficulty'),
+ ('Courage', 'courage', 'quality', 2, 'Overcoming fear, bravery, inner strength, perseverance through difficulty, spiritual fortitude, willpower'),
+ ('Healing', 'healing', 'quality', 3, 'Physical healing, emotional healing, recovery from suffering, divine healing power, overcoming illness, spiritual wholeness'),
+ ('Joy', 'joy', 'quality', 4, 'Divine joy, bliss, happiness, cheerfulness, overcoming sadness and depression, finding joy within, ever-new joy'),
+ ('Purpose', 'purpose', 'quality', 5, 'Life purpose, meaning, dharma, vocation, finding direction, why am I here, fulfilling divine plan'),
+ ('Love', 'love', 'quality', 6, 'Divine love, unconditional love, devotion, human love, expanding the heart, love for God, love for all beings');
+
+-- Phase 3+: life situation themes (accessible from "Browse all themes" page, not on homepage grid)
+-- These are added as content is ingested and sufficient passages are confirmed.
+-- Minimum threshold: ~20 reviewed passages before a situation theme page goes live.
+-- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
+-- ('Relationships', 'relationships', 'situation', 1, 'Marriage, friendship, family bonds, human love, companionship, interpersonal harmony, forgiveness between people, how to treat others, divine friendship'),
+-- ('Parenting', 'parenting', 'situation', 2, 'Raising children, parenthood, guiding young souls, family life, teaching children spiritual values, a parent''s duty'),
+-- ('Loss & Grief', 'loss-and-grief', 'situation', 3, 'Death of a loved one, bereavement, grief, consolation, the soul''s continuity, life after death, eternal life'),
+-- ('Work', 'work', 'situation', 4, 'Livelihood, career, right activity, duty, service, karma yoga, finding meaning in work, balancing material and spiritual life'),
+-- ('Loneliness', 'loneliness', 'situation', 5, 'Isolation, feeling alone, finding the inner companion, solitude vs loneliness, divine companionship, belonging'),
+-- ('Aging', 'aging', 'situation', 6, 'Growing older, the body and the soul, vitality, wisdom of age, preparing for the afterlife, eternal youth of the spirit');
+
+-- Phase 5+: exploration themes — persons, principles, scriptures, practices (ADR-033)
+-- Same tagging pipeline as quality/situation themes. No fixed minimum — editorial judgment decides when a topic has enough depth to publish.
+-- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
+--
+-- -- SPIRITUAL FIGURES (category = 'person')
+-- ('Christ', 'christ', 'person', 1, 'Jesus Christ, Christ Consciousness, the Second Coming, the teachings of Jesus, Yogananda''s interpretation of Christianity, the Christ of the East and West'),
+-- ('Krishna', 'krishna', 'person', 2, 'Lord Krishna, the Bhagavad Gita''s speaker, divine cowherd, avatar, cosmic consciousness personified, the universal guru'),
+-- ('Lahiri Mahasaya', 'lahiri-mahasaya', 'person', 3, 'Lahiri Mahasaya, Yogananda''s param-guru, Kriya Yoga master, the householder yogi, revival of ancient yoga science'),
+-- ('Sri Yukteswar', 'sri-yukteswar', 'person', 4, 'Sri Yukteswar, Yogananda''s guru, Jnanavatar, wisdom incarnation, astrology and scripture, guru-disciple relationship'),
+-- ('Patanjali', 'patanjali', 'person', 5, 'Patanjali, author of the Yoga Sutras, father of yoga philosophy, eight limbs, systematic yoga science'),
+-- ('Kabir', 'kabir', 'person', 6, 'Kabir, mystic poet, weaver saint, union of Hindu and Muslim devotion, direct experience of God'),
+-- ('Divine Mother', 'divine-mother', 'person', 7, 'Divine Mother, God as Mother, cosmic feminine, Kali, unconditional love of God, Yogananda''s devotion to the Mother aspect'),
+--
+-- -- YOGIC PRINCIPLES (category = 'principle') — Yama/Niyama from Patanjali's Yoga Sutras
+-- ('Ahimsa', 'ahimsa', 'principle', 1, 'Non-violence, non-injury, compassion for all beings, harmlessness in thought word and deed, the first yama'),
+-- ('Satya', 'satya', 'principle', 2, 'Truthfulness, honesty, integrity, living in truth, speaking truth, the second yama'),
+-- ('Asteya', 'asteya', 'principle', 3, 'Non-stealing, non-covetousness, contentment with what one has, the third yama'),
+-- ('Brahmacharya', 'brahmacharya', 'principle', 4, 'Self-control, moderation, conservation of vital energy, chastity, the fourth yama'),
+-- ('Aparigraha', 'aparigraha', 'principle', 5, 'Non-attachment, non-possessiveness, simplicity, freedom from greed, the fifth yama'),
+-- ('Saucha', 'saucha', 'principle', 6, 'Cleanliness, purity of body and mind, internal and external purification, the first niyama'),
+-- ('Santosha', 'santosha', 'principle', 7, 'Contentment, acceptance, inner satisfaction, the second niyama'),
+-- ('Tapas', 'tapas', 'principle', 8, 'Self-discipline, austerity, spiritual fire, perseverance, the third niyama'),
+-- ('Svadhyaya', 'svadhyaya', 'principle', 9, 'Self-study, scriptural study, introspection, the fourth niyama'),
+-- ('Ishvara Pranidhana', 'ishvara-pranidhana', 'principle', 10, 'Surrender to God, devotion, offering actions to the divine, the fifth niyama'),
+--
+-- -- SACRED TEXTS (category = 'scripture')
+-- ('Yoga Sutras', 'yoga-sutras', 'scripture', 1, 'Patanjali''s Yoga Sutras, eight limbs of yoga, systematic yoga philosophy, samadhi, pratyahara, dharana, dhyana'),
+-- ('Bhagavad Gita', 'bhagavad-gita', 'scripture', 2, 'The Bhagavad Gita, Krishna and Arjuna, battlefield of life, karma yoga, bhakti yoga, jnana yoga, God Talks With Arjuna'),
+-- ('Bible', 'bible', 'scripture', 3, 'The Holy Bible, Old and New Testament, Christ''s teachings, Yogananda''s interpretation of Christianity, the Second Coming'),
+-- ('Rubaiyat', 'rubaiyat', 'scripture', 4, 'Rubaiyat of Omar Khayyam, Wine of the Mystic, Yogananda''s spiritual interpretation, Persian poetry, divine intoxication'),
+--
+-- -- SPIRITUAL PRACTICES (category = 'practice')
+-- ('Meditation', 'meditation', 'practice', 1, 'Meditation technique, how to meditate, stillness, concentration, going within, interiorization, daily practice'),
+-- ('Concentration', 'concentration', 'practice', 2, 'One-pointed attention, focus, mental power, will, dharana, training the mind'),
+-- ('Pranayama', 'pranayama', 'practice', 3, 'Breath control, life force, prana, vital energy, breathing exercises, energy control'),
+-- ('Affirmation', 'affirmation', 'practice', 4, 'Affirmations, positive thinking, mental healing, thought power, Scientific Healing Affirmations, will and affirmation'),
+-- ('Devotion', 'devotion', 'practice', 5, 'Bhakti, love for God, prayer, chanting, divine love, heart-centered practice, surrender'),
+--
+-- -- YOGA PATHS (category = 'yoga_path')
+-- ('Kriya Yoga', 'kriya-yoga', 'yoga_path', 1, 'Kriya Yoga, the royal technique, spinal magnetization, life force control, Babaji''s yoga, Lahiri Mahasaya''s science'),
+-- ('Raja Yoga', 'raja-yoga', 'yoga_path', 2, 'Raja Yoga, the royal path, Patanjali''s eightfold path, meditation and mental control, astanga yoga'),
+-- ('Bhakti Yoga', 'bhakti-yoga', 'yoga_path', 3, 'Bhakti Yoga, the path of devotion, love for God, divine love, chanting, prayer, emotional surrender'),
+-- ('Karma Yoga', 'karma-yoga', 'yoga_path', 4, 'Karma Yoga, the path of action, selfless service, right activity, nishkama karma, duty without attachment'),
+-- ('Jnana Yoga', 'jnana-yoga', 'yoga_path', 5, 'Jnana Yoga, the path of wisdom, discrimination, viveka, intellectual understanding, Vedantic inquiry'),
+-- ('Hatha Yoga', 'hatha-yoga', 'yoga_path', 6, 'Hatha Yoga, physical postures, asana, body as temple, health, Energization Exercises, physical purification'),
+-- ('Mantra Yoga', 'mantra-yoga', 'yoga_path', 7, 'Mantra Yoga, sacred sound, repetition of God''s name, chanting, japa, AUM, vibratory consciousness'),
+-- ('Laya Yoga', 'laya-yoga', 'yoga_path', 8, 'Laya Yoga, absorption, dissolution of ego, merging in the Infinite, kundalini, subtle energy centers');
+
+-- ============================================================
+-- THEME TAGGING PIPELINE (ADR-032)
+-- ============================================================
+-- Semi-automated: embeddings propose, humans approve.
+--
+-- Adding a new theme:
+-- 1. INSERT into teaching_topics with name, slug, category, description
+-- 2. Embed the description → store in description_embedding
+-- 3. Run cosine similarity: compare description_embedding against all book_chunks.embedding
+-- 4. Chunks above threshold (e.g., 0.45) get INSERT into chunk_topics with tagged_by='auto'
+-- 5. Optional: Claude Opus classifies ambiguous chunks near the threshold (ADR-014 batch tier — classifying, not generating)
+-- 6. Human reviews candidate list, approves/rejects → tagged_by updated to 'reviewed' or row deleted
+-- 7. Topic page goes live when an editor decides the tagged passages have sufficient depth (no fixed minimum)
+--
+-- Auto-tagging is cheap: pure vector math against existing embeddings. No re-ingestion.
+-- Adding a new theme retroactively requires zero re-embedding — only a similarity scan + human review.
+--
+-- Multilingual: the multilingual embedding model places semantically equivalent text
+-- in different languages close in vector space, so English theme descriptions produce
+-- reasonable candidates for non-English chunks. Per-language descriptions improve accuracy
+-- for languages with different spiritual vocabulary.
+
+-- ============================================================
+-- SEARCH QUERY LOG (anonymized, for understanding seeker needs)
+-- ============================================================
+CREATE TABLE search_queries (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ query_text TEXT NOT NULL,
+ query_expanded TEXT[], -- expanded search terms (if AI was used)
+ results_count INTEGER,
+ search_mode TEXT, -- 'hybrid', 'fts_only', 'vector_only'
+ language TEXT DEFAULT 'en',
+ duration_ms INTEGER, -- search latency
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now
+);
+
+-- No user identification stored. Queries are anonymized.
+-- Time-series index for analytics.
+CREATE INDEX idx_queries_time ON search_queries(created_at DESC);
+
+-- No retention policy needed. At ~1,000 searches/day, the raw table
+-- grows ~73 MB/year — trivially manageable for Neon over a 10-year horizon.
+-- If retention ever becomes necessary, a simple aggregation can be added then.
+
+-- ============================================================
+-- CHUNK RELATIONS (pre-computed semantic similarity between passages)
+-- ============================================================
+-- Powers the "Related Teachings" side panel in the reader,
+-- "Continue the Thread" end-of-chapter suggestions, and
+-- graph traversal across the library. (ADR-050)
+--
+-- Pre-computed at ingestion time. For each chunk, store the
+-- top 30 most similar chunks (excluding adjacent paragraphs
+-- from the same chapter — those are already "in context").
+--
+-- Top 30 provides headroom for filtered queries (by book,
+-- language, content type). If filtering yields < 3 results,
+-- fall back to a real-time vector similarity query.
+
+CREATE TABLE chunk_relations (
+ source_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ similarity FLOAT NOT NULL,
+ rank INTEGER NOT NULL, -- 1 = most similar, 2 = second, etc.
+ relation_type TEXT, -- NULL (Phase 0–2), classified in Phase 5 (ADR-005 E6):
+ -- 'same_topic' — both passages address the same theme
+ -- 'develops_further'— target develops the source idea at greater length
+ -- 'personal_story' — target is a personal illustration of the source teaching
+ -- 'practical' — target is a practical application or affirmation
+ -- 'performance_of' — target audio/video is a performance of source chant
+ -- (deterministic editorial link, not vector-derived;
+ -- similarity=1.0, rank orders multiple performances;
+ -- ADR-059)
+ -- Classified by Claude for top 10 cross-book relations per chunk. Spot-checked.
+ -- performance_of relations are editorially curated, not AI-classified.
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY (source_chunk_id, target_chunk_id)
+);
+
+-- Fast lookup: "what's related to what I'm reading?"
+CREATE INDEX idx_chunk_relations_source ON chunk_relations(source_chunk_id, rank);
+
+-- Reverse lookup: "what passages consider this chunk related?"
+CREATE INDEX idx_chunk_relations_target ON chunk_relations(target_chunk_id);
+
+-- ============================================================
+-- CHUNK REFERENCES (editorial cross-references within text)
+-- ============================================================
+-- Human-curated cross-references for explicit mentions:
+-- "As my guru Sri Yukteswar taught..." → link to that passage.
+-- Supplements the automatic embedding-based relations above.
+
+-- chunk_references table added in Phase 5 (Related Teachings & Reader Intelligence)
+CREATE TABLE chunk_references (
+ source_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
+ reference_type TEXT NOT NULL DEFAULT 'mention', -- 'mention', 'quote', 'scripture', 'continuation'
+ note TEXT, -- editorial note (e.g., "References Bhagavad Gita 2:47")
+ created_by TEXT NOT NULL DEFAULT 'editorial', -- 'editorial' or 'auto'
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY (source_chunk_id, target_chunk_id)
+);
+
+CREATE INDEX idx_chunk_references_source ON chunk_references(source_chunk_id);
+CREATE INDEX idx_chunk_references_target ON chunk_references(target_chunk_id);
+
+-- ============================================================
+-- HYBRID SEARCH: RRF over pgvector + pg_search BM25 (ADR-044, ADR-114)
+-- ============================================================
+-- Combines dense vector similarity (pgvector) and BM25 keyword
+-- relevance (pg_search/ParadeDB) using Reciprocal Rank Fusion.
+-- Phase 4+ adds PATH C (graph-augmented retrieval via Postgres) as a third source
+-- merged at the application layer before reranking (ADR-119).
+
+-- Example hybrid query (implemented in /lib/services/search.ts):
+--
+-- WITH vector_results AS (
+--   SELECT id, content, book_id,
+--     1 - (embedding <=> $query_embedding) AS score,
+--     ROW_NUMBER() OVER (ORDER BY embedding <=> $query_embedding) AS rank
+--   FROM book_chunks
+--   WHERE language = $language
+--   ORDER BY embedding <=> $query_embedding
+--   LIMIT 50
+-- ),
+-- keyword_results AS (
+--   SELECT id, content, book_id,
+--     paradedb.score(id) AS score,
+--     ROW_NUMBER() OVER (ORDER BY paradedb.score(id) DESC) AS rank
+--   FROM book_chunks
+--   WHERE id @@@ paradedb.match('content', $expanded_query)
+--     AND language = $language
+--   LIMIT 50
+-- ),
+-- rrf AS (
+--   SELECT
+--     COALESCE(v.id, k.id) AS id,
+--     (COALESCE(1.0 / (60 + v.rank), 0) +
+--      COALESCE(1.0 / (60 + k.rank), 0)) AS rrf_score
+--   FROM vector_results v
+--   FULL OUTER JOIN keyword_results k ON v.id = k.id
+-- )
+-- SELECT id, rrf_score FROM rrf ORDER BY rrf_score DESC LIMIT $match_count;
+
+-- Note: The English fallback strategy (ADR-075) is implemented at the
+-- service layer, not in the SQL function. When search_language results
+-- < 3, findPassages calls hybrid_search a second time with
+-- search_language='en' and merges the results, marking English
+-- passages with an [EN] tag. This keeps the SQL function clean and
+-- the fallback policy in application code where it belongs.
+
+-- ============================================================
+-- ENTITY REGISTRY (canonical entity resolution — ADR-116)
+-- ============================================================
+-- Built before first book ingestion. All enrichment entity extraction
+-- validates against this registry. Feeds suggestion system (ADR-049,
+-- ADR-120 Tiers 2 and 4) and graph intelligence (ADR-117).
+CREATE TABLE entity_registry (
+ id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ canonical_name  TEXT NOT NULL,
+ entity_type     TEXT NOT NULL,     -- Teacher|DivineName|Work|Technique|SanskritTerm|Concept|Place|ExperientialState
+ aliases         TEXT[],            -- all known surface forms
+ language        CHAR(5),
+ definition      TEXT,
+ srf_definition  TEXT,              -- Yogananda's specific definition if distinct
+ centrality_score REAL,             -- PageRank from graph batch (Phase 4+, ADR-117)
+ community_id   TEXT,               -- community detection cluster (Phase 4+, ADR-117)
+ bridge_score   REAL,               -- betweenness centrality (Phase 4+, ADR-117)
+ created_at      TIMESTAMPTZ DEFAULT now(),
+ UNIQUE(canonical_name, entity_type)
+);
+
+CREATE INDEX entity_aliases_idx ON entity_registry USING gin(aliases);
+
+-- ============================================================
+-- SANSKRIT NORMALIZATION (ADR-116, extends ADR-080)
+-- ============================================================
+-- Handles transliteration variants: "samadhi" = "Samaadhi" = "samahdi".
+-- All variant forms loaded into suggestion system for fuzzy matching.
+CREATE TABLE sanskrit_terms (
+ id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ canonical_form  TEXT NOT NULL,     -- "samadhi"
+ display_form    TEXT NOT NULL,     -- "Samadhi"
+ devanagari      TEXT,              -- "समाधि"
+ iast_form       TEXT,              -- "samādhi"
+ common_variants TEXT[],            -- ["Samaadhi", "samahdi"]
+ srf_definition  TEXT,
+ domain          TEXT,              -- philosophy|practice|state|quality
+ depth_level     INT,               -- if experiential state: 1-7 (ADR-115)
+ weight          INT DEFAULT 100    -- suggestion ranking weight
+);
+
+-- ============================================================
+-- SUGGESTION DICTIONARY (ADR-049, ADR-120)
+-- ============================================================
+-- Pre-computed suggestion vocabulary derived from corpus enrichment.
+-- Six-tier hierarchy. No click_through tracking (DELTA compliance).
+CREATE TABLE suggestion_dictionary (
+ id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ suggestion      TEXT NOT NULL,
+ display_text    TEXT,              -- formatted display (e.g., "Samadhi — superconscious state")
+ suggestion_type TEXT NOT NULL,     -- scoped_query|entity|concept|sanskrit|learned_query|term
+ language        CHAR(5) NOT NULL,
+ script          TEXT NOT NULL,     -- latin|cjk|arabic|cyrillic|devanagari
+ latin_form      TEXT,              -- transliteration for non-latin terms
+ corpus_frequency INT DEFAULT 0,
+ query_frequency  INT DEFAULT 0,   -- from anonymized, aggregated query log (ADR-053).
+                                    -- DELTA note: this is aggregated "what the world searches for"
+                                    -- (cf. ADR-090), not individual behavioral profiling.
+                                    -- Acceptable under DELTA because no per-user attribution exists.
+ editorial_boost  REAL DEFAULT 0,  -- 0.0–1.0, set by editors for promoted suggestions
+ weight          REAL GENERATED ALWAYS AS (
+  (corpus_frequency * 0.3) + (query_frequency * 0.5) + (editorial_boost * 0.2)
+ ) STORED,                          -- weights sum to 1.0: corpus 30%, query 50%, editorial 20%
+ entity_id       UUID REFERENCES entity_registry(id),
+ book_id         UUID REFERENCES books(id),
+ updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX suggestion_trgm_idx ON suggestion_dictionary USING gin(suggestion gin_trgm_ops);
+CREATE INDEX suggestion_language_idx ON suggestion_dictionary(language, suggestion);
+CREATE INDEX suggestion_weight_idx ON suggestion_dictionary(language, weight DESC);
+
+-- ============================================================
+-- EXTRACTED RELATIONSHIPS (graph intelligence — ADR-115, ADR-117)
+-- ============================================================
+-- Every relationship triple extracted by the enrichment pipeline.
+-- Queried directly by graph-augmented retrieval (PATH C, Phase 4+).
+-- Graph algorithm batch job reads from this table nightly.
+CREATE TABLE extracted_relationships (
+ id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ chunk_id        UUID REFERENCES book_chunks(id),
+ subject_entity  TEXT,
+ relationship    TEXT,              -- TEACHES|INTERPRETS|DESCRIBES_STATE|MENTIONS|etc.
+ object_entity   TEXT,
+ confidence      REAL,
+ created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================
+-- USER PROFILES (opt-in authenticated experience — ADR-121)
+-- ============================================================
+-- Account never required for core functionality. DELTA core
+-- commitments preserved: no behavioral profiling, no gamification,
+-- no engagement optimization. No profile_embedding column.
+CREATE TABLE user_profiles (
+ id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ auth0_id            TEXT UNIQUE NOT NULL,
+ preferred_language  CHAR(5),
+ tradition_background TEXT,         -- optional, user-provided
+ practice_level      TEXT,          -- optional, user-provided
+ created_at          TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Contentful Content Model (Production)
+
+```
+Content Type: Book
+├── title (Short Text, required, localized)
+├── subtitle (Short Text, localized)
+├── author (Short Text, default: "Paramahansa Yogananda")
+├── publicationYear (Integer)
+├── isbn (Short Text)
+├── coverImage (Media, localized)
+├── language (Short Text, default: "en")
+├── chapters (References, many → Chapter)
+└── slug (Short Text, unique, for URL generation)
+
+Content Type: Chapter
+├── title (Short Text, required, localized)
+├── chapterNumber (Integer, required)
+├── book (Reference → Book)
+├── sections (References, many → Section)
+└── sortOrder (Integer)
+
+Content Type: Section
+├── heading (Short Text, localized)
+├── chapter (Reference → Chapter)
+├── blocks (References, many → TextBlock)
+└── sortOrder (Integer)
+
+Content Type: TextBlock
+├── content (Rich Text, required, localized)
+│ └── stores text as JSON AST
+│ preserves bold, italic, footnotes, verse numbers
+├── section (Reference → Section)
+├── pageNumber (Integer) — maps to physical book page
+├── sortOrder (Integer)
+└── metadata (JSON Object) — flexible field for verse refs, etc.
+```
+
+**Webhook pipeline (production):**
+```
+Contentful publish event
+ │
+ ▼
+Webhook → Serverless Function (Lambda or Vercel Function)
+ │
+ ├── Fetch updated TextBlock from Contentful API
+ ├── Extract plain text from Rich Text JSON AST
+ ├── Generate embedding via OpenAI API
+ ├── Upsert into Neon book_chunks table
+ │ (matched by contentful_id)
+ └── Log sync event
+```
+
+---
+
+## DES-005: Content Ingestion Pipeline
+
+### Phase 0 Pipeline (PDF → Neon)
+
+```
+Step 1: Download PDF
+ └── Autobiography of a Yogi from spiritmaji.com
+
+Step 2: Convert PDF → Structured Markdown
+ └── Using `marker` (open-source, Python)
+ or manual extraction + cleanup
+ └── Output: chapters as separate .md files
+ with headings, paragraphs preserved
+
+Step 2.5: Unicode NFC Normalization (ADR-080)
+ └── Apply Unicode NFC normalization to all extracted text
+ └── IAST diacritical marks (ā, ṇ, ś, ṣ) have precomposed
+ and decomposed representations — OCR output is
+ unpredictable about which form it produces
+ └── NFC ensures identical-looking strings are byte-identical
+ └── Must run BEFORE any text comparison, deduplication,
+ embedding, or indexing
+ └── Also: detect Devanāgarī script blocks (/[\u0900-\u097F]/)
+ in God Talks with Arjuna — flag for display preservation
+ but exclude from embedding input
+
+Step 3: Human Review / QA
+ └── Verify OCR accuracy
+ └── Correct spiritual terminology
+ └── Ensure chapter/page boundaries are correct
+ └── Flag Sanskrit diacritics that may have been mangled
+ by PDF extraction (ADR-005 E4, ADR-080)
+ └── This step is NON-NEGOTIABLE for sacred texts
+
+Step 4: Chunk by Natural Boundaries
+ └── Split at paragraph level
+ └── Each chunk = one coherent passage
+ └── Retain: chapter number, page number, section heading
+ └── Target chunk size: 200-500 tokens
+ (large enough to be a meaningful quote,
+ small enough for precise retrieval)
+ └── Include 1-sentence overlap with adjacent chunks
+ Overlap algorithm: Take the last sentence of the preceding
+ chunk and prepend it to the current chunk. Sentence boundary
+ detection: split on /(?<=[.!?])\s+(?=[A-Z""])/ with special
+ handling for abbreviations (Mr., Dr., St.) and Sanskrit terms
+ containing periods. If the preceding chunk has no clear
+ sentence boundary (e.g., verse fragments), use no overlap.
+ The overlap text is included in the embedding but marked in
+ metadata (overlap_chars count) so it can be excluded from
+ display when the chunk is shown as a standalone quote.
+
+Step 5: Language Detection (per-chunk, fastText)
+ └── Detect primary language of each chunk
+ └── Detect script (Latin, Devanagari, CJK, etc.)
+ └── Assign language_confidence score
+ └── Phase 0: English-only, but column populated for future use
+
+Step 6: Entity Resolution (ADR-116)
+ └── Resolve names, places, Sanskrit terms against entity_registry
+ └── Match aliases: "Master" = "Guruji" = "Paramahansa Yogananda"
+ └── Sanskrit normalization: "samadhi" = "Samaadhi" = "samahdi"
+ └── Unknown entities flagged for human review queue
+ └── Entity registry must be seeded BEFORE first book ingestion
+
+Step 7: Unified Enrichment (single Claude pass per chunk, ADR-115)
+ └── Claude generates structured JSON output:
+     summary, topics, entities (typed), domain classification,
+     experiential_depth (1–7), emotional_quality, voice_register,
+     cross_references, extracted_relationships
+ └── Entities validated against entity_registry (Step 6)
+ └── Confidence < 0.7 flagged for human review queue
+ └── Enrichment output stored as structured Postgres columns
+ └── Replaces separate classification passes (E3–E8)
+
+Step 8: Generate Embeddings
+ └── Voyage voyage-3-large (1024 dimensions, ADR-118)
+ └── Asymmetric encoding: document input type for chunks
+ └── Cost: ~$0.06 per 1M tokens
+ └── Entire Autobiography of a Yogi: < $0.30
+
+Step 9: Insert into Neon
+ └── Populate books, chapters, book_chunks tables
+ └── BM25 index (pg_search) automatically updated on INSERT
+ └── Verify: test searches return expected passages
+
+Step 10: Compute Chunk Relations (ADR-050)
+ └── For each new chunk, compute cosine similarity
+ against all existing chunks
+ └── Store top 30 most similar per chunk in chunk_relations
+ └── Exclude adjacent paragraphs from same chapter
+ (those are already "in context")
+ └── Two modes:
+ --full Recompute all relations (after embedding
+ model migration per ADR-046)
+ --incremental Compute only for new/updated chunks
+ and update existing chunks' top-30
+ if new chunks displace current entries
+ └── Similarity is symmetric (A→B = B→A), so each pair
+ computed once, both directions updated
+ └── For Autobiography (~2,000 chunks): ~4M pairs, minutes
+ └── For full corpus (~50K chunks): batched, still tractable
+
+Step 11: Update Suggestion Dictionary (ADR-049, ADR-120)
+ └── Extract distinctive terms from the book's chunks
+ └── Add to suggestion_dictionary table with source attribution
+ └── Sanskrit terms get inline definitions from sanskrit_terms table
+ └── Suggestion index grows with each book — never shrinks
+
+Step 12: Graph Metrics (Phase 4+, ADR-117 — nightly batch, not per-ingestion)
+ └── Nightly Python + NetworkX job loads full graph from Postgres
+ └── Runs PageRank, community detection, betweenness centrality
+ └── Writes results to centrality_score, community_id, bridge_score columns
+ └── extracted_relationships (Step 7) feed graph structure automatically
+```
+
+### Production Pipeline (Contentful → Neon)
+
+```
+Step 1: Content editors enter/import book text into Contentful
+ └── Using the Book → Chapter → Section → TextBlock model
+ └── Rich Text fields preserve formatting
+ └── Localized versions entered per locale
+
+Step 2: On publish, Contentful webhook fires
+
+Step 3: Sync service receives webhook
+ └── Fetches the updated TextBlock
+ └── Extracts plain text from Rich Text AST
+ └── Language detection (fastText) + entity resolution (ADR-116)
+ └── Unified enrichment pass (Claude, ADR-115)
+ └── Generates embedding (Voyage voyage-3-large, ADR-118)
+ └── Upserts into Neon (matched by contentful_id)
+
+Step 4: Update chunk relations (incremental)
+ └── Recompute relations for the updated chunk
+ against all existing chunks (1 × N_total)
+ └── Update other chunks' top-30 if the updated
+ chunk now scores higher than their current #30
+
+Step 5: Update suggestion dictionary
+ └── Re-extract terms from updated chunk
+ └── Merge into suggestion_dictionary
+
+Step 6: Graph updates (Phase 4+, ADR-117)
+ └── extracted_relationships updated in Postgres (Step 3)
+ └── Nightly batch job recomputes graph metrics automatically
+
+Step 7: Search index, relations, suggestions, and graph
+ are always in sync with editorial source
+```
+
+---
+
+## ADR-041: Phase 0 Bootstrap
+
+The path from "no code" to "running search" — the ceremony that transforms design documents into a working system.
+
+### Environment Setup
+
+```
+1. Repository
+ └── pnpm create next-app@latest srf-teachings --typescript --tailwind --app
+ └── pnpm add @neondatabase/serverless @anthropic-ai/sdk voyageai
+ └── Copy .env.example → .env.local (see below)
+
+2. Neon Project
+ └── Create project in Neon Console (or via MCP)
+ └── Enable pgvector extension
+ └── Note: connection string (pooled), direct connection string
+ └── Create dev branch for local development
+
+3. Database Schema
+ └── pnpm add -D dbmate
+ └── dbmate up (runs /migrations/001_initial_schema.sql)
+ └── Verify: tables, indexes, BM25 index (pg_search), entity_registry
+
+4. Vercel Project
+ └── Link repo → Vercel
+ └── Set environment variables (see below)
+ └── First deploy: verify /api/v1/health returns OK
+
+5. Sentry Project
+ └── Create project in Sentry
+ └── Configure NEXT_PUBLIC_SENTRY_DSN
+ └── Verify error capture with test exception
+
+6. First Content
+ └── Run ingestion script (deliverable 0a.3)
+ └── Verify: pnpm run ingest -- --book autobiography
+ └── Check: book_chunks populated, embeddings present
+ └── Run: pnpm run relations -- --full
+ └── Smoke test: search "How do I overcome fear?" returns results
+```
+
+### Environment Variables (`.env.example`)
+
+```env
+# Neon PostgreSQL
+DATABASE_URL= # Pooled connection string (for serverless)
+DATABASE_URL_DIRECT= # Direct connection string (for dbmate migrations)
+
+# AI Services (ADR-014)
+AWS_REGION=us-east-1 # Bedrock region
+CLAUDE_MODEL_CLASSIFY=anthropic.claude-3-5-haiku-20241022-v1:0 # Intent classification
+CLAUDE_MODEL_EXPAND=anthropic.claude-3-5-haiku-20241022-v1:0 # Query expansion
+CLAUDE_MODEL_RANK=anthropic.claude-3-5-haiku-20241022-v1:0 # Passage ranking (promote to Sonnet if benchmarks warrant)
+CLAUDE_MODEL_BATCH=anthropic.claude-opus-4-6-v1 # Offline batch: theme tagging, reference extraction, translation drafting
+VOYAGE_API_KEY= # Voyage voyage-3-large for embeddings (ADR-118)
+
+# Observability
+NEXT_PUBLIC_SENTRY_DSN= # Sentry error tracking
+SENTRY_AUTH_TOKEN= # Source map uploads
+
+# Vercel (set in Vercel dashboard, not .env)
+# VERCEL_URL — auto-set by Vercel
+```
+
+---
+
+## ADR-048: Chunking Strategy
+
+The chunking algorithm is the single most important factor in search retrieval quality. Yogananda's prose style varies dramatically across books, requiring a nuanced strategy.
+
+### Default Chunking (Phases 0–5: narrative, collected talks, short works)
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| **Unit** | Paragraph (typographic paragraph breaks in source text) | Yogananda's paragraphs correspond to idea boundaries |
+| **Token range** | 100–500 tokens (target: 200–300) | Balances specificity with context |
+| **Minimum** | 100 tokens — paragraphs below this are merged with the following paragraph | Prevents orphaned fragments |
+| **Maximum** | 500 tokens — split at sentence boundaries, keeping both halves above 100 tokens | Prevents imprecise retrieval |
+| **Overlap** | None | Paragraph boundaries are natural semantic boundaries; overlap introduces duplicate search results |
+
+**Metadata preserved per chunk:** `book_id`, `chapter_id`, `paragraph_index` (position within chapter), `page_number` (from source), `language`.
+
+### Special Handling
+
+| Content Type | Strategy | Rationale |
+|-------------|----------|-----------|
+| **Epigraphs and poetry** | Single chunk regardless of length | Splitting a poem mid-stanza destroys meaning |
+| **Lists and enumerations** | Single chunk | Yogananda's numbered instructions are semantically atomic |
+| **Dialogue and quoted speech** | Single chunk for continuous exchanges; split at speaker changes if >500 tokens | Preserves conversational flow |
+| **Aphorisms (*Sayings*, *Scientific Healing Affirmations*)** | One chunk per standalone saying/affirmation regardless of length | These books are already atomically organized |
+| **Chapter titles and section headers** | Not chunked separately — prepended to first paragraph as metadata context | Headers are context, not content |
+
+### Verse-Aware Chunking (Phase 6: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*)
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| **Unit** | Verse-commentary pair | Maintains the interpretive relationship |
+| **Long commentaries** | Split at paragraph boundaries within commentary; each sub-chunk retains verse text as prefix | Verse context travels with every fragment |
+| **Cross-reference** | Verse reference stored as structured metadata (e.g., "Bhagavad Gita IV:7") | Enables side-by-side commentary view |
+
+### Per-Language Validation (Phase 10)
+
+English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts; Devanagari and Bengali have different word-boundary characteristics. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary. See ROADMAP deliverable 10.10 for the formal validation requirement.
+
+### Semantic Density Classification
+
+Not all passages carry equal semantic weight per token. Some sentences condense an entire teaching into ten words ("The soul is ever free"). Others are narrative connective tissue ("We traveled by train to Puri"). Semantic density — meaning per word — is a useful signal for multiple portal features.
+
+**Classification:** A `semantic_density` score per chunk, computed during ingestion:
+
+| Score | Label | Description | Example |
+|-------|-------|-------------|---------|
+| `high` | Aphoristic | Maximum meaning per token. Standalone truth. Dwell-worthy. | *"The soul is ever free; it is deathless, birthless..."* |
+| `medium` | Expository | Standard teaching prose. Develops an idea across sentences. | *"When you practice meditation regularly, the mind..."* |
+| `low` | Narrative | Story, transition, biographical detail. Context, not teaching. | *"We arrived at the station in the early morning..."* |
+
+**How computed:** Claude Opus (ADR-014 batch tier, "Classifying" category from ADR-005) classifies each chunk during ingestion. Not a numeric score — a three-level enum. Spot-checked by reviewer.
+
+**Column:** `ALTER TABLE book_chunks ADD COLUMN semantic_density TEXT CHECK (semantic_density IN ('high', 'medium', 'low'));`
+
+**Where it's used:**
+
+| Feature | How density helps |
+|---------|-------------------|
+| Today's Wisdom | Favors `high` density passages — aphorisms, standalone truths |
+| Quiet Corner | Uses only `high` density passages — affirmations must stand alone |
+| "The Essential Yogananda" | A curated view of the ~200 highest-density passages across the entire library. Not a new page initially — a filter on the `/themes` or `/explore` page. The 200 passages that pack the most teaching per word. |
+| Self-Revealing Navigation (DES-015) | The "most evocative passage" selected for the warm-background hint on first visit is the highest-density passage in the chapter's first screen |
+| Search result ranking | Density as a tiebreaker when relevance scores are close — prefer aphoristic passages that stand alone over narrative context |
+
+**Phase:** Populated during Phase 3 ingestion (when Claude batch processing is available). Retroactively applied to Phase 0 content.
+
+### ADR-039 ext: Corpus Stylometric Fingerprint
+
+Content Integrity Verification (ADR-039) uses per-chapter content hashes to verify text hasn't been altered. A stylometric fingerprint adds a deeper layer: not just "this text hasn't been changed" but "this text is consistent with the verified patterns of Yogananda's writing."
+
+**What the fingerprint captures:**
+
+| Dimension | Signal |
+|-----------|--------|
+| **Sentence length distribution** | Mean, median, and standard deviation of words per sentence, per book |
+| **Vocabulary frequency** | The characteristic vocabulary profile — frequency of spiritual terms, pronouns, imperative forms |
+| **Metaphor recurrence** | Yogananda's distinctive metaphors: ocean/wave, lotus, light/darkness, divine mother. Frequency and distribution. |
+| **Rhetorical mode ratio** | Declarative vs. imperative vs. interrogative sentences across the corpus |
+| **Passage structure** | Average paragraph length, dialogue-to-exposition ratio, quotation density |
+
+**How computed:** A batch analysis script run once after full corpus ingestion. Outputs a JSON fingerprint file per book and one for the aggregate corpus. Stored alongside content hashes on the `/integrity` page.
+
+**Who this serves:**
+- **Content integrity.** In a world of AI-generated spiritual content, the ability to verify "this passage is consistent with Yogananda's writing style" is a unique trust signal.
+- **Scholars.** Stylometric analysis is a recognized methodology in textual scholarship. Making the portal's fingerprint public invites scholarly engagement.
+- **AI systems consuming portal content (ADR-081).** The fingerprint helps AI systems distinguish authentic Yogananda passages from AI-generated imitations.
+
+**What this is not:** Not a plagiarism detector. Not a tool for verifying external claims about Yogananda's authorship. It is a statistical profile of the authenticated corpus — a reference point, not a judge.
+
+**Phase:** Phase 6+ (requires substantial corpus ingestion). Published on the `/integrity` page alongside content hashes.
+
+---
+
+## DES-031: MCP Server Strategy
+
+MCP (Model Context Protocol) serves three tiers of AI consumer, all wrapping the same `/lib/services/` functions. MCP tools are the AI-native complement to HTTP API routes — one service layer, two access protocols. (ADR-097 governs third-party MCP servers; ADR-101 governs the portal's own MCP tiers.)
+
+### Third-Party MCP Servers (ADR-097)
+
+| MCP Server | Use Case | Availability |
+|------------|----------|-------------|
+| **Neon MCP** | Database schema management, SQL execution, migrations during development | Available now |
+| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Phase 0 |
+| **Contentful MCP** | Content model design, entry management during development | Phase 9+ (evaluate) |
+
+See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
+
+### SRF Corpus MCP — Three-Tier Architecture (ADR-101)
+
+```
+Seeker (browser) → API Route → Service Layer → Neon
+AI agent (MCP)   → MCP Tool  → Service Layer → Neon
+Claude Code (dev) → MCP Tool → Service Layer → Neon
+```
+
+The service layer doesn't care who's calling. The access protocol and metadata envelope differ by tier.
+
+#### Tier 1: Development (Phase 0)
+
+Unrestricted access for Claude Code during portal development. Also used for iterating on guide pathway generation prompts (DES-035 § Worldview Guide Pathway Generation, DES-048 § Worldview Pathway Catalog) — developer tests "generate a guide pathway for Buddhist meditators" interactively, refining prompt templates before deploying to the admin portal batch workflow.
+
+| Tool | Service Function | Purpose |
+|---|---|---|
+| `search_corpus(query, limit)` | `search.ts` | Find passages by semantic query |
+| `search_by_theme(slug)` | `themes.ts` | Theme-based retrieval |
+| `search_references(source_name)` | `references.ts` | External reference lookup |
+| `get_vocabulary_bridge(category)` | reads `spiritual-terms.json` | Terminology mapping |
+| `get_book_metadata(slug)` | `books.ts` | Book information |
+| `get_theme_metadata(slug)` | `themes.ts` | Theme information |
+
+#### Tier 2: Internal (Phase 4+)
+
+Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that DES-035 AI workflows need for corpus-grounded proposals. Authentication via API key or IAM role (not Auth0).
+
+| Tool | Service Function | Purpose | Phase |
+|---|---|---|---|
+| `get_chunk_with_context(chunk_id, window)` | `chunks.ts` | Passage + N surrounding chunks (for QA, classification, review) | 4 |
+| `get_similar_passages(chunk_id, threshold, limit)` | `search.ts` | Embedding-based nearest neighbors (distinct from theme search) | 4 |
+| `get_glossary_terms_in_passage(chunk_id)` | `glossary.ts` | Glossary terms in a passage with definitions | 4 |
+| `get_content_coverage(theme_slug)` | `themes.ts` | Passage count, book distribution, tone distribution per theme | 4 |
+| `verify_citation(book_slug, chapter, page)` | `citations.ts` | Confirm a quote exists in the corpus | 4 |
+| `get_pending_reviews(queue_type, limit)` | `queue.ts` | Items awaiting human review in a specific queue | 4 |
+| `get_daily_passage(language, exclude_id)` | `daily.ts` | Random passage from curated pool | 4 |
+| `get_cross_book_connections(chunk_id)` | `relations.ts` | Related passages from other books | 5 |
+| `get_person_context(person_slug)` | `people.ts` | Biography, lineage position, key mentioning passages | 5 |
+| `get_graph_neighborhood(node_id, depth, types[])` | `graph.ts` | Subgraph around any node, filtered by node/edge type | 6 |
+| `get_search_trends(period, min_count)` | `analytics.ts` | Anonymized aggregated query themes (DELTA-compliant) | 6 |
+| `find_concept_path(source_slug, target_slug)` | `graph.ts` | Shortest ontological path between two concepts | 7 |
+| `get_passage_translations(canonical_chunk_id)` | `translations.ts` | All language variants of a passage | 10 |
+
+**Internal MCP use cases by consumer:**
+
+| Consumer | Primary Tools | Phase |
+|---|---|---|
+| Theme tag proposal AI | `get_similar_passages`, `get_content_coverage`, `get_graph_neighborhood` | 4, 6 |
+| Guide pathway generation AI | `search_corpus`, `search_references`, `get_vocabulary_bridge`, `find_concept_path` | 4, 7 |
+| Ingestion QA AI | `get_chunk_with_context`, `verify_citation` | 4 |
+| Translation review AI | `get_passage_translations`, `get_glossary_terms_in_passage` | 10 |
+| Reading thread drafting AI | `get_cross_book_connections`, `get_graph_neighborhood`, `find_concept_path` | 5, 6, 7 |
+| Social media caption AI | `search_corpus`, `get_book_metadata`, `get_theme_metadata` | 8 |
+| Impact narrative AI | `get_search_trends`, `get_graph_neighborhood` | 6 |
+| SRF mobile app | `search_corpus`, `get_daily_passage`, `get_graph_neighborhood`, `get_person_context` | TBD (stakeholder) |
+| Admin portal AI features | `get_pending_reviews`, `get_content_coverage`, `get_search_trends` | 4, 6 |
+
+#### Tier 3: External (Phase 8+)
+
+Rate-limited access for third-party AI assistants (ChatGPT, Claude, Gemini, custom agents). Exposes a content-serving subset (no admin/editorial tools). Every response wrapped in fidelity metadata.
+
+**Available tools:** `search_corpus`, `search_by_theme`, `get_book_metadata`, `get_theme_metadata`, `get_glossary_terms_in_passage`, `get_graph_neighborhood`, `find_concept_path`, `get_person_context`, `get_daily_passage`, `verify_citation`.
+
+**Not available externally:** `get_pending_reviews`, `get_search_trends`, `get_content_coverage`, `get_similar_passages`, `get_chunk_with_context`, `get_passage_translations`.
+
+**Fidelity metadata envelope:**
+
+```jsonc
+{
+  "passages": [
+    {
+      "text": "Verbatim passage text...",
+      "citation": {
+        "book": "Autobiography of a Yogi",
+        "chapter": 12,
+        "chapter_title": "Years in My Master's Hermitage",
+        "page": 142
+      },
+      "context_url": "/books/autobiography-of-a-yogi/12#chunk-uuid",
+      "themes": ["Peace", "Meditation"]
+    }
+  ],
+  "fidelity": {
+    "source": "Self-Realization Fellowship",
+    "portal": "teachings.yogananda.org",
+    "presentation": "verbatim_only",
+    "paraphrase_permitted": false,
+    "attribution_required": true,
+    "attribution_format": "{book}, Chapter {chapter}, p. {page}",
+    "context_url_purpose": "Full chapter context — present to user alongside quote"
+  }
+}
+```
+
+The `fidelity` object is a moral signal, not a technical enforcement — analogous to Creative Commons metadata. The `context_url` ensures seekers always have one click to the full, unmediated portal.
+
+**Rate limiting:** Same Cloudflare + application-level tiering as HTTP API (ADR-023). Registered consumers (fidelity contract acknowledged) receive higher limits. Unregistered consumers receive anonymous web crawler limits (ADR-081).
+
+**Access governance:** Stakeholder decision (CONTEXT.md). Recommendation: registered access — clients receive an API key upon acknowledging the fidelity contract, balancing reach with accountability.
+
+### Knowledge Graph as MCP Surface
+
+The Knowledge Graph (ADR-062) answers structural queries that text search cannot:
+
+| Query Type | Tool | What It Returns |
+|---|---|---|
+| "How does meditation relate to concentration?" | `get_graph_neighborhood("meditation", 2, ["theme", "concept"])` | Structural relationships between concepts |
+| "What is the path from pranayama to samadhi?" | `find_concept_path("pranayama", "samadhi")` | Ontological steps with a representative passage at each |
+| "Who is Lahiri Mahasaya?" | `get_person_context("lahiri-mahasaya")` | Biography, lineage position, key passages |
+| "What themes cluster around grief?" | `get_graph_neighborhood("grief", 2, ["theme"])` | Related themes and their connection types |
+
+These structural queries are the portal's unique offering via MCP — no other digital representation of Yogananda's teachings encodes relational structure. The graph API (`/api/v1/graph/subgraph`) serves the web client; MCP tools serve AI consumers needing the same relational data in a different access pattern.
+
+### MCP Tool Interface Contract
+
+All MCP tools across all three tiers follow a shared interface contract. This ensures consistency for AI consumers that may graduate from Tier 1 (development) to Tier 2 (internal) or encounter Tier 3 (external) — the tool naming and response shape remain predictable.
+
+**Naming convention:** `snake_case` verbs: `search_corpus`, `get_book_metadata`, `verify_citation`. Prefix indicates action: `search_*` (query-based retrieval), `get_*` (ID-based lookup), `verify_*` (boolean validation), `find_*` (graph traversal).
+
+**Parameter naming:** `snake_case`, matching the API response convention (ADR-110). Common parameters: `language` (ISO 639-1, default `'en'`), `limit` (positive integer), `chunk_id` / `book_slug` / `theme_slug` (resource identifier matching the type conventions in ADR-110).
+
+**Response shape:** MCP tools return the same shape as their corresponding HTTP API endpoints (when one exists), plus tier-specific metadata:
+
+```jsonc
+{
+  // For Tier 3 only: fidelity metadata envelope wraps the response
+  "fidelity": { ... },
+  // The response body matches the HTTP API equivalent
+  "data": [...],
+  "meta": { ... }
+}
+```
+
+Tier 1 and Tier 2 tools return raw service-layer output (matching the HTTP API shape). Tier 3 tools wrap the output in the fidelity envelope. This means a tool like `search_corpus` returns the same `data` array as `GET /api/v1/search`, with identical field names and structure.
+
+**Error shape:** MCP tools return errors using the same `error` / `message` / `request_id` structure as the HTTP API error contract (DES-019). The compassionate error messaging applies equally — an AI consumer's end user may see these messages.
+
+### MCP Service File
+
+`/lib/mcp/` directory:
+- `server.ts` — MCP server setup, tier routing, authentication
+- `tools/corpus.ts` — search, theme, reference, vocabulary bridge tools
+- `tools/editorial.ts` — internal editorial tools (Tier 2 only)
+- `tools/graph.ts` — Knowledge Graph traversal tools
+- `tools/people.ts` — People Library tools
+- `tools/fidelity.ts` — fidelity metadata envelope wrapper (Tier 3)
+
+All tools delegate to `/lib/services/` — zero business logic in the MCP layer.
+
+---
+
+## DES-039: Infrastructure and Deployment
+
+All infrastructure is defined as code per SRF engineering standards. See ADR-016.
+
+### Terraform Module Layout
+
+```
+/terraform/
+ main.tf — Provider configuration, backend
+ variables.tf — Input variables (project name, environment)
+ outputs.tf — Connection strings, URLs, DSNs
+
+ /modules/
+ /neon/ — Neon project, database, roles, pgvector
+ /vercel/ — Vercel project, env vars, domains
+ /sentry/ — Sentry project, DSN, alert rules
+ /cloudflare/ — DNS records, WAF rules, bot protection
+ /newrelic/ — Synthetics monitors, alert policies
+
+ /environments/
+ dev.tfvars — Phase 1 (only active environment)
+ qa.tfvars — Phase 9+
+ stg.tfvars — Phase 9+
+ prod.tfvars — Phase 9+
+```
+
+### Boundary: Terraform vs. Application Code
+
+| Managed by Terraform | Managed by Application Code |
+|---------------------|-----------------------------|
+| Service creation (Neon project, Vercel project, Sentry project) | Database schema (dbmate SQL migrations) |
+| Environment variables, secrets | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
+| DNS records, domain bindings | Application routing (`next.config.js`) |
+| Alert rules, Synthetics monitors | Structured logging (`lib/logger.ts`) |
+| Auth provider (Phase 13+, if needed) | Auth SDK integration in Next.js |
+| Repo settings, branch protection | CI/CD workflow files |
+
+### Source Control and CI/CD
+
+| Phase | SCM | CI/CD | Terraform State |
+|-------|-----|-------|-----------------|
+| **Phases 0–8** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Phase 9+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+
+#### Phase 1 CI/CD Pipeline (GitHub Actions)
+
+```
+On every PR:
+ 1. Lint + type check
+ 2. Vitest (unit/integration)
+ 3. axe-core (accessibility)
+ 4. next build
+ 5. Playwright (E2E)
+ 6. Lighthouse CI (performance)
+ 7. Search quality suite
+ 8. terraform plan (if /terraform/ changed)
+
+On merge to main:
+ 1. All of the above
+ 2. terraform apply (dev)
+ 3. Vercel production deployment
+```
+
+Infrastructure changes (`/terraform/**`) trigger `terraform plan` on PR and `terraform apply` on merge. Application changes trigger the full test suite and Vercel deployment. Both can trigger in the same PR.
+
+### Environment Variables
+
+All environment variables documented in `.env.example` and provisioned via Terraform:
+
+```bash
+# .env.example — Local development reference
+# These are set by Terraform in deployed environments.
+
+# Neon
+DATABASE_URL= # Terraform output: module.neon.connection_string
+NEON_PROJECT_ID= # Terraform output: module.neon.project_id
+
+# AI
+ANTHROPIC_API_KEY= # Set manually (secret)
+OPENAI_API_KEY= # Set manually (secret)
+
+# Sentry
+NEXT_PUBLIC_SENTRY_DSN= # Terraform output: module.sentry.dsn
+SENTRY_AUTH_TOKEN= # Set manually (secret)
+
+# Auth (Phase 13+, if needed — no auth variables required for Phases 0–12)
+
+# YouTube
+YOUTUBE_API_KEY= # Set manually (secret)
+
+# Email (Phase 8)
+RESEND_API_KEY= # Set manually (secret)
+
+# Amplitude (Phase 6)
+NEXT_PUBLIC_AMPLITUDE_KEY= # Terraform output: module.amplitude.api_key
+
+# New Relic (Phase 6)
+NEW_RELIC_LICENSE_KEY= # Set manually (secret)
+```
+
+Secrets (API keys, tokens) are never in Terraform state. They are set via Vercel's encrypted environment variables (provisioned by Terraform as empty placeholders, then populated manually or via a secrets manager).
+
+### Local Development
+
+Developers run the app locally without Terraform:
+
+1. Clone repo
+2. `pnpm install`
+3. Copy `.env.example` → `.env.local`, fill in values
+4. `pnpm db:migrate` (applies dbmate migrations to a Neon dev branch)
+5. `pnpm dev` (starts Next.js dev server)
+
+Terraform manages deployed environments. Local development uses direct Neon connection strings and local config files.
+
+---
+
+## DES-054: Knowledge Graph Ontology
+
+The knowledge graph captures the relationships between teachings, teachers, concepts, and experiences that make Yogananda's corpus a web of interconnected wisdom rather than a flat document collection. The graph ontology is designed in Phase 0; graph intelligence becomes active in Phase 4 via Postgres tables + Python batch computation (ADR-117).
+
+### Node Types
+
+| Node Type | Description | Primary Key Source | Phase |
+|-----------|-------------|-------------------|-------|
+| **Teacher** | Yogananda, his line of gurus, other teachers he references | `entity_registry` (type = 'person') | 4 |
+| **DivineName** | God, Divine Mother, Christ, Krishna, Cosmic Consciousness | `entity_registry` (type = 'divine_name') | 4 |
+| **Work** | Published books, collections, individual poems/chants | `books` table | 4 |
+| **Technique** | Kriya Yoga (public description only), Hong-Sau, Energization | `entity_registry` (type = 'technique') | 4 |
+| **SanskritTerm** | Samadhi, maya, karma, dharma — with canonical forms | `sanskrit_terms` table | 4 |
+| **Concept** | Abstract teachings: divine love, self-realization, willpower | `entity_registry` (type = 'concept') | 4 |
+| **Scripture** | Bhagavad Gita, Bible, Rubaiyat — works Yogananda comments on | `entity_registry` (type = 'scripture') | 6 |
+| **ExperientialState** | States of consciousness (waking → nirvikalpa samadhi) | `entity_registry` (type = 'state') | 4 |
+| **Place** | Ranchi, Encinitas, Dakshineswar — biographical/spiritual places | `places` table | 4 |
+| **Chunk** | Individual text passages from the corpus | `book_chunks` table | 4 |
+
+All node types correspond to rows in Postgres tables (`entity_registry`, `books`, `book_chunks`, `places`, `sanskrit_terms`). Graph algorithm results (centrality_score, community_id, bridge_score) are stored as columns on the source rows. Chunk embeddings (ADR-118) are used by pgvector for similarity ranking after graph traversal retrieves candidates.
+
+### Edge Types
+
+| Edge Type | From → To | Description | Phase |
+|-----------|-----------|-------------|-------|
+| **LINEAGE** | Teacher → Teacher | Guru-disciple relationship | 4 |
+| **AUTHORED** | Teacher → Work | Authorship attribution | 4 |
+| **TEACHES** | Chunk → Concept | Passage teaches or discusses a concept | 4 |
+| **MENTIONS** | Chunk → SanskritTerm | Sanskrit term appears in passage | 4 |
+| **REFERENCES** | Chunk → Scripture | Passage quotes or comments on scripture | 6 |
+| **DESCRIBES_STATE** | Chunk → ExperientialState | Passage describes a state of consciousness | 4 |
+| **LOCATED_AT** | Teacher → Place | Biographical association | 4 |
+| **NEXT / PREV** | Chunk → Chunk | Sequential reading order within a book | 4 |
+| **RELATED_CONCEPT** | Concept → Concept | Conceptual relationship (broader/narrower) | 4 |
+| **CROSS_TRADITION** | Concept → Concept | Yogananda's explicit cross-tradition mapping | 6 |
+| **TECHNIQUE_FOR** | Technique → ExperientialState | Practice leads toward state | 4 |
+
+### Graph Algorithms (Nightly Batch)
+
+Three algorithms run nightly on the full graph and feed suggestion weights and retrieval confidence:
+
+1. **PageRank** — Identifies the most-connected, highest-authority passages and concepts. Feeds the "canonical teaching" signal in Related Teachings (ADR-050).
+2. **Community Detection** — Groups densely connected nodes into teaching clusters. Feeds thematic browsing and the Quiet Index (DES-029).
+3. **Betweenness Centrality** — Finds bridge passages that connect otherwise separate teaching domains. These are the passages that link, say, meditation technique to devotional practice. Surfaced in Reading Arc suggestions (Phase 8+).
+
+### Graph-Augmented Retrieval Query Pattern
+
+Graph-augmented retrieval (PATH C) uses multi-step SQL queries composed in `/lib/services/graph.ts`:
+
+```sql
+-- Step 1: Entity resolution — identify concepts in the query
+SELECT id, canonical_name, entity_type
+FROM entity_registry
+WHERE canonical_name = $concept OR $concept = ANY(aliases);
+
+-- Step 2: Graph traversal — find chunks within 2–3 hops
+WITH direct_chunks AS (
+  SELECT DISTINCT er.chunk_id
+  FROM extracted_relationships er
+  WHERE er.subject_entity = $canonical_name
+     OR er.object_entity = $canonical_name
+),
+two_hop_chunks AS (
+  SELECT DISTINCT er2.chunk_id
+  FROM extracted_relationships er1
+  JOIN extracted_relationships er2
+    ON er1.object_entity = er2.subject_entity
+  WHERE er1.subject_entity = $canonical_name
+    AND er1.chunk_id != er2.chunk_id
+)
+SELECT chunk_id FROM direct_chunks
+UNION
+SELECT chunk_id FROM two_hop_chunks;
+
+-- Step 3: Vector similarity ranking on graph-retrieved candidates
+SELECT bc.id, bc.content, bc.book_id,
+       1 - (bc.embedding <=> $query_embedding) AS similarity
+FROM book_chunks bc
+WHERE bc.id = ANY($graph_chunk_ids)
+  AND bc.language = $language
+ORDER BY similarity DESC
+LIMIT 20;
+```
+
+This three-step pattern replaces the single openCypher query that Neptune Analytics would have provided. The trade-off is 2-3 SQL round-trips instead of one declarative query — adding ~10-20ms latency, negligible in a pipeline already at 200-400ms. The advantage is: all data in one system, debuggable with standard SQL, no cross-system synchronization.
+
+**Governed by:** ADR-117 (Postgres-Native Graph Intelligence), ADR-116 (Entity Registry), ADR-050 (Related Teachings)
+
+*Section added: 2026-02-23, ADR-117. Revised: 2026-02-23, Neptune removed — Postgres-native implementation.*
+
+---
