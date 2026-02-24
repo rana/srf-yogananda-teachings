@@ -15,7 +15,7 @@
 | [7](#phase-7-empower) | Empower | Study Workspace, PDF export, staff tools |
 | [8](#phase-8-distribute) | Distribute | Email, social, WhatsApp, RSS, webhooks |
 | [9](#phase-9-integrate) | Integrate | GitLab, regional distribution, Contentful Custom Apps |
-| [10](#phase-10-translate) | Translate | 9 languages, translation workflow |
+| [10](#phase-10-translate) | Translate | 9 non-English core languages, translation workflow |
 | [11](#phase-11-polish) | Polish | WCAG audit, design system, PWA, TTS |
 | [12](#phase-12-multimedia) | Multimedia | Video, audio, images, cross-media hub |
 | [13](#phase-13-personalize) | Personalize | Optional auth, sync, personalized email |
@@ -487,19 +487,19 @@ Contentful has been the editorial source of truth since Phase 0 (ADR-010). This 
 
 ## Phase 10: Translate
 
-**Goal:** Serve content and search in multiple languages, activating Phase 1's i18n infrastructure. (ADR-075, ADR-076, ADR-077)
+**Goal:** Serve content and search in 9 non-English core languages, activating Phase 1's i18n infrastructure. (ADR-075, ADR-076, ADR-077)
 
-Two parallel language waves — Western (es, de, fr, it, pt, ja) and Indian (hi, bn) — launch simultaneously where resourcing permits. Per-language search quality evaluation ensures no language goes live with degraded retrieval. YSS co-equal design stakeholder participation for Hindi/Bengali cultural adaptation. The impact dashboard provides leadership visibility into global reach and unmet demand. The sequencing commitment (ADR-077): both waves are planned as parallel workstreams; Yogananda's heritage languages (830M speakers) do not wait behind European languages by default.
+The core language set (ADR-077) defines 10 languages: en, de, es, fr, it, pt, ja, th, hi, bn. All 9 non-English languages are Phase 10 peers — no wave ordering. Resourcing may require sequencing during implementation, but the architectural commitment is equal. Per-language search quality evaluation ensures no language goes live with degraded retrieval. YSS co-equal design stakeholder participation for Hindi/Bengali cultural adaptation. SRF/YSS Thailand community input for Thai locale. The impact dashboard provides leadership visibility into global reach and unmet demand.
 
 - AI-assisted UI translations with mandatory human review per locale (ADR-078)
 - Localized book content ingestion with content availability matrix
 - Per-language search: language-specific tsvector, multilingual embedding benchmarking (ADR-047)
 - English fallback passages clearly marked `[EN]`; "Read in English →" links
 - Cross-language passage alignment via `canonical_chunk_id`
-- Per-language presentation adaptations: non-Latin fonts, CJK line-height, cultural "Seeking..." entry points
+- Per-language presentation adaptations: non-Latin fonts, CJK line-height, Thai word-boundary handling, cultural "Seeking..." entry points
 - Translation review UI with side-by-side English source and AI draft (ADR-082, ADR-078)
 - Impact dashboard at `/admin/impact`: countries, content growth, "What is humanity seeking?" (ADR-090)
-- Per-language search suggestions with transliteration support for Indic languages (ADR-049)
+- Per-language search suggestions with transliteration support for Indic and Thai languages (ADR-049)
 
 **Success criteria:** At least one non-English language live with ≥ 80% search quality on 15–20 test queries. English fallback passages clearly marked `[EN]`. Per-language homepage payload < 50KB including font subsetting.
 
@@ -546,7 +546,7 @@ The portal becomes a true multimedia platform. Video transcription (YouTube → 
 - Knowledge Graph: all five content types, 3D WebGL visualization, Consciousness Cartography stretch goal (ADR-061, ADR-062, DES-054)
 - Concept/Word Graph exploration UI (DES-055)
 
-**Success criteria:** Cross-media search returns interleaved book, video, and audio results. Synchronized transcript scrolls with playback. Knowledge graph displays all five content types with sacred artifact golden ring. YSS branding activates for Hindi/Bengali locales.
+**Success criteria:** Cross-media search returns interleaved book, video, and audio results. Synchronized transcript scrolls with playback. Knowledge graph displays all five content types with sacred artifact golden ring. YSS branding activates for Hindi, Bengali, and Thai locales.
 
 ---
 
@@ -659,7 +659,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 | **7 (Empower)** | Phase 3 multi-book corpus available | Phase 6 observability operational |
 | **8 (Distribute)** | Phase 4 editorial workflows operational | Phase 7 PDF generation available |
 | **9 (Integrate)** | Phase 6 complete | GitLab access provisioned. Contentful Custom Apps scope defined. (ADR-123) |
-| **10 (Translate)** | Embedding model benchmarked for multilingual (research begins Phase 1–2), translation reviewers identified | Phase 1 i18n infrastructure validated. Contentful locales activated for target languages. (ADR-123) |
+| **10 (Translate)** | Embedding model benchmarked for multilingual (research begins Phase 1–2), translation reviewers identified, digital text availability confirmed for core languages | Phase 1 i18n infrastructure validated. Contentful locales activated for target languages. (ADR-077, ADR-123) |
 | **11 (Polish)** | Phase 10 at least one non-English language live | Third-party accessibility auditor engaged |
 | **12 (Multimedia)** | Phase 6 complete (unified search operational) | Phase 11 PWA evaluation complete, audio/image source material available from SRF |
 | **13 (Personalize)** | Phase 12 complete | SRF decision on user accounts (required for server-sync features 13.5–13.6 only; localStorage-based features 13.2–13.4 proceed independently). Auth0 configuration aligned with SRF identity standards. (ADR-123) |
@@ -668,7 +668,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 **Critical decision gates** (require SRF input before the phase begins):
 - **Phase 4 (Operate):** Who owns editorial governance? Who is the portal coordinator? (See CONTEXT.md § Operational Staffing)
 - **Phase 9 (Integrate):** GitLab migration scope and timeline
-- **Phase 10 (Translate):** YSS branding strategy for Hindi/Bengali locales
+- **Phase 10 (Translate):** YSS branding strategy for Hindi/Bengali/Thai locales, digital text availability for all 9 non-English core languages
 - **Phase 13 (Personalize):** Whether to implement user accounts at all
 - **Phase 14 (Community):** VLD role assignment process, VLD coordinator identified, community curation governance model
 

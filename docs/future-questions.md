@@ -51,9 +51,10 @@ When a phase enters active planning, move its questions back to CONTEXT.md § Op
 - [ ] Mixed-script embedding quality for Gita commentary: validate excluding Devanāgarī from embedding input doesn't degrade verse-specific retrieval. (ADR-080, ADR-048, ADR-046)
 
 ### Stakeholder
-- [ ] Hindi/Bengali audio-first pilot: can SRF provide Yogananda voice recordings alongside the text launch? Deferring all audio to Phase 12 creates a cultural equity gap for oral-tradition populations. (ADR-026, ADR-057, ADR-006)
+- [ ] Hindi/Bengali/Thai audio-first pilot: can SRF provide Yogananda voice recordings alongside the text launch? Deferring all audio to Phase 12 creates a cultural equity gap for oral-tradition populations. (ADR-026, ADR-057, ADR-006)
 - [ ] YSS photographic archives of Indian biographical sites (Gorakhpur, Serampore, Ranchi, Dakshineswar) for Sacred Places. (DES-023, ADR-069)
 - [ ] India's DPDPA cross-border transfer provisions: monitor as Phase 10 Hindi/Bengali approaches. (ADR-099, ADR-077)
+- [ ] Thailand's PDPA compliance: verify data handling for Thai locale. (ADR-099, ADR-077)
 - [ ] Brazil LGPD Data Protection Officer requirement for Portuguese-language content. (ADR-099)
 
 ---

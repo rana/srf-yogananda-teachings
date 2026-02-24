@@ -1948,7 +1948,7 @@ A library notice board, not a SaaS changelog. The notice board says "The poetry 
 | "We added WhatsApp support" | "You can now ask Yogananda's books a question from WhatsApp" |
 | "Dark mode is here" | "The reader now adjusts to evening light" |
 | "v3.2: Bug fixes and performance" | *(omit — seekers don't need this)* |
-| "9 new languages!" | "The teachings are now available in Hindi, Bengali, and seven more languages" |
+| "9 new languages!" | "The teachings are now available in Hindi, Bengali, Thai, and six more languages" |
 
 ### Content Categories
 

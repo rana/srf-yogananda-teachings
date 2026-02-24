@@ -1437,6 +1437,7 @@ The portal's "direct quotes only" principle (ADR-001) means it cannot add interp
  - `es`: Teléfono de la Esperanza (Spain), local equivalents (Latin America)
  - `hi`/`bn`: iCall, Vandrevala Foundation, AASRA
  - `ja`: Inochi no Denwa
+ - `th`: Samaritans of Thailand (1323)
  - Other locales: IASP directory link as fallback
 
  Resource data stored in locale files (`messages/{locale}.json`) alongside other UI strings. Editorial review required for all crisis resource text (consistent with ADR-078).
@@ -1709,7 +1710,7 @@ The portal has a brand identity for its AI: "The Librarian" (ADR-089). But the p
 
 ### Context
 
-The portal's mission — making the teachings "available freely throughout the world" — requires multi-language support. The convocation site's locale set (en, es, de, fr, it, pt, ja) establishes the initial target. However, localization for this portal has a unique challenge: not all books are translated into all languages. The content availability is asymmetric.
+The portal's mission — making the teachings "available freely throughout the world" — requires multi-language support. The core language set (ADR-077) defines 10 languages: en, de, es, fr, it, pt, ja, th, hi, bn. However, localization for this portal has a unique challenge: not all books are translated into all languages. The content availability is asymmetric.
 
 Three distinct layers require different localization strategies:
 
@@ -1797,7 +1798,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 ### Context
 
-The initial locale set (en, es, de, fr, it, pt, ja) includes only left-to-right (LTR) languages. However, Yogananda's teachings have readership in Arabic, Urdu, and Hebrew-speaking communities, and Hindi/Bengali use Devanagari script (LTR but with different typographic conventions). Building a CSS architecture that only works for LTR requires a significant retrofit when RTL languages are added.
+The core language set (en, de, es, fr, it, pt, ja, th, hi, bn) includes only left-to-right (LTR) languages. However, Yogananda's teachings have readership in Arabic, Urdu, and Hebrew-speaking communities (evaluation candidates). Building a CSS architecture that only works for LTR requires a significant retrofit when RTL languages are added.
 
 CSS logical properties (`margin-inline-start` instead of `margin-left`, `padding-block-end` instead of `padding-bottom`) provide directional-agnostic layout at zero additional cost when used from the start.
 
@@ -1834,52 +1835,60 @@ Tailwind CSS supports logical properties via the `ms-*` (margin-start), `me-*` (
 
 ---
 
-## ADR-077: Hindi and Bengali in Locale Roadmap
+## ADR-077: Core Language Set
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
+- *Revised: 2026-02-24, replaced Hindi/Bengali locale roadmap with a unified core language set. Wave structure removed — all non-English languages are Phase 10 peers.*
 
 ### Context
 
-The initial locale set (en, es, de, fr, it, pt, ja) mirrors the convocation site, which serves a primarily Western conference audience. However, the teaching portal's mission is global — "available freely throughout the world."
+The portal's mission — making the teachings "available freely throughout the world" — requires multi-language support. The question is not *whether* to support multiple languages, but *which* languages constitute the core commitment and how to sequence them.
 
-Yogananda was born in Gorakhpur, India. YSS (Yogoda Satsanga Society of India) serves millions of seekers on the Indian subcontinent. Hindi is the third most spoken language in the world. Bengali is Yogananda's mother tongue. The Autobiography of a Yogi has official Hindi and Bengali translations published by YSS.
-
-Omitting Hindi and Bengali from the portal — whose stated mission is global availability — is a significant gap.
+Official SRF/YSS translations of Yogananda's works exist in multiple languages. The core language set should reflect the intersection of mission reach, available translations, and organizational presence.
 
 ### Decision
 
-Add **Hindi (hi)** and **Bengali (bn)** to the locale roadmap as a **second wave in Phase 10**, following the initial Western-language wave.
+Define a **core language set of 10 languages** that the portal commits to supporting. All 9 non-English languages are Phase 10 peers — no wave ordering, no Western-before-Indian sequencing.
 
-**Phase 10 locale waves:**
+| Language | Code | Script | Rationale |
+|----------|------|--------|-----------|
+| **English** | en | Latin | Default. All content originates in English. |
+| **Spanish** | es | Latin | ~550M speakers. Strong SRF Latin America presence. Official translations exist. |
+| **German** | de | Latin | SRF Deutschland. Official translations exist. |
+| **French** | fr | Latin | Francophone Africa (~130M speakers) + France. Official translations exist. |
+| **Italian** | it | Latin | Official translations exist. |
+| **Portuguese** | pt | Latin | ~260M speakers (Brazil dominant). Official translations exist. |
+| **Japanese** | ja | CJK | Official translations exist. Established SRF Japan presence. |
+| **Thai** | th | Thai | Official translations exist. SRF/YSS Thailand presence. |
+| **Hindi** | hi | Devanagari | ~600M speakers. YSS audience. Yogananda's country. Official YSS translations. |
+| **Bengali** | bn | Bengali | ~230M speakers. Yogananda's mother tongue. Official YSS translations. |
 
-| Wave | Languages | Rationale |
-|------|-----------|-----------|
-| **10a (Western)** | es, de, fr, it, pt, ja | Matches convocation site. Western audience. SRF's existing translation infrastructure. |
-| **10b (Indian)** | hi, bn | YSS audience. Yogananda's heritage languages. Massive population reach. |
-| **10c (Evaluation)** | Evaluate further | Based on demand data, available translations, and SRF/YSS input. Candidates: Chinese, Korean, Russian, Arabic. |
+**Evaluation candidates** (not in core set, evaluated based on demand data and translation availability): Chinese, Korean, Russian, Arabic.
 
 ### Rationale
 
-- **Mission integrity.** A portal that serves Yogananda's teachings in Japanese but not Hindi — Yogananda's own country — contradicts the mission.
-- **Population reach.** Hindi speakers: ~600M. Bengali speakers: ~230M. These exceed the combined speakers of German, French, Italian, and Portuguese.
-- **YSS translations exist.** YSS has published official Hindi and Bengali translations of key Yogananda works. The content likely exists (pending confirmation of digital availability).
-- **Devanagari and Bengali scripts** are LTR, so the CSS logical properties decision (ADR-076) already covers the directional requirements. Font support (Noto Sans Devanagari, Noto Sans Bengali) is available via Google Fonts.
+- **Mission integrity.** The core set covers the languages where official Yogananda translations exist and SRF/YSS has organizational presence. Every core language has published translations — the portal serves verbatim text, not machine-translated content.
+- **No wave ordering.** The previous wave structure (Western first, Indian second) created an equity gap that contradicted the mission. All 9 non-English languages are Phase 10 peers. Resourcing constraints may require sequencing during implementation, but the *architectural commitment* is equal.
+- **Population reach.** The core set covers ~3 billion speakers across 6 scripts (Latin, CJK, Thai, Devanagari, Bengali). Hindi + Bengali alone exceed 830M speakers.
+- **Script diversity drives architectural quality.** Supporting Latin, CJK, Thai, Devanagari, and Bengali from the core set forces robust i18n infrastructure — font loading, line-height adaptation, word-boundary handling (Thai has none), search tokenization.
+- **Thai inclusion.** Official Thai translations exist. Thai script's lack of word boundaries makes it an excellent forcing function for search tokenization quality. SRF/YSS has presence in Thailand.
 
 ### Risks
 
-- **The 10a/10b split creates an optics and equity gap.** During the period between the Western-language launch and the Indian-language launch, the portal serves Yogananda's teachings in Japanese, German, French, Italian, and Portuguese — but not in Hindi or Bengali. For a portal whose mission is "available freely throughout the world," this period represents a visible contradiction of mission integrity. The practical rationale (SRF's existing Western translation infrastructure, convocation site alignment) is genuine, but the sequencing should be explicitly documented as a resourcing decision, not presented as natural ordering.
-- **Yogananda's heritage languages carry symbolic weight.** Serving European languages before the master's own heritage languages may be perceived as perpetuating a colonial pattern — Western audiences served first, Indian audiences second — regardless of the operational reasons. Early engagement with YSS and Indian design voices can mitigate this.
-- **The longer 10b is delayed after 10a, the greater the equity gap.** If 10a and 10b can be compressed (or better, parallelized), the optics and the mission alignment both improve. See CONTEXT.md § Open Questions (Stakeholder) for the co-launch question.
+- **Capacity.** 9 non-English languages in a single phase is ambitious. Implementation may need to be sequenced by resourcing reality, but this is an operational decision made during Phase 10 execution — not an architectural pre-commitment to ordering.
+- **Digital text availability.** Confirmed that official translations exist in all core languages. Digital text availability (machine-readable format) must be verified per language — a critical stakeholder question.
+- **Thai script complexity.** Thai has no word boundaries, combining characters, and tone marks. Search tokenization (pg_search ICU) handles Thai, but per-language search quality benchmarking is essential.
 
 ### Consequences
 
-- Phase 10 is split into waves (10a Western, 10b Indian, 10c Evaluation). The split is a resourcing decision — not an assertion that Western languages are higher priority than Yogananda's heritage languages.
-- Need to confirm YSS has digital text of Hindi/Bengali translations (stakeholder question)
-- May need YSS-specific UI adaptations (organizational branding differences between SRF and YSS)
-- Google Fonts Noto Sans Devanagari and Noto Sans Bengali added to the font stack for Phase 10 Indian wave
-- The portal URL and branding question: is the Hindi/Bengali version served from the same domain (teachings.yogananda.org/hi/) or a YSS-branded domain?
+- Phase 10 serves all 9 non-English core languages as peers — no wave sub-phases
+- Need to confirm digital text availability for all core languages (stakeholder question)
+- YSS-specific UI adaptations needed for Hindi and Bengali locales (organizational branding differences between SRF and YSS per ADR-079)
+- Font stacks: Noto Sans/Serif Devanagari (Hindi), Noto Sans/Serif Bengali (Bengali), Noto Sans/Serif Thai (Thai), Noto Sans/Serif JP (Japanese). All loaded conditionally per locale.
+- Portal URL and branding question for Hindi/Bengali: same domain (`teachings.yogananda.org/hi/`) or YSS-branded domain?
 - YSS representatives participate in Hindi/Bengali design decisions as co-equal stakeholders (see CONTEXT.md § Stakeholders)
+- Thai design decisions require input from SRF/YSS Thailand community
 
 ---
 
@@ -1948,9 +1957,9 @@ The Claude system prompt for UI translation should include:
 ### Rationale
 
 - **Cost efficiency.** Professional translation of 300 strings × 8 languages = 2,400 translation units. AI drafting reduces this to a review task rather than a from-scratch task, cutting cost and time significantly.
-- **Quality floor.** Claude produces competent translations in all target languages (es, de, fr, it, pt, ja, hi, bn). The human reviewer elevates from competent to appropriate — catching tone, register, and spiritual terminology issues.
+- **Quality floor.** Claude produces competent translations in all core languages (es, de, fr, it, pt, ja, th, hi, bn). The human reviewer elevates from competent to appropriate — catching tone, register, and spiritual terminology issues.
 - **Sacred text boundary is absolute.** No amount of cost savings justifies AI-translating Yogananda's words. The portal serves *official SRF/YSS translations* or nothing. This is a theological constraint, not a technical one.
-- **Scalable.** As new languages are added (Phase 10 evaluation wave), the same workflow applies — Claude draft → human review. No need to find full professional translation services for each new locale.
+- **Scalable.** As new languages are added beyond the core set, the same workflow applies — Claude draft → human review. No need to find full professional translation services for each new locale.
 
 ### Alternatives Considered
 

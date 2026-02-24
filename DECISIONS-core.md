@@ -3925,7 +3925,7 @@ This raises a deeper question: is the embedding model the right place to economi
 
 Three dimensions of embedding quality matter for this portal:
 
-1. **Multilingual retrieval quality.** text-embedding-3-small's multilingual capability is emergent from training data diversity, not an explicit optimization target. Models like Cohere embed-v3 and BGE-M3 were designed multilingual-first. For European languages (es, de, fr, it, pt) the gap is likely small. For Hindi, Bengali, and Japanese — the languages where the English fallback strategy is load-bearing — the gap may be significant.
+1. **Multilingual retrieval quality.** text-embedding-3-small's multilingual capability is emergent from training data diversity, not an explicit optimization target. Models like Cohere embed-v3 and BGE-M3 were designed multilingual-first. For European languages (es, de, fr, it, pt) the gap is likely small. For Hindi, Bengali, Thai, and Japanese — the languages where the English fallback strategy is load-bearing — the gap may be significant.
 
 2. **Domain specificity.** General-purpose embedding models are trained on web text, Wikipedia, and news. Yogananda's prose is spiritually dense, metaphorical, and uses vocabulary that spans traditions ("The wave forgets it is the ocean" — simultaneously about water and cosmic consciousness). General models may not capture the semantic relationships that matter for this corpus.
 

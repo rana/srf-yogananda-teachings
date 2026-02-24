@@ -535,7 +535,7 @@ Per-language suggestion indices are required. Each language gets:
 - Localized curated queries (from `messages/{locale}.json`)
 - Language-specific `pg_trgm` or edge-cached index
 
-**Transliteration challenge:** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). CJK languages have no word boundaries, making prefix matching fundamentally different. The suggestion system must handle both native script and Romanized input for Indic languages. This is an open design question — see CONTEXT.md.
+**Transliteration challenge:** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). CJK languages have no word boundaries, making prefix matching fundamentally different. Thai script also lacks word boundaries and requires ICU segmentation. The suggestion system must handle both native script and Romanized input for Indic and Thai languages. This is an open design question — see CONTEXT.md.
 
 **Sparse-language graceful handling:** If a language has few books, its suggestion index will be thin. When suggestions are sparse, the response should be honest (fewer suggestions, not padded with irrelevant terms) rather than falling back to English suggestions unprompted.
 

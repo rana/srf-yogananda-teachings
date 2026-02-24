@@ -17,7 +17,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Cultural notes:** The portal's warm cream + Merriweather + bibliomantic "Show me another" aesthetic was designed for English spiritual readers. This is the baseline.
 - **Open question:** Which edition of *Autobiography of a Yogi* does the portal's pagination reference? SRF study groups worldwide reference specific page numbers. Edition clarity is needed. (ADR-034 provides the `edition` column.)
 
-### Spanish (es) — Wave 11a
+### Spanish (es) — Core
 
 - **Primary platforms:** WhatsApp (dominant in Latin America), Google, YouTube, Instagram
 - **Script:** Latin. Standard design tokens work. Spanish diacritics (á, é, ñ) render correctly in Merriweather.
@@ -25,35 +25,35 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Organizational:** SRF (not YSS) serves Latin America directly. Verify whether Latin American SRF centers have their own event calendars for the Events signpost.
 - **Open question:** Does SRF have digital text of Spanish translations?
 
-### German (de) — Wave 11a
+### German (de) — Core
 
 - **Primary platforms:** Google, YouTube, WhatsApp (growing), email
 - **Script:** Latin. Merriweather renders ä, ö, ü, ß correctly.
 - **Cultural notes:** German compound words ("Selbstverwirklichung," "Gottverwirklichung," "Überbewusstsein") challenge search. Embedding model must place these near English equivalents — requires explicit testing. ADR-078 glossary specifies formal "Sie" register. German privacy expectations exceed GDPR minimums — the portal's no-tracking approach (ADR-095) is a strong cultural fit, but German seekers may still expect a privacy explanation page. Older SRF Deutschland translations may use different orthography ("Krija" vs "Kriya") — search must handle both.
 - **Open question:** Does SRF Deutschland have digital text? Which translations?
 
-### French (fr) — Wave 11a
+### French (fr) — Core
 
 - **Primary platforms:** Google, YouTube, WhatsApp (Francophone Africa), email
 - **Script:** Latin. Standard diacritics (é, è, ê, ç) work in Merriweather.
 - **Cultural notes:** Search must be diacritic-insensitive ("méditation" = "meditation"). Francophone Africa (~130M speakers) may be a larger audience than France itself — ADR-006 global equity features (KaiOS, text-only, 2G) are directly relevant. West African French has different spiritual idiom from European French; "Seeking..." entry points need validation with both.
 - **Open question:** Do SRF French translations exist in digital form? Is there a distinct Francophone African SRF/YSS community?
 
-### Italian (it) — Wave 11a
+### Italian (it) — Core
 
 - **Primary platforms:** Google, YouTube, WhatsApp, email
 - **Script:** Latin. Standard Merriweather rendering.
 - **Cultural notes:** Warm cream aesthetic and serif typography align well with Italian book culture. Few Italian SRF centers — Events signpost may feel sparse. Spiritual terminology glossary (ADR-078) is critical — Italian translations may handle Sanskrit terms differently than English.
 - **Open question:** Digital text availability from SRF Italian publications.
 
-### Portuguese (pt) — Wave 11a
+### Portuguese (pt) — Core
 
 - **Primary platforms:** WhatsApp (dominant in Brazil), Google, YouTube, Instagram
 - **Script:** Latin. Merriweather renders Portuguese diacritics (ã, õ, ç) correctly.
 - **Cultural notes:** Brazilian Portuguese and European Portuguese differ in vocabulary, spelling, and idiom. May need `pt-BR` and `pt-PT` as distinct locales or, at minimum, distinct "Seeking..." entry points. Brazil has one of the world's largest yoga communities. WhatsApp integration is not optional for this audience. ADR-006 equity features relevant for Brazil's connectivity inequality.
 - **Open question:** Do SRF Brazilian Portuguese translations exist? Is there a Brazilian SRF organizational structure distinct from Portuguese?
 
-### Japanese (ja) — Wave 11a
+### Japanese (ja) — Core
 
 - **Primary platforms:** LINE (not WhatsApp), Google, YouTube, Twitter/X
 - **Script:** CJK (Hiragana, Katakana, Kanji). Requires Noto Serif JP / Noto Sans JP font loading.
@@ -61,7 +61,16 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Cultural notes:** "Show me another" may need reframing. The cultural analogue to bibliomancy is omikuji (temple fortune slips), where the expectation is a single, definitive message — not unlimited refreshes. Consider framing as "別の教えを読む" (read a different teaching) rather than inviting endless cycling. Japanese social sharing prefers very short, aphoristic content — optimal shareable unit may be one sentence, not a full paragraph. LINE share support needed alongside WhatsApp (ADR-026). Honorific suffixes required for master names ("パラマハンサ・ヨガナンダ師"). Japanese *ma* (negative space) philosophy and wabi-sabi aesthetic could inform the Quiet Corner's presentation differently from the English version — stillness as active aesthetic principle, not merely absence of clutter. "Seeker" (*tanbōsha*, 探訪者) implies outsider status — "practitioner" or "reader" might feel more respectful in Japanese. Per-locale editorial review should determine the appropriate term.
 - **Open question:** Does SRF/YSS have digital Japanese translations? What is the Japanese SRF community structure?
 
-### Hindi (hi) — Wave 11b
+### Thai (th) — Core
+
+- **Primary platforms:** LINE (dominant), Facebook, Google, YouTube
+- **Script:** Thai (LTR, but no word boundaries). Requires Noto Serif Thai / Noto Sans Thai font loading.
+- **Typography:** Thai script has no whitespace between words — word segmentation is a significant challenge for search tokenization. PostgreSQL ICU tokenization handles Thai, but search quality must be explicitly benchmarked. Line height should be increased vs Latin to accommodate Thai's tall character cells (ascenders for tone marks, descenders for vowels below the baseline). Drop capitals are a Western convention — omit for Thai. Per-language chunk size validation is critical due to different token economies.
+- **Cultural notes:** Thailand has a strong SRF/YSS presence. Thai Buddhist culture has existing meditation traditions (Theravada vipassana) that overlap with and differ from Yogananda's teachings — the portal should respect this context. Thai spiritual aesthetics favor gold, lotus imagery, and ornate visual treatments (similar to Hindi locale considerations). "Seeker" terminology needs cultural validation — Thai Buddhist vocabulary (*phū sǣngha tham*, ผู้แสวงธรรม) carries connotations from Theravada tradition. Official Thai translations of Yogananda's works exist.
+- **Organizational:** Verify SRF/YSS Thailand organizational structure and branding requirements. Thai locale may need YSS-style branding rather than SRF.
+- **Open question:** Which Yogananda works have official Thai translations? Does SRF/YSS Thailand have digital text? Thai word segmentation quality for search needs benchmarking.
+
+### Hindi (hi) — Core
 
 - **Primary platforms:** WhatsApp (dominant), Google, YouTube, JioPhone/KaiOS
 - **Script:** Devanagari (LTR). Requires Noto Serif Devanagari font loading. Base font size may need 10–15% increase vs Latin for equivalent readability.
@@ -72,7 +81,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Organizational:** YSS branding, YSS bookstore links, YSS event calendar. Portal URL question: `teachings.yogananda.org/hi/` or a YSS-branded domain? YSS representatives are co-equal design stakeholders for the Hindi locale — see CONTEXT.md § Stakeholders.
 - **Open question:** Does YSS have digital text of Hindi translations? What is YSS's digital infrastructure and approval process?
 
-### Bengali (bn) — Wave 11b
+### Bengali (bn) — Core
 
 - **Primary platforms:** WhatsApp, Google, YouTube, Facebook
 - **Script:** Bengali script (LTR). Requires Noto Serif Bengali font loading. Bengali conjuncts and vowel signs require careful font rendering. Base font size may need increase vs Latin.
@@ -81,7 +90,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 - **Organizational:** Same YSS branding considerations as Hindi. YSS representatives are co-equal design stakeholders for the Bengali locale.
 - **Open question:** Does YSS have digital Bengali text? Bengali script rendering quality validation needed.
 
-### Future Evaluation Candidates (Wave 11c)
+### Future Evaluation Candidates
 
 - **Chinese (zh):** WeChat ecosystem (not WhatsApp). Simplified vs Traditional Chinese. Great Firewall considerations for mainland China hosting. Strong yoga community in urban China.
 - **Korean (ko):** KakaoTalk (not WhatsApp). Naver search (not Google-dominant). Korean Hangul is phonetic — different search characteristics.
@@ -94,9 +103,9 @@ Each supported locale carries cultural, typographic, and platform expectations t
 2. **Platform-aware distribution.** WhatsApp for Latin America, India, Africa. LINE for Japan. WeChat for China. KakaoTalk for Korea. The portal's messaging strategy must be locale-aware.
 3. **Script-aware typography.** Font size, line height, drop capitals, and line width all vary by script family. Design tokens should be locale-overridable.
 4. **Branding-aware identity.** SRF branding for Western locales. YSS branding for Indian locales. The portal's visual identity adapts to the organization the seeker knows.
-5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa), the TTS "Listen" button (Phase 11) is a critical accessibility feature. For Hindi and Bengali locales specifically, audio-first entry points should be prioritized earlier than the general TTS schedule. Yogananda's own voice recordings are the most direct form of the teachings. Consider an audio-first pilot alongside the Hindi/Bengali text launch (Phase 10b) rather than deferring all audio to Phase 12. Yogananda's tradition includes kirtan (singing/chanting) and oral storytelling — inherently oral modes that the portal's text-first approach underserves.
+5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa, Thailand), the TTS "Listen" button (Phase 11) is a critical accessibility feature. For Hindi, Bengali, and Thai locales specifically, audio-first entry points should be prioritized earlier than the general TTS schedule. Yogananda's own voice recordings are the most direct form of the teachings. Consider an audio-first pilot alongside the Hindi/Bengali/Thai text launch (Phase 10) rather than deferring all audio to Phase 12. Yogananda's tradition includes kirtan (singing/chanting) and oral storytelling — inherently oral modes that the portal's text-first approach underserves.
 6. **What feels sacred is culturally specific.** The emotional register of the portal — what feels contemplative, welcoming, sacred — is not universal. The warm cream + Merriweather + bibliomantic aesthetic resonates with Western spiritual bookstore sensibility. Hindi spiritual print traditions carry more ornate visual warmth (deeper gold, ornamental dividers, generous Devanāgarī calligraphy). Bengali devotional culture values poetic beauty and literary refinement (Tagore's influence). Japanese *ma* (negative space) philosophy could genuinely inform the Quiet Corner differently. Bhakti traditions express devotion through fervent intensity, not only through stillness. Per-locale adaptation addresses emotional resonance, not just typography and platform preferences. Each locale's visual and editorial adaptation is a *translation of emotional register*, not just a typographic adjustment.
-7. **Unsupported language arrival is a design surface, not an error state.** A seeker arriving from Japan, Korea, Russia, or an Arabic-speaking country will encounter a portal that doesn't yet speak their language. This moment must be designed, not defaulted. The response: (a) detect the browser's `Accept-Language` header; (b) if the language is in the future roadmap (Wave 11c candidates), display a brief, warm message in that language: "We are working to bring Yogananda's teachings to [language]. For now, the portal is available in [list of current languages]." This message is a static string in `messages/{locale}.json`, not a dynamic translation. (c) If the language is not on any roadmap, display the English welcome with no false promise. (d) Never auto-redirect — let the seeker choose. (e) The `[EN]` fallback marker (CLAUDE.md constraint #12) is always visible when English content is shown to a non-English browser locale. This principle extends to in-portal moments: when a seeker navigates to a book page that isn't yet available in their language, the page shows the English version with a clear `[EN]` marker and, if the translation is in progress, a note: "This book is being prepared in [language]." Honest about scope, not apologetic about it.
+7. **Unsupported language arrival is a design surface, not an error state.** A seeker arriving from Korea, Russia, or an Arabic-speaking country will encounter a portal that doesn't yet speak their language. This moment must be designed, not defaulted. The response: (a) detect the browser's `Accept-Language` header; (b) if the language is an evaluation candidate, display a brief, warm message in that language: "We are working to bring Yogananda's teachings to [language]. For now, the portal is available in [list of current languages]." This message is a static string in `messages/{locale}.json`, not a dynamic translation. (c) If the language is not on any roadmap, display the English welcome with no false promise. (d) Never auto-redirect — let the seeker choose. (e) The `[EN]` fallback marker (CLAUDE.md constraint #12) is always visible when English content is shown to a non-English browser locale. This principle extends to in-portal moments: when a seeker navigates to a book page that isn't yet available in their language, the page shows the English version with a clear `[EN]` marker and, if the translation is in progress, a note: "This book is being prepared in [language]." Honest about scope, not apologetic about it.
 
 ---
 
@@ -172,7 +181,7 @@ CREATE INDEX idx_subscribers_active ON email_subscribers(is_active, is_confirmed
 
 **Design constraints:**
 - Plain HTML email (no JavaScript, no web fonts — fallback to Georgia/serif)
-- **Non-Latin script support (Phase 10):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
+- **Non-Latin script support (Phase 10):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Thai, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
 - Warm cream background (`#FAF8F5`), navy text (`#1A2744`)
 - Single passage, single CTA ("Read in context"), no other links except footer
 - Unsubscribe link uses `unsubscribe_token` — one-click, no login required

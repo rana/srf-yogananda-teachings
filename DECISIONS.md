@@ -122,11 +122,11 @@ Shapes how the portal feels and behaves for readers. The design system derives f
 
 **Internationalization**
 
-Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Phase 1 for RTL readiness; Hindi and Bengali are on the locale roadmap. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Phase 1 for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Phase 10 peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
 
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
 - ADR-076: CSS Logical Properties from Phase 1
-- ADR-077: Hindi and Bengali in Locale Roadmap
+- ADR-077: Core Language Set
 - ADR-078: AI-Assisted Translation Workflow
 - ADR-079: YSS Organizational Branding and Locale Strategy
 - ADR-080: Sanskrit Display and Search Normalization Policy

@@ -228,6 +228,7 @@ Client computes:
 |--------|----------|---------|-------------|-----------------|-------|
 | Hindi | `Asia/Kolkata` | IN | ~22°N | ±30 min | Single timezone covers all India; brahmamuhurta override makes solar precision less critical |
 | Bengali | `Asia/Kolkata` | IN | ~22°N | ±30 min | Same as Hindi |
+| Thai | `Asia/Bangkok` | TH | ~14°N | ±20 min | Single timezone; tropical latitude means consistent sunrise times year-round |
 | Japanese | `Asia/Tokyo` | JP | ~36°N | ±20 min | Single timezone; north-south extent moderate |
 | German | `Europe/Berlin` | DE | ~51°N | ±15 min | Small country; high accuracy |
 | Spanish (Latin Am) | varies | varies | varies | ±30–45 min | Multiple timezones across Latin America; good enough |
@@ -249,7 +250,7 @@ Client computes:
 
 **Implementation cost:** ~5KB client-side (timezone+country → latitude table ~3KB + suncalc ~2KB). The client computes `time_band` and sends it as a query parameter — the server never sees timezone, country, or coordinates. No new database columns. No server-side location processing. The server receives only a band name (`dawn`, `night`, `brahmamuhurta`, etc.) — the same opacity as the current fixed-clock design.
 
-**Phase:** Solar-aware circadian ships alongside the circadian color temperature in Phase 11. Indian locale brahmamuhurta override ships in Phase 10b with the Hindi/Bengali launch.
+**Phase:** Solar-aware circadian ships alongside the circadian color temperature in Phase 11. Indian locale brahmamuhurta override ships in Phase 10 with the Hindi/Bengali launch.
 
 **API:**
 
@@ -708,7 +709,7 @@ A `@media print` stylesheet ensures passages and chapters print beautifully:
 - Portal URL in small footer: `teachings.yogananda.org`
 - Page breaks between chapters (for full chapter printing)
 - No background colors (saves ink, respects user paper)
-- **Non-Latin font support (Phase 10):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
+- **Non-Latin font support (Phase 10):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Thai for Thai, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
 
 #### ADR-059: Chant Reader Variant
 
@@ -1482,12 +1483,13 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --font-serif-alt: 'Lora', Georgia, serif;
  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
- /* === Indic Script Fonts (ADR-080) === */
+ /* === Non-Latin Script Fonts (ADR-077, ADR-080) === */
  /* Noto Sans Devanagari loaded from Phase 0 — God Talks with Arjuna
  contains original Bhagavad Gita verses in Devanāgarī script.
  Loaded conditionally: only on pages containing Devanāgarī characters.
- Phase 10 adds Noto Sans Bengali for Bengali content. */
+ Phase 10 adds Thai and Bengali font stacks. */
  --font-devanagari: 'Noto Sans Devanagari', 'Noto Serif Devanagari', sans-serif;
+ --font-thai: 'Noto Sans Thai', 'Noto Serif Thai', sans-serif; /* Phase 10 */
  --font-bengali: 'Noto Sans Bengali', sans-serif; /* Phase 10 */
 
  /* === Font Scale === */
@@ -1646,7 +1648,7 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 
 ## DES-017: Multi-Language Strategy
 
-(See ADR-075 for architectural rationale, ADR-076 for CSS logical properties, ADR-077 for Hindi/Bengali.)
+(See ADR-075 for architectural rationale, ADR-076 for CSS logical properties, ADR-077 for core language set.)
 
 ### Three-Layer Localization
 
@@ -1684,13 +1686,13 @@ Locale detection on first visit: `Accept-Language` header → redirect to best m
 
 Not all books are translated into all languages. This creates asymmetric experiences:
 
-| Book | en | es | de | fr | it | pt | ja | hi | bn |
-|------|----|----|----|----|----|----|----|----|-----|
-| Autobiography of a Yogi | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Where There Is Light | ✓ | ✓ | ✓ | ✓ | ✓ | ? | ? | ? | ? |
-| Sayings | ✓ | ✓ | ? | ? | ? | ? | ? | ? | ? |
-| Man's Eternal Quest | ✓ | ✓ | ? | ? | ? | ? | ? | ? | ? |
-| Second Coming of Christ | ✓ | ? | ? | ? | ? | ? | ? | ? | ? |
+| Book | en | es | de | fr | it | pt | ja | th | hi | bn |
+|------|----|----|----|----|----|----|----|----|----|----|
+| Autobiography of a Yogi | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ? | ✓ | ✓ |
+| Where There Is Light | ✓ | ✓ | ✓ | ✓ | ✓ | ? | ? | ? | ? | ? |
+| Sayings | ✓ | ✓ | ? | ? | ? | ? | ? | ? | ? | ? |
+| Man's Eternal Quest | ✓ | ✓ | ? | ? | ? | ? | ? | ? | ? | ? |
+| Second Coming of Christ | ✓ | ? | ? | ? | ? | ? | ? | ? | ? | ? |
 
 *(This matrix must be verified with SRF/YSS — it is a critical stakeholder question.)*
 
@@ -1811,8 +1813,9 @@ Français
 Italiano
 Português
 日本語
-हिन्दी (Phase 10 Indian wave)
-বাংলা (Phase 10 Indian wave)
+ไทย
+हिन्दी
+বাংলা
 ```
 
 Selection stored in a cookie. Available on every page. Not gated by account.
@@ -1822,6 +1825,7 @@ Selection stored in a cookie. Available on every page. Not gated by account.
 | Language | Script | Font |
 |----------|--------|------|
 | Japanese | CJK | Noto Serif JP (reading), Noto Sans JP (UI) |
+| Thai | Thai | Noto Serif Thai (reading), Noto Sans Thai (UI) |
 | Hindi | Devanagari | Noto Serif Devanagari (reading), Noto Sans Devanagari (UI) |
 | Bengali | Bengali | Noto Serif Bengali (reading), Noto Sans Bengali (UI) |
 | All Latin | Latin | Merriweather / Lora / Open Sans (existing stack) |
@@ -1851,10 +1855,11 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 > **Central registry:** CONTEXT.md § Open Questions. The Phase 10 questions below are tracked there with the full stakeholder list.
 
-- Digital text availability of official translations (highest-impact Phase 10 question)
-- Translation reviewer staffing
-- YSS portal branding for Hindi/Bengali locales
+- Digital text availability of official translations for all 9 non-English core languages (highest-impact Phase 10 question)
+- Translation reviewer staffing per language
+- YSS portal branding for Hindi/Bengali/Thai locales
 - Whether translated editions preserve paragraph structure (affects `canonical_chunk_id` alignment)
+- Thai word-boundary handling for search tokenization (Thai script has no whitespace between words)
 
 ---
 

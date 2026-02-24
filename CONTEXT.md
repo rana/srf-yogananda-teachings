@@ -97,8 +97,8 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 **Stakeholder**
 - [ ] Portal-app relationship: complementary or overlapping reader? Will portal search power the app?
-- [ ] Hindi/Bengali co-launch timing: Phase 10 or 10a/10b split? Heritage languages after European languages requires explicit rationale. (ADR-077)
-- [ ] YSS co-equal or advisory authority over Hindi/Bengali design decisions. (ADR-077, ADR-079)
+- [x] ~~Hindi/Bengali co-launch timing: Phase 10 or 10a/10b split?~~ Resolved 2026-02-24: Wave structure removed. All 9 non-English core languages are Phase 10 peers with no ordering. (ADR-077 revised)
+- [ ] YSS co-equal or advisory authority over Hindi/Bengali/Thai design decisions. (ADR-077, ADR-079)
 - [ ] Translated editions: do they preserve paragraph structure? (Critical for cross-language alignment)
 - [ ] *Cosmic Chants* canonical volume or family of editions? (ADR-059)
 - [ ] Monastic content scope: content *by* vs. *about* monastics. (ADR-036, ADR-037, ADR-001)
@@ -178,7 +178,7 @@ When a feature proposal seems to conflict with this principle, the response is n
 ### In Scope
 
 - **Free access** to Yogananda's published books and SRF/YSS publications
-- **Multi-language support** (English + all translated languages). Initial target: es, de, fr, it, pt, ja (matching convocation site), then hi, bn (Yogananda's heritage languages, YSS audience). See ADR-075, ADR-077.
+- **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Phase 10 peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
 - **Intelligent Query Tool** — users ask questions and search across the entire library of books to find specific answers (e.g., "How do I deal with fear?")
 - **Life-theme navigation** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without needing to formulate a search query
 - **Today's Wisdom** — a different Yogananda passage on each visit, creating a living, dynamic homepage

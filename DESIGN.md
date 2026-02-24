@@ -509,7 +509,7 @@ Response (complete collection — see § API Conventions):
  "cover_image_url": "...",
  "chapter_count": 48,
  "slug": "autobiography-of-a-yogi",
- "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja"]
+ "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja", "th", "hi", "bn"]
  }
  ],
  "also_available_in_english": [...],
@@ -541,7 +541,7 @@ Response:
  "cover_image_url": "...",
  "description": "A spiritual classic...",
  "bookstore_url": "https://bookstore.yogananda.org/...",
- "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja"],
+ "available_languages": ["en", "es", "de", "fr", "it", "pt", "ja", "th", "hi", "bn"],
  "chapters": [
    { "number": 1, "title": "My Parents and Early Life" },
    { "number": 2, "title": "My Mother's Death and the Mystic Amulet" },
@@ -2032,6 +2032,8 @@ The same seeker archetype requires cultural adaptation across locales — not ju
 | French (fr) | Diacritic-insensitive search, Francophone Africa vs European French | — |
 | German (de) | Compound word search, privacy expectations exceed GDPR | — |
 | Portuguese (pt) | Brazilian vs European variants, university/intellectual framing | WhatsApp |
+| Japanese (ja) | CJK tokenization, omikuji framing, *ma* aesthetic, LINE (not WhatsApp) | LINE |
+| Thai (th) | No word boundaries (search tokenization), Buddhist context, gold/lotus aesthetics | LINE |
 | Hindi (hi) | YSS branding, mobile-first, text-only mode essential, *sādhak* terminology | WhatsApp |
 | Bengali (bn) | YSS branding, lyrical editorial register, Tagore's aesthetic influence | WhatsApp |
 
