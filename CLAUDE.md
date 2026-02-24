@@ -70,6 +70,22 @@ These constraints directly affect code generation. For the full set of theologic
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
 
+## Project Skills
+
+Six custom skills in `.claude/skills/`:
+
+**Review skills** (read-only analysis, no file changes):
+- **seeker-ux** — Reading and seeker experience review. Evaluates the reader's journey for accessibility, helpfulness, and spiritual uplift.
+- **mission-align** — SRF mission alignment check. Assesses whether features and decisions serve the portal's spiritual purpose.
+- **cultural-lens** — Cultural sensitivity review. Evaluates assumptions about language, geography, religion, and access.
+
+**Proposal management skills** (edit project documents with approval):
+- **proposal-merge** — Decompose an elmer proposal into precise edits across DECISIONS.md, DESIGN.md, ROADMAP.md, and CONTEXT.md. Assigns ADR/DES identifiers, detects conflicts, presents full plan for approval before executing.
+- **dedup-proposals** — Deduplicate and synthesize overlapping elmer proposals. Without arguments: scans all proposals, reports variant clusters. With a filename: finds related explorations of the same topic and synthesizes them into one document preserving all unique ideas.
+- **theme-integrate** — Integrate a new content theme into taxonomy, terminology bridge, enrichment pipeline, knowledge graph, and worldview pathways. Generates all integration artifacts from a proposal or free-text description.
+
+**Proposal management workflow:** `/dedup-proposals` → `/proposal-merge <file>` or `/theme-integrate <file>` → run `coherence` skill to verify cross-document integrity.
+
 ## Document Maintenance
 
 Five documents. Keep them accurate as you work — drift compounds across sessions. (ADR-098)
@@ -84,6 +100,7 @@ Five documents. Keep them accurate as you work — drift compounds across sessio
 | New technology adopted | Update DESIGN.md tech stack table |
 | New content type added | DESIGN.md § Data Model + API section, ROADMAP.md phase, new ADR. Also: Knowledge Graph node/edge types, ADR-062 checklist, DES-053 media-type variations. |
 | New API endpoint added | Follow DES-019 § API Conventions (ADR-110). Paginated lists: `data`/`pagination`/`meta`; complete collections: `data`/`meta`; single resources: object directly. |
+| Elmer proposal approved for merge | Use `/dedup-proposals` first if variants exist, then `/proposal-merge <file>` or `/theme-integrate <file>`. Skill handles all document updates. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
 

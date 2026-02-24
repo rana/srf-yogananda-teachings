@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 0a (Prove).
 
-**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture + 56 design sections DES-001 through DES-056), DECISIONS.md (123 ADRs, numbered 001–123, organized into 11 topical groups), ROADMAP.md (15 phases, 0a–14). RAG Architecture Proposal merged into project documents (2026-02-23). No code yet.
+**What exists:** Comprehensive design documentation — CONTEXT.md (this file), DESIGN.md (architecture + 56 design sections DES-001 through DES-056), DECISIONS.md (123 ADRs, numbered 001–123, organized into 11 topical groups), ROADMAP.md (15 phases, 0a–14). RAG Architecture Proposal merged into project documents (2026-02-23). 15 elmer proposals in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting merge into canonical documents. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23. No code yet.
 
 **What's next:** Phase 0a — Prove. Confirm edition + PDF source with SRF, then: repo setup, Neon + schema (pgvector + pg_search), PDF ingestion, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader, search quality evaluation (50-query golden set). Eight deliverables answering one question: does semantic search work over Yogananda's text? Phase 0b (Foundation) adds entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
