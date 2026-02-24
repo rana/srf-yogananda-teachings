@@ -1,0 +1,4 @@
+worktrees/
+logs/
+state.db
+daemon.pid
