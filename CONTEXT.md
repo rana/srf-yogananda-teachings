@@ -4,7 +4,7 @@
 
 **Phase:** Design complete. Ready to begin Phase 0a (Prove).
 
-**What exists:** Comprehensive design documentation across eight files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture, 19 sections) + three phase-scoped design files (DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (123 ADRs with 11 navigational group summaries), ROADMAP.md (15 phases, 0a–14). Document architecture restructured 2026-02-23: PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase for context-window efficiency; DECISIONS.md index enhanced with group summaries. RAG Architecture Proposal merged into project documents (2026-02-23). 15 elmer proposals in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting merge into canonical documents. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23. No code yet.
+**What exists:** Comprehensive design documentation across eleven files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture, 19 sections) + three phase-scoped design files (DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (navigational index with group summaries) + three phase-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 123 ADRs total, ADR-001 through ADR-123), ROADMAP.md (15 phases, 0a–14). Document architecture restructured 2026-02-23: PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md and DECISIONS.md split by phase for context-window efficiency. RAG Architecture Proposal merged into project documents (2026-02-23). 21 elmer proposals in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting dedup and merge into canonical documents. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23. No code yet.
 
 **What's next:** Phase 0a — Prove. Confirm edition + PDF source with SRF, then: repo setup, Neon + schema (pgvector + pg_search), PDF ingestion, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader, search quality evaluation (50-query golden set). Eight deliverables answering one question: does semantic search work over Yogananda's text? Phase 0b (Foundation) adds entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
@@ -85,8 +85,12 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 ### Tier 4: Requires SRF Input Before Phase 4
 
+**Strategic** (from Phase Sizing Analysis, ADR-102)
+- [ ] Calendar timeline: what is the assumed team size and velocity? (ADR-102)
+- [ ] Minimum lovable product: which phase constitutes "launched" — publicly available to seekers? (ADR-102)
+- [ ] Editorial capacity curve: at what phase does the monastic editor's 2–3 hour daily window become insufficient? (ADR-082, ADR-102)
+
 **Technical**
-- [x] ~~Neptune Analytics vs. Postgres-only graph for bounded corpus (~50K chunks).~~ **Resolved:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database; operational simplicity of single-database architecture outweighs single-query elegance. See ADR-117 revision. *(Resolved 2026-02-23.)*
 - [ ] Sacred Places fallback hierarchy: ranked array of external links per place rather than Google Street View only? (DES-023, ADR-070)
 - [ ] Chant text chunking and embedding quality: evaluate during *Cosmic Chants* ingestion. (ADR-059, ADR-046)
 
@@ -124,6 +128,7 @@ Questions about Phase 4+ features — multilingual scale, multimedia, MCP distri
 9. **SCM for Phases 0–8:** GitHub acceptable for Phases 0–8 with planned Phase 9 migration to GitLab. *(Resolved: confirmed by stakeholder.)*
 10. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
 11. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
+12. **Neptune Analytics vs. Postgres-only graph:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database. *(Resolved 2026-02-23, ADR-117 revised.)*
 
 ---
 

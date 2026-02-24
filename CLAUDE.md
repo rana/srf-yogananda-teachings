@@ -14,16 +14,19 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 4. **DESIGN-phase0.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
 5. **DESIGN-phase1-4.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
 6. **DESIGN-phase5-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — 123 Architecture Decision Records (ADR-001 through ADR-123) organized into 11 topical groups with navigational summaries. Read the index + group summaries first; load full ADRs on demand.
+7. **DECISIONS.md** — Index and navigational summaries for 123 ADRs across 11 topical groups. ADR bodies split into three files:
+   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–053, 114–121). Phase 0+.
+   - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Phase 1+.
+   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–113, 123). Phase 4+.
 8. **ROADMAP.md** — 15 phases (0–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
 
 **Phase-gated reading.** Do not read front-to-back. Load what the task requires:
 - **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current phase
-- **When implementing Phase 0:** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS.md ADRs referenced by those sections
-- **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + relevant ADRs
-- **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + relevant ADRs
-- **When making decisions:** The relevant ADR group from the DECISIONS.md index (Foundational, Architecture, Content, Search, etc.)
-- **Not needed for Phase 0:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, Cross-Media ADRs (054–064), Staff & Community ADRs (082–087), Brand & Communications ADRs (088–092, 105)
+- **When implementing Phase 0:** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS-core.md (ADRs referenced by those sections)
+- **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + DECISIONS-core.md + DECISIONS-experience.md
+- **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + all DECISIONS files as needed
+- **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
+- **Not needed for Phase 0:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md
 
 ## Ignore
 
@@ -80,11 +83,13 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 123 decisions in DECISIONS.md (ADR-001 through ADR-123), organized into 11 topical groups: Foundational Constraints, Architecture & Platform, Content & Data Model, Search & AI, Cross-Media, Seeker Experience, Internationalization, Staff & Community, Brand & Communications, Operations & Engineering, Governance. New ADRs append after ADR-123. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
+**ADR-NNN** (Architecture Decision Records) — 123 decisions (ADR-001 through ADR-123), organized into 11 topical groups. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
 
 **DES-NNN** (Design Sections) — 56 sections (DES-001 through DES-056) split across four files: DESIGN.md (cross-cutting), DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
+
+**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS.md and DESIGN-phase0.md). Rule: DECISIONS.md carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS.md.
 
 ## Project Skills
 
@@ -104,12 +109,12 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Eight documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Eleven documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
 | Principle added or revised | Update PRINCIPLES.md (expanded rationale) and CLAUDE.md § Principles (compressed form) |
-| New decision made | Add ADR to DECISIONS.md and update the domain index at top of file |
+| New decision made | Add ADR to the appropriate DECISIONS body file (core/experience/operations) and update the DECISIONS.md index |
 | Open question resolved | Move from "Open Questions" to "Resolved Questions" in CONTEXT.md |
 | Open question added | Add to CONTEXT.md § Open Questions (appropriate tier). Cross-reference from relevant DESIGN.md section if applicable. |
 | Phase deliverable changed | Update ROADMAP.md deliverable table/bullets and success criteria |
@@ -132,4 +137,4 @@ Once implementation begins, DESIGN.md sections transition from "authoritative sp
 3. **When implementation diverges from design:** Update DESIGN.md to reflect the actual decision. DESIGN.md is a living document, not a historical artifact.
 4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 
-DECISIONS.md ADRs are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
+ADRs (in DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md) are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.

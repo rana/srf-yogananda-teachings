@@ -216,3 +216,7 @@ The final wisdom: "The portal's greatest feature isn't search or themes or daily
 10. **Ship phases 0-2 complete** — Everything else is bonus
 
 Your 2036 self's final advice: "Delete half the ADRs. Ship the simplest thing that preserves the teachings with dignity. Let it grow from actual use, not anticipated needs. And remember: the portal's job is to disappear — to deliver Yogananda's words and get out of the way."
+
+---
+
+*Synthesized from two explorations. Unique insight from the earlier variant: the documentation volume — the project's greatest strength as institutional memory — may also be its greatest weakness, creating a system so elaborate that only AI can maintain it, perpetuating the AI-human collaboration model it assumes will persist. True 2036 success looks like: runs on 5-year-old code no one touches, volunteer maintainers onboard in a day, the documentation fits in 50 pages, someone forked it for another tradition, and the philanthropist's grandchildren understand why it mattered.*

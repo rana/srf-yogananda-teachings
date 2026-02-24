@@ -38,27 +38,7 @@ Each phase delivers a working, demonstrable increment organized around a single 
 
 ## Phase Sizing Analysis
 
-*Section added: 2026-02-21, greenfield phase review. Proposal C adopted 2026-02-21 (ADR-103).*
-
-The original 18-phase roadmap had an asymmetric deliverable distribution. Five structural observations led to three resequencing proposals. Proposal C was adopted, reorganizing around 15 capability themes. The observations that motivated the restructuring:
-
-1. **Phase 2 spanned three workstreams** — page build-out, content delivery infrastructure, and foundational concerns. Now merged with engineering infrastructure into Phase 1 (Build).
-2. **Engineering infrastructure arrived after the portal was built** — CI/CD, testing, Terraform shipped in old Phase 3, after 20 portal deliverables. Now co-delivered in Phase 1 (Build).
-3. **Phase 5 was the riskiest phase** — 23 deliverables mixing content expansion, editorial operations, and SRF staffing dependencies. Now decomposed into Phase 3 (Grow) and Phase 4 (Operate).
-4. **The Contentful migration at Phase 10 carries rework cost** — observation preserved; timing unchanged pending stakeholder input.
-5. **The Knowledge Graph is built incrementally** — graph data model ships in Phase 6 (Complete); visualization grows as content types are added.
-
-### Open Questions (from original analysis)
-
-1. **Calendar timeline.** What is the assumed team size and velocity?
-2. **Parallel workstreams.** Phase 3 (Grow) book ingestion is independent of Phase 4 (Operate) editorial work. Which phases have parallelizable workstreams?
-3. **Minimum lovable product.** Which phase constitutes "launched" — publicly available to seekers?
-4. **Critical path through SRF decisions.** Five phases are gated by stakeholder decisions with no committed timelines.
-5. **Phase 4 staffing gate failure mode.** If SRF hasn't identified editorial staff by Phase 4, is there an autonomous degraded mode? *Proposed resolution (to confirm with SRF before Phase 3):* Phase 4 tooling ships independently of staffing; editorial queues activate via feature flag when staff are onboarded. The AE team can serve as temporary lightweight editorial staff until monastics are assigned. This avoids blocking the tooling build on an organizational decision. Resolve as ADR or Resolved Question in CONTEXT.md during Phase 1–2.
-6. **Rework cost quantification.** Every book ingested before Phase 9 gets ingested twice (PDF pipeline, then Contentful).
-7. **Editorial capacity curve.** At what phase does the monastic editor's 2–3 hour daily window become insufficient?
-
-See CONTEXT.md § Open Questions for the consolidated list. See ADR-102 (analysis) and ADR-103 (adoption).
+Restructured from 18 to 15 capability-themed phases (2026-02-21). ADR-102 documents the analysis; ADR-103 documents the adoption. Remaining open questions from the restructuring are consolidated in CONTEXT.md § Open Questions.
 
 ---
 

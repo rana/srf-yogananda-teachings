@@ -14,6 +14,16 @@
 | [DES-005: Content Ingestion Pipeline](DESIGN-phase0.md#des-005-content-ingestion-pipeline) | 0, 9+ | DESIGN-phase0.md |
 | [ADR-041: Phase 0 Bootstrap](DESIGN-phase0.md#adr-041-phase-0-bootstrap) | 0 | DESIGN-phase0.md |
 | [DES-006: Frontend Design](DESIGN-phase1-4.md#des-006-frontend-design) | 1–11 | DESIGN-phase1-4.md |
+| &emsp;[DES-007: Opening Moment — Portal Threshold](DESIGN-phase1-4.md#des-007-opening-moment--portal-threshold) | 1+ | DESIGN-phase1-4.md |
+| &emsp;[DES-008: Reader Typography Refinements](DESIGN-phase1-4.md#des-008-reader-typography-refinements) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-009: "Dwell" Interaction — Passage Contemplation Mode](DESIGN-phase1-4.md#des-009-dwell-interaction--passage-contemplation-mode) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-010: Layered Passage Depth — "Go Deeper Within the Text"](DESIGN-phase1-4.md#des-010-layered-passage-depth--go-deeper-within-the-text) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-011: Time-Aware Reading — Circadian Color Temperature](DESIGN-phase1-4.md#des-011-time-aware-reading--circadian-color-temperature) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-012: "Breath Between Chapters" — Chapter Transition Pacing](DESIGN-phase1-4.md#des-012-breath-between-chapters--chapter-transition-pacing) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-013: Keyboard-First Reading Navigation](DESIGN-phase1-4.md#des-013-keyboard-first-reading-navigation) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-014: Session Closure Moments — Departure Grace](DESIGN-phase1-4.md#des-014-session-closure-moments--departure-grace) | 2+ | DESIGN-phase1-4.md |
+| &emsp;[DES-015: Self-Revealing Navigation](DESIGN-phase1-4.md#des-015-self-revealing-navigation) | 1+ | DESIGN-phase1-4.md |
+| &emsp;[DES-016: Lotus as Unified Visual Motif](DESIGN-phase1-4.md#des-016-lotus-as-unified-visual-motif) | 1+ | DESIGN-phase1-4.md |
 | [DES-017: Multi-Language Strategy](DESIGN-phase1-4.md#des-017-multi-language-strategy) | 1 (infra), 10 (content) | DESIGN-phase1-4.md |
 | [DES-018: Cultural Design Considerations](DESIGN-phase5-plus.md#des-018-cultural-design-considerations) | 10+ | DESIGN-phase5-plus.md |
 | [DES-019: API Design (Next.js API Routes)](#des-019-api-design-nextjs-api-routes) | 0+ | DESIGN.md |
