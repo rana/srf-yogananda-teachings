@@ -22,7 +22,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-010: Contentful as Editorial Source of Truth (Production)
 - ADR-011: API-First Architecture for Platform Parity
 - ADR-012: Progressive Web App as Mobile Intermediate Step
-- ADR-013: Single-Database Architecture — No DynamoDB (amended by ADR-117)
+- ADR-013: Single-Database Architecture — No DynamoDB
 - ADR-014: AWS Bedrock Claude with Model Tiering
 - ADR-015: Phase 0 Uses Vercel, Not AWS Lambda/DynamoDB
 - ADR-016: Infrastructure as Code from Phase 1 (Terraform)
@@ -38,7 +38,7 @@ Each decision is recorded with full context so future contributors understand no
 - ADR-026: Low-Tech and Messaging Channel Strategy
 - ADR-027: Language API Design — Locale Prefix on Pages, Query Parameter on API
 - ADR-028: Remove book_store_links Table — Simplify Bookstore Links
-- ADR-117: Neptune Analytics as Graph Intelligence Layer
+- ADR-117: Postgres-Native Graph Intelligence Layer
 - ADR-120: Redis Suggestion Cache Architecture
 
 **Content & Data Model**
@@ -4200,7 +4200,7 @@ This powers three features:
 2. **"Continue the Thread"** — at the end of every chapter, a section aggregates the most related cross-book passages for all paragraphs in that chapter.
 3. **Graph traversal** — clicking a related passage navigates to that passage in its reader context, and the side panel updates with *that* passage's relations. The reader follows threads of meaning across the entire library.
 
-**Relationship categorization** (Phase 4+, powered by ADR-117 Neptune Analytics and ADR-115 enrichment):
+**Relationship categorization** (Phase 4+, powered by ADR-117 graph intelligence and ADR-115 enrichment):
 
 Each relation is classified into one of five categories, computed at index time by Claude (ADR-115 enrichment pipeline) and refined by graph traversal path:
 
@@ -10245,7 +10245,7 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
 
 - New enrichment columns added to `book_chunks`: `experiential_depth`, `voice_register`, `emotional_quality`, `cross_references`, `domain` (see DESIGN.md DES-004)
 - The ingestion pipeline (DES-005) is updated to include the unified enrichment step
-- An `extracted_relationships` table logs all relationship triples for graph construction (ADR-117)
+- An `extracted_relationships` table logs all relationship triples for graph intelligence (ADR-117)
 - The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Phase 0a pre-implementation checklist)
 - ADR-005 E3, E4, E6, E8 are folded into this pipeline; E1, E2, E5, E7 remain as separate operations
 
@@ -10277,7 +10277,9 @@ CREATE TABLE entity_registry (
     language        CHAR(5),
     definition      TEXT,
     srf_definition  TEXT,           -- Yogananda's specific definition if distinct from general usage
-    neptune_node_id TEXT,           -- graph linkage (Phase 4+)
+    centrality_score REAL,          -- PageRank from graph batch (Phase 4+, ADR-117)
+    community_id   TEXT,            -- community detection cluster (Phase 4+, ADR-117)
+    bridge_score   REAL,            -- betweenness centrality (Phase 4+, ADR-117)
     created_at      TIMESTAMPTZ DEFAULT now(),
     UNIQUE(canonical_name, entity_type)
 );
@@ -10319,67 +10321,93 @@ CREATE TABLE sanskrit_terms (
 - Entity registry populated before first book ingestion (Phase 0a pre-implementation checklist)
 - All enrichment entity extraction (ADR-115) resolves against the registry
 - Suggestion dictionary (ADR-049, ADR-120) draws Tier 2 and Tier 4 entries from these tables
-- Knowledge graph nodes (ADR-117) are linked to registry entries via `neptune_node_id`
+- Knowledge graph relationships (ADR-117) reference entity registry entries via canonical ID
 - DESIGN.md DES-004 (Data Model) updated with both table schemas
 - ADR-080 (Sanskrit Display and Search Normalization) extended by the `sanskrit_terms` table
 
 ---
 
-## ADR-117: Neptune Analytics as Graph Intelligence Layer
+## ADR-117: Postgres-Native Graph Intelligence Layer
 
 - **Status:** Accepted
 - **Date:** 2026-02-23
-- **Amends:** ADR-013 (Single-Database Architecture)
+- **Revised:** 2026-02-23, Neptune Analytics removed in favor of Postgres-native graph intelligence
 
 ### Context
 
-ADR-013 established a single-database architecture: Neon PostgreSQL for all content, relational data, and search. This decision was sound for Phase 0 — simplicity over ecosystem conformity.
-
-However, the RAG Architecture Proposal identifies a class of features that require combined vector similarity + graph traversal in a single query — a capability that Postgres alone cannot efficiently serve:
+The portal requires graph intelligence to make Yogananda's cross-tradition intellectual project computationally navigable:
 
 - **Related Teachings with categorized paths** (ADR-050): not just "similar" passages, but passages related by concept neighborhood, cross-tradition parallels, experiential state progression, and teacher lineage
 - **Contemplative Companion:** a user describes an inner state; the system traverses the ExperientialState graph to find the closest match and surfaces Yogananda's verbatim descriptions
 - **Scripture-in-Dialogue:** navigating Yogananda's Gita and Gospel commentaries as a unified cross-tradition conversation via verse-level graph edges
 - **Reading Arc:** graph-guided progressive study sequences computed from concept depth and PROGRESSION_TO edges
-- **GraphRAG:** a third retrieval path that finds passages pure vector and keyword search cannot — passages that never mention the search term but are two concept-hops away in the knowledge graph
+- **Graph-augmented retrieval:** a third retrieval path that finds passages pure vector and keyword search cannot — passages that never mention the search term but are conceptually adjacent via the graph
 
-These features are not ornamental — they are what distinguishes a world-class spiritual text platform from a search box over books. The knowledge graph and concept graph together make Yogananda's cross-tradition intellectual project computationally navigable.
+These features are not ornamental — they are what distinguishes a world-class spiritual text platform from a search box over books.
 
 ### Decision
 
-Amend ADR-013 to a **two-system architecture**: Neon Postgres for content, relational data, embeddings, and primary search; Neptune Analytics for graph intelligence (knowledge graph, concept graph, graph algorithms).
+Implement graph intelligence **within the single-database architecture** (ADR-013). Neon PostgreSQL stores all graph structure in relational tables. Graph algorithms run as nightly batch jobs using Python + NetworkX/igraph. Graph-augmented retrieval (PATH C) uses multi-step SQL queries composed in application code.
+
+**No separate graph database.** Neptune Analytics was evaluated and rejected (see Alternatives Considered).
+
+**Graph data model:**
+- Graph structure stored in Postgres tables: `entity_registry` (ADR-116), `extracted_relationships` (ADR-115), `concept_relations`, and entity-type-specific tables
+- Relationships are first-class rows — queryable by standard SQL, indexable, joinable with content tables
+- Canonical entity IDs from `entity_registry` serve as the primary key for all graph nodes
+
+**Graph algorithms (nightly batch, Phase 4+):**
+- Python batch job loads entities and relationships from Postgres into NetworkX/igraph (in-memory — the full graph fits easily at ~50K chunks, ~500 entities, ~500K edges)
+- **PageRank:** Which concepts are most referenced? Results written as `centrality_score` column on entity rows. Feeds suggestion weights and retrieval confidence.
+- **Community Detection:** Which concept clusters naturally co-occur? Results written as `community_id` column. Feeds "conceptual neighborhood" queries and theme browsing.
+- **Betweenness Centrality:** Which concepts bridge otherwise separate clusters? Results written as `bridge_score` column. High betweenness = cross-tradition bridge terms.
+- All algorithm results stored as columns in Postgres, refreshed nightly. No external system required.
+
+**Graph-augmented retrieval (PATH C, Phase 4+):**
+- Entity resolution against `entity_registry` identifies concepts in the query
+- SQL traversal across `extracted_relationships` and `concept_relations` tables finds chunks within 2–3 hops
+- pgvector similarity ranking applied to traversal results
+- Multi-step queries composed in `/lib/services/graph.ts` — two-three SQL round-trips instead of one openCypher query
+- Results merged into RRF alongside PATH A (vector) and PATH B (BM25)
 
 **Phasing:**
-- **Phase 0–3:** Single-database (Neon Postgres only). The graph ontology is designed from Phase 0, but Neptune is not provisioned.
-- **Phase 4:** Neptune Analytics introduced. Knowledge graph foundation: teacher, work, chunk, and entity nodes; lineage, authorship, content-relationship, and sequential (NEXT/PREV) edges. PATH C (GraphRAG) activated in the search pipeline.
-- **Phase 8:** Concept/word graph fully constructed: cross-tradition equivalences, progression chains, co-occurrence edges. Graph algorithms running nightly.
+- **Phase 0:** Graph ontology designed and documented in DES-054/055. Entity registry and extracted_relationships tables created.
+- **Phase 4:** Graph algorithm batch pipeline (Python + NetworkX). PATH C activated in search pipeline. Knowledge graph foundation: all node types and edge types populated.
+- **Phase 8:** Concept/word graph fully constructed: cross-tradition equivalences, progression chains, co-occurrence edges.
 
-**Why Neptune Analytics specifically:** Neptune Analytics persists Voyage embeddings on graph nodes and provides vector similarity algorithms callable from openCypher — meaning a single query can traverse relationships AND retrieve semantically similar content simultaneously. This unification is the core capability. A Postgres adjacency-list graph cannot efficiently combine multi-hop traversal with vector similarity in one query.
+### Alternatives Considered
 
-**Data synchronization:** Canonical entity IDs (from `entity_registry`, ADR-116) serve as the join key between Postgres and Neptune. Entities are upserted by canonical ID. The ingestion pipeline (DES-005) writes to both systems: Postgres for content and search, Neptune for graph structure.
+**Neptune Analytics (rejected):**
+Neptune Analytics was the original choice (Feb 2026). It offers combined graph traversal + vector similarity in a single openCypher query — an elegant capability. Rejected for five reasons:
 
-**Graph algorithms (nightly batch):**
-- **PageRank:** Which concepts are most referenced? Results stored as `centrality_score` on nodes. Feeds suggestion weights and retrieval confidence.
-- **Community Detection:** Which concept clusters naturally co-occur? (Expected: meditation/states, devotion/love, philosophy/maya, technique/practice, Christian-parallels, Hindu-philosophy.) Feeds "conceptual neighborhood" queries.
-- **Betweenness Centrality:** Which concepts bridge otherwise separate clusters? High betweenness = cross-tradition bridge terms — the most important for cross-tradition retrieval.
+1. **The corpus is too small to justify a second database.** ~50K–100K chunks with ~500 entities fits in memory on commodity hardware. The full graph loads in seconds; all algorithms complete in under a minute. Neptune is designed for billion-edge graphs.
+2. **Two-system data synchronization is a permanent operational tax.** Every entity must be synced between Postgres and Neptune. Every migration, debugging session, and monitoring pipeline doubles in surface area. This tax compounds over the project's 10-year horizon.
+3. **The single-query unification advantage is narrow.** The combined traversal + vector query is elegant but adds only ~10-20ms latency when decomposed into multi-step SQL. In a search pipeline already at 200-400ms, this is negligible.
+4. **ADR-013's single-database rationale applies to Neptune as strongly as to DynamoDB.** The original arguments — one backup strategy, one connection string, one migration tool, one monitoring target — are just as valid for a graph database as for a key-value store.
+5. **The terminology bridge (ADR-051) and query expansion (Phase 0b) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
+
+**Apache AGE (PostgreSQL extension):** Adds openCypher support to PostgreSQL — attractive in principle, but not available on Neon (the project's database provider). Would require self-hosting Postgres, contradicting the managed-infrastructure strategy.
 
 ### Rationale
 
-- **The bounded corpus justifies the graph.** A 50K–100K chunk corpus with ~500 canonical entities is an ideal graph size — large enough for meaningful traversal patterns, small enough for complete PageRank and community detection in seconds.
-- **ADR-013's original reasoning still holds for content.** Neon Postgres remains the single authoritative store for all content, search indexes, and relational data. Neptune adds a graph *intelligence* layer — it does not duplicate content storage.
-- **Neptune Analytics is managed and AWS-native.** No database administration for the graph layer. Compatible with the existing AWS infrastructure (ADR-017, ADR-019). openCypher is an open standard — the graph data model is portable even if Neptune is replaced.
-- **The alternative (Postgres-only graph) was evaluated.** Recursive CTEs over adjacency tables can serve simple 1-2 hop traversals, but combining multi-hop graph patterns with vector similarity in a single query requires imperative code stitching together multiple Postgres queries. Neptune unifies this in one declarative openCypher query.
+- **The bounded corpus is the key insight.** A 50K–100K chunk corpus with ~500 canonical entities is a graph problem that fits in a Python dictionary, not one that requires a graph database. NetworkX handles it trivially.
+- **ADR-013 remains unqualified.** The single-database architecture is restored to its original strength: one system for all data, all queries, all operations.
+- **Pre-computation absorbs the runtime cost.** Graph algorithm results are pre-computed nightly and stored as Postgres columns. Read-time queries are simple SELECTs and JOINs — no graph engine involved.
+- **PATH C's value is empirically testable.** The Phase 0a golden query set includes graph-dependent test queries. If two-path search + terminology bridge handles them adequately, PATH C can be deferred or eliminated entirely without architectural regret.
+- **Operational simplicity is a 10-year feature.** A system that a single developer can debug, maintain, and operate for a decade outperforms a technically superior but operationally complex alternative.
 
 ### Consequences
 
-- ADR-013 is amended: the portal uses two data systems, cleanly separated by concern
-- DES-004 (Data Model) gains graph-linkage columns (`neptune_node_id`) on entities and chunks
-- DES-005 (Content Ingestion Pipeline) gains a graph-load step (Phase 4+)
-- New DESIGN.md sections: DES-054 (Knowledge Graph Ontology) and DES-055 (Concept/Word Graph)
-- DES-003 (Search Architecture) gains PATH C: GraphRAG (Phase 4+)
-- Phase 4 in ROADMAP.md adds Neptune Analytics provisioning and knowledge graph foundation deliverables
-- The graph ontology (node types, edge types, algorithms) is designed from Phase 0 and documented in DES-054/055, even though Neptune itself is introduced in Phase 4
-- Terraform configuration (ADR-016) extended for Neptune Analytics
+- ADR-013 remains the unqualified single-database architecture — no amendment
+- DES-004 (Data Model) uses standard relational columns for graph metadata (no `neptune_node_id`)
+- DES-005 (Content Ingestion Pipeline) stores extracted relationships in Postgres (no graph-load step to external system)
+- DES-054 (Knowledge Graph Ontology) and DES-055 (Concept/Word Graph) describe node/edge types stored in Postgres tables, computed by batch jobs
+- DES-003 (Search Architecture) PATH C uses multi-step SQL queries in `/lib/services/graph.ts`
+- Phase 4 in ROADMAP.md adds graph algorithm batch pipeline (Python + NetworkX), not Neptune provisioning
+- No Terraform configuration for graph infrastructure — batch job runs as Lambda or Vercel cron
+- Graph ontology designed from Phase 0 and documented in DES-054/055
+
+*Revised: 2026-02-23, Neptune Analytics removed. Single-database architecture restored. Graph intelligence implemented via Postgres tables + Python batch computation. Motivated by bounded corpus size (~50K chunks), operational simplicity over 10-year horizon, and single-database principle (ADR-013).*
 
 ---
 
@@ -10426,7 +10454,7 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 - HNSW index parameters updated for 1024 dimensions
 - Voyage API key added to environment configuration
 - DESIGN.md tech stack table updated: Voyage `voyage-3-large` replaces OpenAI `text-embedding-3-small`
-- Neptune Analytics nodes (ADR-117) store Voyage embeddings for graph-native vector search
+- Graph-augmented retrieval (ADR-117, PATH C) uses pgvector similarity on chunks retrieved via graph traversal
 - Phase 10 benchmarking scope updated: Voyage as baseline rather than OpenAI
 
 ---
@@ -10444,7 +10472,7 @@ The Phase 0 search pipeline (DES-003) uses a two-path hybrid search: pgvector de
 
 2. **Cross-encoder reranking.** The Phase 0 passage ranking uses Claude Haiku — effective but general-purpose. Cohere Rerank 3.5 is a purpose-built cross-encoder that sees query + passage together and produces a true relevance score. It is multilingual-native and requires no language routing.
 
-3. **Graph-augmented retrieval (GraphRAG).** With the knowledge graph (ADR-117) active in Phase 4+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph.
+3. **Graph-augmented retrieval.** With the knowledge graph (ADR-117) active in Phase 4+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph. Implemented via multi-step SQL queries against Postgres graph tables (no external graph database).
 
 ### Decision
 
@@ -10466,7 +10494,7 @@ Three enhancements to the search pipeline, phased for implementation:
 **Phase 4+: Three-Path Parallel Retrieval**
 - **PATH A:** Dense vector (pgvector HNSW) — semantic similarity
 - **PATH B:** BM25 keyword (pg_search) — exact term and phrase matching
-- **PATH C:** GraphRAG (Neptune Analytics) — entity-aware graph traversal + vector similarity in a single openCypher query. Traverses concept neighborhoods, lineage relationships, cross-tradition bridges, experiential state graph.
+- **PATH C:** Graph-augmented retrieval (Postgres, ADR-117) — entity-aware graph traversal via multi-step SQL queries against `extracted_relationships` and `concept_relations` tables, combined with pgvector similarity. Traverses concept neighborhoods, lineage relationships, cross-tradition bridges, experiential state graph.
 - All three paths contribute candidates to RRF fusion before reranking
 
 ```
@@ -10479,15 +10507,15 @@ Phase 4+:   PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
 
 - **HyDE is high-lift for spiritual text.** Seekers often express queries as emotional states ("I feel lost"), questions ("What is the meaning of suffering?"), or experiential descriptions ("a light I saw in meditation"). These live far from Yogananda's document language in embedding space. A hypothetical passage bridges the gap.
 - **Cohere Rerank is purpose-built.** Cross-encoders see query and passage together — they can detect relevance that bi-encoder similarity misses (e.g., a passage that answers a question without using any of the question's words). Cohere Rerank 3.5 is multilingual-native, eliminating language-specific routing.
-- **GraphRAG finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage for a seeker searching "Holy Spirit" — neither vector similarity nor BM25 would find it.
+- **Graph-augmented retrieval finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage for a seeker searching "Holy Spirit" — neither vector similarity nor BM25 would find it. Note: the terminology bridge (ADR-051) covers many of these mappings; PATH C's unique contribution is for multi-hop traversals beyond direct term mappings.
 - **Phased introduction manages complexity.** Each enhancement can be validated independently against the golden retrieval set before the next is added.
 
 ### Consequences
 
 - DES-003 (Search Architecture) updated with the full pipeline diagram showing all three phases
 - Cohere Rerank API key added to environment configuration
-- Search latency budget increases: Phase 0 target ~200ms; Phase 2 target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Phase 4 target ~400ms (graph adds ~50ms)
-- The golden retrieval set (Phase 0a) gains HyDE-specific and GraphRAG-specific test queries in later phases
+- Search latency budget increases: Phase 0 target ~200ms; Phase 2 target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Phase 4 target ~400ms (graph-augmented retrieval adds ~50ms)
+- The golden retrieval set (Phase 0a) gains HyDE-specific and graph-augmented test queries in later phases
 - Cost per query increases: ~$0.001 for HyDE (Claude) + ~$0.0005 for Cohere Rerank = ~$0.0015/query total AI cost
 
 ---

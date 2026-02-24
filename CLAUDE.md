@@ -40,7 +40,7 @@ These constraints directly affect code generation. For the full set of theologic
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Neptune Analytics (graph, Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Python + NetworkX graph batch pipeline (Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), Contentful (Phase 9+), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```

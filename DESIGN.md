@@ -59,7 +59,7 @@
 | [DES-051: Portal Updates Page — "The Library Notice Board"](#des-051-portal-updates-page-the-library-notice-board) | 4+ |
 | [DES-052: Outbound Webhook Event System](#des-052-outbound-webhook-event-system) | 4+ |
 | [DES-053: Unified Content Pipeline Pattern](#des-053-unified-content-pipeline-pattern) | — |
-| [DES-054: Knowledge Graph Ontology](#des-054-knowledge-graph-ontology) | 0 (design), 4+ (Neptune) |
+| [DES-054: Knowledge Graph Ontology](#des-054-knowledge-graph-ontology) | 0 (design), 4+ (batch) |
 | [DES-055: Concept/Word Graph](#des-055-conceptword-graph) | 4+ |
 | [DES-056: Feature Catalog (RAG Architecture Proposal)](#des-056-feature-catalog-rag-architecture-proposal) | 2–12+ |
 
@@ -200,7 +200,7 @@ One-time ingestion (offline script):
 │ │ │ │
 │ │ • Claude API — query expansion + HyDE          │ │
 │ │ • Cohere Rerank 3.5 — passage reranking (Ph 2+)│ │
-│ │ • Neptune Analytics — graph queries (Phase 4+)  │ │
+│ │ • Graph batch pipeline — Python + NetworkX (4+) │ │
 │ │ • Retool — admin panel (content review, analytics) │ │
 │ │ • Cloudflare — CDN, edge caching, security │ │
 │ └──────────────────────────────────────────────────────┘ │
@@ -223,7 +223,7 @@ The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it 
 
 ### Search Flow
 
-The search pipeline has evolved through three phase tiers. Phase 0–1 uses a two-path retrieval core (vector + BM25). Phase 2+ adds HyDE and Cohere Rerank. Phase 4+ adds a third retrieval path via Neptune graph traversal.
+The search pipeline has evolved through three phase tiers. Phase 0–1 uses a two-path retrieval core (vector + BM25). Phase 2+ adds HyDE and Cohere Rerank. Phase 4+ adds a third retrieval path via Postgres-native graph traversal (ADR-117).
 
 ```
 1. USER QUERY
@@ -269,7 +269,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  diverges from corpus vocabulary.
  │
  ▼
-6. MULTI-PATH PARALLEL RETRIEVAL (Neon PostgreSQL + Neptune Phase 4+)
+6. MULTI-PATH PARALLEL RETRIEVAL (Neon PostgreSQL, Phase 4+ adds PATH C)
 
  PATH A — Dense Vector (pgvector, HNSW):
  - Embed the original query using Voyage voyage-3-large (ADR-118)
@@ -281,12 +281,12 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  - BM25 scoring produces better relevance ranking than tsvector ts_rank
  - Find top 20 chunks by keyword relevance
 
- PATH C — Graph Traversal (Neptune Analytics, Phase 4+, ADR-117):
+ PATH C — Graph-Augmented Retrieval (Postgres, Phase 4+, ADR-117):
  - Identify entities/concepts in query via entity registry (ADR-116)
- - Traverse knowledge graph: concept → related teachings → chunks
+ - SQL traversal across extracted_relationships and concept_relations
  - Return top 20 chunks reachable within 2–3 hops
- - Voyage embeddings on Neptune nodes enable combined
-   traversal + similarity in a single openCypher query
+ - pgvector similarity applied to graph-retrieved candidates
+ - Multi-step queries composed in /lib/services/graph.ts
 
  RECIPROCAL RANK FUSION (RRF):
  - Merge results from all active paths (A+B in Phase 0–3; A+B+C in Phase 4+)
@@ -333,7 +333,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
 |-------|----------------|----------|-------------|
 | 0–1 | Vector (pgvector) + BM25 (pg_search) | Claude Haiku passage ranking | Basic query expansion, terminology bridge |
 | 2–3 | Vector + BM25 | Cohere Rerank 3.5 | HyDE, improved query expansion |
-| 4+ | Vector + BM25 + GraphRAG (Neptune) | Cohere Rerank 3.5 | Three-path RRF, entity-aware retrieval |
+| 4+ | Vector + BM25 + Graph (Postgres) | Cohere Rerank 3.5 | Three-path RRF, entity-aware retrieval |
 
 ### Search Intent Classification (ADR-005 E1)
 
@@ -917,7 +917,8 @@ CREATE TABLE book_chunks (
  accessibility_level SMALLINT, -- 1=universal, 2=accessible, 3=deep (ADR-005 E3)
  -- NULL until classified. Computed by Claude at ingestion, spot-checked by reviewer.
  -- Used for Today's Wisdom (prefer 1–2), theme pages (default 1–2, "Show deeper" shows all).
- neptune_node_id TEXT, -- graph linkage (Phase 4+, ADR-117)
+ centrality_score REAL,  -- PageRank from graph batch (Phase 4+, ADR-117)
+ community_id TEXT,      -- community detection cluster (Phase 4+, ADR-117)
  metadata JSONB DEFAULT '{}',
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -1264,7 +1265,7 @@ CREATE INDEX idx_chunk_references_target ON chunk_references(target_chunk_id);
 -- ============================================================
 -- Combines dense vector similarity (pgvector) and BM25 keyword
 -- relevance (pg_search/ParadeDB) using Reciprocal Rank Fusion.
--- Phase 4+ adds PATH C (Neptune GraphRAG) as a third source
+-- Phase 4+ adds PATH C (graph-augmented retrieval via Postgres) as a third source
 -- merged at the application layer before reranking (ADR-119).
 
 -- Example hybrid query (implemented in /lib/services/search.ts):
@@ -1309,7 +1310,7 @@ CREATE INDEX idx_chunk_references_target ON chunk_references(target_chunk_id);
 -- ============================================================
 -- Built before first book ingestion. All enrichment entity extraction
 -- validates against this registry. Feeds suggestion system (ADR-049,
--- ADR-120 Tiers 2 and 4) and knowledge graph nodes (ADR-117).
+-- ADR-120 Tiers 2 and 4) and graph intelligence (ADR-117).
 CREATE TABLE entity_registry (
  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  canonical_name  TEXT NOT NULL,
@@ -1318,7 +1319,9 @@ CREATE TABLE entity_registry (
  language        CHAR(5),
  definition      TEXT,
  srf_definition  TEXT,              -- Yogananda's specific definition if distinct
- neptune_node_id TEXT,              -- graph linkage (Phase 4+)
+ centrality_score REAL,             -- PageRank from graph batch (Phase 4+, ADR-117)
+ community_id   TEXT,               -- community detection cluster (Phase 4+, ADR-117)
+ bridge_score   REAL,               -- betweenness centrality (Phase 4+, ADR-117)
  created_at      TIMESTAMPTZ DEFAULT now(),
  UNIQUE(canonical_name, entity_type)
 );
@@ -1375,10 +1378,11 @@ CREATE INDEX suggestion_language_idx ON suggestion_dictionary(language, suggesti
 CREATE INDEX suggestion_weight_idx ON suggestion_dictionary(language, weight DESC);
 
 -- ============================================================
--- EXTRACTED RELATIONSHIPS (audit trail for graph construction — ADR-115, ADR-117)
+-- EXTRACTED RELATIONSHIPS (graph intelligence — ADR-115, ADR-117)
 -- ============================================================
--- Every relationship triple extracted by the enrichment pipeline
--- is logged here. Loaded to Neptune in Phase 4+.
+-- Every relationship triple extracted by the enrichment pipeline.
+-- Queried directly by graph-augmented retrieval (PATH C, Phase 4+).
+-- Graph algorithm batch job reads from this table nightly.
 CREATE TABLE extracted_relationships (
  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  chunk_id        UUID REFERENCES book_chunks(id),
@@ -1386,7 +1390,6 @@ CREATE TABLE extracted_relationships (
  relationship    TEXT,              -- TEACHES|INTERPRETS|DESCRIBES_STATE|MENTIONS|etc.
  object_entity   TEXT,
  confidence      REAL,
- loaded_to_graph BOOLEAN DEFAULT FALSE,
  created_at      TIMESTAMPTZ DEFAULT now()
 );
 
@@ -1569,11 +1572,11 @@ Step 11: Update Suggestion Dictionary (ADR-049, ADR-120)
  └── Sanskrit terms get inline definitions from sanskrit_terms table
  └── Suggestion index grows with each book — never shrinks
 
-Step 12: Graph Load (Phase 4+, ADR-117)
- └── Create/update Neptune nodes: Teacher, Work, Chunk
- └── Create edges from extracted_relationships (Step 7)
- └── Attach Voyage embeddings to chunk nodes
- └── Run nightly graph algorithms: PageRank, community detection
+Step 12: Graph Metrics (Phase 4+, ADR-117 — nightly batch, not per-ingestion)
+ └── Nightly Python + NetworkX job loads full graph from Postgres
+ └── Runs PageRank, community detection, betweenness centrality
+ └── Writes results to centrality_score, community_id, bridge_score columns
+ └── extracted_relationships (Step 7) feed graph structure automatically
 ```
 
 ### Production Pipeline (Contentful → Neon)
@@ -1604,10 +1607,9 @@ Step 5: Update suggestion dictionary
  └── Re-extract terms from updated chunk
  └── Merge into suggestion_dictionary
 
-Step 6: Update graph (Phase 4+, ADR-117)
- └── Update Neptune node for the chunk
- └── Refresh extracted relationships as graph edges
- └── Nightly algorithm run picks up changes
+Step 6: Graph updates (Phase 4+, ADR-117)
+ └── extracted_relationships updated in Postgres (Step 3)
+ └── Nightly batch job recomputes graph metrics automatically
 
 Step 7: Search index, relations, suggestions, and graph
  are always in sync with editorial source
@@ -8362,7 +8364,7 @@ Phases 0–6 implement each pipeline independently — books, magazine, then vid
 
 ## DES-054: Knowledge Graph Ontology
 
-The knowledge graph captures the relationships between teachings, teachers, concepts, and experiences that make Yogananda's corpus a web of interconnected wisdom rather than a flat document collection. The graph ontology is designed in Phase 0; Neptune Analytics hosts the graph starting in Phase 4 (ADR-117).
+The knowledge graph captures the relationships between teachings, teachers, concepts, and experiences that make Yogananda's corpus a web of interconnected wisdom rather than a flat document collection. The graph ontology is designed in Phase 0; graph intelligence becomes active in Phase 4 via Postgres tables + Python batch computation (ADR-117).
 
 ### Node Types
 
@@ -8379,7 +8381,7 @@ The knowledge graph captures the relationships between teachings, teachers, conc
 | **Place** | Ranchi, Encinitas, Dakshineswar — biographical/spiritual places | `places` table | 4 |
 | **Chunk** | Individual text passages from the corpus | `book_chunks` table | 4 |
 
-All node types carry a `neptune_node_id` that maps back to the source Postgres row. Chunk nodes carry Voyage embeddings (ADR-118) enabling combined traversal + similarity queries in a single openCypher statement.
+All node types correspond to rows in Postgres tables (`entity_registry`, `books`, `book_chunks`, `places`, `sanskrit_terms`). Graph algorithm results (centrality_score, community_id, bridge_score) are stored as columns on the source rows. Chunk embeddings (ADR-118) are used by pgvector for similarity ranking after graph traversal retrieves candidates.
 
 ### Edge Types
 
@@ -8405,26 +8407,50 @@ Three algorithms run nightly on the full graph and feed suggestion weights and r
 2. **Community Detection** — Groups densely connected nodes into teaching clusters. Feeds thematic browsing and the Quiet Index (DES-029).
 3. **Betweenness Centrality** — Finds bridge passages that connect otherwise separate teaching domains. These are the passages that link, say, meditation technique to devotional practice. Surfaced in Reading Arc suggestions (Phase 8+).
 
-### GraphRAG Query Pattern
+### Graph-Augmented Retrieval Query Pattern
 
-```
-// Example: Find teachings related to "meditation" within 2 hops
-MATCH (c:Concept {canonical: 'meditation'})<-[:TEACHES]-(chunk:Chunk)
-WITH chunk, c
-OPTIONAL MATCH (chunk)-[:RELATED_CONCEPT]->(related:Concept)
-WITH chunk, collect(DISTINCT related.canonical) AS related_concepts
-WHERE neptune.algo.vectors.cosine(chunk.embedding, $query_embedding) > 0.7
-RETURN chunk.chunk_id, chunk.content_preview, related_concepts,
-       neptune.algo.vectors.cosine(chunk.embedding, $query_embedding) AS similarity
+Graph-augmented retrieval (PATH C) uses multi-step SQL queries composed in `/lib/services/graph.ts`:
+
+```sql
+-- Step 1: Entity resolution — identify concepts in the query
+SELECT id, canonical_name, entity_type
+FROM entity_registry
+WHERE canonical_name = $concept OR $concept = ANY(aliases);
+
+-- Step 2: Graph traversal — find chunks within 2–3 hops
+WITH direct_chunks AS (
+  SELECT DISTINCT er.chunk_id
+  FROM extracted_relationships er
+  WHERE er.subject_entity = $canonical_name
+     OR er.object_entity = $canonical_name
+),
+two_hop_chunks AS (
+  SELECT DISTINCT er2.chunk_id
+  FROM extracted_relationships er1
+  JOIN extracted_relationships er2
+    ON er1.object_entity = er2.subject_entity
+  WHERE er1.subject_entity = $canonical_name
+    AND er1.chunk_id != er2.chunk_id
+)
+SELECT chunk_id FROM direct_chunks
+UNION
+SELECT chunk_id FROM two_hop_chunks;
+
+-- Step 3: Vector similarity ranking on graph-retrieved candidates
+SELECT bc.id, bc.content, bc.book_id,
+       1 - (bc.embedding <=> $query_embedding) AS similarity
+FROM book_chunks bc
+WHERE bc.id = ANY($graph_chunk_ids)
+  AND bc.language = $language
 ORDER BY similarity DESC
-LIMIT 20
+LIMIT 20;
 ```
 
-This query combines graph traversal (concept → chunk) with vector similarity (Voyage embedding cosine) in a single openCypher statement — the core value proposition of Neptune Analytics over pure Postgres graph approaches.
+This three-step pattern replaces the single openCypher query that Neptune Analytics would have provided. The trade-off is 2-3 SQL round-trips instead of one declarative query — adding ~10-20ms latency, negligible in a pipeline already at 200-400ms. The advantage is: all data in one system, debuggable with standard SQL, no cross-system synchronization.
 
-**Governed by:** ADR-117 (Neptune Analytics), ADR-116 (Entity Registry), ADR-050 (Related Teachings)
+**Governed by:** ADR-117 (Postgres-Native Graph Intelligence), ADR-116 (Entity Registry), ADR-050 (Related Teachings)
 
-*Section added: 2026-02-23, ADR-117*
+*Section added: 2026-02-23, ADR-117. Revised: 2026-02-23, Neptune removed — Postgres-native implementation.*
 
 ---
 
@@ -8509,9 +8535,9 @@ Expanded retrieval includes passages mentioning any of these terms
 
 Cross-tradition mappings are limited to Yogananda's own explicit mappings. The portal does not extend theological interpretation beyond what appears in the published corpus. If Yogananda wrote that kundalini is "what the Christians call the Holy Ghost," that mapping exists. If he did not make a specific mapping, it does not exist in the graph — regardless of how obvious it might seem to a scholar. The librarian finds; the librarian does not interpret.
 
-**Governed by:** ADR-117 (Neptune Analytics), ADR-116 (Entity Registry), ADR-001 (Librarian, Not Oracle)
+**Governed by:** ADR-117 (Postgres-Native Graph Intelligence), ADR-116 (Entity Registry), ADR-001 (Librarian, Not Oracle)
 
-*Section added: 2026-02-23, ADR-117*
+*Section added: 2026-02-23, ADR-117. Revised: 2026-02-23, Neptune removed — Postgres-native implementation.*
 
 ---
 
@@ -8525,7 +8551,7 @@ These features are actively designed into the architecture and have governing AD
 
 | Feature | Phase | Governing ADRs | Key Dependencies |
 |---------|-------|----------------|------------------|
-| **Related Teachings — Categorized** | 3 (similarity), 4+ (graph-categorized) | ADR-050, ADR-117 | Chunk relations (Phase 0), Neptune (Phase 4) |
+| **Related Teachings — Categorized** | 3 (similarity), 4+ (graph-categorized) | ADR-050, ADR-117 | Chunk relations (Phase 0), graph batch pipeline (Phase 4) |
 | **Contemplative Companion** | 6+ | ADR-050, ADR-115, ADR-117 | Enrichment metadata (experiential_depth, voice_register), knowledge graph |
 | **Scripture-in-Dialogue** | 6 | ADR-117, ADR-116 | Scripture nodes in knowledge graph, verse-level chunking for Gita/Bible commentaries |
 | **Reading Arc** | 8 | ADR-117, ADR-115 | Graph algorithms (PageRank, betweenness centrality), experiential depth progression |
@@ -8547,14 +8573,14 @@ These features are documented and phase-assigned but not yet actively designed:
 
 | Feature | Phase | Key Dependency | Notes |
 |---------|-------|---------------|-------|
-| **Knowledge Graph Exploration UI** | 12 | DES-054, Neptune | react-force-graph-3d, interactive 3D visualization |
-| **Concept/Word Graph Exploration UI** | 12 | DES-055, Neptune | D3 + WebGL progressive enhancement |
+| **Knowledge Graph Exploration UI** | 12 | DES-054, graph batch | react-force-graph-3d, interactive 3D visualization |
+| **Concept/Word Graph Exploration UI** | 12 | DES-055, graph batch | D3 + WebGL progressive enhancement |
 | **Lineage Voice Comparator** | 8 | ADR-117, ADR-115 | Compare how Yogananda and his gurus discuss the same concept |
 | **Evolution of a Teaching** | 8 | ADR-117, temporal metadata | How Yogananda's expression of a concept evolved across books over decades |
 | **Cosmic Chants as Portal** | 9 | ADR-117, chant content | If chants are in corpus scope: verse-by-verse with Yogananda's explanations |
 | **Passage Genealogy** | 8 | ADR-117, cross-reference extraction | The lineage of thought behind each passage — what influenced it |
 | **Semantic Drift Detection** | 8 | ADR-115, temporal metadata | Staff tool: detect when the same term shifts meaning across books |
-| **Consciousness Cartography** | 12+ | DES-054, DES-055, Neptune | Stretch goal: visual map of consciousness states and their relationships |
+| **Consciousness Cartography** | 12+ | DES-054, DES-055, graph batch | Stretch goal: visual map of consciousness states and their relationships |
 
 ### Explicitly Omitted
 
