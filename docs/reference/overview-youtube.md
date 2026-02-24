@@ -23,6 +23,10 @@ Brother Chidananda shares a story about a recent meeting with a prominent Britis
 
 ### Notes
 
+#### SRF Online Announcements
+
+https://yogananda.org/light-for-the-ages-the-future-of-paramahansa-yoganandas-work
+
 #### Books Online
 
 For online book source material during a proof-of-concept, SRF books are available at https://spiritmaji.com/.
@@ -39,4 +43,6 @@ For online book source material during a proof-of-concept, SRF books are availab
 
 #### Domain name
 
-Teaching portal might eventually be located at https://teachings.yoganada.org. Possible alternative https://srfteachings.org, similar to existing https://srflessons.org.
+Teaching portal might eventually be located at https://srfteachings.org, similar to existing https://srflessons.org. 
+
+Possible alternative https://teachings.yoganada.org.

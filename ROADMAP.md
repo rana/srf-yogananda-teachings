@@ -20,7 +20,7 @@
 | [12](#phase-12-multimedia) | Multimedia | Video, audio, images, cross-media hub |
 | [13](#phase-13-personalize) | Personalize | Optional auth, sync, personalized email |
 | [14](#phase-14-community) | Community | Events, study circles, VLD curation |
-| — | [Future: SRF Lessons](#future-consideration-srf-lessons-integration) | Not scheduled |
+| — | [Unscheduled Features](#unscheduled-features) | Ideas not yet assigned to a phase |
 | — | [PWA-First Strategy](#pwa-first-strategy-no-native-app) | No native app rationale |
 | — | [Phase Gates](#phase-gates) | Go/no-go criteria between phases |
 | — | [Cost Trajectory](#cost-trajectory) | Infrastructure cost projections |
@@ -33,6 +33,8 @@
 Each phase delivers a working, demonstrable increment organized around a single capability theme. 15 phases total (0a–14). Phase 0 is split into 0a (Prove) and 0b (Foundation) per ADR-113. Phase 0a proves that semantic search works. Phase 1 builds the complete portal with engineering infrastructure alongside it (CI/CD, testing, Terraform — not deferred to a later phase). Phase 2 refines the contemplative reader. Phases 3–4 decompose the multi-book expansion: Phase 3 (Grow) expands the corpus independently of organizational decisions, while Phase 4 (Operate) establishes editorial operations once SRF staffing is confirmed — this split makes the most critical organizational dependency visible as its own phase gate. Phases 5–6 build cross-book intelligence and complete the library. Phases 7–8 extend reach through tools and distribution channels. Phases 9–11 add Contentful CMS, multi-language support, and accessibility polish. Phase 12 delivers cross-media intelligence across video, audio, and images in one coherent phase. Phase 13 adds optional user accounts. Phase 14 combines community events and curation at scale.
 
 **Parallel workstreams and feature-flag activation (ADR-123):** Phases are *capability themes*, not strictly sequential gates. Where deliverables within a phase have no technical dependency on another phase's organizational prerequisites, they proceed in parallel. Specifically: Phase 5 algorithmic computation proceeds alongside Phase 4 editorial tooling; Phase 9 infrastructure (GitLab, Terraform) proceeds independently of Contentful contract; Phase 10 language waves run in parallel where resources permit; Phase 13 localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, Contentful contract, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
+
+**Unscheduled features:** Not every idea belongs in a phase immediately. Features that emerge from proposals, stakeholder conversations, or development experience but aren't ready for phase assignment live in the [Unscheduled Features](#unscheduled-features) section below. They are reviewed at every phase boundary and either graduate to a phase, remain unscheduled, or are explicitly omitted. The backlog does not grow forever — omission with rationale is a valid outcome.
 
 ---
 
@@ -590,14 +592,43 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 
 ---
 
-## Future Consideration: SRF Lessons Integration
+## Unscheduled Features
 
-The SRF Home Study Lessons — the organization's core spiritual curriculum — are explicitly out of scope for the public portal. However, they may eventually be incorporated for authorized students and kriyabans. The architecture is designed so this is not structurally impossible (ADR-085):
+> Features and ideas not assigned to a phase. Reviewed at every phase boundary
+> during the retrospective. Items graduate to phases or are explicitly omitted
+> with rationale. This section is institutional memory — not a promise.
 
-- **Content-level access control.** Any content item can carry an `access_level` (`public`, `enrolled`, `kriyaban`). The API layer respects this via Auth0 custom claims. No implementation work in any current phase.
-- **If activated,** Lessons would be a separate, curated reading experience — not mixed into the general search index. Search might acknowledge "This topic is also covered in SRF Lesson 24" without revealing content.
-- **The portal never teaches Kriya Yoga techniques.** Even with Lessons integration, technique instructions remain outside scope.
-- **Timeline:** Unknown. May never happen, or may be years away. The architecture is ready; the decision is SRF's.
+### Validated — Awaiting Scheduling
+
+Architecturally sound, principle-checked, has governing references. Needs a scheduling decision.
+
+| Feature | Source | Governing Refs | Dependencies | Notes |
+|---------|--------|----------------|--------------|-------|
+| **SRF Lessons Integration** | Stakeholder vision | ADR-085, ADR-121 | Auth0 custom claims, `access_level` content model | Not scheduled. SRF's decision. Architecture ready (content-level access control, separate reading experience, technique instructions always out of scope). May never happen. |
+
+### Proposed — Awaiting Evaluation
+
+Idea captured. Not yet checked against principles and architecture. May be adopted, may be omitted.
+
+| Feature | Source | Proposal | Principle Risk | Notes |
+|---------|--------|----------|----------------|-------|
+| *(Populated from `.elmer/proposals/` after `/dedup-proposals`)* | | | | |
+
+### Deferred from Development
+
+Was in scope for a phase, cut during implementation. Re-evaluate at the next phase boundary.
+
+| Feature | Original Phase | Cut Reason | Re-evaluate At | Notes |
+|---------|----------------|------------|----------------|-------|
+| *(Populated during development)* | | | | |
+
+### Graduation Protocol
+
+- **At every phase boundary:** review unscheduled features during retrospective. Deferred items get first priority — they were already scoped once.
+- **Proposed → Validated:** requires principle-check (does it violate any of the 11 principles?) and architectural review (does it fit the existing design, or does it need new ADRs?).
+- **Validated → Phase assignment:** stakeholder decision. Add to the target phase's deliverable table.
+- **Any tier → Omitted:** add to DES-056 § Explicitly Omitted with rationale.
+- **AI proposes, human approves.** The AI may recommend graduation or omission; the human principal decides.
 
 ---
 
@@ -643,6 +674,8 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 - **Phase 10 (Translate):** YSS branding strategy for Hindi/Bengali locales
 - **Phase 13 (Personalize):** Whether to implement user accounts at all
 - **Phase 14 (Community):** VLD role assignment process, VLD coordinator identified, community curation governance model
+
+**Unscheduled feature review:** Every phase gate includes a triage of ROADMAP.md § Unscheduled Features. Deferred-from-development items are evaluated first; validated items are considered for the upcoming phase; proposed items are principle-checked if relevant to the next phase's capability theme.
 
 ---
 

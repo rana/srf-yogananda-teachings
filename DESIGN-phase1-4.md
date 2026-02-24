@@ -4180,7 +4180,7 @@ These features are actively designed into the architecture and have governing AD
 
 ### Deferred with Phase Assignment
 
-These features are documented and phase-assigned but not yet actively designed:
+These features are documented and phase-assigned but not yet actively designed. Features without a phase assignment belong in ROADMAP.md § Unscheduled Features instead.
 
 | Feature | Phase | Key Dependency | Notes |
 |---------|-------|---------------|-------|

@@ -126,6 +126,8 @@ Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase file
 | Elmer proposal approved for merge | Use `/dedup-proposals` first if variants exist, then `/proposal-merge <file>` or `/theme-integrate <file>`. Skill handles all document updates. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
 | Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
+| Feature idea without a phase | Add to ROADMAP.md § Unscheduled Features (Proposed tier). Cross-reference governing ADRs if known. |
+| Feature cut from a phase during development | Move to ROADMAP.md § Unscheduled Features (Deferred tier) with original phase, cut reason, and re-evaluation target. |
 
 At phase boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.
 
