@@ -747,7 +747,7 @@ The Intelligent Query Tool requires semantic (vector) search to find thematicall
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Neon + pgvector** | Already in SRF stack; vector + FTS + relational in one DB; free tier available; no vendor sprawl | Not a purpose-built vector DB; HNSW index tuning required |
+| **Neon + pgvector** | Already in SRF stack; vector + FTS + relational in one DB; Scale tier provides 30-day PITR, protected branches, OTLP export; no vendor sprawl | Not a purpose-built vector DB; HNSW index tuning required |
 | **Pinecone** | Purpose-built vector search; managed; fast | New vendor; no relational data; no FTS; cost at scale; sync complexity |
 | **Weaviate / Qdrant** | Strong vector search; hybrid search built-in | New vendor; operational overhead if self-hosted; overkill for corpus size |
 | **Supabase** | Postgres + pgvector + auth + storage all-in-one | SRF chose Neon, not Supabase; diverges from established stack |
@@ -788,7 +788,7 @@ Book text needs to live somewhere with editorial management: version control, re
 |--------|------|------|
 | **Contentful** | SRF standard; editorial workflow; locales; Rich Text AST is parseable for chunking; convocation site proves pattern | Cost at scale; not a search engine |
 | **Neon only** | Simplest; no sync complexity; full control | No editorial UI (would need Retool); no version history; no localization workflow |
-| **Sanity.io** | Excellent DX; real-time collaboration; generous free tier | Not in SRF stack; would diverge from organizational standard |
+| **Sanity.io** | Excellent DX; real-time collaboration | Not in SRF stack; would diverge from organizational standard |
 | **Strapi (self-hosted)** | Open-source; full control; no per-record pricing | Operational overhead; not in SRF stack; no edge CDN |
 
 ### Decision
@@ -1151,7 +1151,7 @@ Use **Terraform** for all infrastructure provisioning from Milestone 2a. The por
 
 | Arc/Milestone | SCM | CI/CD | Terraform State |
 |---------------|-----|-------|-----------------|
-| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud free tier or S3 backend |
+| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud or S3 backend |
 | **Arc 6+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
 
 Arcs 1–5 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness.
@@ -1294,7 +1294,7 @@ terraform:apply:
 
 - Milestone 2a includes `/terraform` directory with modules for Neon, Vercel, and Sentry
 - Arcs 1–4 use GitHub + GitHub Actions; Arc 4 migrates to GitLab + GitLab CI (SRF IDP)
-- Terraform state stored in Terraform Cloud free tier (Arcs 1–3) or GitLab Terraform backend (Milestone 5a+)
+- Terraform state stored in Terraform Cloud (Arcs 1–3) or GitLab Terraform backend (Milestone 5a+)
 - All environment variables and service configuration defined in Terraform — no undocumented dashboard settings
 - `.env.example` still maintained for local development (developers run the app locally without Terraform)
 - Auth0, New Relic, and Cloudflare modules added as those services are introduced (Milestones 5–6)
@@ -1509,27 +1509,51 @@ Migration sequencing: Terraform apply runs *first* (in case it creates the datab
 
 ---
 
-## ADR-019: Database Backup to S3
+## ADR-019: Database Backup and Recovery Strategy
 
 **Status:** Accepted | **Date:** 2026-02-19
 
 ### Context
 
-The portal's canonical content — book text, embeddings, theme tags, chunk relations, daily passages, calendar events — lives in Neon PostgreSQL. Neon provides point-in-time recovery (PITR), which protects against accidental data loss within Neon's retention window.
+The portal's canonical content — book text, embeddings, theme tags, chunk relations, daily passages, calendar events — lives in Neon PostgreSQL. Neon provides three native recovery mechanisms on Scale tier (ADR-124):
 
-However, PITR doesn't protect against:
+1. **Point-in-time recovery (PITR)** — restore to any moment within a 30-day window
+2. **Snapshots** — manual and scheduled capture of branch state with one-step restore
+3. **Time Travel Queries** — read-only queries against any historical point within the PITR window (via ephemeral computes)
+
+However, native Neon recovery doesn't protect against:
 - Neon service-level incidents beyond their disaster recovery capability
-- A catastrophic bad migration that corrupts data and isn't noticed within the PITR window
-- The need to restore specific tables or rows without restoring the entire database
 - A future vendor migration (if SRF moves away from Neon for any reason)
+- The need for a portable backup format (standard `pg_dump`) that any PostgreSQL host can restore
 
 The 10-year architecture horizon (ADR-004) demands that the data survive any single vendor relationship. Neon may not exist in 10 years. The data must.
 
 ### Decision
 
-Add a **nightly `pg_dump` to S3** as a Milestone 2a deliverable, alongside the Terraform work.
+Adopt a **three-layer recovery strategy**: Neon-native PITR + Neon Snapshots + nightly `pg_dump` to S3.
 
-#### Implementation
+#### Layer 1: Neon PITR (30-day window)
+
+Available immediately on Scale tier. Restore to any moment within 30 days — covers accidental data corruption, bad migrations, and operational mistakes. Uses Neon's built-in WAL-based recovery.
+
+- **Restore scope:** Entire branch (all databases)
+- **Restore method:** Timestamp or LSN (Log Sequence Number)
+- **Pre-restore safety:** Neon automatically creates a backup branch (`{branch}_old_{timestamp}`)
+- **Time Travel Queries:** Before committing to a restore, run read-only queries against historical state to verify the target recovery point is correct. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle.
+
+#### Layer 2: Neon Snapshots (automated schedule)
+
+Configure automated snapshots on the production branch via Neon Console or API:
+
+- **Daily snapshot** at 03:00 UTC (before nightly pg_dump for redundancy)
+- **Weekly snapshot** on Sundays
+- **Monthly snapshot** on the 1st
+- **Retention:** Up to 10 snapshots (Scale tier limit). Lifecycle: keep 7 daily + 2 weekly + 1 monthly.
+- **Restore:** One-step restore from any snapshot. Faster than PITR for known-good checkpoints.
+
+#### Layer 3: pg_dump to S3 (vendor-independent)
+
+Nightly `pg_dump` to S3 provides a portable backup that can restore to any PostgreSQL host — not just Neon. This is the vendor-independence layer.
 
 - **Lambda function** (using ADR-017 infrastructure) runs nightly via EventBridge cron
 - `pg_dump --format=custom` (most flexible restore format)
@@ -1546,9 +1570,27 @@ Add a **nightly `pg_dump` to S3** as a Milestone 2a deliverable, alongside the T
  outputs.tf — Bucket ARN
 ```
 
+#### Restore decision tree
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Bad migration noticed within minutes | PITR (timestamp) | Fastest; restore to pre-migration moment |
+| Data corruption noticed within hours | Time Travel Query → PITR | Verify target point first, then restore |
+| Need to inspect historical state | Time Travel Query | Read-only, no restore needed |
+| Known-good checkpoint needed | Snapshot restore | One-step, no timestamp arithmetic |
+| Neon is down | S3 pg_dump → any PostgreSQL host | Vendor-independent recovery |
+| Vendor migration | S3 pg_dump → new provider | Portable format |
+
 #### Restore procedure (documented in operational playbook)
 
-1. Download backup from S3: `aws s3 cp s3://srf-portal-backups/{date}.dump ./`
+**From PITR:**
+1. Use Time Travel Query to verify the target recovery point
+2. Restore production branch to target timestamp via Neon Console or CLI
+3. Neon auto-creates a backup branch; verify the restore
+4. If wrong: restore again from the backup branch
+
+**From S3 backup:**
+1. Download backup: `aws s3 cp s3://srf-portal-backups/{date}.dump ./`
 2. Create a Neon branch for restore testing
 3. `pg_restore --dbname=... {date}.dump`
 4. Verify content integrity
@@ -1556,18 +1598,24 @@ Add a **nightly `pg_dump` to S3** as a Milestone 2a deliverable, alongside the T
 
 ### Rationale
 
-- **Vendor independence.** The backup exists outside Neon's infrastructure. If Neon has a catastrophic failure or if SRF migrates to another PostgreSQL provider, the data is recoverable from S3.
-- **Negligible cost.** S3 Standard-IA with lifecycle rules: < $1/month for the full library backup history.
-- **Operational confidence.** Having an independent backup makes risky operations (embedding model migration per ADR-046, major re-ingestion) safer. Rollback is always possible.
+- **Defense in depth.** Three independent recovery mechanisms. PITR for speed, snapshots for checkpoints, pg_dump for portability.
+- **30-day PITR window (Scale tier).** Covers the realistic detection window for data corruption. A bad migration or ingestion error has 30 days to be noticed before recovery becomes expensive.
+- **Vendor independence.** S3 backups exist outside Neon's infrastructure. The data survives a Neon outage or a future vendor migration.
+- **Negligible cost.** S3 Standard-IA with lifecycle rules: < $1/month. Neon Snapshots included in Scale tier.
+- **Operational confidence.** Multiple recovery options make risky operations (embedding model migration per ADR-046, major re-ingestion) safer.
 
 ### Consequences
 
+- PITR and Time Travel Queries available from Milestone 1a (Scale tier)
+- Snapshot schedule configured during Milestone 1a.2 Neon project setup
 - `/terraform/modules/backup/` added in Milestone 2a
-- Lambda function for nightly pg_dump added in Arc 1 (or Milestone 2a when Lambda infrastructure from ADR-017 is first deployed)
+- Lambda function for nightly pg_dump added when Lambda infrastructure from ADR-017 is first deployed
 - S3 bucket created and managed by Terraform
 - Restore procedure documented in operational playbook
 - Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
-- **Extends ADR-016** (Terraform) and **ADR-004** (10-year architecture)
+- **Extends ADR-016** (Terraform), **ADR-004** (10-year architecture), and **ADR-124** (Neon platform governance)
+
+*Revised: 2026-02-25, expanded from pg_dump-only to three-layer recovery strategy leveraging Neon Scale tier capabilities.*
 
 ---
 
@@ -1611,7 +1659,7 @@ SRF AWS Organization
 
 - **Account isolation.** Each environment in its own AWS account. IAM boundaries prevent dev from touching prod. SRF standard pattern.
 - **Terraform workspaces.** One Terraform configuration, three workspaces (`dev`, `stg`, `prod`). Environment-specific values in `terraform/environments/{env}.tfvars`.
-- **Neon branching.** Dev and staging use Neon branches (instant, free). Production uses the primary Neon project. Schema migrations promoted through branches before reaching production.
+- **Neon branching.** Dev and staging use Neon branches (instant, copy-on-write). Production uses the primary Neon project with branch protection enabled (ADR-124). Schema migrations promoted through branches before reaching production. Preview branches per PR with TTL auto-expiry.
 
 ### GitLab CI/CD Strategy
 
@@ -1837,7 +1885,7 @@ Implement rate limiting at two layers:
 
 #### Layer 1: Cloudflare (edge — Arc 1)
 
-Cloudflare's free tier includes basic rate limiting via WAF rules. Configure:
+Cloudflare includes rate limiting via WAF rules. Configure:
 
 | Rule | Limit | Scope |
 |------|-------|-------|

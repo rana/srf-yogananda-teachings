@@ -29,7 +29,7 @@ Options for auto-updating YouTube content:
 Use a **hybrid RSS + YouTube Data API** approach:
 
 1. **RSS feed** (free, no key) for "Latest Videos" — the ~15 most recent uploads, revalidated hourly via Next.js ISR
-2. **YouTube Data API v3** (free tier, 10,000 units/day) for the full categorized library — playlists mapped to site categories, revalidated every 6 hours via ISR
+2. **YouTube Data API v3** (10,000 units/day quota) for the full categorized library — playlists mapped to site categories, revalidated every 6 hours via ISR
 3. Videos categorized by mapping YouTube playlist titles to portal categories
 4. Videos embedded via `youtube-nocookie.com` for privacy-enhanced playback
 

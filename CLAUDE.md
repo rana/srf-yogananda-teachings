@@ -62,7 +62,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Contentful (Arc 1+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Milestone 2b+, ADR-119), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Redis/ElastiCache (suggestions, Milestone 2b+, ADR-120), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL Scale tier + pgvector + pg_search/ParadeDB + pg_stat_statements (ADR-124), Contentful (Arc 1+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Milestone 2b+, ADR-119), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Redis/ElastiCache (suggestions, Milestone 2b+, ADR-120), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
@@ -86,7 +86,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 118 records organized into 11 topical groups (some numbers retired). DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
+**ADR-NNN** (Architecture Decision Records) — 119 records organized into 11 topical groups (some numbers retired). DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-124 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability).
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)

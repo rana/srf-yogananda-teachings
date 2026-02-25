@@ -1003,17 +1003,49 @@ Adopt a **layered testing strategy** with specific tools for each layer:
 
 #### Database Test Isolation
 
-Each test run creates a **Neon branch**, runs integration tests against it, and deletes the branch afterward. This provides full database isolation without maintaining a separate test database, using Neon's instant branching capability.
+Each test run creates a **Neon branch**, runs integration tests against it, and deletes the branch afterward. This provides full database isolation without maintaining a separate test database, using Neon's instant copy-on-write branching.
 
 ```
 CI pipeline:
- 1. Create Neon branch from main
+ 1. Create Neon branch from production (TTL: 1 hour)
  2. Apply migrations to branch
  3. Seed test data
  4. Run Vitest integration tests against branch
  5. Run Playwright E2E tests against branch
- 6. Delete branch (cleanup)
+ 6. Delete branch (cleanup — TTL ensures deletion even if CI fails)
 ```
+
+#### Preview Branches per PR
+
+Beyond test isolation, create a **persistent preview branch** for each PR that needs database state. This enables Vercel preview deployments with their own database.
+
+```
+On PR open:
+ 1. Create Neon branch: pr-{number} (TTL: 7 days)
+ 2. Apply migrations to branch
+ 3. Seed with representative data
+ 4. Pass branch connection string to Vercel preview deployment
+
+On PR close/merge:
+ 1. Delete preview branch (TTL auto-deletes if missed)
+```
+
+Scale tier supports 25 branches included + $1.50/month per additional branch (up to 5,000). With TTL auto-expiry, orphaned branches are impossible.
+
+#### Schema Diff in CI
+
+Neon's built-in schema diff compares branch schemas. Add as a CI step and GitHub Action:
+
+```
+On every PR with migration changes:
+ 1. Create Neon branch from production
+ 2. Apply migrations to branch
+ 3. Run: neonctl branches schema-diff --branch pr-{number} --compare-to production
+ 4. Post schema diff as PR comment (GitHub Action)
+ 5. Reviewer sees exact schema changes before approving
+```
+
+This catches migration drift, unintended column changes, and missing indexes before they reach production.
 
 #### CI Pipeline
 
@@ -1029,6 +1061,7 @@ CI pipeline:
 │ 6. E2E tests (Playwright) │
 │ 7. Lighthouse CI (performance) │
 │ 8. Search quality suite │
+│ 9. Schema diff (if migrations changed) │
 │ │
 │ All must pass before merge. │
 └─────────────────────────────────────────┘
@@ -1038,18 +1071,24 @@ CI pipeline:
 
 - **Fidelity guarantee.** The search quality test suite is the most important test layer — it verifies that seekers find the right passages. A regression in search quality is a mission failure.
 - **Accessibility as gate.** axe-core in CI means accessibility violations block merges, not just generate warnings. This enforces ADR-003.
-- **Neon branching for test isolation.** Eliminates the "works on my machine" problem for database-dependent tests. Each PR gets a clean database.
+- **Neon branching for test isolation.** Eliminates the "works on my machine" problem for database-dependent tests. Each PR gets a clean database. TTL auto-expiry ensures cleanup even when CI fails.
+- **Preview branches per PR.** Vercel preview deployments get their own database state — reviewers see the full experience, not just code changes.
+- **Schema diff as safety net.** Migrations are verified against production schema before merge. Catches unintended column changes, missing indexes, and migration drift.
 - **Cross-browser E2E.** Seekers worldwide use diverse browsers. Playwright's multi-browser support catches rendering issues that single-browser testing misses.
 - **Performance budgets.** Lighthouse CI prevents performance regressions. A portal that's slow on a mobile connection in rural India fails the global accessibility mission.
 
 ### Consequences
 
 - Milestone 2a includes Vitest, Playwright, axe-core, and Lighthouse CI setup (basic axe-core testing begins in Milestone 2a)
-- CI pipeline runs all test layers on every PR
-- Neon branches are created/deleted per test run (Neon free tier supports this)
+- CI pipeline runs all test layers on every PR, including schema diff when migrations change
+- Neon branches use TTL auto-expiry: 1 hour for test branches, 7 days for preview branches (ADR-124)
+- Preview branches per PR enable database-backed Vercel preview deployments
+- Neon Schema Diff GitHub Action posts migration diff as PR comment
 - Storybook is introduced in Milestone 2a alongside the design system foundations
 - Search quality test suite is a Milestone 1a deliverable (1a.8) and grows as the corpus expands
 - Visual regression testing begins when the component library stabilizes
+
+*Revised: 2026-02-25, added preview branches per PR, branch TTL auto-expiry, and schema diff in CI leveraging Neon Scale tier capabilities (ADR-124).*
 
 ---
 
@@ -1198,7 +1237,7 @@ DESIGN.md specs (source of truth)
 Visual design emerges through code iteration: generate CSS/components, render in browser, evaluate, refine. The browser rendering — not a Figma file — is the design artifact. Figma files are maintained as a communication surface for SRF stakeholders and future designers, not as the authoritative design spec.
 
 - No Figma files required for Milestone 1a (search validation)
-- Milestone 1b / 2a: Figma free tier documents core screens *after* they exist in code
+- Milestone 1b / 2a: Figma documents core screens *after* they exist in code
 - Storybook is the primary component reference during AI-led arcs
 
 #### When Human Designers Join: Figma-First Design
@@ -1245,7 +1284,7 @@ This ensures the design language stays synchronized between Figma and the codeba
 ### Rationale
 
 - **Industry standard.** Figma is what most designers and frontend developers know. Hiring or onboarding someone who uses Figma is trivially easy.
-- **Free tier covers Milestone 2a.** Three files and unlimited drafts is sufficient for Milestone 2a. No cost until the design system requires shared libraries.
+- **Figma covers Milestone 2a.** Three files and unlimited drafts is sufficient for Milestone 2a. Upgrade to Professional when the design system requires shared libraries.
 - **Design token pipeline.** The Figma Tokens → Tailwind pipeline ensures design and code stay synchronized. This is critical when the Calm Technology design system is reused across SRF properties.
 - **Stakeholder communication.** Figma files allow SRF leadership and the philanthropist's foundation to preview the portal design. However, during AI-led phases, deployed prototypes and Storybook serve this purpose more effectively than static Figma mockups.
 - **Code-first during AI-led arcs.** When the primary designer is an AI that generates code directly, the natural design artifact is the rendered browser output, not a visual design tool file. Figma's value increases when human designers need a native collaboration surface — not before.
@@ -1253,7 +1292,7 @@ This ensures the design language stays synchronized between Figma and the codeba
 ### Consequences
 
 - Milestone 1a: No Figma files. Design validation happens through search functionality, not visual design.
-- Milestone 1b / 2a: Figma free tier documents core screens after they are built in code. Code → Figma direction.
+- Milestone 1b / 2a: Figma documents core screens after they are built in code. Code → Figma direction.
 - When human designers are active, Figma becomes upstream. Figma → code direction.
 - Upgrade to Professional when Calm Technology design system requires shared libraries.
 - Figma Tokens plugin configured for bidirectional synchronization with `tokens.json`.
@@ -2858,4 +2897,132 @@ Examples:
 - Milestone 1a.9 success criteria updated to include parameter validation
 - Future ADRs specify whether each specific value is a principle or parameter
 - CLAUDE.md updated to reference this classification in the document maintenance guidance
+
+---
+
+---
+
+## ADR-124: Neon Platform Governance — Tier, Compute, Branching, Extensions, and Observability
+
+- **Status:** Accepted
+- **Date:** 2026-02-25
+
+### Context
+
+The portal uses Neon Serverless Postgres as its single database (ADR-013). Prior to this decision, Neon-specific platform capabilities were referenced throughout the documentation without a central governance ADR. Compute configuration, tier selection, branching strategy, extension management, and database observability were implicit or distributed across ADR-009, ADR-019, ADR-094, and DESIGN-arc1.md.
+
+A comprehensive audit of Neon's feature catalog against our design documents revealed:
+
+1. **Tier-gated features.** Several capabilities critical to production readiness (30-day PITR, protected branches, OpenTelemetry export, configurable autosuspend) are only available on paid tiers.
+2. **Missing extensions.** `pg_stat_statements` (query performance) was not in the first migration despite clear Arc 1 value.
+3. **No compute governance.** No ADR specified compute sizing per environment, autosuspend policy, or scaling strategy.
+4. **No branch lifecycle policy.** Branch naming, TTL auto-expiry, and the distinction between persistent and ephemeral branches were undocumented.
+5. **No database observability.** The observability strategy (ADR-095) covered application monitoring but not database-level metrics.
+
+### Decision
+
+Establish **Neon Scale tier** as the project's database platform from Milestone 1a, with explicit governance for compute, branching, extensions, and observability.
+
+#### Tier Selection: Scale
+
+| Capability | Free | Launch | **Scale** (chosen) |
+|-----------|------|--------|-------------------|
+| PITR window | 6 hours | 7 days | **30 days** |
+| Protected branches | — | 2 | **5** |
+| Monitoring retention | 1 day | 3 days | **14 days** |
+| OpenTelemetry export | — | — | **Included** |
+| Max compute (autoscaling) | 2 CU | 16 CU | **16 CU** |
+| Max compute (fixed) | 2 CU | 16 CU | **56 CU** |
+| Branches included | 10 | 10 | **25** |
+| Snapshots | 1 | 10 | **10** |
+| IP Allow | — | — | **Included** |
+| SOC 2 / ISO 27001 | — | — | **Included** |
+| SLA | — | — | **Included** |
+
+**Why Scale over Launch:** The 30-day PITR window, OpenTelemetry export, 14-day monitoring retention, and compliance certifications are worth the incremental cost for a production portal serving sacred content. The SLA provides operational confidence. Cost: ~$20/month baseline (autoscaling from 0.25 CU, pay only for active compute hours).
+
+#### Compute Configuration by Environment
+
+| Environment | Min CU | Max CU | Autosuspend | Protected | Notes |
+|-------------|--------|--------|-------------|-----------|-------|
+| **Production** | 0.5 | 4 | 300s (5 min) | Yes | Never scales to zero instantly; avoids cold-start on first seeker query |
+| **Staging** | 0.25 | 2 | 60s | No | Lower baseline; faster suspend for cost efficiency |
+| **Dev** | 0.25 | 2 | 0s (immediate) | No | Scales to zero when idle; developer pays nothing overnight |
+| **CI test branches** | 0.25 | 1 | 0s | No | Ephemeral; auto-deleted via TTL |
+| **PR preview branches** | 0.25 | 1 | 60s | No | Persists for PR lifetime; TTL: 7 days |
+
+*Parameter — default values above, evaluate: Milestone 1b traffic patterns (ADR-123).*
+
+#### Branch Lifecycle Policy
+
+| Branch Type | Naming | TTL | Created By | Deleted By |
+|-------------|--------|-----|------------|------------|
+| **Production** | `production` | Permanent | Terraform | Never (protected) |
+| **Staging** | `staging` | Permanent | Terraform | Never |
+| **Dev** | `dev` | Permanent | Terraform | Manual |
+| **CI test** | `ci-{run_id}` | 1 hour | GitHub Actions | Auto (TTL) or CI cleanup step |
+| **PR preview** | `pr-{number}` | 7 days | GitHub Actions | Auto (TTL) or on PR close |
+| **Migration test** | `migrate-{date}` | 2 hours | Manual / CI | Auto (TTL) |
+| **Restore test** | `restore-{date}` | 24 hours | Manual | Auto (TTL) |
+
+All ephemeral branches use TTL to guarantee cleanup. The 25-branch included allocation (Scale tier) comfortably handles typical concurrent PR + CI usage. Additional branches at $1.50/month each if needed.
+
+#### Extension Governance
+
+Extensions enabled in the first migration (`001_initial_schema.sql`):
+
+| Extension | Purpose | Arc | Governing ADR |
+|-----------|---------|-----|---------------|
+| `vector` (pgvector) | Dense vector search (HNSW) | 1+ | ADR-009 |
+| `pg_search` (ParadeDB) | BM25 full-text search | 1+ | ADR-114 |
+| `pg_trgm` | Trigram fuzzy matching for suggestions | 1+ | ADR-049 |
+| `unaccent` | Diacritics-insensitive search | 1+ | ADR-080 |
+| `pg_stat_statements` | Query performance monitoring | 1+ | This ADR |
+
+**Future extensions** (evaluate at arc boundaries):
+
+| Extension | Purpose | Evaluate At | Notes |
+|-----------|---------|-------------|-------|
+| `pg_tiktoken` | Token counting for chunk pipeline | Milestone 1b | Deferred — uses OpenAI tokenizer (cl100k_base), not Voyage/Claude tokenizers. Evaluate when Anthropic/Bedrock provides accurate token counting. |
+| `pg_cron` | In-database scheduled jobs | Milestone 2a | Only useful with always-on compute; may replace some Lambda cron jobs |
+| `pgrag` | RAG utilities | Milestone 1b | Evaluate whether it simplifies the retrieval pipeline |
+
+**Extension addition policy:** New extensions require an ADR amendment or new ADR referencing this governance section. Extensions must be tested on a migration branch before production.
+
+#### Database Observability
+
+**Built-in monitoring (Scale tier, 14-day retention):**
+- RAM, CPU, connection count, deadlocks, rows (insert/update/delete), replication delay, local file cache hit rate, working set size
+
+**pg_stat_statements (installed from Milestone 1a):**
+- Top queries by frequency and average duration
+- Query plan changes after index modifications
+- Performance regression detection after migrations
+- **Caveat:** Stats reset on compute suspend/restart. For production (300s autosuspend), this is acceptable — most sessions are long enough to accumulate meaningful data.
+
+**OpenTelemetry export (Scale tier, Milestone 2a+):**
+- Export database metrics and Postgres logs to the observability stack (Sentry, New Relic, or Grafana)
+- Complements application-level observability (ADR-095) with database-level visibility
+- Enables alerts on: connection pool saturation, cache miss rate spikes, replication lag, query duration regressions
+
+### Rationale
+
+- **Production readiness from day one.** Scale tier's 30-day PITR, protected branches, and SLA provide the safety net appropriate for a portal serving sacred content.
+- **Cost-proportionate.** ~$20/month baseline for Scale tier is negligible for a philanthropist-funded project. Compute autoscaling means costs track actual usage.
+- **Observability completeness.** Application monitoring (ADR-095) without database monitoring is like monitoring a car's dashboard but not the engine. `pg_stat_statements` + OTLP export close this gap.
+- **Branch discipline.** TTL auto-expiry eliminates orphaned branches — a common operational headache. Named conventions make branches discoverable in the Neon Console.
+- **Extension discipline.** Centralizing extension governance prevents sprawl and ensures every extension has a documented purpose and governing ADR.
+
+### Consequences
+
+- Neon project upgraded to Scale tier (or created as Scale from Milestone 1a)
+- Production branch protected; compute configuration applied per environment
+- 5 extensions enabled in first migration (vector, pg_search, pg_trgm, unaccent, pg_stat_statements)
+- Branch naming convention and TTL policy enforced in CI scripts
+- `pg_stat_statements` data informs search query optimization from Milestone 1a
+- OpenTelemetry export configured during Milestone 2a observability setup
+- Snapshot schedule configured during Milestone 1a.2 (ADR-019)
+- **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
+- DESIGN-arc1.md § DES-004 schema updated to include all 5 extensions
+- ROADMAP.md cost model updated to reflect Scale tier pricing
 

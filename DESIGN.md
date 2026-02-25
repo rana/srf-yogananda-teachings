@@ -1738,15 +1738,19 @@ Testing is a fidelity guarantee, not optional polish. A bug that misattributes a
 
 ```
 CI pipeline:
- 1. Create Neon branch from main
+ 1. Create Neon branch from production (TTL: 1 hour)
  2. Apply migrations to branch
  3. Seed test data
  4. Run Vitest integration tests against branch
  5. Run Playwright E2E tests against branch
- 6. Delete branch (cleanup)
+ 6. Delete branch (TTL ensures cleanup even if CI fails)
 ```
 
-Each test run gets a fully isolated database. No shared test database. No cleanup scripts. Neon's instant branching makes this practical.
+Each test run gets a fully isolated database. No shared test database. No cleanup scripts. Neon's instant copy-on-write branching makes this practical. TTL auto-expiry prevents orphaned branches.
+
+**Preview branches per PR:** Persistent branches (TTL: 7 days) enable database-backed Vercel preview deployments. Reviewers see the full experience, not just code changes.
+
+**Schema diff in CI:** When migrations change, Neon's schema diff compares the PR branch against production and posts the diff as a PR comment via GitHub Action. Catches migration drift before merge.
 
 ### CI Pipeline
 
@@ -1760,6 +1764,7 @@ On every PR:
  6. E2E tests (Playwright)
  7. Lighthouse CI (performance)
  8. Search quality suite
+ 9. Schema diff (if migrations changed)
 
 All must pass before merge.
 ```

@@ -577,10 +577,11 @@ When a seeker selects a suggestion, intent classification still runs on the sele
 
 ```sql
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS vector;    -- pgvector (dense vector search)
-CREATE EXTENSION IF NOT EXISTS pg_search; -- ParadeDB BM25 full-text search (ADR-114)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;   -- trigram similarity (fuzzy matching, suggestion fallback)
-CREATE EXTENSION IF NOT EXISTS unaccent;  -- diacritics-insensitive search (ADR-080)
+CREATE EXTENSION IF NOT EXISTS vector;              -- pgvector (dense vector search)
+CREATE EXTENSION IF NOT EXISTS pg_search;           -- ParadeDB BM25 full-text search (ADR-114)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;             -- trigram similarity (fuzzy matching, suggestion fallback)
+CREATE EXTENSION IF NOT EXISTS unaccent;            -- diacritics-insensitive search (ADR-080)
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;  -- query performance monitoring (ADR-124)
 
 -- ============================================================
 -- BOOKS
@@ -1808,7 +1809,7 @@ All infrastructure is defined as code per SRF engineering standards. See ADR-016
 
 | Arc/Milestone | SCM | CI/CD | Terraform State |
 |---------------|-----|-------|-----------------|
-| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud |
 | **Arc 6+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
 #### Milestone 2a CI/CD Pipeline (GitHub Actions)

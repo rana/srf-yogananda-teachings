@@ -57,7 +57,7 @@ These are blocking conversations that must happen before ingestion begins:
 | # | Deliverable | Description |
 |---|-------------|-------------|
 | 1a.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-041) |
-| 1a.2 | **Neon project + initial schema** | Create Neon project with pgvector, pg_search, pg_trgm, and unaccent extensions enabled. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116) |
+| 1a.2 | **Neon project + initial schema** | Create Neon project (Scale tier, ADR-124) with pgvector, pg_search, pg_trgm, unaccent, and pg_stat_statements extensions enabled. Enable branch protection on production branch. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116, ADR-124) |
 | 1a.3 | **Contentful space + content model** | Create Contentful space. Configure content types: Book → Chapter → Section → TextBlock per DESIGN-arc1.md § Contentful Content Model. Enable English locale. Configure Contentful Personal Access Token in `.env`. Verify content model by creating a test Book entry. Contentful is the editorial source of truth from Arc 1 (ADR-010). |
 | 1a.4 | **PDF ingestion + Contentful import** | Download Autobiography PDF → convert with marker → human QA → import into Contentful via Management API (Book → Chapter → Section → TextBlock entries). Typographic normalization applied during extraction (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter and store in `chapters.content_hash` (ADR-039). Then batch sync from Contentful to Neon: read TextBlocks from Delivery API → chunk by paragraphs (ADR-048: paragraph-based, 100–500 token range, special handling for epigraphs and poetry) → generate embeddings → insert into Neon with `contentful_id` linkage. |
 | 1a.5 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. QA happens on Contentful entries (editors can review in the Contentful web UI). The full editorial review portal ships in Milestone 3b. |
@@ -72,7 +72,7 @@ These are blocking conversations that must happen before ingestion begins:
 |-----------|---------|------|
 | Frontend | Next.js (local dev; Vercel in 1b) | $0 |
 | CMS | Contentful | $0 |
-| Database | Neon PostgreSQL + pgvector + pg_search (free tier) | $0 |
+| Database | Neon PostgreSQL + pgvector + pg_search (Scale tier) | ~$20/mo |
 | Embeddings | Voyage voyage-3-large (1024d, ADR-118) | ~$0.30 one-time |
 | Enrichment | Claude via AWS Bedrock (batch, ADR-115) | ~$5-10 one-time |
 | PDF processing | marker (open-source Python) | $0 |
@@ -137,16 +137,16 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 | Component | Service | Cost |
 |-----------|---------|------|
-| Frontend | Next.js on Vercel (free tier) | $0 |
-| Database | Neon PostgreSQL + pgvector + pg_search (free tier) | $0 |
+| Frontend | Next.js on Vercel (Pro tier) | ~$20/mo |
+| Database | Neon PostgreSQL + pgvector + pg_search (Scale tier, ADR-124) | ~$20/mo |
 | AI | Claude API (query expansion, intent classification, terminology bridge, passage ranking, enrichment, ingestion QA, search eval) | ~$15-25/mo |
 | Embeddings | Voyage voyage-3-large (ADR-118) | ~$0.30 one-time |
 | PDF processing | marker (open-source Python) | $0 |
 | Language detection | fastText (open-source) | $0 |
 | Fonts | Google Fonts (Merriweather, Lora, Open Sans) | $0 |
-| Error tracking | Sentry (free tier: 5K errors/mo) | $0 |
+| Error tracking | Sentry (Team tier) | ~$26/mo |
 | Migrations | dbmate (open-source) | $0 |
-| Analytics | Vercel Analytics (free tier) | $0 |
+| Analytics | Vercel Analytics (included with Pro) | $0 |
 | SCM | GitHub (Arcs 1–3) → GitLab (Arc 4+, SRF IDP) | $0 |
 | CI/CD | GitHub Actions (Arcs 1–3) → GitLab CI (Arc 4+) | $0 |
 
@@ -198,8 +198,8 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | 2a.19 | **Self-hosted fonts** | Replace Google Fonts CDN with self-hosted WOFF2 files in `/public/fonts/`. Eliminates IP transmission to Google servers (German GDPR compliance, LG München I). Improves performance (no external DNS lookup). `@font-face` with `font-display: swap`. (ADR-099) |
 | 2a.20 | **Privacy policy and legal pages** | `/privacy` page: human-readable privacy policy in contemplative voice — what data is collected, why, retention periods, sub-processors, data subject rights. `/legal` page: terms of use, copyright, content licensing. Linked from footer on every page. Record of Processing Activities (ROPA) document created. (ADR-099) |
 | 2a.21 | **Testing infrastructure** | Vitest + React Testing Library for unit/integration tests. Playwright for E2E tests (core user flows: search, read, share, Quiet Corner). axe-core in CI for accessibility. Lighthouse CI for performance budgets. Neon branch-per-test-run isolation. (ADR-094) |
-| 2a.22 | **Terraform infrastructure + Lambda + database backup** | `/terraform` directory with modules for Neon (project, database, pgvector), Vercel (project, env vars), Sentry (project, DSN), Lambda (IAM roles, layers, VPC config), EventBridge Scheduler, and backup (S3 bucket + Lambda pg_dump via EventBridge Scheduler, nightly, 90-day retention). Lambda infrastructure provisioned here — subsequent arcs add functions to already-working infrastructure. GitHub Actions pipeline calls CI-agnostic `/scripts/` (ADR-018): `terraform plan` on PR, `terraform apply` on merge. State in Terraform Cloud free tier. `.env.example` for local development. Quarterly restore drill: test restore from random backup to Neon branch. (ADR-016, ADR-018, ADR-019, ADR-017) |
-| 2a.23 | **Figma core screens** | Three Figma files (free tier): Home & Search, Reader & Content, Quiet & Utility. Design tokens exported to `tokens.json` → consumed by `tailwind.config.ts`. (ADR-096) |
+| 2a.22 | **Terraform infrastructure + Lambda + database backup** | `/terraform` directory with modules for Neon (project, database, pgvector, branch protection, compute config per ADR-124), Vercel (project, env vars), Sentry (project, DSN), Lambda (IAM roles, layers, VPC config), EventBridge Scheduler, and backup (S3 bucket + Lambda pg_dump via EventBridge Scheduler, nightly, 90-day retention). Neon Snapshots schedule configured (daily/weekly/monthly). Lambda infrastructure provisioned here — subsequent arcs add functions to already-working infrastructure. GitHub Actions pipeline calls CI-agnostic `/scripts/` (ADR-018): `terraform plan` on PR, `terraform apply` on merge. State in Terraform Cloud. `.env.example` for local development. Quarterly restore drill: test restore from random backup to Neon branch. OpenTelemetry export configured for database observability. (ADR-016, ADR-018, ADR-019, ADR-017, ADR-124) |
+| 2a.23 | **Figma core screens** | Three Figma files: Home & Search, Reader & Content, Quiet & Utility. Design tokens exported to `tokens.json` → consumed by `tailwind.config.ts`. (ADR-096) |
 | 2a.24 | **Storybook component library** | Storybook setup documenting all portal components. Design token visualization. Interactive component states. Foundation for Calm Technology design system. |
 | 2a.25 | **KaiOS emulator in CI** | Add KaiOS browser emulator to the testing matrix. Critical flows (search, read chapter, navigate) must pass on feature phone browsers. (ADR-006) |
 | 2a.26 | **OpenAPI specification** | Auto-generated `/api/v1/openapi.json` from route handler types. Machine-readable API documentation. Enables auto-generated client libraries and API explorers. (ADR-081) |
@@ -659,8 +659,8 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 
 | Arc / Milestone | Estimated Monthly Cost | Notes |
 |-----------------|----------------------|-------|
-| Milestone 1a (Prove) | ~$0-1 | Neon free, local dev only, one-time embedding cost (~$0.10). |
-| Milestones 1b–2b (Deploy through Refine) | ~$5-10 | Vercel free, minimal Claude API usage. S3 backup < $1/mo. |
+| Milestone 1a (Prove) | ~$20-30 | Neon Scale tier (~$20/mo baseline), local dev only, one-time embedding cost (~$0.30). |
+| Milestones 1b–2b (Deploy through Refine) | ~$80-100 | Neon Scale (~$20), Vercel Pro (~$20), Sentry Team (~$26), Claude API (~$15-25). S3 backup < $1/mo. |
 | Arc 3 (Wisdom) | ~$10-20 | More embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
 | Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. GitLab CI/CD, regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
 | Milestone 5b+ (Languages) | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
@@ -687,7 +687,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | **Search API abuse** | Public, unauthenticated search API with Claude API cost per query | Two-layer rate limiting (Cloudflare + application) from Arc 1. Claude API monthly budget cap. Graceful degradation to database-only search when rate-limited. (ADR-023) |
 | **Operational staffing** | Editorial review portal provides tooling, but who uses it? Theme tagging, daily passage curation, translation review, and content QA require dedicated staff time. | Establish editorial roles before Milestone 3b. Key roles to fill: portal coordinator (cross-queue health), content editor, theological reviewer, book ingestion operator. VLD coordinator needed by Milestone 7b. Operational playbook (deliverable 3b.11) documents procedures so year-3 staff can operate without the builders. See CONTEXT.md § Operational Staffing. |
 | **Editorial queue backlog** | Review queues grow with every arc. If the monastic editor is unavailable for weeks, AI-proposed tags accumulate and daily passage curation has no attention. | Queue health monitoring (deliverable 3b.12) with age thresholds and escalation to portal coordinator. Email digest highlights overdue items. Minimum editorial coverage model: determine how many review hours/week each arc requires. |
-| **Database disaster recovery** | Canonical content (book text, embeddings, theme tags, chunk relations) lives only in Neon. Loss beyond PITR window requires expensive re-ingestion. | Nightly pg_dump to S3 (Milestone 2a, ADR-019). 90-day retention + monthly archives for 1 year. Quarterly restore drill. |
+| **Database disaster recovery** | Canonical content (book text, embeddings, theme tags, chunk relations) lives only in Neon. | Three-layer recovery: 30-day PITR (Scale tier), automated Neon Snapshots, nightly pg_dump to S3 (ADR-019, ADR-124). Time Travel Queries for pre-restore verification. Quarterly restore drill. |
 | **Edition changes** | SRF publishes revised editions; page numbers and paragraph boundaries change. All portal citations become inaccurate. | Edition tracking in data model (ADR-034). Content-addressable deep links survive re-ingestion (ADR-022). Old edition archived, not deleted. |
 | **Shared passage link permanence** | Re-ingestion with different chunking breaks shared links in emails, WhatsApp messages, bookmarks. | Content-hash deep links (ADR-022). Resolution chain: exact match → content-hash in same chapter → content-hash in same book → graceful "passage may have moved" fallback. |
 

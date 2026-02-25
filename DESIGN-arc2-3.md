@@ -1904,8 +1904,8 @@ import { neon } from '@neondatabase/serverless';
 //
 // For Lambda batch workloads (Milestone 2a+, ADR-017):
 // - Use Neon's pooled connection string (port 5432 → pooler endpoint)
-// - Connection limit: Neon free tier allows 100 concurrent connections;
-// paid tier scales with compute size
+// - Connection limit scales with compute size (up to 4,000 at 9+ CU)
+// - Scale tier: autoscaling up to 16 CU, protected branches, 30-day PITR
 // - Batch scripts should use connection pooling via pg Pool with max: 5
 //
 // For local development:

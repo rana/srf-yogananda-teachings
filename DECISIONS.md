@@ -37,7 +37,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-016: Infrastructure as Code (Terraform)
 - ADR-017: Terraform-Native Lambda
 - ADR-018: CI-Agnostic Deployment Scripts
-- ADR-019: Database Backup to S3
+- ADR-019: Database Backup and Recovery Strategy
 - ADR-020: Multi-Tenant Infrastructure Design
 - ADR-021: Redundancy, Failover, and Regional Distribution Strategy
 - ADR-022: Content-Addressable Passage Deep Links
@@ -157,7 +157,7 @@ Governs the portal's public identity and outreach channels. SRF imagery follows 
 
 **Operations & Engineering**
 
-Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
+Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end with Neon branch-per-PR isolation and schema diff in CI; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. Neon platform governance (ADR-124) covers tier selection, compute configuration, branch lifecycle, extension management, and database observability. MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
 
 - ADR-093: Engineering Standards for SRF Projects
 - ADR-094: Testing Strategy
@@ -182,6 +182,7 @@ Controls how the project governs its own decisions, documents, and evolution. Th
 - ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
 - ADR-113: Prove Before Foundation (Arc 1 Milestone Split)
 - ADR-123: Principle vs. Parameter — Decision Classification and Governance Flexibility
+- ADR-124: Neon Platform Governance — Tier, Compute, Branching, Extensions, and Observability
 
 ---
 
@@ -193,5 +194,5 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 |------|--------|------|---------------|
 | [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–014, 016–027, 029–044, 046–053, 114–121 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
-| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
+| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123–124 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

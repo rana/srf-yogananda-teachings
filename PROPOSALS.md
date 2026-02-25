@@ -14,6 +14,10 @@
 | PRO-002 | SRF Lessons Integration | Feature | Validated | ADR-085, ADR-121 | Stakeholder vision |
 | PRO-003 | Text-to-Speech for Passages | Feature | Proposed | ADR-003, ADR-073 | Accessibility vision |
 | PRO-004 | Audio-Visual Ambiance Toggle | Enhancement | Proposed | ADR-065 | Unscheduled feature |
+| PRO-005 | Neon Auth as Auth0 Alternative | Enhancement | Proposed | ADR-124 | Neon platform audit 2026-02-25 |
+| PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
+| PRO-007 | Logical Replication for Analytics CDC | Feature | Proposed | ADR-124, ADR-095 | Neon platform audit 2026-02-25 |
+| PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Proposed | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
 
 ---
 
@@ -58,6 +62,46 @@
 **Scheduling Notes:** Listed in ROADMAP.md § Deferred / Suspended. Optional temple bells or nature sounds during reading. Must respect Calm Technology principles — never autoplay, never default-on, never attention-seeking. Evaluated and deferred as non-essential to the core reading experience. Risk of trivializing the portal's contemplative register if poorly executed.
 **Re-evaluate At:** Post-Arc 3 (after core experience is mature)
 **Decision Required From:** Editorial + UX review
+
+### PRO-005: Neon Auth as Auth0 Alternative
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-124
+**Dependencies:** Milestone 7a (accounts). No auth until then.
+**Scheduling Notes:** The portal architecture uses Auth0 for optional authentication (Milestone 7a+). Neon Auth (managed Better Auth) is now GA with 60K MAU free (Scale tier), branch-aware auth state, and native Row-Level Security integration. Branch-aware auth means PR preview deployments get isolated auth environments automatically — no Auth0 tenant management needed for previews. Evaluate when Milestone 7a scoping begins.
+**Re-evaluate At:** Milestone 7a scoping
+**Decision Required From:** Architecture
+
+### PRO-006: pg_cron for In-Database Scheduling
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-124, ADR-017
+**Dependencies:** Always-on production compute (production autosuspend ≥ 300s per ADR-124). `pg_cron` only fires when compute is active.
+**Scheduling Notes:** Several operations could benefit from in-database scheduling: stale suggestion cache cleanup, embedding deprecation (90-day window per ADR-046), `pg_stat_statements` periodic snapshots to a metrics table, daily passage rotation. Currently these require external cron (Lambda via EventBridge or Vercel Cron Jobs). `pg_cron` runs inside Postgres — simpler, no cold starts, no infrastructure. Trade-off: couples scheduling to the database; Lambda/Vercel cron is more portable. Evaluate when production compute is always-on.
+**Re-evaluate At:** Milestone 2a (when Lambda infrastructure ships)
+**Decision Required From:** Architecture
+
+### PRO-007: Logical Replication for Analytics CDC
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-124, ADR-095, ADR-099
+**Dependencies:** Scale tier (already selected). Analytics destination (ClickHouse, Snowflake, or similar).
+**Scheduling Notes:** Neon supports outbound logical replication to analytics platforms (ClickHouse via PeerDB, Kafka, Snowflake, Fivetran, etc.). If SRF wants analytics beyond DELTA-compliant Amplitude events — e.g., content engagement patterns, search quality trends over time, corpus health metrics — logical replication provides real-time CDC without application-layer ETL. Must remain DELTA-compliant: replicate content and aggregate metrics only, never user-identifying data.
+**Re-evaluate At:** Arc 3 boundary (when editorial operations generate analytics needs)
+**Decision Required From:** Architecture + DELTA compliance review
+
+### PRO-008: Time Travel Queries for Production Debugging
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-019, ADR-124
+**Dependencies:** Scale tier (30-day PITR window). Already available.
+**Scheduling Notes:** Neon Time Travel Queries allow read-only SQL against any historical database state within the PITR window. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle. Use cases: "what did this chunk's embedding look like before re-ingestion?", "when did this theme tag change?", "what was the search_queries table 2 hours ago?". No restore needed — just reads. Already available on Scale tier; needs documentation in the operational playbook and awareness among developers. Consider adding to Milestone 1a operational setup as a development workflow tool.
+**Re-evaluate At:** Milestone 1a implementation (available now)
+**Decision Required From:** Architecture (self-assessment)
 
 ---
 

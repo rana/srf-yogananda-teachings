@@ -84,6 +84,17 @@ max_turns = 50
 #   "opportunity-scan:",
 # ]
 
+[verification]
+# on_done = "pnpm build && pnpm test"  # enable after step 0 scaffolds build system
+max_retries = 2
+
+[implement]
+model = "opus"
+decompose_model = "opus"
+decompose_max_turns = 30
+max_turns = 50
+# budget_usd = 100.00           # total budget across all plan steps
+
 # Per-million-token rates (USD) for cost estimation.
 # Used only when claude CLI does not report actual cost.
 [costs.rates]
