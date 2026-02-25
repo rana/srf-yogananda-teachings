@@ -471,11 +471,11 @@ One-time credential provisioning required before the first `terraform apply`. Th
 
 | Credential | Where to create | What it enables | Store as |
 |---|---|---|---|
-| **Terraform Cloud org + workspace** | app.terraform.io → New Organization | State backend, plan review UI | TFC API token → GitHub secret `TF_API_TOKEN` |
+| **Terraform Cloud org + workspace** | app.terraform.io → New Organization | State backend (local execution mode), locking, versioning | TFC API token → GitHub secret `TF_API_TOKEN` |
 | **AWS Account** (region: `us-west-2`) | aws.amazon.com | S3 backups, Lambda, Bedrock, EventBridge | — |
 | **AWS IAM OIDC Identity Provider** | AWS IAM Console → Identity Providers | GitHub Actions → AWS auth (no stored keys) | — |
 | **AWS IAM Role (portal-ci)** | AWS IAM Console → Roles | Scoped CI permissions (Terraform, S3, Lambda) | ARN → GitHub secret `AWS_ROLE_ARN` |
-| **AWS IAM User (portal-app-bedrock)** | AWS IAM Console → Users | Vercel → Bedrock inference (`bedrock:InvokeModel` only) | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` → Vercel env vars |
+| **AWS IAM User (portal-app-bedrock)** | Created by Terraform (`aws_iam_user` + `aws_iam_access_key`) | Vercel → Bedrock inference (`bedrock:InvokeModel*`, `bedrock:Converse*`) | Terraform sets keys as Vercel env vars automatically |
 | **Neon API key** | console.neon.tech → API Keys | Terraform Neon provider | GitHub secret `NEON_API_KEY` |
 | **Vercel API token** | vercel.com → Settings → Tokens | Terraform Vercel provider | GitHub secret `VERCEL_TOKEN` |
 | **Vercel Org/Team ID** | vercel.com → Settings → General | Scoping Terraform | GitHub secret `VERCEL_ORG_ID` |
@@ -505,7 +505,7 @@ One-time credential provisioning required before the first `terraform apply`. Th
 | Cloudflare API Token | When custom domain assigned | Cloudflare dashboard |
 | Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard |
 
-**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with only `bedrock:InvokeModel` permission — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation.
+**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*`) — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation.
 
 See DES-039 § Environment Configuration for the complete `.env.example`, named constants, CI secrets table, and Claude Code developer tooling setup.
 

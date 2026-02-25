@@ -67,15 +67,17 @@ Eleven principles define the project's identity and directly constrain code gene
 **Code layout:**
 ```
 /lib/services/ — Business logic (framework-agnostic TypeScript)
+/lib/config.ts — Named constants per ADR-123 (model IDs, chunk sizes, search params)
 /lib/mcp/ — MCP server (unscheduled; ADR-101)
 /lib/logger.ts — Structured JSON logging
 /app/ — Next.js Server Components + Route Handlers
 /app/api/v1/ — Versioned API routes
 /migrations/ — Numbered SQL migrations (dbmate)
-/terraform/ — Infrastructure as Code
+/terraform/ — Infrastructure as Code (Neon, Vercel, Sentry, AWS modules)
 /lambda/ — AWS Lambda handlers (Milestone 3a+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
-/scripts/ — CI-agnostic deployment scripts
+/scripts/ — CI-agnostic deployment scripts (ADR-018)
+/.github/workflows/ — CI/CD pipelines (ci.yml, terraform.yml, neon-branch.yml)
 /docs/reference/ — Background research (not active project docs)
 /docs/operational/ — Operational playbook (Milestone 3b+: procedures for editorial, ingestion, VLD)
 ```

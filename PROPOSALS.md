@@ -80,7 +80,7 @@
 **Governing Refs:** ADR-124, ADR-017
 **Dependencies:** Always-on production compute (production autosuspend ≥ 300s per ADR-124). `pg_cron` only fires when compute is active.
 **Scheduling Notes:** Several operations could benefit from in-database scheduling: stale suggestion cache cleanup, embedding deprecation (90-day window per ADR-046), `pg_stat_statements` periodic snapshots to a metrics table, daily passage rotation. Currently these require external cron (Lambda via EventBridge or Vercel Cron Jobs). `pg_cron` runs inside Postgres — simpler, no cold starts, no infrastructure. Trade-off: couples scheduling to the database; Lambda/Vercel cron is more portable. Evaluate when production compute is always-on.
-**Re-evaluate At:** Milestone 2a (when Lambda infrastructure ships)
+**Re-evaluate At:** Milestone 3a (when Lambda infrastructure ships, ADR-017)
 **Decision Required From:** Architecture
 
 ### PRO-007: Logical Replication for Analytics CDC

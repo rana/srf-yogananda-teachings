@@ -1493,7 +1493,7 @@ See DES-039 § Environment Configuration for the canonical `.env.example`, named
 NEON_DATABASE_URL=               # From Neon Console → Connection Details (pooled)
 NEON_DATABASE_URL_DIRECT=        # From Neon Console → Connection Details (direct)
 AWS_REGION=us-west-2
-AWS_ACCESS_KEY_ID=               # IAM user with bedrock:InvokeModel
+AWS_ACCESS_KEY_ID=               # IAM user with Bedrock inference permissions
 AWS_SECRET_ACCESS_KEY=           # Paired with above
 VOYAGE_API_KEY=                  # From Voyage AI dashboard
 NEXT_PUBLIC_SENTRY_DSN=          # From Sentry → Project Settings → Client Keys
@@ -1821,7 +1821,7 @@ Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`.
 
 | Managed by Terraform | Managed by Application Code |
 |---------------------|-----------------------------|
-| Service creation (Neon project, Vercel project, Sentry project) | Database schema (dbmate SQL migrations) |
+| Service creation (Neon project, Vercel project, Sentry project) | Database schema + extensions (dbmate SQL migrations — `CREATE EXTENSION IF NOT EXISTS pgvector`, etc.) |
 | Environment variables, secrets placeholders | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
 | AWS IAM roles, S3 buckets, Budgets alarm | Lambda handler code (`/lambda/`) |
 | — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
@@ -1861,12 +1861,14 @@ Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraf
 ```
 .github/
  workflows/
-   ci.yml              — App CI: lint, type check, test, build, a11y, Lighthouse, search quality
-   terraform.yml        — Infra CI: fmt, validate, plan (PR), apply (merge to main)
-   neon-branch.yml      — Neon branch lifecycle: create on PR open, delete on PR close
-   neon-cleanup.yml     — Nightly: delete orphaned Neon preview branches
- dependabot.yml         — Automated provider + dependency update PRs
+   ci.yml              — [1a] App CI: lint, type check, test, build, a11y, Lighthouse, search quality
+   terraform.yml        — [1a] Infra CI: fmt, validate, plan (PR), apply (merge to main)
+   neon-branch.yml      — [1b] Neon branch lifecycle: create on PR open, delete on PR close
+   neon-cleanup.yml     — [1b] Nightly: delete orphaned Neon preview branches
+ dependabot.yml         — [1a] Automated provider + dependency update PRs
 ```
+
+Milestone 1a creates `ci.yml`, `terraform.yml`, and `dependabot.yml`. The Neon branch workflows (`neon-branch.yml`, `neon-cleanup.yml`) are added in 1b when preview deployments become active (Vercel enabled).
 
 **`ci.yml`** runs on all PRs and pushes to main. No AWS credentials needed — pure app testing.
 
@@ -1920,8 +1922,8 @@ NEON_PROJECT_ID=                 # [terraform] Neon API calls
 
 # ── AWS (Bedrock inference from Vercel) ─────────────────────────
 AWS_REGION=us-west-2             # [terraform] Bedrock, Lambda, S3
-AWS_ACCESS_KEY_ID=               # [secret] IAM user: portal-app-bedrock (InvokeModel only)
-AWS_SECRET_ACCESS_KEY=           # [secret] Paired with above
+AWS_ACCESS_KEY_ID=               # [terraform] IAM user: portal-app-bedrock (Bedrock inference only)
+AWS_SECRET_ACCESS_KEY=           # [terraform] Paired with above — keys in TFC-encrypted state
 
 # ── AI ──────────────────────────────────────────────────────────
 VOYAGE_API_KEY=                  # [secret] Voyage voyage-3-large embeddings (ADR-118)
@@ -1942,7 +1944,9 @@ SENTRY_AUTH_TOKEN=               # [secret] Source map uploads
 # NEW_RELIC_LICENSE_KEY=         # [secret] Milestone 3d — observability
 ```
 
-**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secret]` = set manually everywhere, never in Terraform state. Secrets in Vercel are provisioned by Terraform as empty placeholders, then populated manually.
+**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secret]` = set manually everywhere, never in Terraform state.
+
+**Credential distribution pattern.** Terraform's AWS module creates the `portal-app-bedrock` IAM user and generates access keys (`aws_iam_access_key`). Terraform's Vercel module reads those outputs and sets them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` creates the IAM user AND distributes its credentials to Vercel — the human never sees or handles the raw secret key. The secret key exists in TFC-encrypted state (acceptable; TFC state is access-controlled). For secrets that Terraform doesn't create (Voyage API key, Contentful tokens), Terraform provisions empty Vercel env var placeholders, and the human populates them in the Vercel dashboard.
 
 **AWS authentication by context:**
 
@@ -1953,7 +1957,9 @@ SENTRY_AUTH_TOKEN=               # [secret] Source map uploads
 | **GitHub Actions → AWS** | OIDC federation (ADR-016) | `AWS_ROLE_ARN` secret, no stored keys |
 | **Local dev → Bedrock** | IAM user or named profile | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local`, or `AWS_PROFILE=srf-dev` |
 
-The Vercel IAM user (`portal-app-bedrock`) has a single permission: `bedrock:InvokeModel` on the configured models in `us-west-2`. It cannot access S3, Lambda, or any other AWS service. Terraform creates this user; credentials are rotated quarterly via manual key rotation (create new key → update Vercel env var → delete old key). Automated rotation deferred to Milestone 3d operational maturity. This is separate from the CI OIDC role (which has broader permissions for Terraform apply, S3 backups, Lambda deployment).
+The Vercel IAM user (`portal-app-bedrock`) has Bedrock inference permissions only: `bedrock:InvokeModel*` and `bedrock:Converse*`, scoped to the configured model ARNs in `us-west-2`. This covers both the legacy `InvokeModel` API and the newer unified `Converse` API (plus their streaming variants), allowing the `@anthropic-ai/bedrock-sdk` to use either without IAM failures. It cannot access S3, Lambda, or any other AWS service. Terraform creates this user; credentials are rotated quarterly via manual key rotation (create new key → update Vercel env var → delete old key). Automated rotation deferred to Milestone 3d operational maturity. This is separate from the CI OIDC role (which has broader permissions for Terraform apply, S3 backups, Lambda deployment).
+
+**Future optimization: Vercel runtime OIDC.** If Vercel supports OIDC federation for serverless function → AWS auth (as it does for deployment contexts), `portal-app-bedrock` can be replaced with an IAM role + Vercel trust policy — eliminating stored credentials entirely. Same zero-key security model as GitHub Actions OIDC. Evaluate at Milestone 3d operational maturity review.
 
 **`ANTHROPIC_API_KEY` is removed from `.env.example`.** The application code uses `@anthropic-ai/bedrock-sdk` (not `@anthropic-ai/sdk`) for all Claude calls, routing through Bedrock in every environment including local dev. One code path, one auth mechanism. If a developer cannot access Bedrock (e.g., no AWS account yet during initial scaffold), the search pipeline gracefully degrades — search works without Claude-powered query expansion, returning BM25 + vector results only.
 
@@ -2045,7 +2051,7 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 **Why separate from `.env.example`:** Claude Code env vars configure the *development tool*, not the application. They route the AI developer through the project's AWS account (same billing, same permissions). A human developer using VS Code wouldn't need these; an AI developer using Claude Code does. The application code never reads `CLAUDE_CODE_USE_BEDROCK` — only the Claude Code CLI does.
 
-**AWS authentication for local development:** The developer (human or AI) authenticates to AWS via an IAM user with an `srf-dev` profile, or via `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`. This is separate from the OIDC federation used by GitHub Actions. The IAM user needs Bedrock InvokeModel permission for the configured region.
+**AWS authentication for local development:** The developer (human or AI) authenticates to AWS via an IAM user with an `srf-dev` profile, or via `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`. This is separate from the OIDC federation used by GitHub Actions. The IAM user needs Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) for the configured region.
 
 ### Local Development
 

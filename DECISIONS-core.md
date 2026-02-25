@@ -1116,7 +1116,7 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 
 - `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
 - `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for the `portal-app-bedrock` IAM user (Vercel → Bedrock). No `ANTHROPIC_API_KEY`.
-- Terraform creates the `portal-app-bedrock` IAM user with only `bedrock:InvokeModel` permission and manages Bedrock model access
+- Terraform creates the `portal-app-bedrock` IAM user with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*` — covers both legacy and unified APIs, scoped to configured model ARNs) and manages Bedrock model access
 - Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_BATCH` (default: Opus)
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
@@ -1162,7 +1162,9 @@ Terraform Cloud free tier (500 managed resources) serves as the state backend fo
 - **Free tier sufficient.** The portal has < 50 managed resources through Arc 3, well within the 500-resource limit.
 - **No bootstrap complexity.** S3 + DynamoDB requires manual bucket/table creation before Terraform can run. TFC requires only organization + workspace creation.
 
-Bootstrap: create a TFC organization and workspace manually (one-time), then Terraform manages everything else. See CONTEXT.md § Bootstrap Credentials Checklist.
+**Execution mode: local (CLI-driven).** Terraform runs in the GitHub Actions runner; TFC stores state remotely. This means provider credentials live in GitHub Secrets (not TFC workspace variables) and OIDC federation works naturally (the GitHub OIDC token is available in the runner). In local mode, TFC does **not** provide its plan review UI — instead, `terraform plan` output is posted as a PR comment by `terraform.yml`. TFC's value in local mode: state storage, locking, versioning, web-based state inspection, and zero-bootstrap state backend. If the human principal later wants TFC's plan review UI, switching to remote execution requires: (1) move provider credentials to TFC workspace variables, (2) configure TFC OIDC trust for AWS (replacing GH Actions OIDC), (3) change workspace execution mode. This is a configuration change, not an architecture change.
+
+Bootstrap: create a TFC organization and workspace manually (one-time, execution mode "local"), then Terraform manages everything else. See CONTEXT.md § Bootstrap Credentials Checklist.
 
 #### GitHub Actions Authentication: OIDC Federation
 
@@ -1249,7 +1251,7 @@ For Arcs 1–3, only `dev` is active. Additional environments are added as the p
 
 | Managed by Terraform | Managed by Application Code |
 |---------------------|-----------------------------|
-| Neon project creation, roles, extensions | Database schema (dbmate SQL migrations) |
+| Neon project creation, roles | Database schema + extensions (dbmate SQL migrations — `CREATE EXTENSION IF NOT EXISTS pgvector`, etc.) |
 | Vercel project, env vars | `vercel.json` (build/routing config) |
 | Sentry project, alert rules | `sentry.client.config.ts` (SDK config) |
 | AWS IAM roles, S3 buckets, Budgets | Lambda handler code (`/lambda/`) |
@@ -1292,7 +1294,7 @@ jobs:
 - **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code.
 - **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code.
 - **OIDC eliminates credential management.** No AWS access keys to rotate, no long-lived secrets to leak. GitHub Actions authenticates via ephemeral tokens scoped to the repo.
-- **Terraform Cloud enables human oversight.** The plan review UI lets the human principal understand AI-authored infrastructure changes without reading raw HCL diffs.
+- **Terraform Cloud enables human oversight.** In local execution mode, `terraform plan` output is posted as PR comments — readable diffs in the PR context where the human reviews. TFC provides state inspection via its web UI. If remote execution is enabled later, TFC's full plan review UI becomes available.
 
 ### Alternatives Considered
 
@@ -1441,8 +1443,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 - The former Lambda batch decision is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Milestone 2a) are replaced.
 - `/serverless/` directory becomes `/lambda/`. No `serverless.yml`. No SF v4 dependency.
 - Terraform gains two modules: `/terraform/modules/lambda/` and `/terraform/modules/eventbridge/`.
-- Milestone 3a deliverable 3.2 gains Lambda infrastructure provisioning and the backup function.
-- Milestone 3a deliverable 3.6 simplifies: deploy ingestion and relation functions into already-provisioned infrastructure. No infrastructure setup in Milestone 3a.
+- Milestone 3a deliverable 3a.6 provisions Lambda infrastructure (`enable_lambda = true` → `terraform apply`) and deploys all batch functions: backup, ingestion, and relation computation.
 - All downstream ADRs referencing Lambda batch infrastructure now reference ADR-017. The infrastructure is the same (Lambda + EventBridge); the deployment mechanism and timing differ.
 - Developers familiar with SF v4 should note: Lambda invocation, monitoring, and IAM are identical. Only the deployment tool changes (Terraform instead of `serverless deploy`).
 - **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Milestone 3a).

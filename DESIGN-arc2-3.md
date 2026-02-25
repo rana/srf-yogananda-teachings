@@ -1902,7 +1902,7 @@ import { neon } from '@neondatabase/serverless';
 // - Each function invocation creates a lightweight client, no pool management needed
 // - Neon's built-in connection pooler (PgBouncer-compatible) handles concurrency server-side
 //
-// For Lambda batch workloads (Milestone 2a+, ADR-017):
+// For Lambda batch workloads (Milestone 3a+, ADR-017):
 // - Use Neon's pooled connection string (port 5432 → pooler endpoint)
 // - Connection limit scales with compute size (up to 4,000 at 9+ CU)
 // - Scale tier: autoscaling up to 16 CU, protected branches, 30-day PITR
