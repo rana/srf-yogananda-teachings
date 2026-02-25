@@ -1071,7 +1071,7 @@ Use the **SRF-standard observability stack** with portal-specific configuration:
 | Layer | Tool | What It Measures |
 |-------|------|-----------------|
 | **Error tracking** | **Sentry** | Unhandled exceptions, API errors, client-side errors. Next.js source maps for readable stack traces. |
-| **APM (performance)** | **New Relic** | API route latency, database query duration, external call timing (Claude API, OpenAI embeddings). Server-side distributed tracing. |
+| **APM (performance)** | **New Relic** | API route latency, database query duration, external call timing (Claude API, Voyage embeddings). Server-side distributed tracing. |
 | **Synthetic monitoring** | **New Relic Synthetics** | Uptime checks on key routes (`/`, `/api/v1/search`, `/api/v1/health`, `/quiet`). Alerts on downtime. |
 | **Product analytics** | **Amplitude** | *Only* appropriate metrics from CONTEXT.md. DELTA-compliant configuration (see below). |
 | **Log aggregation** | **Vercel Logs → New Relic** | Structured JSON logs. Request ID correlation across services. |
@@ -1509,7 +1509,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 | **Sentry** | Processor | Error stack traces, request context | US | Yes |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | Yes (Milestone 3d+) |
 | **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | Covered by AWS DPA |
-| **OpenAI** | Processor | Corpus text at embedding time (one-time) | US | Yes |
+| **Voyage AI** | Processor | Corpus text at embedding time (one-time; ADR-118) | US | Yes |
 | **Resend/SES** | Processor | Subscriber email addresses | US | Yes (Milestone 5a+) |
 | **Auth0** | Processor | User accounts (if implemented) | US | Yes (Milestone 7a+) |
 | **Contentful** | Processor | Editorial content (no personal data) | EU | Yes (Arc 1+) |
@@ -2580,7 +2580,7 @@ Search results are ranked by a composite score combining multiple signals. The h
 | Signal | Source | Weight | Notes |
 |---|---|---|---|
 | **Semantic relevance** | Vector similarity (cosine distance) | Primary | The passage's meaning matches the query's intent |
-| **Lexical relevance** | Full-text search rank (ts_rank) | Secondary | Exact term matches, especially for proper nouns and Sanskrit terms |
+| **Lexical relevance** | Full-text search rank (ParadeDB BM25 `paradedb.score()`, ADR-114) | Secondary | Exact term matches, especially for proper nouns and Sanskrit terms |
 | **Claude passage ranking** | Claude Haiku (ADR-005 C2) | Tertiary (re-ranker) | Re-ranks the top candidates from hybrid retrieval based on query intent |
 | **Accessibility level** | `accessibility_level` column (ADR-005 E3) | Tie-breaker | When two passages are equally relevant, the more accessible passage ranks higher |
 | **Tone appropriateness** | `tone` column (ADR-005 E4) | Tie-breaker | When the query implies emotional need (grief, fear), consoling passages rank higher |
@@ -2823,10 +2823,10 @@ Examples:
 **Parameters** — Tunable defaults. Ship with the documented value. Adjust based on evidence. Changes are configuration updates, not architectural decisions. Document the current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration).
 
 Examples:
-- RRF fusion k=60 (DES-003) — tune after Milestone 1a.8 search quality evaluation
+- RRF fusion k=60 (DES-003) — tune after Milestone 1a.9 search quality evaluation
 - Dwell debounce 1200ms (DES-009) — tune after Milestone 2b user testing
 - Chunk size 200–300 tokens (ADR-048) — tune per language after ingestion
-- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone 1a.8
+- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone 1a.9
 - Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
 - Email purge delay: 90 days (DES-030) — adjust based on legal review
 - Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
@@ -2842,7 +2842,7 @@ Examples:
 
 3. **Evaluation log:** When a parameter is tuned based on data, add a brief note to the relevant DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*`
 
-4. **Milestone gate integration:** Milestone 1a.8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone 1a.8" are reviewed during that gate.
+4. **Milestone gate integration:** Milestone 1a.9 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone 1a.9" are reviewed during that gate.
 
 ### Rationale
 
@@ -2855,7 +2855,7 @@ Examples:
 
 - All existing magic numbers in DESIGN.md to be annotated with the parameter convention during Arc 1 implementation
 - `/lib/config.ts` created as the canonical location for runtime parameters
-- Milestone 1a.8 success criteria updated to include parameter validation
+- Milestone 1a.9 success criteria updated to include parameter validation
 - Future ADRs specify whether each specific value is a principle or parameter
 - CLAUDE.md updated to reference this classification in the document maintenance guidance
 

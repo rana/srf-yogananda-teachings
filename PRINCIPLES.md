@@ -126,6 +126,6 @@ The search quality test suite (50-query golden set) serves as the acceptance gat
 
 This principle protects the other ten. Without it, every operational parameter accumulates the governance weight of a principle. An engineer who needs to change a cache TTL from 5 minutes to 15 minutes should not feel they are violating an architectural decision. The distinction *preserves* the authority of actual principles by preventing parameter-level fatigue from eroding respect for the governance process.
 
-Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Milestone 1a.8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables.
+Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Milestone 1a.9 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables.
 
 In year 7, a new developer can identify what's tunable versus what's sacred without reading the full DECISIONS.md archive.

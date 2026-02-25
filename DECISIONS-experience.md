@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Architecture Decision Records (Experience)
 
-> **Scope.** This file contains ADRs from the **Cross-Media**, **Seeker Experience**, and **Internationalization** groups. These shape the portal's user experience from Milestone 2a onward. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
+> **Scope.** This file contains ADRs from the **Cross-Media**, **Seeker Experience**, and **Internationalization** groups. These shape the portal's seeker experience from Milestone 2a onward. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
 > **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
 
@@ -268,7 +268,7 @@ CREATE TABLE audio_segments (
  'machine', 'review', 'approved'
 )),
  content TEXT NOT NULL, -- cleaned text for embedding (same pattern as book_chunks.content)
- embedding vector(1536), -- text-embedding-3-small
+ embedding vector(1024), -- voyage-3-large (ADR-118)
  language TEXT NOT NULL DEFAULT 'en',
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -286,7 +286,7 @@ CREATE INDEX idx_audio_segments_embedding ON audio_segments USING ivfflat (embed
 1. **Upload.** Audio files uploaded to S3 via Contentful or admin tool. Metadata entered in CMS.
 2. **Transcription.** AWS Lambda triggers Whisper transcription. Output: timestamped segments.
 3. **Human Review.** Transcription enters editorial review (same portal as book chunks and video transcripts). Reviewers correct errors, especially for Yogananda's voice recordings where fidelity is paramount.
-4. **Embedding.** Approved segments are embedded using text-embedding-3-small (same model as book chunks).
+4. **Embedding.** Approved segments are embedded using Voyage voyage-3-large (same model as book chunks — ADR-118).
 5. **Indexing.** Segments added to the cross-media search index. Audio results appear alongside book passages and video clips.
 
 ### Audio Player Experience
@@ -313,6 +313,8 @@ CREATE INDEX idx_audio_segments_embedding ON audio_segments USING ivfflat (embed
 - `is_yogananda_voice` flag enables special sacred artifact presentation
 - Storage costs: audio files are larger than text but smaller than video. S3 Standard for active, S3 IA for archive.
 - Future: chapter-aligned audio (e.g., audiobook chapters mapped to book chapters for side-by-side reading+listening)
+
+*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
 
 ---
 
@@ -443,7 +445,9 @@ A single chant may also have multiple performance recordings: Yogananda's own vo
 - The book reader route (`/books/[slug]/[chapter]`) needs a variant rendering path for `content_format != 'prose'`. Implementation deferred to the phase when *Cosmic Chants* is ingested.
 - Audio/video ingestion pipeline (Arc 6) must include a step where editorial staff map recordings to specific chants. This is a curation task, not an automated pipeline step.
 - The chant reader UX extends naturally to other poetry collections (e.g., *Songs of the Soul*, *Whispers from Eternity*) — the `'poetry'` content format uses the same whole-unit rendering without the inline media panel unless `performance_of` relations exist.
-- Embedding quality for short devotional poetry should be evaluated during ingestion. If chants embed poorly with text-embedding-3-small, consider concatenating the chant title + instructions + text as the embedding input to provide richer context.
+- Embedding quality for short devotional poetry should be evaluated during ingestion. If chants embed poorly with the embedding model, consider concatenating the chant title + instructions + text as the embedding input to provide richer context.
+
+*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
 
 ---
 
@@ -481,7 +485,7 @@ CREATE TABLE content_items (
  video_chunk_id UUID REFERENCES video_chunks(id) ON DELETE CASCADE,
  audio_segment_id UUID REFERENCES audio_segments(id) ON DELETE CASCADE,
  image_id UUID REFERENCES images(id) ON DELETE CASCADE,
- embedding vector(1536),
+ embedding vector(1024), -- voyage-3-large (ADR-118)
  language TEXT NOT NULL DEFAULT 'en',
  created_at TIMESTAMPTZ NOT NULL DEFAULT now,
  CONSTRAINT exactly_one_ref CHECK (
@@ -566,6 +570,8 @@ Each result's `content_type` determines presentation: book passages show verbati
 - **Extends** ADR-050 (chunk relations) — from book-only to cross-media
 - **Extends** ADR-032 (teaching topics) — from book chunks to all content types
 - **Extends** ADR-055 (video transcription) — video chunks join the unified search index
+
+*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
 
 ---
 
@@ -1728,7 +1734,7 @@ Implement a **three-layer localization strategy** with English fallback:
 
 **Layer 2 — Book content:** Language-specific chunks in Neon, differentiated by the existing `language` column on `book_chunks`. No machine translation of Yogananda's words — if an official translation doesn't exist, the book is not available in that language. Contentful locales (production) provide per-locale editorial content.
 
-**Layer 3 — Search:** Per-language tsvector columns for full-text search (PostgreSQL language dictionaries handle stemming). Multilingual embedding model (start with OpenAI text-embedding-3-small, which handles multilingual text). Claude handles query expansion in all target languages.
+**Layer 3 — Search:** Per-language pg_search BM25 indexes with ICU tokenization for full-text search (ADR-114). Multilingual embedding model (Voyage voyage-3-large, 1024 dimensions, 26 languages — ADR-118). Claude handles query expansion in all target languages.
 
 **English fallback:** When the user's language has insufficient content (fewer than 3 search results, sparse theme pages, small daily passage pool), supplement with English passages clearly marked with a `[EN]` language tag and "Read in English" links. The fallback is transparent — never silent.
 
@@ -1781,11 +1787,13 @@ The following decisions were made during a comprehensive multilingual audit to e
 - The content availability matrix creates asymmetric experiences per language — this is honest, not a bug
 - The book catalog per language shows only available books, plus a "Also available in English" section
 - The `hybrid_search` function accepts a `search_language` parameter and filters to the user's locale
-- The `content_tsv` column uses a trigger (not GENERATED ALWAYS) to select the correct PostgreSQL text search dictionary per chunk's language
+- Per-language pg_search BM25 indexes with ICU tokenization provide language-aware full-text search (ADR-114)
 - All content-serving API endpoints accept a `language` parameter with English fallback at the service layer
 - Per-language search quality test suite (15–20 queries per language) is a launch gate before any language goes live in Milestone 5b
 - Per-language chunk size benchmarking required during Milestone 5b ingestion for non-Latin scripts
 - `books.bookstore_url` provides "Find this book" links to SRF Bookstore. Per-language bookstore routing (e.g., YSS Bookstore for Hindi/Bengali) can be added via a simple lookup table if needed at Milestone 5b.
+
+*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
 
 ---
 
@@ -2095,8 +2103,8 @@ The search index collapses purely orthographic variants so that all of the follo
 
 Implementation:
 - **Unicode NFC normalization** is a mandatory preprocessing step in the ingestion pipeline, applied before any text comparison, deduplication, embedding, or indexing. OCR output is unpredictable about precomposed vs. decomposed Unicode forms for IAST combining characters (ā, ṇ, ś, ṣ). NFC ensures consistent representation.
-- **`unaccent` extension** applied to the full-text search index (the `content_tsv` column) so that diacritical variants collapse for search. The `unaccent` dictionary is added to the text search configuration used by `book_chunks_tsvector_trigger`.
-- **Display text is never modified.** The `content` column stores the original text with diacritics preserved. Only the search index (`content_tsv`) and embedding input are normalized.
+- **ICU normalization in pg_search BM25** handles diacritical variant collapsing natively via the ICU tokenizer (ADR-114). The `unaccent` extension remains available for pg_trgm fuzzy matching but is not needed for the primary full-text search index.
+- **Display text is never modified.** The `content` column stores the original text with diacritics preserved. Only the search index and embedding input are normalized.
 
 **Exception — Aum/Om:** Yogananda used "Aum" (three-syllable cosmic vibration) deliberately, distinguishing it from the single-syllable "Om." This distinction is theological, not orthographic. Search normalization must not collapse "Aum" to "Om." Instead, the terminology bridge (ADR-051) maps "Om" → ["Aum", "cosmic vibration", "Holy Ghost", "Amen"] for query expansion, preserving the distinction while ensuring seekers who search "Om" find Aum passages.
 
@@ -2107,7 +2115,7 @@ Implementation:
 *God Talks with Arjuna* contains original Bhagavad Gita verses in Devanāgarī alongside romanized transliteration and English commentary. Each chapter typically includes: (a) Devanāgarī verse, (b) romanized transliteration, (c) word-by-word translation, (d) Yogananda's full commentary.
 
 - **Display:** Devanāgarī verses are preserved in `chunk_content` and rendered using Noto Sans Devanagari in the font stack. The Devanāgarī font loads from Arc 1 (not Milestone 5b) because the English-language Gita commentary contains Devanāgarī.
-- **Search indexing:** Devanāgarī script passages are excluded from the embedding input via a script-detection preprocessing step. The English commentary and romanized transliteration are embedded. Rationale: `text-embedding-3-small` is trained primarily on Latin-script text; Devanāgarī content would degrade embedding quality for the surrounding English content without improving retrieval (seekers search the commentary, not the original verses).
+- **Search indexing:** Devanāgarī script passages are excluded from the embedding input via a script-detection preprocessing step. The English commentary and romanized transliteration are embedded. Rationale: although Voyage voyage-3-large (ADR-118) has stronger multilingual support than its predecessor (26 languages including Indic scripts), embedding raw Devanāgarī verses alongside English commentary would dilute retrieval quality for the English-language search context — seekers search the commentary, not the original verses.
 - **Chunking (extends ADR-048):** For verse-aware chunking, the Devanāgarī verse text is preserved as metadata on the verse-commentary chunk but excluded from the token count that determines chunk splitting. The romanized transliteration is included in both the chunk content and the embedding input.
 
 **4. Terminology bridge extensions for Sanskrit and cross-tradition terms.**
@@ -2135,7 +2143,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 
 - **SRF published text as canonical** follows the direct-quotes-only principle (ADR-001). The portal is a faithful librarian, not an editor.
 - **Unicode NFC normalization** is standard practice for text processing pipelines that handle combining characters. Without it, identical-looking strings can fail equality checks, deduplication, and search matching.
-- **`unaccent` in search** is the established PostgreSQL pattern for diacritics-insensitive search. It normalizes the index without altering stored data.
+- **ICU tokenization in pg_search BM25** (ADR-114) handles diacritics normalization natively, collapsing orthographic variants in the search index without altering stored data. The `unaccent` extension remains for pg_trgm fuzzy matching.
 - **The Aum/Om exception** reflects a general principle: search normalization handles orthography; the terminology bridge handles semantics. Collapsing semantically distinct terms in the index would lose information that cannot be recovered.
 - **Devanāgarī font in Arc 1** because the content is present in Arc 1. Deferring font support to Milestone 5b creates a rendering gap for the Gita commentary — Devanāgarī would fall back to system fonts, breaking the visual coherence of the sacred reading experience.
 - **Pronunciation in the glossary** serves seekers who encounter Sanskrit for the first time. Phonetic guides are a minimal editorial effort with high impact for newcomers. Audio pronunciation is deferred until SRF can provide approved recordings.
@@ -2144,7 +2152,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 ### Consequences
 
 - **Ingestion pipeline:** Unicode NFC normalization added as a mandatory preprocessing step (Step 2.5 in DESIGN.md § Content Ingestion Pipeline)
-- **Search index:** `unaccent` extension added to the tsvector trigger configuration. Existing `book_chunks_tsvector_trigger` updated to apply `unaccent` before `to_tsvector`
+- **Search index:** pg_search BM25 index with ICU tokenizer handles diacritics normalization natively (ADR-114). The `unaccent` extension remains for pg_trgm fuzzy matching.
 - **Font stack:** `'Noto Sans Devanagari'` added to the serif font stack for Arc 1. Loaded conditionally (only when Devanāgarī characters are present on the page) to avoid unnecessary font downloads on pages that don't need it
 - **Glossary schema:** Three new nullable columns (`phonetic_guide`, `pronunciation_url`, `has_teaching_distinction`) on `glossary_terms`
 - **Terminology bridge:** Two new extraction categories (inline Sanskrit definitions, cross-tradition terms) added to the ADR-051 vocabulary extraction lifecycle
@@ -2152,6 +2160,8 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 - **Extends:** ADR-051, ADR-005 E4, ADR-038, ADR-048
 - **New stakeholder questions:** SRF editorial policy on contested transliterations; pronunciation recording availability; *God Talks with Arjuna* Devanāgarī display confirmation
 - **New technical questions:** IAST diacritics rendering verification in Merriweather/Lora at small sizes
+
+*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
 
 ---
 

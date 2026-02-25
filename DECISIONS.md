@@ -189,7 +189,7 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 
 | File | Groups | ADRs | Arc Relevance |
 |------|--------|------|---------------|
-| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–053, 114–121 | Arc 1+ (implementation-critical) |
+| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–014, 016–027, 029–044, 046–053, 114–121 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
 | [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

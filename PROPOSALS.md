@@ -12,6 +12,8 @@
 |-----|-------|------|--------|----------------|--------|
 | PRO-001 | SRF Corpus MCP — Three-Tier Architecture | Feature | Validated | ADR-101, DES-031, ADR-097 | ADR-101 (descheduled 2026-02-24) |
 | PRO-002 | SRF Lessons Integration | Feature | Validated | ADR-085, ADR-121 | Stakeholder vision |
+| PRO-003 | Text-to-Speech for Passages | Feature | Proposed | ADR-003, ADR-073 | Accessibility vision |
+| PRO-004 | Audio-Visual Ambiance Toggle | Enhancement | Proposed | ADR-065 | Unscheduled feature |
 
 ---
 
@@ -36,6 +38,26 @@
 **Scheduling Notes:** Not scheduled. SRF's decision. Architecture ready (content-level access control, separate reading experience, technique instructions always out of scope). May never happen.
 **Re-evaluate At:** Stakeholder request
 **Decision Required From:** SRF leadership
+
+### PRO-003: Text-to-Speech for Passages
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-003, ADR-073
+**Dependencies:** Passage display infrastructure (Milestone 2a). Screen reader emotional quality standards (ADR-073) inform voice selection criteria.
+**Scheduling Notes:** Listed in ROADMAP.md § Unscheduled Features. TTS for displayed passages would extend accessibility beyond screen readers to seekers who prefer audio consumption. Voice selection must respect the devotional register — synthetic voices that trivialize sacred text are worse than no TTS. Evaluate browser-native speech synthesis vs. cloud TTS services; consider DELTA compliance for any cloud option.
+**Re-evaluate At:** Arc 2 boundary
+**Decision Required From:** Architecture + accessibility review
+
+### PRO-004: Audio-Visual Ambiance Toggle
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-065
+**Dependencies:** None architectural. Content dependency: curated ambient audio assets.
+**Scheduling Notes:** Listed in ROADMAP.md § Deferred / Suspended. Optional temple bells or nature sounds during reading. Must respect Calm Technology principles — never autoplay, never default-on, never attention-seeking. Evaluated and deferred as non-essential to the core reading experience. Risk of trivializing the portal's contemplative register if poorly executed.
+**Re-evaluate At:** Post-Arc 3 (after core experience is mature)
+**Decision Required From:** Editorial + UX review
 
 ---
 

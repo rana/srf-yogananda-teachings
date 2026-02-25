@@ -754,7 +754,7 @@ The Intelligent Query Tool requires semantic (vector) search to find thematicall
 
 ### Decision
 
-Use **Neon PostgreSQL with the pgvector extension** for both relational data and vector search. Combine with Postgres full-text search (tsvector) for hybrid retrieval.
+Use **Neon PostgreSQL with the pgvector extension** for both relational data and vector search. Combine with pg_search / ParadeDB BM25 (ADR-114) for hybrid retrieval.
 
 ### Rationale
 
@@ -786,7 +786,7 @@ Book text needs to live somewhere with editorial management: version control, re
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Contentful** | SRF standard; editorial workflow; locales; Rich Text AST is parseable for chunking; convocation site proves pattern | Free tier limited (10K records, 2 locales); cost at scale; not a search engine |
+| **Contentful** | SRF standard; editorial workflow; locales; Rich Text AST is parseable for chunking; convocation site proves pattern | Cost at scale; not a search engine |
 | **Neon only** | Simplest; no sync complexity; full control | No editorial UI (would need Retool); no version history; no localization workflow |
 | **Sanity.io** | Excellent DX; real-time collaboration; generous free tier | Not in SRF stack; would diverge from organizational standard |
 | **Strapi (self-hosted)** | Open-source; full control; no per-record pricing | Operational overhead; not in SRF stack; no edge CDN |
@@ -803,7 +803,7 @@ Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a 
 - Multi-language support via Contentful locales
 - Separation of concerns: Contentful for authoring, Neon for searching
 - Adopting from Arc 1 avoids a costly later migration of 15+ books and all editorial workflows
-- Free tier (10K records, 2 locales) is sufficient for single-book Arc 1; evaluate at Milestone 3a (multi-book)
+- Capacity sufficient for single-book Arc 1; evaluate tier needs at Milestone 3a (multi-book)
 
 ### Consequences
 
@@ -811,7 +811,7 @@ Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a 
 - Ingestion pipeline imports processed text into Contentful via Management API, then syncs to Neon for search
 - The Neon schema includes `contentful_id` columns for linkage — populated from Arc 1, not deferred
 - A Contentful → Neon sync service is needed: batch script in Milestone 1a, webhook-driven from Milestone 1b on Vercel
-- Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks); paid tier evaluation needed at Milestone 3a (multi-book corpus)
+- Contentful capacity sufficient for one book (~3K TextBlocks); evaluate tier needs at Milestone 3a (multi-book corpus)
 - When SRF provides non-PDF digital text prior to launch, it goes directly into Contentful — no pipeline change required
 
 *Revised: 2026-02-24, Contentful confirmed as Arc 1 requirement per stakeholder hard requirement.*
@@ -1100,7 +1100,7 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 2. **All Sonnet** — Higher baseline quality for ranking. Rejected because: 10x cost increase over Haiku at scale. The portal's ranking task is constrained (select and order passage IDs from 20 candidates) — not open-ended reasoning. Haiku is likely sufficient; benchmark first.
 3. **Opus for intent classification** — Considered whether Opus's deeper reasoning would improve classification accuracy. Rejected because: intent classification is bounded enum categorization (~7 types). The input is a short user query, the output is structured JSON. Haiku reaches the quality ceiling for this task; additional model capability has nowhere to go.
 4. **Opus for passage ranking** — Considered whether Opus would better understand subtle spiritual nuance when ordering passages (e.g., distinguishing "divine fulfillment" from "renunciation" for "I feel empty inside"). Rejected because: the ranker receives 20 pre-retrieved passages already filtered by vector similarity + FTS relevance. It selects the top 5 and outputs ordered passage IDs — a constrained selection task, not open-ended reasoning. The heavy semantic lifting is done by the hybrid search layer, the spiritual-terms.json vocabulary bridge, and well-crafted system prompts with explicit ranking criteria (spiritual depth, directness of address, emotional resonance). The quality difference between models narrows significantly when the task is structured, the output format is constrained, and the candidate pool is pre-filtered. At ~$7,500/month for ranking alone (10K searches/day), the cost is unjustifiable for a free portal when architecture already ensures relevant results. **Opus is appropriate for offline batch work** (editorial analysis, theme taxonomy construction, cross-book relationship mapping) — low-volume, high-reasoning tasks — but not per-search costs.
-5. **OpenAI GPT models** — Could reduce vendor count (already using OpenAI for embeddings). Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Switching LLM providers for cost reasons alone adds migration risk. ADR-001 established Claude; no reason to revisit.
+5. **OpenAI GPT models** — Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Embeddings use Voyage (ADR-118), not OpenAI, so there is no vendor-consolidation argument. Switching LLM providers for cost reasons alone adds migration risk. ADR-001 established Claude; no reason to revisit.
 
 ### Rationale
 
@@ -1667,7 +1667,7 @@ Contentful Organization
 
 - Terraform configurations parameterized by environment from Arc 1
 - AWS account creation requested through SRF's cloud team (or single-account with IAM isolation if multi-account is delayed)
-- Contentful spaces created per environment (free tier supports one space; paid tier needed for multi-space)
+- Contentful spaces created per environment (one space per environment)
 - GitLab CI/CD templates prepared during Milestone 5a, activated at Arc 4
 - Neon branching strategy documented in runbook
 - **Fallback:** If multi-account AWS is operationally heavy for early arcs, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
@@ -2570,7 +2570,7 @@ Themes are applied to passages via a **semi-automated pipeline: embeddings propo
 ```sql
 -- teaching_topics: add category and description_embedding columns
 ALTER TABLE teaching_topics ADD COLUMN category TEXT NOT NULL DEFAULT 'quality';
-ALTER TABLE teaching_topics ADD COLUMN description_embedding VECTOR(1536);
+ALTER TABLE teaching_topics ADD COLUMN description_embedding VECTOR(1024);
 CREATE INDEX idx_teaching_topics_category ON teaching_topics(category);
 
 -- chunk_topics: three-state tagged_by + similarity score
@@ -2810,7 +2810,7 @@ CREATE TABLE image_descriptions (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid,
  image_id UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
  description_text TEXT NOT NULL, -- Rich contextual description for embedding
- embedding vector(1536),
+ embedding vector(1024),
  language TEXT NOT NULL DEFAULT 'en',
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -3349,11 +3349,10 @@ CREATE TABLE magazine_chunks (
  chunk_index INTEGER NOT NULL,
  content TEXT NOT NULL,
  page_number INTEGER,
- embedding VECTOR(1536),
- embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small',
- embedding_dimension INTEGER NOT NULL DEFAULT 1536,
+ embedding VECTOR(1024),
+ embedding_model TEXT NOT NULL DEFAULT 'voyage-3-large',
+ embedding_dimension INTEGER NOT NULL DEFAULT 1024,
  embedded_at TIMESTAMPTZ DEFAULT now,
- content_tsv TSVECTOR,
  content_hash TEXT NOT NULL,
  language TEXT NOT NULL DEFAULT 'en',
  metadata JSONB DEFAULT '{}',
@@ -3363,7 +3362,7 @@ CREATE TABLE magazine_chunks (
 
 CREATE INDEX idx_magazine_chunks_embedding ON magazine_chunks
  USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
-CREATE INDEX idx_magazine_chunks_fts ON magazine_chunks USING GIN (content_tsv);
+-- BM25 index via pg_search (ADR-114) replaces tsvector; created by pg_search CREATE INDEX
 CREATE INDEX idx_magazine_chunks_language ON magazine_chunks(language);
 ```
 
@@ -3707,20 +3706,20 @@ Use **hybrid search** with Reciprocal Rank Fusion (RRF) to merge vector similari
 
 ### Consequences
 
-- Each chunk needs both an embedding vector AND a tsvector index
-- The hybrid_search SQL function encapsulates the merging logic
+- Each chunk needs both an embedding vector AND a pg_search BM25 index (ADR-114)
+- The hybrid_search SQL function uses `paradedb.score(id)` and `@@@` operator for BM25, fused with vector results via RRF
 - Weights between FTS and vector can be tuned based on query characteristics
 
 ---
 
 ## ADR-046: Embedding Model Versioning and Migration
 
-- **Status:** Accepted (embedding model updated by ADR-118: Voyage voyage-3-large replaces OpenAI text-embedding-3-small)
+- **Status:** Accepted (embedding model updated to Voyage voyage-3-large by ADR-118)
 - **Date:** 2026-02-17
 
 ### Context
 
-The portal uses vector embeddings (currently OpenAI text-embedding-3-small, 1536 dimensions) to power semantic search. Over a 10-year lifespan, the embedding model will almost certainly be replaced 2-3 times as better models emerge — higher quality, lower cost, multilingual improvements, or dimensionality changes.
+The portal uses vector embeddings (Voyage voyage-3-large, 1024 dimensions; adopted by ADR-118) to power semantic search. Over a 10-year lifespan, the embedding model will almost certainly be replaced 2-3 times as better models emerge — higher quality, lower cost, multilingual improvements, or dimensionality changes.
 
 Re-embedding the entire corpus is a batch operation (read chunks → call new model → update vectors). But during the transition, the search index must continue to function. And the system must know which chunks have been re-embedded and which haven't.
 
@@ -3738,19 +3737,19 @@ Add an `embedding_model` column to `book_chunks` that records which model genera
 #### Schema Change
 
 ```sql
-ALTER TABLE book_chunks ADD COLUMN embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small';
-ALTER TABLE book_chunks ADD COLUMN embedding_dimension INTEGER NOT NULL DEFAULT 1536;
+ALTER TABLE book_chunks ADD COLUMN embedding_model TEXT NOT NULL DEFAULT 'voyage-3-large';
+ALTER TABLE book_chunks ADD COLUMN embedding_dimension INTEGER NOT NULL DEFAULT 1024;
 ALTER TABLE book_chunks ADD COLUMN embedded_at TIMESTAMPTZ NOT NULL DEFAULT now;
 ```
 
 #### Migration Workflow
 
 ```
-1. Choose new model (e.g., text-embedding-3-large)
+1. Choose new model (e.g., a domain-adapted fine-tune or next-generation multilingual model)
 2. Create Neon branch for testing
 3. Re-embed a sample (100 chunks) on the branch
 4. Run search quality test suite against new embeddings
-5. Compare precision/recall vs. current model
+5. Compare precision/recall vs. current model (Voyage voyage-3-large baseline)
 6. If improved:
  a. Re-embed all chunks in batches (background job)
  b. Update embedding_model, embedding_dimension, embedded_at per chunk
@@ -3766,11 +3765,11 @@ During step 6, the search function can handle mixed models by:
 
 #### Dimension Change Handling
 
-If a new model uses different dimensions (e.g., 3072 instead of 1536), pgvector supports multiple vector columns:
+If a new model uses different dimensions (e.g., 2048 instead of 1024), pgvector supports multiple vector columns:
 
 ```sql
 -- Add new dimension column
-ALTER TABLE book_chunks ADD COLUMN embedding_v2 VECTOR(3072);
+ALTER TABLE book_chunks ADD COLUMN embedding_v2 VECTOR(2048);
 
 -- Create HNSW index for new column
 CREATE INDEX idx_chunks_embedding_v2 ON book_chunks
@@ -3783,14 +3782,14 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 
 ### Rationale
 
-- **Models will change.** OpenAI has already released three generations of embedding models (ada-002 → 3-small → 3-large). The pace will continue. Designing for model lock-in is designing for obsolescence.
+- **Models will change.** The embedding model landscape evolves rapidly — OpenAI released three generations (ada-002 → 3-small → 3-large), and this project adopted Voyage voyage-3-large (ADR-118) before writing a single line of application code. Designing for model lock-in is designing for obsolescence.
 - **Corpus grows over time.** By Milestone 5b (multi-language), the corpus may be 10x larger than Arc 1. Re-embedding at that scale is hours of API calls and significant cost. Incremental migration keeps the portal online throughout.
 - **Search quality is the core mission.** A better embedding model directly improves passage retrieval. The portal should be able to adopt improvements without architectural changes.
 - **Zero cost now.** Three columns and a convention. No additional infrastructure.
 
 ### Multilingual Embedding Requirement (Added 2026-02-18)
 
-**The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. OpenAI's text-embedding-3-small places semantically equivalent text in different languages close together in vector space. This means:
+**The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. Voyage voyage-3-large embeds 26 languages in a unified vector space as a design goal — not an incidental capability. This means:
 
 - English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus.
 - The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — even when the user typed their query in Spanish.
@@ -3808,38 +3807,38 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 - Budget for re-embedding costs when evaluating new models (Milestone 5b multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
 
+*Revised: 2026-02-24, ADR-118 coherence update*
+
 ---
 
 ---
 
 ## ADR-047: Multilingual Embedding Quality Strategy
 
-- **Status:** Accepted (embedding model updated by ADR-118: Voyage voyage-3-large selected for multilingual quality)
+- **Status:** Accepted (embedding model updated to Voyage voyage-3-large by ADR-118)
 - **Date:** 2026-02-21
 
 ### Context
 
-The portal's embedding model (OpenAI text-embedding-3-small) was selected for cost, multilingual support, and quality (ADR-046). However, cost is negligible at this corpus scale — the entire multilingual corpus across all languages costs under $1 to embed. Even text-embedding-3-large at 13x the price would cost ~$9. The economics that differentiate embedding models for most products do not apply here.
-
-This raises a deeper question: is the embedding model the right place to economize for a portal whose mission is making Yogananda's teachings "freely accessible worldwide"? The embedding model is the single most leveraged component in the search experience — it determines whether the right passage surfaces for a seeker's query. Everything else (UI, typography, citation formatting) is presentation.
+The embedding model is the single most leveraged component in the search experience — it determines whether the right passage surfaces for a seeker's query. Everything else (UI, typography, citation formatting) is presentation. For a portal whose mission is making Yogananda's teachings "freely accessible worldwide," the embedding model should be selected for quality, not cost. Cost is negligible at this corpus scale — the entire multilingual corpus across all languages costs under $10 to embed.
 
 Three dimensions of embedding quality matter for this portal:
 
-1. **Multilingual retrieval quality.** text-embedding-3-small's multilingual capability is emergent from training data diversity, not an explicit optimization target. Models like Cohere embed-v3 and BGE-M3 were designed multilingual-first. For European languages (es, de, fr, it, pt) the gap is likely small. For Hindi, Bengali, Thai, and Japanese — the languages where the English fallback strategy is load-bearing — the gap may be significant.
+1. **Multilingual retrieval quality.** The portal serves seekers in 10 languages. A model whose multilingual capability is a design goal — not an incidental side-effect of training data diversity — produces stronger cross-language alignment for European languages, Hindi, Bengali, Thai, and Japanese. The languages where the English fallback strategy is load-bearing benefit the most from intentional multilingual design.
 
 2. **Domain specificity.** General-purpose embedding models are trained on web text, Wikipedia, and news. Yogananda's prose is spiritually dense, metaphorical, and uses vocabulary that spans traditions ("The wave forgets it is the ocean" — simultaneously about water and cosmic consciousness). General models may not capture the semantic relationships that matter for this corpus.
 
-3. **Cross-language alignment for sacred vocabulary.** Terms like "samadhi," "サマーディ," "समाधि" should occupy the same region of vector space. The spiritual terminology bridge (`spiritual-terms.json`, ADR-051) handles this at the query expansion layer, but embedding-level alignment would be more robust.
+3. **Cross-language alignment for sacred vocabulary.** Terms like "samadhi," "サマーディ," "समाधि" should occupy the same region of vector space. The spiritual terminology bridge (`spiritual-terms.json`, ADR-051) handles this at the query expansion layer, but embedding-level alignment is more robust.
 
 ### Decision
 
-1. **Start with OpenAI text-embedding-3-small** as the Arc 1 embedding model. It provides adequate multilingual support, the architecture is well-understood, and the operational model is simple (symmetric embeddings — same encoding for queries and documents).
+1. **Voyage voyage-3-large is the Arc 1 embedding model.** ADR-118 adopted Voyage voyage-3-large (1024 dimensions, 26 languages, 32K token input) based on its multilingual-first design, asymmetric encoding support (`input_type = 'document'` at ingestion, `input_type = 'query'` at search time), and strong performance on literary/spiritual text retrieval. Originally, OpenAI text-embedding-3-small (1536 dimensions) was selected for its simplicity and adequate multilingual support; ADR-118 superseded that choice after the RAG Architecture Proposal demonstrated that Voyage's intentional multilingual design and literary retrieval quality justified the switch before any corpus was embedded.
 
-2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Milestone 5b). The Milestone 1a English-only evaluation (Deliverable 1a.9) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
+2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestone 1a English-only evaluation (Deliverable 1a.9) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
 
-3. **Establish domain-adapted embeddings as a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
+3. **Domain-adapted embeddings remain a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
  - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
- - **Method:** Fine-tune a strong multilingual base model (e.g., multilingual-e5-large-instruct or BGE-M3) on the corpus with retrieval-specific training objectives
+ - **Method:** Fine-tune a strong multilingual base model (e.g., Voyage voyage-3-large, multilingual-e5-large-instruct, or BGE-M3) on the corpus with retrieval-specific training objectives
  - **Evaluation:** Per-language search quality test suites (Milestone 5b) provide the evaluation framework
  - **Outcome:** An embedding model that understands Yogananda's vocabulary, metaphorical patterns, and cross-tradition spiritual concepts at a depth no general model matches
 
@@ -3847,31 +3846,33 @@ Three dimensions of embedding quality matter for this portal:
 
 ### Alternatives Considered
 
-1. **Start with Cohere embed-v3** — Designed multilingual-first, supports query/document asymmetry (encodes queries and documents differently for better retrieval), scores higher on multilingual benchmarks (MIRACL, Mr.TyDi) for Indic languages. Rejected because: the query/document asymmetry adds operational complexity (wrong `input_type` degrades results silently), Cohere is a smaller company than OpenAI (10-year vendor risk), and the benchmark advantage is measured on Wikipedia-like content — not spiritual text. The gap may not transfer to this domain. Worth benchmarking in Milestone 5b when multilingual content exists.
+1. **Stay with OpenAI text-embedding-3-small** — The original Arc 1 choice. Adequate multilingual support, well-understood operational model, symmetric embeddings. Rejected by ADR-118 because: multilingual capability is emergent from training data diversity rather than an explicit design goal; performance on literary and spiritual text retrieval lags behind Voyage; the symmetric encoding model forgoes retrieval-optimized asymmetric encoding. At this corpus scale, the operational simplicity advantage does not justify the quality gap.
 
-2. **Self-hosted open-source model (BGE-M3, multilingual-e5-large)** — Eliminates API vendor dependency entirely. At this corpus scale (~150K chunks), could run on a single GPU or even CPU. Rejected for Arc 1 because: adds operational complexity (model hosting, versioning, GPU provisioning) during an arc focused on proving search works. Remains a strong candidate for the domain-adapted model research track, where self-hosting is likely necessary anyway.
+2. **Cohere embed-v3** — Designed multilingual-first, scores higher on multilingual benchmarks (MIRACL, Mr.TyDi) for Indic languages. Not selected because: Cohere is a smaller company (10-year vendor risk), and the benchmark advantage is measured on Wikipedia-like content — the gap may not transfer to spiritual text. Remains a strong Milestone 5b benchmark candidate, particularly for Indic/CJK languages.
 
-3. **Benchmark multilingual models before Arc 1** — Use a small sample of Autobiography of a Yogi in multiple published translations to benchmark models now. Rejected as a hard requirement because: Arc 1's priority is proving the search pipeline end-to-end. However, this remains a valuable optional activity — if time permits, a lightweight benchmark using 5-10 chapters across 3-4 languages would provide early signal on multilingual quality.
+3. **Self-hosted open-source model (BGE-M3, multilingual-e5-large)** — Eliminates API vendor dependency entirely. At this corpus scale (~150K chunks), could run on a single GPU or even CPU. Not selected for Arc 1 because: adds operational complexity (model hosting, versioning, GPU provisioning) during an arc focused on proving search works. Remains a strong candidate for the domain-adapted model research track, where self-hosting is likely necessary anyway.
 
-4. **Per-language embedding models** — Use text-embedding-3-small for European languages and a stronger multilingual model for Indic/CJK. ADR-046's `embedding_model` column already supports this. Rejected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Milestone 5b benchmarking reveals language-specific deficiencies.
+4. **Per-language embedding models** — Use Voyage for most languages and a specialized model for Indic/CJK. ADR-046's `embedding_model` column supports this. Not selected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Milestone 5b benchmarking reveals language-specific deficiencies.
 
-5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Milestone 1a evaluation (Deliverable 1a.9) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-046.
+5. **OpenAI text-embedding-3-large** — 3072 dimensions, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew.
 
 ### Rationale
 
-- **Cost is not the differentiator.** At < $1 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Starting with text-embedding-3-small is justified by simplicity and adequate quality, not by savings.
+- **Quality is the differentiator.** At < $10 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Voyage voyage-3-large was selected because it is designed multilingual-first, supports asymmetric encoding for retrieval optimization, and outperforms OpenAI models on literary retrieval benchmarks at a smaller dimension (1024 vs. 1536).
 - **Domain adaptation is the highest-ceiling option.** General models compete on benchmarks across all domains. A model fine-tuned on Yogananda's corpus would compete on one domain — the only one that matters for this portal. This is the path to world-class retrieval quality.
 - **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on English-only data — missing the point.
 - **The architecture is already ready.** ADR-046's model versioning, the Neon branch migration workflow, and the per-language evaluation suites provide the complete infrastructure for model evolution. This ADR adds strategic direction, not architectural changes.
 
 ### Consequences
 
-- Arc 1 proceeds with text-embedding-3-small as planned
+- Arc 1 proceeds with Voyage voyage-3-large (1024 dimensions)
 - Deliverable 1a.9 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
-- Milestone 5b includes formal benchmarking of multilingual-optimized models alongside the existing "may trigger first embedding model migration" language
-- Domain-adapted embeddings become a documented research track, scoped after Milestone 5b corpus completion
+- Milestone 5b benchmarks Voyage as the baseline against multilingual-optimized alternatives (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, domain-adapted fine-tunes)
+- Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
 - Future embedding model decisions should reference this ADR alongside ADR-046
+
+*Revised: 2026-02-24, ADR-118 coherence update*
 
 ---
 

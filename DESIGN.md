@@ -2,7 +2,7 @@
 
 > **Navigation guide.** The design is split across four files by arc scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives.
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 | Section | Arc/Milestone | File |
 |---------|---------------|------|
@@ -717,7 +717,7 @@ All services that process data on the portal's behalf, with their roles, data to
 | **Sentry** | Processor | Error stack traces, request context | US | 1a+ |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | 3d+ |
 | **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | 1+ |
-| **OpenAI** | Processor | Corpus text at embedding time (one-time, not retained) | US | 1+ |
+| **Voyage AI** | Processor | Corpus text at embedding time (one-time, not retained; ADR-118) | US | 1+ |
 | **Resend/SES** | Processor | Subscriber email addresses | US | 5a+ |
 | **Auth0** | Processor | User accounts (if implemented) | US | 7a+ |
 | **Contentful** | Processor | Editorial content (no personal data) | EU | 1+ |
@@ -1549,7 +1549,7 @@ Model swap workflow:
  5. After completion: drop old vectors, update indexes
 ```
 
-For dimension changes (e.g., 1536 → 3072), add a new vector column, build HNSW index, re-embed, then drop the old column. The search function handles both during transition.
+For dimension changes (e.g., 1024 → 2048), add a new vector column, build HNSW index, re-embed, then drop the old column. The search function handles both during transition.
 
 ### Content Export
 
@@ -1629,7 +1629,7 @@ The portal uses the SRF-standard observability stack with DELTA-compliant config
 | Layer | Tool | Purpose |
 |-------|------|---------|
 | **Error tracking** | Sentry | Unhandled exceptions, API errors, client-side errors. Next.js source maps. |
-| **APM** | New Relic | API route latency, database query duration, Claude API/OpenAI call timing. Distributed tracing. |
+| **APM** | New Relic | API route latency, database query duration, Claude API/Voyage embedding call timing. Distributed tracing. |
 | **Synthetic monitoring** | New Relic Synthetics | Uptime checks: `/`, `/api/v1/search`, `/api/v1/health`, `/quiet`. |
 | **Product analytics** | Amplitude | DELTA-compliant: event counts only. No user identification, no session tracking, no autocapture. |
 | **Log aggregation** | Vercel Logs → New Relic | Structured JSON logs with request ID correlation. |

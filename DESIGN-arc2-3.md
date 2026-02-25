@@ -2,7 +2,7 @@
 
 > **Scope.** This file contains the technical design sections relevant to **Arc 2: Presence** (Milestones 2a/2b) and **Arc 3: Wisdom** (Milestones 3a–3d) — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -1324,7 +1324,7 @@ The portal is equally excellent for seekers who never touch the search bar. Seve
 - Optional Focus mode (ADR-072) reduces the reader to: reading column + Next Chapter. Everything else suppressed.
 
 **6. The devoted practitioner** (returns daily or weekly, uses search to find half-remembered passages, builds collections, compares across books).
-- This is the portal's highest-frequency user — someone who has practiced Kriya Yoga or studied Yogananda's writings for years and uses the portal as a study companion, not for discovery.
+- This is the portal's highest-frequency seeker — someone who has practiced Kriya Yoga or studied Yogananda's writings for years and uses the portal as a study companion, not for discovery.
 - Advanced search supports their recall pattern: partial-phrase matching, book-scoped search, cross-book comparison via Related Teachings.
 - Personal collections (Arc 6) and study circle sharing (Milestone 7b) serve this seeker directly. Until then, browser bookmarks and the reading history (sessionStorage) provide lightweight persistence.
 - The Practice Bridge signposts (ADR-104) are confirmations for this seeker, not introductions — they already know the path. The signpost tone acknowledges this.
@@ -1745,11 +1745,11 @@ The `[EN]` tag is a small, muted language indicator. It is honest, not apologeti
 
 ### Language-Specific Search
 
-**Full-text search:** PostgreSQL language dictionaries handle stemming, stop words, and normalization per language.
+**Full-text search:** pg_search / ParadeDB BM25 indexes (ADR-114) handle per-language tokenization, stemming, and normalization via ICU analyzers.
 
-> **Note:** The `content_tsv` column and its language-aware trigger (defined in § Data Model) already handle per-language full-text search. The trigger maps each chunk's `language` code to the appropriate PostgreSQL dictionary at insert/update time. No additional column or index is needed when new languages are added in Milestone 5b — only new content rows with the correct `language` value.
+> **Note:** pg_search BM25 indexes are configured per-language using ICU tokenization (defined in § Data Model). Each chunk's `language` column determines the appropriate analyzer at query time. No additional indexes are needed when new languages are added in Milestone 5b — only new content rows with the correct `language` value and the corresponding ICU analyzer configuration.
 
-**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
+**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. Voyage voyage-3-large (ADR-118) supports 26 languages and places semantically equivalent passages in different languages close together in the unified cross-lingual embedding space. This means English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
 **Query expansion:** Claude handles all target languages. The expansion prompt includes the target language:
 
@@ -2810,9 +2810,9 @@ The portal is maintained by a broader organizational ecosystem than just "staff.
 | Persona | Schedule | Technical Comfort | Primary Tool | Key Need |
 |---|---|---|---|---|
 | **Philanthropist's foundation** | Quarterly or annually | Low | Impact report (PDF/web) | Pre-formatted, narrative impact report they can share with their board. Generated from Impact Dashboard data, curated into a story. No work required. |
-| **Study circle leader** | Weekly preparation | Moderate | Study Workspace + community collections | Find → collect → arrange → share → present. Power user of community collections and shared links. Weekly satsanga preparation is the primary use case. |
+| **Study circle leader** | Weekly preparation | Moderate | Study Workspace + community collections | Find → collect → arrange → share → present. Power seeker of community collections and shared links. Weekly satsanga preparation is the primary use case. |
 
-**Study circle leader — expanded profile:** This is the portal's most demanding external power user and the primary driver for Arc 6 (Study Workspace) and Milestone 7b (Community Curation) features. The weekly satsanga preparation workflow is: (1) identify a theme or topic for the week, (2) search and browse for relevant passages across multiple books, (3) collect passages into an ordered sequence that builds understanding, (4) add brief contextual notes for group discussion, (5) share the collection with group members via link, (6) present during satsanga using Presentation mode (ADR-006 §5). Until Arc 6, this seeker uses browser bookmarks, manual note-taking, and shared passage links — functional but friction-heavy. The study circle leader also serves as an informal portal evangelist, introducing the portal to group members who may become daily visitors, devoted practitioners, or Quiet Corner seekers. In Indian and Latin American contexts, the study circle leader may be the primary interface between the portal and seekers who are less digitally literate — they project the portal on a shared screen or read passages aloud. Presentation mode's early delivery (consider pulling to Milestones 2b–3a per CONTEXT.md technical open question) directly serves this population.
+**Study circle leader — expanded profile:** This is the portal's most demanding external seeker and the primary driver for Arc 6 (Study Workspace) and Milestone 7b (Community Curation) features. The weekly satsanga preparation workflow is: (1) identify a theme or topic for the week, (2) search and browse for relevant passages across multiple books, (3) collect passages into an ordered sequence that builds understanding, (4) add brief contextual notes for group discussion, (5) share the collection with group members via link, (6) present during satsanga using Presentation mode (ADR-006 §5). Until Arc 6, this seeker uses browser bookmarks, manual note-taking, and shared passage links — functional but friction-heavy. The study circle leader also serves as an informal portal evangelist, introducing the portal to group members who may become daily visitors, devoted practitioners, or Quiet Corner seekers. In Indian and Latin American contexts, the study circle leader may be the primary interface between the portal and seekers who are less digitally literate — they project the portal on a shared screen or read passages aloud. Presentation mode's early delivery (consider pulling to Milestones 2b–3a per CONTEXT.md technical open question) directly serves this population.
 
 **Staffing open question:** Several operational personas (portal coordinator, book ingestion operator, VLD coordinator) are not yet assigned. SRF must determine whether these are monastic roles, AE team roles, or dedicated positions before Milestone 3b begins. See CONTEXT.md § Open Questions (Stakeholder).
 
@@ -3842,7 +3842,7 @@ The subgraph endpoint powers embeddable mini-graphs in other pages: the reader's
 - Zoom, pan, pinch. Cluster labels appear when zoomed out (dominant theme tag).
 - No lines, no arrows. Points of light on warm cream. Spatial layout reveals relationships that lists hide.
 
-**Implementation:** UMAP dimensionality reduction from 1536-dim embeddings to 2D. Pre-computed nightly. Static JSON (~500KB for ~10,000 items). Canvas or WebGL rendering.
+**Implementation:** UMAP dimensionality reduction from 1024-dim embeddings (ADR-118) to 2D. Pre-computed nightly. Static JSON (~500KB for ~10,000 items). Canvas or WebGL rendering.
 
 **Milestone:** Arc 4+ (constellation). Milestone 3d delivers Knowledge Graph mode only.
 
