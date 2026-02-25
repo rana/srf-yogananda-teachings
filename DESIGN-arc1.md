@@ -1272,6 +1272,8 @@ Webhook → Vercel Function
 
 ## DES-005: Content Ingestion Pipeline
 
+*Conforms to DES-053 (Unified Content Pipeline Pattern). This is the first pipeline implemented; DES-053's seven-stage pattern was derived from this design. Future content types (video transcripts, magazine articles, audio) should follow the same stages.*
+
 ### Arc 1 Pipeline (PDF → Contentful → Neon)
 
 Contentful is the editorial source of truth from Arc 1 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide non-PDF digital text that goes directly into Contentful.

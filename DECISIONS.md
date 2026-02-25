@@ -6,7 +6,7 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*Unassigned numbers: ADR-015, 028, 045, 102, and 103 were skipped during restructuring and are available for future use.*
+*Unassigned numbers: ADR-015, 028, 045, 102, 103, 125, and 126 were skipped during restructuring and are available for future use. (ADR-125/126 appeared in early explorations but were never adopted.)*
 
 ### Index by Concern
 

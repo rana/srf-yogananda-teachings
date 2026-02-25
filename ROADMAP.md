@@ -615,7 +615,10 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement |
 | PRO-007 | Logical Replication for Analytics CDC | Feature |
 | PRO-008 | Time Travel Queries for Production Debugging | Enhancement |
-| *(Populated from `.elmer/proposals/` explorations after `/dedup-proposals`)* | | |
+| PRO-009 | Scientific-Spiritual Bridge Themes (cosmic life, abundance, vibration/AUM) | Theme |
+| PRO-010 | Word-Level Graph Navigation | Feature |
+| PRO-011 | Proactive Editorial AI Agent | Enhancement |
+| PRO-012 | Copyright and Legal Framework | Policy |
 
 ---
 
