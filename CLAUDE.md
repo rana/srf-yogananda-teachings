@@ -73,7 +73,7 @@ Eleven principles define the project's identity and directly constrain code gene
 /app/api/v1/ — Versioned API routes
 /migrations/ — Numbered SQL migrations (dbmate)
 /terraform/ — Infrastructure as Code
-/lambda/ — AWS Lambda handlers (Milestone 2a+, ADR-017)
+/lambda/ — AWS Lambda handlers (Milestone 3a+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
 /scripts/ — CI-agnostic deployment scripts
 /docs/reference/ — Background research (not active project docs)

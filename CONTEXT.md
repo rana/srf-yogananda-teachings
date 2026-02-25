@@ -130,7 +130,7 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 10. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-027.)*
 11. **Digital text availability:** SRF/YSS has digital text of official translated editions. Per-language OCR is not required. *(Resolved: confirmed by stakeholder.)*
 12. **Editorial workflow ownership:** Non-issue — resolved through organizational discussion. *(Resolved: confirmed by stakeholder.)*
-13. **SCM for Arcs 1–5:** GitHub acceptable for Arcs 1–5 with planned Arc 6 migration to GitLab. *(Resolved: confirmed by stakeholder.)*
+13. **SCM:** GitHub is the primary SCM for all arcs. GitLab migration architecturally supported (via ADR-018 CI-agnostic scripts) but not planned. If SRF requires GitLab for production handoff, the migration path is clean. *(Resolved 2026-02-25: GitHub-first confirmed. ADR-016 revised.)*
 14. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
 15. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
 16. **Neptune Analytics vs. Postgres-only graph:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database. *(Resolved by ADR-117.)*
@@ -460,6 +460,54 @@ Documented in the SRF AE Tech Stack Brief. Key components relevant to this porta
 | Monitoring | New Relic, Sentry, Amplitude |
 
 The teaching portal should use these technologies wherever possible, introducing new tools only when the established stack cannot meet a requirement (e.g., pgvector for vector search, Claude via AWS Bedrock for AI features — ADR-014).
+
+---
+
+## Bootstrap Credentials Checklist
+
+One-time credential provisioning required before the first `terraform apply`. The human principal creates these accounts and tokens — they cannot be automated. See ADR-016 for architecture and DES-039 for deployment spec.
+
+### Milestone 1a (infrastructure bootstrap)
+
+| Credential | Where to create | What it enables | Store as |
+|---|---|---|---|
+| **Terraform Cloud org + workspace** | app.terraform.io → New Organization | State backend, plan review UI | TFC API token → GitHub secret `TF_API_TOKEN` |
+| **AWS Account** (region: `us-west-2`) | aws.amazon.com | S3 backups, Lambda, Bedrock, EventBridge | — |
+| **AWS IAM OIDC Identity Provider** | AWS IAM Console → Identity Providers | GitHub Actions → AWS auth (no stored keys) | — |
+| **AWS IAM Role (portal-ci)** | AWS IAM Console → Roles | Scoped CI permissions (Terraform, S3, Lambda) | ARN → GitHub secret `AWS_ROLE_ARN` |
+| **AWS IAM User (portal-app-bedrock)** | AWS IAM Console → Users | Vercel → Bedrock inference (`bedrock:InvokeModel` only) | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` → Vercel env vars |
+| **Neon API key** | console.neon.tech → API Keys | Terraform Neon provider | GitHub secret `NEON_API_KEY` |
+| **Vercel API token** | vercel.com → Settings → Tokens | Terraform Vercel provider | GitHub secret `VERCEL_TOKEN` |
+| **Vercel Org/Team ID** | vercel.com → Settings → General | Scoping Terraform | GitHub secret `VERCEL_ORG_ID` |
+| **Sentry auth token** | sentry.io → Settings → Auth Tokens | Terraform Sentry provider | GitHub secret `SENTRY_AUTH_TOKEN` |
+| **Sentry org slug** | sentry.io → Settings → General | Scoping Terraform | GitHub secret `SENTRY_ORG` |
+| **Neon spend alert** | console.neon.tech → Billing → Alerts | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
+| **Vercel spend alert** | vercel.com → Settings → Billing → Spend Management | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
+
+### Milestone 1b (content + AI)
+
+| Credential | Where to create | What it enables | Store as |
+|---|---|---|---|
+| **AWS Bedrock model access** | AWS Console → Bedrock → Model Access (`us-west-2`) | Claude Haiku inference | Enabled on the `portal-app-bedrock` IAM user |
+| **Voyage AI API key** | dash.voyageai.com → API Keys | Embedding generation (ADR-118) | GitHub secret `VOYAGE_API_KEY` + Vercel env var |
+| **Contentful Management Token** | app.contentful.com → Settings → API Keys | Content ingestion pipeline | GitHub secret `CONTENTFUL_MANAGEMENT_TOKEN` |
+| **Contentful Access Token** | app.contentful.com → Settings → API Keys | Delivery API (read-only) | Vercel env var `CONTENTFUL_ACCESS_TOKEN` |
+| **Contentful Space ID** | app.contentful.com → Settings → General | API scoping | GitHub secret `CONTENTFUL_SPACE_ID` |
+
+### Later milestones (not needed for Arc 1)
+
+| Credential | When | Notes |
+|---|---|---|
+| YouTube API Key | Arc 2 (video integration) | Google Cloud Console |
+| New Relic License Key | Milestone 3d (observability) | New Relic dashboard |
+| Amplitude API Key | Milestone 3d (analytics) | Amplitude dashboard |
+| Resend API Key | Milestone 5a (email) | Resend dashboard |
+| Cloudflare API Token | When custom domain assigned | Cloudflare dashboard |
+| Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard |
+
+**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with only `bedrock:InvokeModel` permission — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation.
+
+See DES-039 § Environment Configuration for the complete `.env.example`, named constants, CI secrets table, and Claude Code developer tooling setup.
 
 ---
 

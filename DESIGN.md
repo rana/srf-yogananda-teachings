@@ -716,7 +716,7 @@ All services that process data on the portal's behalf, with their roles, data to
 | **Amplitude** | Processor | Anonymized events with country_code (no user ID) | US | 3d+ |
 | **Sentry** | Processor | Error stack traces, request context | US | 1a+ |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | 3d+ |
-| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | 1+ |
+| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-west-2` | 1+ |
 | **Voyage AI** | Processor | Corpus text at embedding time (one-time, not retained; ADR-118) | US | 1+ |
 | **Resend/SES** | Processor | Subscriber email addresses | US | 5a+ |
 | **Auth0** | Processor | User accounts (if implemented) | US | 7a+ |

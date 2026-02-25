@@ -1547,7 +1547,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 | **Amplitude** | Processor | Anonymized events with country_code | US | Yes |
 | **Sentry** | Processor | Error stack traces, request context | US | Yes |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | Yes (Milestone 3d+) |
-| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | Covered by AWS DPA |
+| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-west-2` | Covered by AWS DPA |
 | **Voyage AI** | Processor | Corpus text at embedding time (one-time; ADR-118) | US | Yes |
 | **Resend/SES** | Processor | Subscriber email addresses | US | Yes (Milestone 5a+) |
 | **Auth0** | Processor | User accounts (if implemented) | US | Yes (Milestone 7a+) |
@@ -1910,7 +1910,7 @@ A library notice board, not a SaaS changelog. The notice board says "The poetry 
 | Major new pages (Sacred Places, Knowledge Graph, Quiet Corner textures) | Yes | New ways to explore the teachings |
 | Seeker-noticeable UX improvements | Selectively | Only when meaningful — "The reader now remembers where you left off" |
 | Bug fixes, performance | No | Developer concerns, not seeker concerns |
-| Infrastructure changes (GitLab migration, regional distribution) | No | Internal, invisible |
+| Infrastructure changes (regional distribution, environment promotion) | No | Internal, invisible |
 | Security patches | No | Standard maintenance |
 
 ### Automation Pipeline

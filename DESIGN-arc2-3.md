@@ -1912,7 +1912,7 @@ import { neon } from '@neondatabase/serverless';
 // - Direct connection to Neon dev branch (non-pooled endpoint)
 // - dbmate uses direct connection string for migrations
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = neon(process.env.NEON_DATABASE_URL!);
 export { sql };
 ```
 

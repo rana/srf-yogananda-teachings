@@ -1114,11 +1114,10 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 
 ### Consequences
 
-- `/lib/services/claude.ts` uses `@aws-sdk/client-bedrock-runtime` instead of the Anthropic SDK
-- `.env.example` changes: replace `ANTHROPIC_API_KEY` with `AWS_REGION` + IAM role (Bedrock access managed via IAM, not API keys)
-- Terraform includes a Bedrock model access module
-- Per-search model IDs configured via `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku)
-- Batch model ID configured via `CLAUDE_MODEL_BATCH` (default: Opus) — used by theme classification, reference extraction, translation drafting, and cross-book relationship mapping
+- `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
+- `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for the `portal-app-bedrock` IAM user (Vercel → Bedrock). No `ANTHROPIC_API_KEY`.
+- Terraform creates the `portal-app-bedrock` IAM user with only `bedrock:InvokeModel` permission and manages Bedrock model access
+- Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_BATCH` (default: Opus)
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
@@ -1137,32 +1136,77 @@ The SRF Tech Stack Brief mandates Infrastructure as Code as a core engineering p
 > *"All infrastructure should be defined as Infrastructure-as-Code and deployable via a GitLab CI/CD pipeline"*
 > — SRF Infrastructure Philosophy, Principle #4
 
-The brief explicitly names **Terraform** as the IaC tool for "everything else" (i.e., everything not covered by Serverless Framework for AWS Lambda). Terraform is integrated into the SRF IDP (Internal Developer Platform), with state stored in the GitLab Terraform backend.
+The brief names **Terraform** as the IaC tool for "everything else" (i.e., everything not covered by Serverless Framework for AWS Lambda). The portal's infrastructure (Neon, Vercel, Sentry, later Auth0, New Relic, Cloudflare) falls squarely in Terraform's "everything else" category.
 
-The portal's infrastructure (Neon, Vercel, Sentry, Auth0, New Relic, Cloudflare) falls squarely in Terraform's "everything else" category. Serverless Framework does not apply — the portal is Next.js on Vercel, not Lambda-based.
-
-Additionally, AI-assisted development (Claude Code) makes Terraform authoring and maintenance practical even for small teams. Terraform's declarative HCL syntax is well within Claude Code's capabilities, reducing the traditional overhead of writing and evolving `.tf` files.
+AI-assisted development (Claude Code) makes Terraform authoring and maintenance practical even for small teams. Terraform's declarative HCL syntax is well within Claude Code's capabilities, reducing the traditional overhead of writing and evolving `.tf` files.
 
 ### Decision
 
-Use **Terraform** for all infrastructure provisioning from Milestone 2a. The portal repo includes a `/terraform` directory with modules for each service.
+Use **Terraform** for all infrastructure provisioning from Milestone 1a. The portal repo includes a `/terraform` directory with modules for each service.
 
 #### Source Control and CI/CD
 
-| Arc/Milestone | SCM | CI/CD | Terraform State |
-|---------------|-----|-------|-----------------|
-| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud or S3 backend |
-| **Arc 6+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
+| Phase | SCM | CI/CD | Terraform State |
+|-------|-----|-------|-----------------|
+| **Primary (all arcs)** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
-Arcs 1–5 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness.
+GitHub is the primary SCM for development velocity and simplicity. GitLab migration is not planned but architecturally supported — CI-agnostic deployment scripts (ADR-018) ensure migration requires only CI config rewrite, not logic rewrite. If SRF requires GitLab for production handoff, the migration path is clean. The Terraform code itself is SCM-agnostic.
+
+#### Terraform State: Terraform Cloud
+
+Terraform Cloud free tier (500 managed resources) serves as the state backend for all arcs. Rationale:
+
+- **Plan review UI.** The human principal reviews AI-authored Terraform plans in Terraform Cloud's web interface — readable diffs, not raw CI logs. This is essential for the AI-as-implementer model.
+- **Built-in state locking.** No DynamoDB table needed.
+- **Free tier sufficient.** The portal has < 50 managed resources through Arc 3, well within the 500-resource limit.
+- **No bootstrap complexity.** S3 + DynamoDB requires manual bucket/table creation before Terraform can run. TFC requires only organization + workspace creation.
+
+Bootstrap: create a TFC organization and workspace manually (one-time), then Terraform manages everything else. See CONTEXT.md § Bootstrap Credentials Checklist.
+
+#### GitHub Actions Authentication: OIDC Federation
+
+GitHub Actions authenticates to AWS via **OpenID Connect (OIDC) federation** — no long-lived AWS credentials stored as GitHub secrets.
+
+```
+GitHub Actions → OIDC token → AWS STS AssumeRoleWithWebIdentity → temporary credentials (1 hour)
+```
+
+Bootstrap (one-time manual setup):
+1. Create an AWS IAM OIDC Identity Provider for `token.actions.githubusercontent.com`
+2. Create an IAM Role with a trust policy scoped to the portal's GitHub repo and `main` branch
+3. Attach policies for S3 (backups), Lambda, EventBridge, Bedrock, and ECR (if needed)
+
+The IAM Role ARN is stored as a GitHub secret (`AWS_ROLE_ARN`). No access keys exist. Credential rotation is eliminated — OIDC tokens are ephemeral (1 hour TTL). Even a compromised workflow cannot escalate beyond the scoped IAM role.
+
+For non-AWS providers (Neon, Vercel, Sentry), API tokens are stored as GitHub secrets and rotated manually on a quarterly cadence. These providers do not support OIDC federation.
+
+#### Provider Version Pinning
+
+All Terraform providers specify exact version constraints in `required_providers`:
+
+```hcl
+terraform {
+ required_version = ">= 1.7"
+ required_providers {
+   neon     = { source = "kislerdm/neon",     version = "~> 0.6" }
+   vercel   = { source = "vercel/vercel",     version = "~> 2.0" }
+   sentry   = { source = "jianyuan/sentry",   version = "~> 0.14" }
+   aws      = { source = "hashicorp/aws",     version = "~> 5.0" }
+ }
+}
+```
+
+The `~>` (pessimistic) operator allows patch updates but locks major/minor versions. Provider upgrades are explicit PRs with `terraform plan` diff review. The Neon provider (`kislerdm/neon`) is community-maintained — pin conservatively and test upgrades.
 
 #### Terraform Module Structure
 
 ```
 /terraform/
- main.tf — Provider configuration, backend
+ main.tf — Provider configuration, TFC backend
  variables.tf — Input variables (project name, environment, etc.)
  outputs.tf — Connection strings, URLs, DSNs
+ versions.tf — required_providers with version constraints
 
  /modules/
  /neon/
@@ -1171,7 +1215,7 @@ Arcs 1–5 use GitHub for velocity and simplicity. Migration to GitLab aligns wi
  outputs.tf — Connection string, branch IDs
 
  /vercel/
- main.tf — Vercel project, environment variables, domains
+ main.tf — Vercel project, environment variables
  variables.tf
  outputs.tf — Deployment URL
 
@@ -1180,52 +1224,41 @@ Arcs 1–5 use GitHub for velocity and simplicity. Migration to GitLab aligns wi
  variables.tf
  outputs.tf — DSN
 
- /auth0/
- main.tf — Auth0 tenant, application, API, actions
- variables.tf
- outputs.tf — Client ID, domain
-
- /cloudflare/
- main.tf — DNS records, WAF rules, bot protection
+ /aws/
+ main.tf — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm
  variables.tf
  outputs.tf
 
- /newrelic/
- main.tf — Synthetics monitors, alert policies, dashboards
- variables.tf
- outputs.tf
+ /cloudflare/ — Added when custom domain assigned (deferred)
+ /newrelic/ — Added at Milestone 3d
+ /auth0/ — Added at Milestone 7a+ (if needed)
+
+ /environments/
+ dev.tfvars — Milestone 1a (only active environment)
+ staging.tfvars — Arc 4+
+ prod.tfvars — Arc 4+
 ```
+
+Three environments (dev/staging/prod). The four-environment SRF convention (dev/qa/stg/prod) adds QA overhead without a QA team — automated tests run in CI against dev or ephemeral environments. Staging is added when multi-environment promotion becomes active (Arc 4+).
 
 #### Environment Management
 
-The SRF standard defines four environments: dev, qa, stg, prod. Terraform workspaces or variable files manage per-environment configuration:
-
-```
-/terraform/
- /environments/
- dev.tfvars
- qa.tfvars
- stg.tfvars
- prod.tfvars
-```
-
-For Arcs 1–4, only `dev` is needed. Additional environments are added as the portal moves toward production.
+For Arcs 1–3, only `dev` is active. Additional environments are added as the portal moves toward production.
 
 #### What Terraform Manages vs. What It Doesn't
 
 | Managed by Terraform | Managed by Application Code |
 |---------------------|-----------------------------|
 | Neon project creation, roles, extensions | Database schema (dbmate SQL migrations) |
-| Vercel project, env vars, domain bindings | `vercel.json` (build/routing config) |
+| Vercel project, env vars | `vercel.json` (build/routing config) |
 | Sentry project, alert rules | `sentry.client.config.ts` (SDK config) |
-| Auth0 tenant, app, API registration | Auth0 SDK configuration in Next.js |
-| Cloudflare DNS, WAF rules | — |
-| New Relic Synthetics, alert policies | `newrelic.js` (agent config) |
-| GitHub/GitLab repo settings, branch protection | `.github/workflows/` or `.gitlab-ci.yml` |
+| AWS IAM roles, S3 buckets, Budgets | Lambda handler code (`/lambda/`) |
+| — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
+| Cloudflare DNS, WAF rules (when active) | Application routing (`next.config.js`) |
 
 The boundary: Terraform creates and configures the *services*. Application code configures *how the app uses those services*. Database schema is managed by dbmate migrations, not Terraform — schema changes require migration semantics (up/down), not declarative state.
 
-#### CI/CD Pipeline (Arcs 1–4 — GitHub Actions)
+#### CI/CD Pipeline (GitHub Actions)
 
 ```yaml
 # .github/workflows/terraform.yml
@@ -1233,73 +1266,60 @@ The boundary: Terraform creates and configures the *services*. Application code 
 
 on:
  pull_request:
- paths: ['terraform/**']
+   paths: ['terraform/**']
  push:
- branches: [main]
- paths: ['terraform/**']
+   branches: [main]
+   paths: ['terraform/**']
 
 jobs:
+ validate:
+   # terraform fmt -check && terraform validate
  plan:
- # On PR: terraform plan, post diff as PR comment
+   # On PR: terraform plan, post diff as PR comment
+   # Uses OIDC to assume AWS_ROLE_ARN (no stored AWS keys)
  apply:
- # On merge to main: terraform apply (dev environment)
- # Production: manual approval gate
+   # On merge to main: terraform apply (dev environment)
+   # Uses OIDC to assume AWS_ROLE_ARN
 ```
 
-#### CI/CD Pipeline (Arc 4+ — GitLab CI)
-
-```yaml
-# .gitlab-ci.yml (aligned with SRF IDP)
-stages:
- - validate
- - plan
- - apply
-
-terraform:plan:
- stage: plan
- script:
- - terraform init
- - terraform plan -var-file=environments/${CI_ENVIRONMENT_NAME}.tfvars
- # Plan output stored as artifact
-
-terraform:apply:
- stage: apply
- script:
- - terraform apply -auto-approve -var-file=environments/${CI_ENVIRONMENT_NAME}.tfvars
- when: manual # Production requires manual approval
- environment:
- name: $CI_ENVIRONMENT_NAME
-```
+`terraform fmt -check` and `terraform validate` run before plan. Plan output is posted as a PR comment for human review.
 
 ### Rationale
 
-- **SRF mandate.** The tech stack brief requires IaC via Terraform. Delivering infrastructure without Terraform deviates from SRF engineering standards and creates technical debt that must be resolved before production.
-- **AI-assisted authoring.** Claude Code writes and maintains Terraform fluently. The traditional objection to IaC ("too much overhead for a small team") is largely neutralized when the AI handles `.tf` file generation, provider configuration, and module structure.
-- **Reproducible environments.** `terraform apply` creates a complete environment from scratch. Disaster recovery, staging environment creation, and onboarding new developers all become simple operations.
-- **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code. This prevents the "someone changed a setting in the dashboard and nobody knows" problem.
-- **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code. A change to an alert threshold or a DNS record is visible, reviewable, and auditable.
-- **GitHub → GitLab migration path.** Starting with GitHub Actions for Arcs 1–4 velocity, then migrating to GitLab CI for SRF IDP alignment, is a clean path. The Terraform code itself is SCM-agnostic — only the CI pipeline config changes.
+- **SRF-aligned IaC.** The tech stack brief requires IaC via Terraform. Delivering infrastructure without Terraform deviates from SRF engineering standards.
+- **AI-assisted authoring.** Claude Code writes and maintains Terraform fluently. The traditional objection to IaC ("too much overhead for a small team") is neutralized when the AI handles `.tf` file generation.
+- **Reproducible environments.** `terraform apply` creates a complete environment from scratch. Disaster recovery and staging creation become simple operations.
+- **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code.
+- **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code.
+- **OIDC eliminates credential management.** No AWS access keys to rotate, no long-lived secrets to leak. GitHub Actions authenticates via ephemeral tokens scoped to the repo.
+- **Terraform Cloud enables human oversight.** The plan review UI lets the human principal understand AI-authored infrastructure changes without reading raw HCL diffs.
 
 ### Alternatives Considered
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Terraform from Milestone 2a (chosen)** | SRF-aligned; reproducible environments; AI-assisted authoring | Upfront setup time; state backend needed |
-| **Terraform deferred to Arc 4** | Simpler Arc 1 and Milestone 2a; no state management overhead | Deviates from SRF standards; manual infrastructure creates undocumented state; harder to retrofit |
-| **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; not integrated into SRF IDP; smaller provider ecosystem |
-| **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle; each service configured independently |
-| **AWS CDK** | Strong AWS integration | Portal is Vercel-based, not AWS-heavy; CDK is AWS-centric; not the SRF standard for non-Lambda infrastructure |
+| **Terraform from Milestone 1a (chosen)** | SRF-aligned; reproducible from day one; aligns with ADR-017 Lambda timing | Upfront setup time; state backend needed |
+| **Terraform deferred to Milestone 2a** | Slightly simpler Arc 1 start | Manual infrastructure creates undocumented state; ADR-017 needs Lambda in Arc 1; import-or-recreate friction |
+| **S3 + DynamoDB state backend** | Zero vendor cost; no TFC dependency | Manual bootstrap (bucket + table); no plan review UI; DynamoDB state locking overhead |
+| **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; smaller provider ecosystem |
+| **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle |
 
 ### Consequences
 
-- Milestone 2a includes `/terraform` directory with modules for Neon, Vercel, and Sentry
-- Arcs 1–4 use GitHub + GitHub Actions; Arc 4 migrates to GitLab + GitLab CI (SRF IDP)
-- Terraform state stored in Terraform Cloud (Arcs 1–3) or GitLab Terraform backend (Milestone 5a+)
-- All environment variables and service configuration defined in Terraform — no undocumented dashboard settings
-- `.env.example` still maintained for local development (developers run the app locally without Terraform)
-- Auth0, New Relic, and Cloudflare modules added as those services are introduced (Milestones 5–6)
-- Four-environment convention (dev/qa/stg/prod) adopted per SRF standard, with only `dev` active in Milestone 2a
-- Stakeholder question: does SRF prefer the portal repo in GitLab from day one, or is GitHub acceptable for Arcs 1–4 with a planned migration?
+- Milestone 1a includes `/terraform` directory with modules for Neon, Vercel, Sentry, and AWS
+- GitHub is the primary SCM with GitHub Actions CI/CD. GitLab migration architecturally supported but not planned.
+- Terraform state stored in Terraform Cloud (free tier)
+- GitHub Actions authenticates to AWS via OIDC federation — no long-lived AWS credentials
+- Non-AWS provider tokens (Neon, Vercel, Sentry) stored as GitHub secrets with quarterly rotation
+- All environment variables and service configuration defined in Terraform. Explicit exceptions: GitHub branch protection (manual), Neon/Vercel spend alerts (manual dashboard settings — see CONTEXT.md § Bootstrap Credentials Checklist)
+- `.env.example` still maintained for local development
+- Cloudflare, New Relic, and Auth0 modules added as those services are introduced
+- Three-environment convention (dev/staging/prod), with only `dev` active in Arcs 1–3
+- Provider versions pinned with pessimistic constraints; upgrades are explicit PRs
+- `.terraform.lock.hcl` committed to version control (reproducible provider installations, like `pnpm-lock.yaml`)
+- TFC auto-apply enabled for `dev` workspace (plan runs on PR, apply runs automatically on merge to main). Staging and production workspaces (Arc 4+) require manual confirmation before apply.
+
+*Revised: 2026-02-25, GitHub-first SCM (GitLab migration deferred, not planned), Terraform Cloud as state backend, OIDC federation for AWS auth, Milestone 1a timing (aligned with ADR-017), three-environment model, provider version pinning. Updated: Lambda timing clarified (module code from 1a, infra provisioned 3a). GitHub settings removed from Terraform boundary (manual). Lock file committed. TFC auto-apply for dev.*
 
 ---
 
@@ -1331,7 +1351,7 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 
 3. **Use EventBridge Scheduler (not EventBridge Rules) for cron tasks.** EventBridge Scheduler is the purpose-built service for scheduled invocations, with built-in retry with exponential backoff, dead-letter queues, and one-time scheduling. All nightly/daily cron tasks use Scheduler.
 
-4. **Provision Lambda infrastructure in Arc 1, not Milestone 2a.** Arc 1 ("Prove") is where Terraform modules are provisioned. The backup Lambda function (ADR-019) deploys immediately. Subsequent milestones add functions to already-working infrastructure.
+4. **Provision Lambda infrastructure when first needed (Milestone 3a), not at a fixed gate (former Milestone 2a).** Terraform module *code* for Lambda (`/terraform/modules/lambda/`, `/terraform/modules/eventbridge/`) exists in the repo from Milestone 1a — it's code like any other. Lambda *infrastructure* (IAM roles, functions, EventBridge schedules) is provisioned in Milestone 3a when the first function (backup, ADR-019) deploys. Subsequent milestones add functions to already-provisioned infrastructure.
 
 5. **Replace `/serverless/` directory with `/lambda/`.** The directory name reflects the runtime, not a vendor tool.
 
@@ -1396,7 +1416,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 
 ### Rationale
 
-- **Lambda is SCM-agnostic.** It works identically under GitHub Actions (Arcs 1–4) and GitLab CI (Arc 4+). Unlike CI-based cron jobs, Lambda infrastructure doesn't change when the portal migrates from GitHub to GitLab. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
+- **Lambda is SCM-agnostic.** It works identically under GitHub Actions or any future CI system. Unlike CI-based cron jobs, Lambda infrastructure doesn't change if the portal ever migrates SCM platforms. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
 - **The portal already has an AWS footprint.** S3 (backups, Milestone 3a), Bedrock (Claude API, Arc 1), CloudFront (media streaming, Arc 6), and EventBridge are all AWS services the portal uses regardless. Lambda is the natural compute layer for an AWS-invested project.
 - **Terraform-native Lambda is sufficient at this scale.** The portal has < 15 Lambda functions across all milestones. SF v4's ergonomics (local invocation, plugin ecosystem, per-function configuration) serve microservice architectures with dozens of functions. For < 15 functions, `aws_lambda_function` + `aws_lambda_layer_version` in Terraform are straightforward and eliminate a tool dependency.
 - **One IaC tool, one deployment pipeline.** `terraform apply` already deploys Neon, Vercel, Sentry, Cloudflare, and S3. Adding Lambda to the same pipeline means no new deployment workflow. CI/CD gains no new steps — Lambda deploys alongside everything else.
@@ -1408,7 +1428,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 
 1. **Keep the former Lambda batch decision unchanged (Lambda + SF v4 in Milestone 2a).** Rejected: introduces dual IaC tooling, SF v4 licensing dependency, and Milestone 2a overload. The benefits of Lambda are preserved without the deployment tool overhead.
 
-2. **Replace Lambda entirely with CI-scheduled scripts (GitHub Actions / GitLab CI).** Rejected: builds batch infrastructure on an SCM platform the portal is leaving at Arc 4. CI cron is ephemeral infrastructure — Lambda + EventBridge is durable infrastructure managed by Terraform.
+2. **Replace Lambda entirely with CI-scheduled scripts (GitHub Actions).** Rejected: CI cron is ephemeral infrastructure tied to the SCM platform. Lambda + EventBridge is durable infrastructure managed by Terraform, SCM-agnostic.
 
 3. **AWS SAM instead of Terraform-native Lambda.** Rejected: SAM is another CLI tool alongside Terraform. For < 15 functions, native Terraform resources are simpler.
 
@@ -1438,11 +1458,11 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 
 ### Context
 
-The portal will migrate from GitHub Actions (Arcs 1–4) to GitLab CI/CD (Arc 4+) per SRF IDP standards. Both CI systems call the same operations: run tests, apply Terraform, run migrations, deploy. If pipeline logic is embedded in CI-specific YAML (GitHub Actions workflow syntax vs. GitLab CI YAML syntax), the Arc 4 migration requires rewriting every pipeline step.
+CI pipeline logic should not be embedded in CI-specific YAML syntax. If the portal ever migrates SCM platforms (e.g., GitHub → GitLab for SRF IDP alignment), CI-embedded logic requires rewriting every pipeline step. More immediately, CI-agnostic scripts enable local execution parity — a developer can run `./scripts/db-migrate.sh` locally with the same logic CI uses.
 
 ### Decision
 
-Add a `scripts/` directory with CI-system-agnostic deployment scripts. Both GitHub Actions and GitLab CI call these scripts rather than embedding logic in workflow YAML.
+Add a `scripts/` directory with CI-system-agnostic deployment scripts. GitHub Actions (and any future CI) calls these scripts rather than embedding logic in workflow YAML.
 
 #### Directory structure
 
@@ -1453,34 +1473,27 @@ Add a `scripts/` directory with CI-system-agnostic deployment scripts. Both GitH
  db-migrate.sh — Run dbmate migrations against a given database URL
  smoke-test.sh — Run smoke tests against a deployed environment
  search-quality.sh — Run the search quality evaluation suite
+ neon-branch-cleanup.sh — Delete orphaned Neon preview branches (TTL enforcement)
 ```
 
 #### CI workflow pattern
 
-GitHub Actions (Arcs 1–4):
 ```yaml
+# GitHub Actions
 steps:
  - run: ./scripts/terraform-plan.sh dev
- - run: ./scripts/db-migrate.sh $DATABASE_URL
+ - run: ./scripts/db-migrate.sh $NEON_DATABASE_URL
  - run: ./scripts/smoke-test.sh $DEPLOYMENT_URL
 ```
 
-GitLab CI (Arc 4+):
-```yaml
-script:
- - ./scripts/terraform-plan.sh dev
- - ./scripts/db-migrate.sh $DATABASE_URL
- - ./scripts/smoke-test.sh $DEPLOYMENT_URL
-```
-
-The CI config becomes a thin orchestration layer. The scripts contain the actual logic.
+The CI config is a thin orchestration layer. The scripts contain the actual logic. If SCM migration occurs, only the CI config changes — scripts are identical.
 
 #### Multi-environment promotion pipeline
 
-For Arc 4+ with four environments (dev/qa/stg/prod):
+For Arc 4+ with three environments (dev/staging/prod):
 
 ```
-PR → dev (auto) → qa (manual gate) → stg (manual gate) → prod (manual gate)
+PR → dev (auto) → staging (manual gate) → prod (manual gate)
 ```
 
 Each promotion runs:
@@ -1493,17 +1506,18 @@ Migration sequencing: Terraform apply runs *first* (in case it creates the datab
 
 ### Rationale
 
-- **Migration cost reduction.** The Arc 4 SCM migration becomes a CI config swap (rewrite `.github/workflows/*.yml` → `.gitlab-ci.yml`), not a logic rewrite. The scripts are identical.
+- **SCM portability.** Any future SCM migration becomes a CI config swap, not a logic rewrite.
 - **Local reproducibility.** Developers can run `./scripts/db-migrate.sh` locally. CI parity with local execution prevents "works on my machine" issues.
 - **Testability.** Scripts can be tested independently of the CI system. ShellCheck lint in CI catches script errors.
 
 ### Consequences
 
-- `/scripts/` directory added to repo in Arc 1
+- `/scripts/` directory added to repo in Milestone 1a
 - GitHub Actions workflows call scripts instead of inline commands
-- Arc 4 GitLab migration rewrites CI config only, not deployment logic
 - All scripts accept environment name as parameter, defaulting to `dev`
 - **Extends ADR-016** (Terraform) with concrete deployment orchestration
+
+*Revised: 2026-02-25, aligned with ADR-016 revision (GitHub-first, three-environment model). Added neon-branch-cleanup.sh.*
 
 ---
 
@@ -1630,7 +1644,7 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 
 ### Context
 
-The portal will operate across multiple environments (dev, staging, production) and will transition from GitHub to GitLab as SRF's Internal Developer Platform. SRF uses AWS as their cloud provider, Terraform for IaC, and has established patterns for multi-account AWS architectures. The architecture team has autonomous design authority for infrastructure decisions regarding GitLab CI/CD templates, AWS account structure, and Contentful space strategy.
+The portal will operate across multiple environments (dev, staging, production) as it moves toward production readiness. SRF uses AWS as their cloud provider, Terraform for IaC, and has established patterns for multi-account AWS architectures. The architecture team has autonomous design authority for infrastructure decisions regarding CI/CD, AWS account structure, and Contentful space strategy.
 
 ### Decision
 
@@ -1661,35 +1675,15 @@ SRF AWS Organization
 - **Terraform workspaces.** One Terraform configuration, three workspaces (`dev`, `stg`, `prod`). Environment-specific values in `terraform/environments/{env}.tfvars`.
 - **Neon branching.** Dev and staging use Neon branches (instant, copy-on-write). Production uses the primary Neon project with branch protection enabled (ADR-124). Schema migrations promoted through branches before reaching production. Preview branches per PR with TTL auto-expiry.
 
-### GitLab CI/CD Strategy
+### CI/CD Promotion Pipeline
 
-```yaml
-# .gitlab-ci.yml (Arc 4+)
-stages:
- - validate
- - test
- - build
- - deploy-dev
- - deploy-staging
- - deploy-prod
-
-deploy-prod:
- stage: deploy-prod
- when: manual # manual gate for production
- environment:
- name: production
- url: https://teachings.yogananda.org
- only:
- - main
- script:
- - ./scripts/deploy.sh prod
- - ./scripts/migrate.sh prod
- - ./scripts/verify.sh prod
+```
+PR → dev (auto) → staging (manual gate) → prod (manual gate)
 ```
 
-- **CI-agnostic scripts.** All deployment logic lives in `/scripts/` (ADR-018). GitLab CI/CD calls the same scripts that GitHub Actions called. Migration is a YAML change, not a logic rewrite.
+- **CI-agnostic scripts.** All deployment logic lives in `/scripts/` (ADR-018). GitHub Actions calls these scripts; any future CI system calls the same scripts.
 - **Manual production gate.** Production deployments always require manual approval. No automatic promotion from staging to production.
-- **GitLab environments.** Each environment is a GitLab environment with its own URL, enabling GitLab's built-in deployment tracking.
+- **GitHub Environments.** Each environment is a GitHub Environment with its own URL and protection rules, enabling deployment tracking and required reviewers.
 
 ### Contentful Space Strategy
 
@@ -1706,17 +1700,17 @@ Contentful Organization
 
 ### Rationale
 
-- **SRF standard patterns.** Multi-account AWS, Terraform workspaces, and GitLab CI/CD are established at SRF. This architecture doesn't invent — it applies.
+- **SRF standard patterns.** Multi-account AWS and Terraform workspaces are established at SRF. This architecture doesn't invent — it applies.
 - **Autonomous design authority.** The user confirmed autonomous decision-making for infrastructure. These decisions align with SRF's tech stack while optimizing for the portal's specific needs.
 - **Blast radius containment.** A broken dev deployment can never affect production. Account-level isolation is the strongest boundary AWS offers.
-- **Migration-ready from day one.** Because deployment scripts are CI-agnostic, the GitHub→GitLab migration at Arc 4 is a configuration change, not a re-architecture.
+- **CI portability.** Because deployment scripts are CI-agnostic (ADR-018), any future SCM migration is a configuration change, not a re-architecture.
 
 ### Consequences
 
 - Terraform configurations parameterized by environment from Arc 1
 - AWS account creation requested through SRF's cloud team (or single-account with IAM isolation if multi-account is delayed)
 - Contentful spaces created per environment (one space per environment)
-- GitLab CI/CD templates prepared during Milestone 5a, activated at Arc 4
+- GitHub Environments configured per environment (dev, staging, prod) with protection rules
 - Neon branching strategy documented in runbook
 - **Fallback:** If multi-account AWS is operationally heavy for early arcs, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
 
@@ -1755,7 +1749,7 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 
 | Service | Region | Failover |
 |---------|--------|----------|
-| Vercel Serverless Functions | `us-east-1` (or `ap-south-1` if Neon region is in Asia) | Vercel provides within-region redundancy. No cross-region failover. |
+| Vercel Serverless Functions | `us-west-2` (co-located with Neon and Bedrock) | Vercel provides within-region redundancy. No cross-region failover. |
 | AWS Lambda | Same region as Neon primary | Within-region redundancy (Lambda runs across multiple AZs automatically). |
 
 **Layer 3: Database (single-region with HA, Arcs 1–4)**
@@ -1791,7 +1785,7 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 
 ### Consequences
 
-- Primary region selected based on Neon availability and SRF's AWS account structure (likely `us-east-1` or `us-west-2`)
+- Primary region: `us-west-2` — co-locates Neon, Bedrock, Lambda, and S3 in a single region
 - Vercel function region co-located with Neon primary
 - Lambda functions deployed to the same region as Neon primary
 - CloudFront distribution configured for all static assets from Arc 1

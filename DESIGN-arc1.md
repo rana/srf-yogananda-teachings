@@ -400,7 +400,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
  If validation fails: delete branch, keep current model.
 
 7. UPDATE CONFIG
- Update .env EMBEDDING_MODEL and EMBEDDING_DIMENSION.
+ Update /lib/config.ts EMBEDDING_MODEL and EMBEDDING_DIMENSIONS.
  Update default values in schema for new chunks.
 ```
 
@@ -1483,27 +1483,21 @@ The path from "no code" to "running search" — the ceremony that transforms des
  └── Smoke test: search "How do I overcome fear?" returns results
 ```
 
-### Environment Variables (`.env.example`)
+### Environment Variables
 
-```env
-# Neon PostgreSQL
-DATABASE_URL= # Pooled connection string (for serverless)
-DATABASE_URL_DIRECT= # Direct connection string (for dbmate migrations)
+See DES-039 § Environment Configuration for the canonical `.env.example`, named constants (`/lib/config.ts`), CI-only secrets, and developer tooling configuration. That section is the single source of truth for all environment variables.
 
-# AI Services (ADR-014)
-AWS_REGION=us-east-1 # Bedrock region
-CLAUDE_MODEL_CLASSIFY=anthropic.claude-3-5-haiku-20241022-v1:0 # Intent classification
-CLAUDE_MODEL_EXPAND=anthropic.claude-3-5-haiku-20241022-v1:0 # Query expansion
-CLAUDE_MODEL_RANK=anthropic.claude-3-5-haiku-20241022-v1:0 # Passage ranking (promote to Sonnet if benchmarks warrant)
-CLAUDE_MODEL_BATCH=anthropic.claude-opus-4-6-v1 # Offline batch: theme tagging, reference extraction, translation drafting
-VOYAGE_API_KEY= # Voyage voyage-3-large for embeddings (ADR-118)
+**Milestone 1a minimum viable `.env.local`** (the subset needed before Contentful is connected):
 
-# Observability
-NEXT_PUBLIC_SENTRY_DSN= # Sentry error tracking
-SENTRY_AUTH_TOKEN= # Source map uploads
-
-# Vercel (set in Vercel dashboard, not .env)
-# VERCEL_URL — auto-set by Vercel
+```bash
+NEON_DATABASE_URL=               # From Neon Console → Connection Details (pooled)
+NEON_DATABASE_URL_DIRECT=        # From Neon Console → Connection Details (direct)
+AWS_REGION=us-west-2
+AWS_ACCESS_KEY_ID=               # IAM user with bedrock:InvokeModel
+AWS_SECRET_ACCESS_KEY=           # Paired with above
+VOYAGE_API_KEY=                  # From Voyage AI dashboard
+NEXT_PUBLIC_SENTRY_DSN=          # From Sentry → Project Settings → Client Keys
+SENTRY_AUTH_TOKEN=               # From Sentry → Settings → Auth Tokens
 ```
 
 ---
@@ -1770,49 +1764,78 @@ All tools delegate to `/lib/services/` — zero business logic in the MCP layer.
 
 ## DES-039: Infrastructure and Deployment
 
-All infrastructure is defined as code per SRF engineering standards. See ADR-016.
+All infrastructure is defined as code per SRF engineering standards from Milestone 1a. See ADR-016.
+
+### Bootstrap: Greenfield Provisioning
+
+The portal starts greenfield — no existing infrastructure to import. Terraform creates all resources from scratch on first `terraform apply`. Any Neon projects or Vercel projects created during design exploration (e.g., via MCP) should be deleted before bootstrap to avoid naming conflicts.
+
+**One-time manual bootstrap** (before first `terraform apply`):
+1. Create Terraform Cloud organization + workspace (see ADR-016 § Terraform State)
+2. Create AWS IAM OIDC Identity Provider + IAM Role (see ADR-016 § OIDC Federation)
+3. Populate GitHub secrets (see CONTEXT.md § Bootstrap Credentials Checklist)
+4. Run `terraform init` to connect workspace to TFC backend
+
+After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`.
 
 ### Terraform Module Layout
 
 ```
 /terraform/
- main.tf — Provider configuration, backend
+ main.tf — Provider configuration, TFC backend
  variables.tf — Input variables (project name, environment)
  outputs.tf — Connection strings, URLs, DSNs
+ versions.tf — required_providers with version constraints
 
  /modules/
- /neon/ — Neon project, database, roles, pgvector
- /vercel/ — Vercel project, env vars, domains
+ /neon/ — Neon project, database, roles, pgvector, pg_search
+ /vercel/ — Vercel project, env vars
  /sentry/ — Sentry project, DSN, alert rules
- /cloudflare/ — DNS records, WAF rules, bot protection
- /newrelic/ — Synthetics monitors, alert policies
+ /aws/ — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm
+ /cloudflare/ — DNS records, WAF rules (deferred until custom domain)
+ /newrelic/ — Synthetics monitors, alert policies (Milestone 3d)
 
  /environments/
- dev.tfvars — Milestone 2a (only active environment)
- qa.tfvars — Milestone 5a+
- stg.tfvars — Milestone 5a+
- prod.tfvars — Milestone 5a+
+ dev.tfvars — Milestone 1a (only active environment)
+ staging.tfvars — Arc 4+
+ prod.tfvars — Arc 4+
 ```
+
+#### Progressive Module Activation
+
+Modules are activated via feature-flag variables in `dev.tfvars`. This avoids commenting out modules or maintaining separate Terraform configurations per milestone.
+
+| Variable | 1a | 1b | 3a | 4+ |
+|----------|----|----|----|----|
+| `enable_neon` | `true` | `true` | `true` | `true` |
+| `enable_sentry` | `true` | `true` | `true` | `true` |
+| `enable_aws_core` | `true` | `true` | `true` | `true` |
+| `enable_vercel` | `false` | `true` | `true` | `true` |
+| `enable_lambda` | `false` | `false` | `true` | `true` |
+| `enable_cloudflare` | `false` | `false` | `false` | when domain assigned |
+| `enable_newrelic` | `false` | `false` | `false` | 3d |
+
+Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 3a adds Lambda. Clean, incremental, auditable.
 
 ### Boundary: Terraform vs. Application Code
 
 | Managed by Terraform | Managed by Application Code |
 |---------------------|-----------------------------|
 | Service creation (Neon project, Vercel project, Sentry project) | Database schema (dbmate SQL migrations) |
-| Environment variables, secrets | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
-| DNS records, domain bindings | Application routing (`next.config.js`) |
+| Environment variables, secrets placeholders | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
+| AWS IAM roles, S3 buckets, Budgets alarm | Lambda handler code (`/lambda/`) |
+| — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
+| DNS records, domain bindings (when active) | Application routing (`next.config.js`) |
 | Alert rules, Synthetics monitors | Structured logging (`lib/logger.ts`) |
-| Auth provider (Milestone 7a+, if needed) | Auth SDK integration in Next.js |
-| Repo settings, branch protection | CI/CD workflow files |
 
 ### Source Control and CI/CD
 
-| Arc/Milestone | SCM | CI/CD | Terraform State |
-|---------------|-----|-------|-----------------|
-| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud |
-| **Arc 6+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+| Phase | SCM | CI/CD | Terraform State |
+|-------|-----|-------|-----------------|
+| **Primary (all arcs)** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
-#### Milestone 2a CI/CD Pipeline (GitHub Actions)
+#### CI/CD Pipeline (GitHub Actions)
 
 ```
 On every PR:
@@ -1823,52 +1846,206 @@ On every PR:
  5. Playwright (E2E)
  6. Lighthouse CI (performance)
  7. Search quality suite
- 8. terraform plan (if /terraform/ changed)
+ 8. terraform fmt -check + terraform validate (if /terraform/ changed)
+ 9. terraform plan (if /terraform/ changed) — posted as PR comment
 
 On merge to main:
  1. All of the above
  2. terraform apply (dev)
- 3. Vercel production deployment
 ```
 
-Infrastructure changes (`/terraform/**`) trigger `terraform plan` on PR and `terraform apply` on merge. Application changes trigger the full test suite and Vercel deployment. Both can trigger in the same PR.
+Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraform validate`, `terraform plan` on PR, and `terraform apply` on merge. Application changes trigger the full test suite. Both can trigger in the same PR.
 
-### Environment Variables
+#### Workflow File Structure
 
-All environment variables documented in `.env.example` and provisioned via Terraform:
+```
+.github/
+ workflows/
+   ci.yml              — App CI: lint, type check, test, build, a11y, Lighthouse, search quality
+   terraform.yml        — Infra CI: fmt, validate, plan (PR), apply (merge to main)
+   neon-branch.yml      — Neon branch lifecycle: create on PR open, delete on PR close
+   neon-cleanup.yml     — Nightly: delete orphaned Neon preview branches
+ dependabot.yml         — Automated provider + dependency update PRs
+```
+
+**`ci.yml`** runs on all PRs and pushes to main. No AWS credentials needed — pure app testing.
+
+**`terraform.yml`** runs only when `/terraform/**` changes. Uses OIDC federation (`AWS_ROLE_ARN`) for AWS auth. Provider tokens (`NEON_API_KEY`, `VERCEL_TOKEN`, `SENTRY_AUTH_TOKEN`) as GitHub secrets. Posts `terraform plan` output as PR comment. On merge to main, `terraform apply` runs via TFC CLI-driven workflow (TFC auto-apply enabled for dev workspace — no manual confirmation needed).
+
+**`neon-branch.yml`** runs on PR lifecycle events. Uses `NEON_API_KEY` secret. Creates a Neon branch on PR open, deletes on PR close.
+
+**`neon-cleanup.yml`** runs on `schedule: cron('0 3 * * *')`. Calls `/scripts/neon-branch-cleanup.sh`. Catches orphans.
+
+**`dependabot.yml`** covers two ecosystems: `terraform` (provider updates for `/terraform/`) and `npm` (dependency updates). Provider update PRs automatically trigger `terraform.yml`, producing a plan diff for review.
+
+#### Vercel Deployment Strategy
+
+Vercel auto-deploys on git push via its native GitHub integration. Terraform manages the Vercel *project* (settings, environment variables, domain bindings) but does not trigger deployments. This keeps the Terraform boundary clean ("Terraform creates services; app code triggers deployments") and avoids race conditions between Terraform-triggered and git-triggered deploys.
+
+For Arc 4+ multi-environment promotion (dev → staging → prod), deployment switches to Vercel CLI invoked from CI scripts (ADR-018), with Vercel's git integration disabled. This gives explicit control over which environment receives which build.
+
+#### Neon Branch-per-PR
+
+Preview deployments use Neon's branching for database isolation:
+
+| Branch Type | Lifecycle | TTL | Cleanup |
+|-------------|-----------|-----|---------|
+| **Production** (`main`) | Permanent | — | — |
+| **Preview** (per PR) | Created on PR open | 7 days after last commit | GitHub Action on PR close + nightly cleanup script |
+| **CI test** (per run) | Created at test start | Deleted at test end | GitHub Action post-step |
+
+TTL enforcement: a GitHub Action runs on PR close (`types: [closed]`) to delete the associated Neon branch via Neon API. A nightly cleanup script (`/scripts/neon-branch-cleanup.sh`) catches orphans — branches older than 7 days with no open PR. Both use the `NEON_API_KEY` secret.
+
+#### Cost Alerting
+
+Terraform provisions an AWS Budget alarm at 80% and 100% of monthly target ($100 for Arcs 1–3, adjusted as services scale). The alarm sends email to the human principal. Neon and Vercel cost alerts are configured manually in their dashboards (no Terraform provider support for spend alerts).
+
+### Environment Configuration
+
+The portal has three distinct configuration layers — application environment variables, named constants, and developer tooling — each with a clear owner and location. ADR-041 and all other sections reference this canonical definition.
+
+#### 1. Application Environment Variables (`.env.example`)
+
+Values that vary per environment or contain secrets. The `.env.example` file is the local development reference. Deployed environments receive these via Terraform outputs and Vercel encrypted env vars.
 
 ```bash
-# .env.example — Local development reference
-# These are set by Terraform in deployed environments.
+# .env.example — Application environment variables
+# Copy to .env.local for local development.
+# In deployed environments, Terraform outputs and Vercel secrets populate these.
 
-# Neon
-DATABASE_URL= # Terraform output: module.neon.connection_string
-NEON_PROJECT_ID= # Terraform output: module.neon.project_id
+# ── Neon PostgreSQL ─────────────────────────────────────────────
+NEON_DATABASE_URL=               # [terraform] Pooled connection (serverless functions)
+NEON_DATABASE_URL_DIRECT=        # [terraform] Direct connection (dbmate migrations, scripts)
+NEON_PROJECT_ID=                 # [terraform] Neon API calls
 
-# AI
-ANTHROPIC_API_KEY= # Set manually (secret)
-OPENAI_API_KEY= # Set manually (secret)
+# ── AWS (Bedrock inference from Vercel) ─────────────────────────
+AWS_REGION=us-west-2             # [terraform] Bedrock, Lambda, S3
+AWS_ACCESS_KEY_ID=               # [secret] IAM user: portal-app-bedrock (InvokeModel only)
+AWS_SECRET_ACCESS_KEY=           # [secret] Paired with above
 
-# Sentry
-NEXT_PUBLIC_SENTRY_DSN= # Terraform output: module.sentry.dsn
-SENTRY_AUTH_TOKEN= # Set manually (secret)
+# ── AI ──────────────────────────────────────────────────────────
+VOYAGE_API_KEY=                  # [secret] Voyage voyage-3-large embeddings (ADR-118)
 
-# Auth (Milestone 7a+, if needed — no auth variables required for Arcs 1–6)
+# ── Contentful ──────────────────────────────────────────────────
+CONTENTFUL_SPACE_ID=             # [terraform] Space identifier
+CONTENTFUL_ACCESS_TOKEN=         # [secret] Delivery API (read-only)
+CONTENTFUL_MANAGEMENT_TOKEN=     # [secret] Management API — ingestion scripts only
 
-# YouTube
-YOUTUBE_API_KEY= # Set manually (secret)
+# ── Observability ───────────────────────────────────────────────
+NEXT_PUBLIC_SENTRY_DSN=          # [terraform] Sentry error tracking (bundled into client JS)
+SENTRY_AUTH_TOKEN=               # [secret] Source map uploads
 
-# Email (Milestone 5a)
-RESEND_API_KEY= # Set manually (secret)
-
-# Amplitude (Milestone 3d)
-NEXT_PUBLIC_AMPLITUDE_KEY= # Terraform output: module.amplitude.api_key
-
-# New Relic (Milestone 3d)
-NEW_RELIC_LICENSE_KEY= # Set manually (secret)
+# ── Future milestones (commented until needed) ──────────────────
+# YOUTUBE_API_KEY=               # [secret] Arc 2+ — video integration
+# RESEND_API_KEY=                # [secret] Milestone 5a — email
+# NEXT_PUBLIC_AMPLITUDE_KEY=     # [terraform] Milestone 3d — analytics
+# NEW_RELIC_LICENSE_KEY=         # [secret] Milestone 3d — observability
 ```
 
-Secrets (API keys, tokens) are never in Terraform state. They are set via Vercel's encrypted environment variables (provisioned by Terraform as empty placeholders, then populated manually or via a secrets manager).
+**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secret]` = set manually everywhere, never in Terraform state. Secrets in Vercel are provisioned by Terraform as empty placeholders, then populated manually.
+
+**AWS authentication by context:**
+
+| Context | Auth mechanism | Credentials |
+|---|---|---|
+| **Vercel functions → Bedrock** | IAM user (`portal-app-bedrock`) | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` as Vercel env vars |
+| **Lambda → Bedrock/S3** | IAM execution role (attached by Terraform) | No env vars needed — role is automatic |
+| **GitHub Actions → AWS** | OIDC federation (ADR-016) | `AWS_ROLE_ARN` secret, no stored keys |
+| **Local dev → Bedrock** | IAM user or named profile | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local`, or `AWS_PROFILE=srf-dev` |
+
+The Vercel IAM user (`portal-app-bedrock`) has a single permission: `bedrock:InvokeModel` on the configured models in `us-west-2`. It cannot access S3, Lambda, or any other AWS service. Terraform creates this user; credentials are rotated quarterly via manual key rotation (create new key → update Vercel env var → delete old key). Automated rotation deferred to Milestone 3d operational maturity. This is separate from the CI OIDC role (which has broader permissions for Terraform apply, S3 backups, Lambda deployment).
+
+**`ANTHROPIC_API_KEY` is removed from `.env.example`.** The application code uses `@anthropic-ai/bedrock-sdk` (not `@anthropic-ai/sdk`) for all Claude calls, routing through Bedrock in every environment including local dev. One code path, one auth mechanism. If a developer cannot access Bedrock (e.g., no AWS account yet during initial scaffold), the search pipeline gracefully degrades — search works without Claude-powered query expansion, returning BM25 + vector results only.
+
+**What is NOT in `.env.example`:**
+- Model IDs, chunk sizes, search parameters → `/lib/config.ts` (see below)
+- CI-only secrets (NEON_API_KEY, VERCEL_TOKEN, AWS_ROLE_ARN) → GitHub Secrets only (see CONTEXT.md § Bootstrap Credentials Checklist)
+- Claude Code developer tooling → developer shell profile (see below)
+
+#### 2. Named Constants (`/lib/config.ts` — ADR-123)
+
+Tunable parameters that are not secrets and do not vary between environments. These are the "magic numbers" that ADR-123 requires as named constants. They change via code PRs, not env var updates.
+
+```typescript
+// /lib/config.ts — Named constants per ADR-123
+// These are tunable defaults, not architectural commitments.
+// Change via PR with evidence. Annotate: date, old → new, reason.
+
+// ── AI Model Selection (ADR-014) ───────────────────────────────
+export const BEDROCK_REGION = 'us-west-2';
+
+// Real-time models (search pipeline — latency-sensitive)
+export const CLAUDE_MODEL_CLASSIFY = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+export const CLAUDE_MODEL_EXPAND   = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+export const CLAUDE_MODEL_RANK     = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+
+// Batch models (offline — quality-sensitive)
+export const CLAUDE_MODEL_BATCH    = 'anthropic.claude-opus-4-6-v1';
+
+// ── Embedding (ADR-118) ────────────────────────────────────────
+export const EMBEDDING_MODEL      = 'voyage-3-large';
+export const EMBEDDING_DIMENSIONS = 1024;
+export const EMBEDDING_INPUT_TYPE_QUERY    = 'query';
+export const EMBEDDING_INPUT_TYPE_DOCUMENT = 'document';
+
+// ── Chunking (ADR-048) ────────────────────────────────────────
+export const CHUNK_SIZE_TOKENS    = 1000;
+export const CHUNK_OVERLAP_TOKENS = 200;
+
+// ── Search (ADR-044, ADR-119) ──────────────────────────────────
+export const RRF_K = 60;
+export const SEARCH_RESULTS_DEFAULT = 10;
+export const SEARCH_RESULTS_MAX     = 50;
+export const SEARCH_DEBOUNCE_MS     = 300;
+
+// ── Rate Limiting (ADR-023) ────────────────────────────────────
+export const RATE_LIMIT_SEARCH_RPM = 30;
+export const RATE_LIMIT_API_RPM    = 60;
+
+// ── Cache TTLs ─────────────────────────────────────────────────
+export const CACHE_TTL_SEARCH_SECONDS     = 300;
+export const CACHE_TTL_SUGGESTIONS_SECONDS = 3600;
+```
+
+Model IDs are parameters, not secrets — they don't need env var indirection. When a model is upgraded, the change is a code PR with a `terraform plan`-equivalent diff: visible, reviewable, and auditable.
+
+#### 3. CI-Only Secrets (GitHub Secrets)
+
+Never in `.env.local` or `.env.example`. Used only by GitHub Actions and Terraform. Documented in CONTEXT.md § Bootstrap Credentials Checklist.
+
+| Secret | Used by | Purpose |
+|---|---|---|
+| `TF_API_TOKEN` | Terraform | Terraform Cloud authentication |
+| `AWS_ROLE_ARN` | GitHub Actions OIDC | Assume IAM role for AWS operations |
+| `NEON_API_KEY` | Terraform, branch cleanup script | Neon provider + branch management |
+| `VERCEL_TOKEN` | Terraform | Vercel provider |
+| `VERCEL_ORG_ID` | Terraform | Scope Vercel operations |
+| `SENTRY_ORG` | Terraform | Scope Sentry operations |
+
+#### 4. Developer Tooling (Claude Code + MCP)
+
+The AI developer (Claude Code) needs its own configuration, separate from the application. These are set in the developer's shell profile or session, not in `.env.example`.
+
+```bash
+# Claude Code — route through AWS Bedrock (same account as app)
+export CLAUDE_CODE_USE_BEDROCK=1
+export AWS_REGION=us-west-2
+export AWS_PROFILE=srf-dev           # or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+
+# Claude Code — Bedrock bearer token (alternative to IAM credentials)
+# export AWS_BEARER_TOKEN_BEDROCK=   # If using bearer token auth instead of IAM
+
+# Claude Code — experimental features
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
+# MCP servers (configured in .claude/settings.json, not env vars)
+# Neon MCP: uses NEON_API_KEY from env or settings
+# Sentry MCP: uses SENTRY_AUTH_TOKEN from env or settings
+```
+
+**Why separate from `.env.example`:** Claude Code env vars configure the *development tool*, not the application. They route the AI developer through the project's AWS account (same billing, same permissions). A human developer using VS Code wouldn't need these; an AI developer using Claude Code does. The application code never reads `CLAUDE_CODE_USE_BEDROCK` — only the Claude Code CLI does.
+
+**AWS authentication for local development:** The developer (human or AI) authenticates to AWS via an IAM user with an `srf-dev` profile, or via `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`. This is separate from the OIDC federation used by GitHub Actions. The IAM user needs Bedrock InvokeModel permission for the configured region.
 
 ### Local Development
 
@@ -1876,11 +2053,13 @@ Developers run the app locally without Terraform:
 
 1. Clone repo
 2. `pnpm install`
-3. Copy `.env.example` → `.env.local`, fill in values
+3. Copy `.env.example` → `.env.local`, fill in values (see § Environment Variables above)
 4. `pnpm db:migrate` (applies dbmate migrations to a Neon dev branch)
 5. `pnpm dev` (starts Next.js dev server)
 
 Terraform manages deployed environments. Local development uses direct Neon connection strings and local config files.
+
+*Section revised: 2026-02-25, consolidated environment configuration into single source of truth. Three layers: .env.example (secrets + per-environment), /lib/config.ts (named constants per ADR-123), developer tooling (Claude Code). Region updated to us-west-2 per human directive. Naming standardized: NEON_DATABASE_URL, CONTENTFUL_ACCESS_TOKEN. Updated: CI workflow file structure (ci.yml + terraform.yml + neon-branch.yml + neon-cleanup.yml + dependabot.yml), progressive module activation via feature flags, secret rotation clarified (manual until 3d), Terraform boundary corrected (GitHub settings manual, not Terraform-managed).*
 
 ---
 

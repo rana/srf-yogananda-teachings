@@ -7,7 +7,7 @@
 | [1: Foundation](#arc-1-foundation--proving-the-light) | Proving the Light | [1a: Prove](#milestone-1a-prove), [1b: Deploy](#milestone-1b-deploy) | Ingest one book, prove semantic search, deploy with AI librarian |
 | [2: Presence](#arc-2-presence--the-living-library) | The Living Library | [2a: Build](#milestone-2a-build), [2b: Refine](#milestone-2b-refine) | All pages, reading experience, accessibility, design system, PWA |
 | [3: Wisdom](#arc-3-wisdom--expanding-understanding) | Expanding Understanding | [3a: Corpus](#milestone-3a-corpus), [3b: Editorial](#milestone-3b-editorial), [3c: Intelligence](#milestone-3c-intelligence), [3d: Complete](#milestone-3d-complete) | Multi-book library, editorial operations, cross-book intelligence, full corpus |
-| [4: Service](#arc-4-service--tools-for-devotion) | Tools for Devotion | — | Study tools, PDF export, magazine, Contentful Custom Apps, GitLab |
+| [4: Service](#arc-4-service--tools-for-devotion) | Tools for Devotion | — | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |
 | [5: Reach](#arc-5-reach--every-seeker-everywhere) | Every Seeker, Everywhere | [5a: Distribution](#milestone-5a-distribution), [5b: Languages](#milestone-5b-languages) | Email, social, messaging, regional distribution, 10 languages |
 | [6: Media](#arc-6-media--all-paths-to-truth) | All Paths to Truth | — | Video, audio, images, cross-media hub, Cosmic Chants |
 | [7: Community](#arc-7-community--shared-journey) | Shared Journey | [7a: Personal](#milestone-7a-personal), [7b: Together](#milestone-7b-together) | Optional accounts, events, study circles, VLD curation |
@@ -21,9 +21,9 @@
 
 ## Arc Philosophy
 
-Each arc delivers a working, demonstrable increment organized around a spiritual narrative theme. 7 arcs total, with internal milestones. Arc 1 (Foundation) proves that semantic search works and deploys the AI-enhanced portal. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and integrates with SRF's GitLab. Arc 5 (Reach) extends distribution channels and activates multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
+Each arc delivers a working, demonstrable increment organized around a spiritual narrative theme. 7 arcs total, with internal milestones. Arc 1 (Foundation) proves that semantic search works and deploys the AI-enhanced portal. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and activates multi-environment promotion (dev/staging/prod). Arc 5 (Reach) extends distribution channels and activates multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
 
-**Parallel workstreams and feature-flag activation (ADR-123):** Arcs are *narrative themes*, not strictly sequential gates. Where deliverables within an arc have no technical dependency on another arc's organizational prerequisites, they proceed in parallel. Specifically: Milestone 3c algorithmic computation proceeds alongside Milestone 3b editorial tooling; Arc 4 GitLab migration proceeds independently of other Arc 4 deliverables; Milestone 5b language waves run in parallel where resources permit; Milestone 7a localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
+**Parallel workstreams and feature-flag activation (ADR-123):** Arcs are *narrative themes*, not strictly sequential gates. Where deliverables within an arc have no technical dependency on another arc's organizational prerequisites, they proceed in parallel. Specifically: Milestone 3c algorithmic computation proceeds alongside Milestone 3b editorial tooling; Arc 4 multi-environment activation proceeds independently of other Arc 4 deliverables; Milestone 5b language waves run in parallel where resources permit; Milestone 7a localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
 **Unscheduled features:** Not every idea belongs in an arc immediately. Features that emerge from proposals, stakeholder conversations, or development experience but aren't ready for arc assignment are managed in **PROPOSALS.md** with PRO-NNN identifiers and summarized in the [Unscheduled Features](#unscheduled-features) section below. They are reviewed at every arc boundary and either graduate to an arc, remain unscheduled, or are explicitly omitted. The backlog does not grow forever — omission with rationale is a valid outcome. See PROPOSALS.md § Graduation Protocol for the full lifecycle.
 
@@ -56,8 +56,8 @@ These are blocking conversations that must happen before ingestion begins:
 
 | # | Deliverable | Description |
 |---|-------------|-------------|
-| 1a.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/` directory structure. (ADR-041) |
-| 1a.2 | **Neon project + initial schema** | Create Neon project (Scale tier, ADR-124) with pgvector, pg_search, pg_trgm, unaccent, and pg_stat_statements extensions enabled. Enable branch protection on production branch. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116, ADR-124) |
+| 1a.1 | **Repository + development environment + infrastructure** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/`, `.github/workflows/` directory structure. Write Terraform modules and run first `terraform apply` — creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Vercel and Lambda modules exist as code but are disabled until Milestone 1b and 3a respectively (see DES-039 § Progressive Module Activation). CI pipeline (`ci.yml` + `terraform.yml`) operational. (ADR-016, ADR-041) |
+| 1a.2 | **Neon project + initial schema** | Neon project created by `terraform apply` (Deliverable 1a.1). Enable pgvector, pg_search, pg_trgm, unaccent, and pg_stat_statements extensions. Enable branch protection on production branch. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry. (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116, ADR-124) |
 | 1a.3 | **Contentful space + content model** | Create Contentful space. Configure content types: Book → Chapter → Section → TextBlock per DESIGN-arc1.md § Contentful Content Model. Enable English locale. Configure Contentful Personal Access Token in `.env`. Verify content model by creating a test Book entry. Contentful is the editorial source of truth from Arc 1 (ADR-010). |
 | 1a.4 | **PDF ingestion + Contentful import** | Download Autobiography PDF → convert with marker → human QA → import into Contentful via Management API (Book → Chapter → Section → TextBlock entries). Typographic normalization applied during extraction (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter and store in `chapters.content_hash` (ADR-039). Then batch sync from Contentful to Neon: read TextBlocks from Delivery API → chunk by paragraphs (ADR-048: paragraph-based, 100–500 token range, special handling for epigraphs and poetry) → generate embeddings → insert into Neon with `contentful_id` linkage. |
 | 1a.5 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. QA happens on Contentful entries (editors can review in the Contentful web UI). The full editorial review portal ships in Milestone 3b. |
@@ -82,6 +82,9 @@ These are blocking conversations that must happen before ingestion begins:
 
 ### Success Criteria
 
+- `terraform apply` completes successfully (Neon project, Sentry project, AWS core resources)
+- `terraform plan` shows no drift after apply
+- CI pipeline (`ci.yml` + `terraform.yml`) runs green on a test PR
 - `pnpm dev` starts a working Next.js application locally
 - `dbmate status` shows migration 001 applied
 - Contentful space contains Autobiography content (Book, Chapters, Sections, TextBlocks)
@@ -147,11 +150,13 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 | Error tracking | Sentry (Team tier) | ~$26/mo |
 | Migrations | dbmate (open-source) | $0 |
 | Analytics | Vercel Analytics (included with Pro) | $0 |
-| SCM | GitHub (Arcs 1–3) → GitLab (Arc 4+, SRF IDP) | $0 |
-| CI/CD | GitHub Actions (Arcs 1–3) → GitLab CI (Arc 4+) | $0 |
+| SCM | GitHub | $0 |
+| CI/CD | GitHub Actions | $0 |
+| IaC State | Terraform Cloud (free tier) | $0 |
 
 ### Success Criteria
 
+- `terraform apply` with `enable_vercel = true` completes (Vercel project created by Terraform)
 - `/api/v1/health` returns `200 OK` on both local and Vercel
 - Sentry test error appears in dashboard
 - `.env.example` documents all required environment variables
@@ -466,9 +471,9 @@ Transform portal content into formats for group study, satsangs, and talks. The 
 
 - Contentful Custom Apps: sidebar panels for theme tags, thread preview, calendar associations (ADR-082)
 - Admin editorial workflow bridging Contentful authoring and portal review queues (ADR-082)
-- GitLab migration: repo, CI/CD, Terraform state, four environments (ADR-016)
+- Multi-environment activation: staging + prod environments, promotion pipeline with manual gates (ADR-016, ADR-020)
 
-**Success criteria:** PDFs render with correct typography and citations. Study Workspace allows passage collection, sequencing, and export without authentication. Magazine articles appear in search results alongside book passages. GitLab CI/CD deploys to all four environments. Terraform plan shows zero drift. Contentful Custom Apps surface review status in editor sidebar.
+**Success criteria:** PDFs render with correct typography and citations. Study Workspace allows passage collection, sequencing, and export without authentication. Magazine articles appear in search results alongside book passages. CI/CD deploys to all three environments (dev/staging/prod) with manual production gate. Terraform plan shows zero drift. Contentful Custom Apps surface review status in editor sidebar.
 
 ---
 
@@ -637,7 +642,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | **3b (Editorial)** | Milestone 3a complete | Theme taxonomy reviewed by theological advisor. Editorial governance decided and portal coordinator identified are *activation* prerequisites (feature-flag pattern, ADR-123), not *build* prerequisites. Infrastructure ships on schedule; queues activate when staffed. |
 | **3c (Intelligence)** | Milestone 3a multi-book corpus available | Milestone 3b editorial review portal operational. Algorithmic deliverables (3c.1–3c.4, 3c.6) can proceed in parallel with Milestone 3b. |
 | **3d (Complete)** | Milestone 3c chunk relations computed | — |
-| **Arc 4 (Service)** | Milestone 3a multi-book corpus available | Milestone 3d observability operational. GitLab access provisioned. Contentful Custom Apps scope defined. (ADR-123) |
+| **Arc 4 (Service)** | Milestone 3a multi-book corpus available | Milestone 3d observability operational. Multi-environment AWS accounts provisioned (or IAM isolation confirmed). Contentful Custom Apps scope defined. (ADR-123) |
 | **5a (Distribution)** | Milestone 3b editorial workflows operational | Arc 4 PDF generation available |
 | **5b (Languages)** | Embedding model benchmarked for multilingual (research begins Milestones 2a–2b), translation reviewers identified, digital text availability confirmed for core languages | Milestone 2a i18n infrastructure validated. Contentful locales activated for target languages. Third-party accessibility auditor engaged. (ADR-077, ADR-123) |
 | **Arc 6 (Media)** | Milestone 3d complete (unified search operational) | Milestone 2b PWA evaluation complete, audio/image source material available from SRF |
@@ -646,7 +651,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 
 **Critical decision gates** (require SRF input before the arc/milestone begins):
 - **Milestone 3b (Editorial):** Who owns editorial governance? Who is the portal coordinator? (See CONTEXT.md § Operational Staffing)
-- **Arc 4 (Service):** GitLab migration scope and timeline
+- **Arc 4 (Service):** Multi-environment AWS account structure (multi-account vs. IAM isolation)
 - **Milestone 5b (Languages):** YSS branding strategy for Hindi/Bengali/Thai locales, digital text availability for all 9 non-English core languages
 - **Milestone 7a (Personal):** Whether to implement user accounts at all
 - **Milestone 7b (Together):** VLD role assignment process, VLD coordinator identified, community curation governance model
@@ -662,7 +667,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | Milestone 1a (Prove) | ~$20-30 | Neon Scale tier (~$20/mo baseline), local dev only, one-time embedding cost (~$0.30). |
 | Milestones 1b–2b (Deploy through Refine) | ~$80-100 | Neon Scale (~$20), Vercel Pro (~$20), Sentry Team (~$26), Claude API (~$15-25). S3 backup < $1/mo. |
 | Arc 3 (Wisdom) | ~$10-20 | More embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
-| Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. GitLab CI/CD, regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
+| Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. Multi-environment promotion (staging + prod), regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
 | Milestone 5b+ (Languages) | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
 | Arc 6 (Media) | +$30-80 | Audio hosting on S3 + CloudFront streaming. Whisper transcription one-time cost (~$0.006/min). Audio file storage scales with archive size. |
 | Milestone 7b (Together) | +$600-1,250 | SMS gateway costs vary by region (India: ~$0.002/msg, US: ~$0.04/msg). Telegram bot: free. USSD/IVR: requires telco negotiation. Community collections gallery and VLD dashboard: negligible incremental cost (existing infrastructure). |
