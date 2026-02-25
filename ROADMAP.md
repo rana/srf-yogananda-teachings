@@ -611,6 +611,10 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 |-----|---------|------|
 | PRO-003 | Text-to-Speech (TTS) for passages | Feature |
 | PRO-004 | Audio-visual ambiance toggle (temple/nature sounds) | Enhancement |
+| PRO-005 | Neon Auth as Auth0 Alternative | Enhancement |
+| PRO-006 | pg_cron for In-Database Scheduling | Enhancement |
+| PRO-007 | Logical Replication for Analytics CDC | Feature |
+| PRO-008 | Time Travel Queries for Production Debugging | Enhancement |
 | *(Populated from `.elmer/proposals/` explorations after `/dedup-proposals`)* | | |
 
 ---

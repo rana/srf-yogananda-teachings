@@ -135,7 +135,7 @@ Make **core accessibility** a **Milestone 2a** requirement from the start. Later
 |----------|-------------|
 | **Structure** | Semantic HTML (`<article>`, `<nav>`, `<main>`, `<header>`, `<footer>`). ARIA landmark regions. Strict heading hierarchy (`h1` → `h2` → `h3`). Skip-to-content link. |
 | **Vision** | All text meets WCAG AA contrast ratios (4.5:1 body, 3:1 large). Alt text on all images. Text reflows at 200% zoom. Font size control (A-/A+). Respect `prefers-contrast: more`. No color-only meaning. |
-| **Motor** | Full keyboard navigation. Visible focus indicators. 44x44px minimum touch targets. No hover-only interactions. No time-limited interactions (Quiet Corner timer is optional). |
+| **Motor** | Full keyboard navigation. Visible focus indicators. 44×44px minimum touch targets. No hover-only interactions. No time-limited interactions (Quiet Corner timer is optional). |
 | **Hearing** | Quiet Corner chime has visual equivalent (gentle brightness change + text). Request corrected YouTube captions from SRF. |
 | **Cognitive** | Consistent navigation. No autoplay. No flashing. Clear UI language. Respect `prefers-reduced-motion`. Predictable behavior. |
 | **Performance** | < 100KB initial load. Lazy-loaded images. `font-display: swap`. Progressive enhancement. |

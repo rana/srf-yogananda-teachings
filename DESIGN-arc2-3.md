@@ -967,7 +967,7 @@ All shortcuts are single-key (no modifier), active only when no input/textarea i
 - Keyboard navigation: full vim-style shortcuts (see above, DES-013)
 - Skip link: "Skip to chapter text" at page top
 - Each paragraph is an `<article>` with `role="article"` and `aria-label` including page number
-- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until the calm technology design system ships (distributed across arcs)
+- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until the Calm Technology design system ships (distributed across arcs)
 - `prefers-reduced-motion`: side panel updates without animation, dwell transitions instant, breath between chapters skipped, opening moment skipped
 - Dwell mode: screen reader announcements on enter/exit
 - All keyboard shortcuts suppressed when input elements have focus
@@ -2651,7 +2651,7 @@ The portal targets WCAG 2.1 Level AA conformance from Milestone 2a. Level AAA cr
 | Requirement | Implementation |
 |-------------|---------------|
 | `prefers-reduced-motion` | All animations and transitions respect `@media (prefers-reduced-motion: reduce)`. When active: no hover animations, no page transitions, timer chime is text-only. |
-| `prefers-color-scheme` | Support `dark` scheme when the calm technology design system ships. Milestone 2a uses light theme only but CSS architecture supports future dark mode via custom properties. |
+| `prefers-color-scheme` | Support `dark` scheme when the Calm Technology design system ships. Milestone 2a uses light theme only but CSS architecture supports future dark mode via custom properties. |
 | `prefers-contrast` | When `more`, increase border widths and ensure all text exceeds 7:1 contrast. |
 | Clear language | All UI copy at 8th-grade reading level or below. Error messages are specific and actionable ("No passages found for this search. Try different words." not "Error 404"). |
 | Consistent navigation | Header and footer identical on every page. No layout shifts between pages. |
@@ -2708,7 +2708,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 | Manual keyboard testing | Every new component | Developer checklist |
 | Screen reader testing | Before each milestone release | VoiceOver (macOS), NVDA (Windows) |
 | Color contrast validation | Design token changes | Chrome DevTools, WebAIM Contrast Checker |
-| Real-user testing | When calm technology design system ships | Engage accessibility testers (consider SRF community members with disabilities) |
+| Real-user testing | When Calm Technology design system ships | Engage accessibility testers (consider SRF community members with disabilities) |
 
 ---
 
@@ -2770,7 +2770,7 @@ The portal's "human review as mandatory gate" principle creates significant staf
 
 ### Guiding Principle
 
-**Staff should think about the teachings, not the technology.** The same calm technology philosophy that governs the seeker experience applies to the staff experience. A monastic editor reviewing whether a passage about inner peace is correctly tagged should work in an environment that respects the material — not a generic data grid.
+**Staff should think about the teachings, not the technology.** The same Calm Technology philosophy that governs the seeker experience applies to the staff experience. A monastic editor reviewing whether a passage about inner peace is correctly tagged should work in an environment that respects the material — not a generic data grid.
 
 ### Staff & Organizational Personas
 

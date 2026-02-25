@@ -66,7 +66,7 @@ Personalization features are classified into three tiers (ADR-002): build (langu
 
 ## 6. Accessibility from Milestone 2a
 
-**WCAG 2.1 AA from the first component.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44x44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
+**WCAG 2.1 AA from the first component.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 
 SRF's mission is to serve "all of humanity." "All" includes people with disabilities. This is a theological imperative, not a compliance exercise. SRF's existing app already invested in screen reader support — the portal must meet or exceed that standard.
 

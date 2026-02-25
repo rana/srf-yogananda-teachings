@@ -180,7 +180,7 @@ The editorial review portal is introduced incrementally, matching the content wo
 
 ### Rationale
 
-- **Staff should think about the teachings, not the technology.** The same principle that governs the seeker experience ("calm technology") should govern the staff experience. A monastic editor's tool should fade into the background, leaving focus on the passage and the decision.
+- **Staff should think about the teachings, not the technology.** The same principle that governs the seeker experience ("Calm Technology") should govern the staff experience. A monastic editor's tool should fade into the background, leaving focus on the passage and the decision.
 - **Three distinct audiences need three distinct experiences.** A monastic editor, an AE developer, and a leadership stakeholder have different mental models, different technical comfort levels, and different goals. One tool cannot serve all three well.
 - **Review workflows are the bottleneck.** The portal's most distinctive constraint — human review as mandatory gate — means the speed and quality of staff review directly determines how quickly new content reaches seekers. A cumbersome review process means fewer themes published, fewer passages curated, slower translation cycles. The review experience is a primary product concern, not an afterthought.
 - **The calm design system already exists.** Building the admin portal in the same Next.js application, with the same design tokens, means zero incremental design cost. The portal's warm cream, Merriweather, and gold accents serve the staff experience as naturally as the seeker experience.
