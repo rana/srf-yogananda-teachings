@@ -1351,7 +1351,7 @@ The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI devel
 
 ---
 
-## ADR-098: Documentation Architecture — Twelve-Document System with Phase-Gated Loading
+## ADR-098: Documentation Architecture — Thirteen-Document System with Phase-Gated Loading
 
 - **Status:** Accepted
 - **Date:** 2026-02-20
@@ -1364,10 +1364,11 @@ Key tensions:
 - **Completeness vs. navigability.** Thorough documentation ensures correct decisions; large documents are expensive to load into AI context windows.
 - **Single source of truth vs. contextual relevance.** Centralizing information prevents drift; distributing it keeps related concerns together.
 - **Design-phase authority vs. code-phase authority.** Documentation is the sole authority before code exists; after implementation, code and documentation must coexist without contradiction.
+- **Maturity honesty.** In a pre-code project, all ADRs carry `Status: Accepted`, but a foundational principle (ADR-001) and a speculative Phase 14 feature (ADR-087) are not equally "decided." The documentation system must honestly reflect the maturity of each record without discarding the thorough thinking that produced it.
 
 ### Decision
 
-Maintain a twelve-document system with explicit roles, a routing document (CLAUDE.md), and defined conventions for the documentation-to-code transition:
+Maintain a thirteen-document system with explicit roles, a routing document (CLAUDE.md), defined conventions for the documentation-to-code transition, and a three-tier maturity model for intellectual work:
 
 | Document | Role | Primary Audience |
 |----------|------|-----------------|
@@ -1382,7 +1383,28 @@ Maintain a twelve-document system with explicit roles, a routing document (CLAUD
 | DECISIONS-core.md | ADR bodies: Foundational, Architecture, Content, Search | Developers, AI |
 | DECISIONS-experience.md | ADR bodies: Cross-Media, Seeker Experience, Internationalization | Developers, AI |
 | DECISIONS-operations.md | ADR bodies: Staff, Brand, Operations, Governance | Developers, AI |
+| PROPOSALS.md | Proposal registry: PRO-NNN identifiers, graduation protocol, scheduling lifecycle | All audiences |
 | ROADMAP.md | Phased delivery plan with deliverables and success criteria | All audiences |
+
+**Three-tier maturity model:**
+
+| Tier | Home | Identifier | Maturity |
+|------|------|-----------|----------|
+| Explorations | `.elmer/proposals/` | Slug filenames | Raw, unvetted AI ideation. Not project documents. |
+| Proposals | PROPOSALS.md | PRO-NNN | Curated, thoughtful. Awaiting validation, scheduling, or adoption. |
+| Decisions & Design | DECISIONS-*.md, DESIGN-*.md | ADR-NNN, DES-NNN | Validated through implementation or foundational principle. |
+
+**ADR maturity classification:**
+
+ADRs carry a maturity marker in their Status field reflecting honest confidence level:
+
+| Maturity | Meaning | Status Field |
+|----------|---------|-------------|
+| Foundational | Defines project identity. Change requires full deliberation. | `Accepted (Foundational)` |
+| Active | Governing current or imminent implementation. | `Accepted` |
+| Provisional | Thorough architectural direction for future phases. May be revised, suspended, or omitted as the project evolves. | `Accepted (Provisional — Phase N+)` |
+| Suspended | Was active or provisional, moved to unscheduled. Reasoning preserved in ADR body; scheduling lifecycle in PROPOSALS.md. | `Suspended → PRO-NNN` |
+| Implemented | Validated through code. Code is authoritative; ADR retains rationale. | `Implemented — see [code path]` |
 
 **Conventions:**
 
@@ -1392,9 +1414,10 @@ Maintain a twelve-document system with explicit roles, a routing document (CLAUD
 4. **ROADMAP.md Table of Contents.** Phase-level navigation for quick orientation.
 5. **DECISIONS.md Index by Concern.** ADRs grouped by domain (already established at ADR-009).
 6. **Implemented-section annotations.** When a DESIGN.md section is fully implemented, annotate: `**Status: Implemented** — see [code path]`. Code becomes the source of truth; DESIGN.md retains architectural rationale.
-7. **ADRs are immutable history.** Decisions are superseded (new ADR), withdrawn (with explanation), or removed (number retired) — never silently edited.
+7. **ADRs are mutable living documents.** Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. When substantially revising, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
 8. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 9. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
+10. **PROPOSALS.md as proposal registry.** PRO-NNN identifiers are permanent — never renamed or reassigned. Proposals graduate to ADR/DES/phase deliverables through the graduation protocol. ADRs may be suspended to PRO-NNN entries. Both directions preserve full cross-references.
 
 ### Rationale
 
@@ -1403,17 +1426,23 @@ Maintain a twelve-document system with explicit roles, a routing document (CLAUD
 - The documentation-to-code transition protocol prevents the "two sources of truth" problem that invariably emerges when design documents survive into an implemented codebase.
 - Centralizing open questions in CONTEXT.md prevents them from being forgotten in document interiors — a real risk at 967KB of total documentation.
 - Making the documentation system itself an ADR ensures future contributors understand why the system is structured this way, and can evolve it deliberately rather than through drift.
+- PROPOSALS.md gives curated proposals first-class citizenship without overcommitting them as "decisions." PRO-NNN identifiers provide stable cross-references throughout the evaluation lifecycle. The three-tier maturity model (explorations → proposals → decisions) honestly reflects confidence levels without discarding the thorough thinking at any tier.
+- ADR maturity classification acknowledges that a foundational principle and a speculative Phase 14 feature are not equally "decided," even though both received thorough analysis. Provisional ADRs represent real architectural thinking — they are not dismissed, but they are honestly distinguished from implementation-tested decisions.
 
 ### Consequences
 
 - DESIGN.md and ROADMAP.md now carry navigable Tables of Contents
 - DESIGN.md inline open questions are converted to cross-references to CONTEXT.md
-- CLAUDE.md maintenance table is expanded from 6 rows to 12 rows
+- CLAUDE.md maintenance table is expanded to cover proposal lifecycle
 - CLAUDE.md gains a "Documentation–Code Transition" section
+- PROPOSALS.md carries the graduation protocol (moved from ROADMAP.md § Unscheduled Features)
+- ROADMAP.md § Unscheduled Features retains a compact summary table of Validated and Deferred items referencing PRO-NNN
 - Future documentation changes should follow the conventions established here
 - This ADR should be revised if the documentation system undergoes further restructuring
 
 *Revised: 2026-02-23, document architecture restructured from 5 to 12 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by phase into 4 files (root + phase0 + phase1-4 + phase5-plus); DECISIONS.md split into navigational index + 3 phase-scoped body files (core, experience, operations); CLAUDE.md updated with phase-gated reading guidance.*
+
+*Revised: 2026-02-24, document architecture expanded from 12 to 13 documents — PROPOSALS.md added as proposal registry with PRO-NNN identifiers and graduation protocol. Three-tier maturity model (explorations → proposals → decisions) introduced. ADR maturity classification added (Foundational, Active, Provisional, Suspended, Implemented). Convention 7 updated from "immutable history" to "mutable living documents" to match CLAUDE.md. Graduation protocol moved from ROADMAP.md § Unscheduled Features to PROPOSALS.md.*
 
 ---
 

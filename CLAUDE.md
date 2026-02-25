@@ -19,6 +19,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Phase 1+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–103, 105–113, 123). Phase 4+.
 8. **ROADMAP.md** — 15 phases (0a–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
+9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
 **Phase-gated reading.** Do not read front-to-back. Load what the task requires:
 - **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current phase
@@ -27,7 +28,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 - **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + DECISIONS-core.md + DECISIONS-experience.md
 - **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + all DECISIONS files as needed
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
-- **Not needed for Phase 0a/0b:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md
+- **When evaluating proposals or at phase boundaries:** PROPOSALS.md
+- **Not needed for Phase 0a/0b:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
 
 ## Ignore
 
@@ -84,11 +86,20 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 123 decisions (ADR-001 through ADR-123), organized into 11 topical groups. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
+**ADR-NNN** (Architecture Decision Records) — 123 records (ADR-001 through ADR-123), organized into 11 topical groups. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
+
+**ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
+- **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)
+- **Active** — Governing current or imminent implementation. (`Accepted`)
+- **Provisional** — Thorough direction for future phases. May be revised or suspended. (`Accepted (Provisional — Phase N+)`)
+- **Suspended** — Moved to PROPOSALS.md. Reasoning preserved in ADR body. (`Suspended → PRO-NNN`)
+- **Implemented** — Validated through code. (`Implemented — see [code path]`)
 
 **DES-NNN** (Design Sections) — 56 sections (DES-001 through DES-056) split across four files: DESIGN.md (cross-cutting), DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
 
-When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`. Always zero-pad to three digits.
+**PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Phase refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
+
+When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`, `PRO-001`. Always zero-pad to three digits.
 
 **Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS.md and DESIGN-phase0.md). Rule: DECISIONS.md carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS.md.
 
@@ -102,15 +113,17 @@ Six custom skills in `.claude/skills/`:
 - **cultural-lens** — Cultural sensitivity review. Evaluates assumptions about language, geography, religion, and access.
 
 **Proposal management skills** (edit project documents with approval):
-- **proposal-merge** — Decompose an elmer proposal into precise edits across DECISIONS.md, DESIGN.md, ROADMAP.md, and CONTEXT.md. Assigns ADR/DES identifiers, detects conflicts, presents full plan for approval before executing.
-- **dedup-proposals** — Deduplicate and synthesize overlapping elmer proposals. Without arguments: scans all proposals, reports variant clusters. With a filename: finds related explorations of the same topic and synthesizes them into one document preserving all unique ideas.
-- **theme-integrate** — Integrate a new content theme into taxonomy, terminology bridge, enrichment pipeline, knowledge graph, and worldview pathways. Generates all integration artifacts from a proposal or free-text description.
+- **dedup-proposals** — Consolidate raw explorations from `.elmer/proposals/` into curated PRO-NNN entries in PROPOSALS.md. Without arguments: scans all explorations, reports variant clusters. With a PRO-NNN or filename: finds related explorations and synthesizes them.
+- **proposal-merge** — Graduate a PRO-NNN proposal into precise edits across DECISIONS.md, DESIGN.md, ROADMAP.md, and CONTEXT.md. Assigns ADR/DES identifiers, detects conflicts, updates PRO status, presents full plan for approval before executing.
+- **theme-integrate** — Integrate a new content theme into taxonomy, terminology bridge, enrichment pipeline, knowledge graph, and worldview pathways. Generates all integration artifacts from a PRO-NNN proposal or free-text description.
 
-**Proposal management workflow:** `/dedup-proposals` → `/proposal-merge <file>` or `/theme-integrate <file>` → run `coherence` skill to verify cross-document integrity.
+**Proposal management workflow:** `/dedup-proposals` → `/proposal-merge <PRO-NNN>` or `/theme-integrate <PRO-NNN>` → run `coherence` skill to verify cross-document integrity.
+
+**Explorations vs. proposals.** Raw files in `.elmer/proposals/` are unvetted AI explorations — not project documents. They feed into `/dedup-proposals`, which curates them into PRO-NNN entries in PROPOSALS.md. Do not reference `.elmer/` explorations in project documents; reference PRO-NNN identifiers instead.
 
 ## Document Maintenance
 
-Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
@@ -123,11 +136,13 @@ Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase file
 | New technology adopted | Update DESIGN.md tech stack table |
 | New content type added | DESIGN.md § Data Model + API section, ROADMAP.md phase, new ADR. Also: Knowledge Graph node/edge types, ADR-062 checklist, DES-053 media-type variations. |
 | New API endpoint added | Follow DES-019 § API Conventions (ADR-110). Paginated lists: `data`/`pagination`/`meta`; complete collections: `data`/`meta`; single resources: object directly. |
-| Elmer proposal approved for merge | Use `/dedup-proposals` first if variants exist, then `/proposal-merge <file>` or `/theme-integrate <file>`. Skill handles all document updates. |
-| Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section |
+| Exploration ready for curation | Run `/dedup-proposals` to consolidate `.elmer/proposals/` explorations into PRO-NNN entries in PROPOSALS.md. |
+| Proposal approved for merge | Run `/proposal-merge <PRO-NNN>` or `/theme-integrate <PRO-NNN>`. Skill handles ADR/DES creation and updates PRO status to Adopted. |
+| Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section. Update governing ADR status if applicable. |
 | Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
-| Feature idea without a phase | Add to ROADMAP.md § Unscheduled Features (Proposed tier). Cross-reference governing ADRs if known. |
-| Feature cut from a phase during development | Move to ROADMAP.md § Unscheduled Features (Deferred tier) with original phase, cut reason, and re-evaluation target. |
+| Feature idea without a phase | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
+| Feature cut from a phase during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original phase, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
+| ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). Update ADR status to `Suspended → PRO-NNN`. ADR body stays in DECISIONS file. Update ROADMAP.md § Unscheduled Features summary table. |
 
 At phase boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.
 

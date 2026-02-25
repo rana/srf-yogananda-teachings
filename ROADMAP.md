@@ -34,7 +34,7 @@ Each phase delivers a working, demonstrable increment organized around a single 
 
 **Parallel workstreams and feature-flag activation (ADR-123):** Phases are *capability themes*, not strictly sequential gates. Where deliverables within a phase have no technical dependency on another phase's organizational prerequisites, they proceed in parallel. Specifically: Phase 5 algorithmic computation proceeds alongside Phase 4 editorial tooling; Phase 9 GitLab migration proceeds independently of other Phase 9 deliverables; Phase 10 language waves run in parallel where resources permit; Phase 13 localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
-**Unscheduled features:** Not every idea belongs in a phase immediately. Features that emerge from proposals, stakeholder conversations, or development experience but aren't ready for phase assignment live in the [Unscheduled Features](#unscheduled-features) section below. They are reviewed at every phase boundary and either graduate to a phase, remain unscheduled, or are explicitly omitted. The backlog does not grow forever — omission with rationale is a valid outcome.
+**Unscheduled features:** Not every idea belongs in a phase immediately. Features that emerge from proposals, stakeholder conversations, or development experience but aren't ready for phase assignment are managed in **PROPOSALS.md** with PRO-NNN identifiers and summarized in the [Unscheduled Features](#unscheduled-features) section below. They are reviewed at every phase boundary and either graduate to a phase, remain unscheduled, or are explicitly omitted. The backlog does not grow forever — omission with rationale is a valid outcome. See PROPOSALS.md § Graduation Protocol for the full lifecycle.
 
 ---
 
@@ -590,42 +590,26 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 
 ## Unscheduled Features
 
-> Features and ideas not assigned to a phase. Reviewed at every phase boundary
-> during the retrospective. Items graduate to phases or are explicitly omitted
-> with rationale. This section is institutional memory — not a promise.
+> Summary view of proposals not yet assigned to a phase. Full proposal details, graduation protocol, and lifecycle management are in **PROPOSALS.md**. This table is reviewed at every phase boundary during the retrospective.
 
 ### Validated — Awaiting Scheduling
 
-Architecturally sound, principle-checked, has governing references. Needs a scheduling decision.
+| PRO | Feature | Governing Refs | Re-evaluate At |
+|-----|---------|----------------|----------------|
+| PRO-001 | SRF Corpus MCP — Three-Tier Architecture | ADR-101, DES-031 | Phase 4 boundary |
+| PRO-002 | SRF Lessons Integration | ADR-085, ADR-121 | Stakeholder request |
 
-| Feature | Source | Governing Refs | Dependencies | Notes |
-|---------|--------|----------------|--------------|-------|
-| **SRF Corpus MCP — Three-Tier Architecture** | ADR-101, DES-031 | ADR-097, ADR-101, ADR-011 | Tier 1: `/lib/services/` operational. Tier 2: Phase 4 editorial portal. Tier 3: Corpus complete (Phase 6+). | Three tiers: Development (Claude Code corpus search), Internal (editorial AI workflows), External (third-party AI assistants with fidelity metadata). Service layer wrapping — no new business logic. Full architecture preserved in DESIGN-phase0.md § DES-031. Descheduled 2026-02-24 to focus on core delivery. |
-| **SRF Lessons Integration** | Stakeholder vision | ADR-085, ADR-121 | Auth0 custom claims, `access_level` content model | Not scheduled. SRF's decision. Architecture ready (content-level access control, separate reading experience, technique instructions always out of scope). May never happen. |
+### Deferred / Suspended
+
+| PRO | Feature | Original Phase | Re-evaluate At |
+|-----|---------|----------------|----------------|
+| *(Populated during development)* | | | |
 
 ### Proposed — Awaiting Evaluation
 
-Idea captured. Not yet checked against principles and architecture. May be adopted, may be omitted.
-
-| Feature | Source | Proposal | Principle Risk | Notes |
-|---------|--------|----------|----------------|-------|
-| *(Populated from `.elmer/proposals/` after `/dedup-proposals`)* | | | | |
-
-### Deferred from Development
-
-Was in scope for a phase, cut during implementation. Re-evaluate at the next phase boundary.
-
-| Feature | Original Phase | Cut Reason | Re-evaluate At | Notes |
-|---------|----------------|------------|----------------|-------|
-| *(Populated during development)* | | | | |
-
-### Graduation Protocol
-
-- **At every phase boundary:** review unscheduled features during retrospective. Deferred items get first priority — they were already scoped once.
-- **Proposed → Validated:** requires principle-check (does it violate any of the 11 principles?) and architectural review (does it fit the existing design, or does it need new ADRs?).
-- **Validated → Phase assignment:** stakeholder decision. Add to the target phase's deliverable table.
-- **Any tier → Omitted:** add to DES-056 § Explicitly Omitted with rationale.
-- **AI proposes, human approves.** The AI may recommend graduation or omission; the human principal decides.
+| PRO | Feature | Type |
+|-----|---------|------|
+| *(Populated from `.elmer/proposals/` explorations after `/dedup-proposals`)* | | |
 
 ---
 
@@ -672,7 +656,7 @@ Each phase has prerequisites that must be satisfied before work begins. Hard pre
 - **Phase 13 (Personalize):** Whether to implement user accounts at all
 - **Phase 14 (Community):** VLD role assignment process, VLD coordinator identified, community curation governance model
 
-**Unscheduled feature review:** Every phase gate includes a triage of ROADMAP.md § Unscheduled Features. Deferred-from-development items are evaluated first; validated items are considered for the upcoming phase; proposed items are principle-checked if relevant to the next phase's capability theme.
+**Unscheduled feature review:** Every phase gate includes a triage of PROPOSALS.md. Deferred/suspended items (PRO-NNN) are evaluated first; validated items are considered for the upcoming phase; proposed items are principle-checked if relevant to the next phase's capability theme. See PROPOSALS.md § Phase Boundary Review.
 
 ---
 

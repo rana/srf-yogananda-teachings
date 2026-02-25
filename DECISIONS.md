@@ -1,8 +1,10 @@
 # SRF Online Teachings Portal — Architecture Decision Records
 
-Each decision is recorded with full context so future contributors understand not just *what* was decided but *why*, and what alternatives were considered.
+Each record captures architectural reasoning with full context — not just the direction chosen but *why*, and what alternatives were considered. In a pre-code project, "Accepted" means accepted as architectural direction. Implementation validates or revises. Foundational ADRs (Principles group) are immutable without full deliberation. Provisional ADRs (distant-phase groups) represent thorough thinking about future direction, not binding commitments. See ADR-098 for the maturity classification.
 
-**Phase navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Phases 0–6 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) remain as architectural commitments but their implementation is distant — treat them as context, not immediate specification.
+**ADR maturity:** Foundational (project identity, change requires deliberation) · Active (governing current/imminent implementation) · Provisional (thorough direction for future phases, may be revised or suspended) · Suspended (moved to PROPOSALS.md, reasoning preserved here) · Implemented (validated through code).
+
+**Phase navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Phases 0–6 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
 ### Index by Concern
 
@@ -172,9 +174,9 @@ Specifies how the portal is built, tested, and monitored. Engineering standards 
 
 **Governance**
 
-Controls how the project governs its own decisions, documents, and evolution. The twelve-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, ROADMAP.md) is designed for AI-first navigation with phase-gated loading; DELTA serves as the primary framework for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+Controls how the project governs its own decisions, documents, and evolution. The thirteen-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with phase-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Twelve-Document System with Phase-Gated Loading
+- ADR-098: Documentation Architecture — Thirteen-Document System with Phase-Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 - ADR-102: Phase Sizing Evaluation — Greenfield Analysis of the 18-Phase Roadmap
 - ADR-103: Roadmap Restructured to 15 Capability-Themed Phases
