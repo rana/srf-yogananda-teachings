@@ -1,77 +1,77 @@
 # SRF Online Teachings Portal — Technical Design
 
-> **Navigation guide.** The design is split across four files by phase scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives.
+> **Navigation guide.** The design is split across four files by arc scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives.
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
-| Section | Phase | File |
-|---------|-------|------|
+| Section | Arc/Milestone | File |
+|---------|---------------|------|
 | [DES-001: Design Philosophy](#des-001-design-philosophy) | — | DESIGN.md |
-| [DES-002: Architecture Overview](#des-002-architecture-overview) | 0, 9+ | DESIGN.md |
-| [DES-003: The AI Librarian: Search Architecture](DESIGN-phase0.md#des-003-the-ai-librarian-search-architecture) | 0–1 | DESIGN-phase0.md |
-| &emsp;[ADR-049: Search Suggestions & Autocomplete](DESIGN-phase0.md#adr-049-search-suggestions-autocomplete) | 0, 3, 10 | DESIGN-phase0.md |
-| [DES-004: Data Model](DESIGN-phase0.md#des-004-data-model) | 0+ | DESIGN-phase0.md |
-| [DES-005: Content Ingestion Pipeline](DESIGN-phase0.md#des-005-content-ingestion-pipeline) | 0, 9+ | DESIGN-phase0.md |
-| [ADR-041: Phase 0 Bootstrap](DESIGN-phase0.md#adr-041-phase-0-bootstrap) | 0 | DESIGN-phase0.md |
-| [DES-006: Frontend Design](DESIGN-phase1-4.md#des-006-frontend-design) | 1–11 | DESIGN-phase1-4.md |
-| &emsp;[DES-007: Opening Moment — Portal Threshold](DESIGN-phase1-4.md#des-007-opening-moment--portal-threshold) | 1+ | DESIGN-phase1-4.md |
-| &emsp;[DES-008: Reader Typography Refinements](DESIGN-phase1-4.md#des-008-reader-typography-refinements) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-009: "Dwell" Interaction — Passage Contemplation Mode](DESIGN-phase1-4.md#des-009-dwell-interaction--passage-contemplation-mode) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-010: Layered Passage Depth — "Go Deeper Within the Text"](DESIGN-phase1-4.md#des-010-layered-passage-depth--go-deeper-within-the-text) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-011: Time-Aware Reading — Circadian Color Temperature](DESIGN-phase1-4.md#des-011-time-aware-reading--circadian-color-temperature) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-012: "Breath Between Chapters" — Chapter Transition Pacing](DESIGN-phase1-4.md#des-012-breath-between-chapters--chapter-transition-pacing) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-013: Keyboard-First Reading Navigation](DESIGN-phase1-4.md#des-013-keyboard-first-reading-navigation) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-014: Session Closure Moments — Departure Grace](DESIGN-phase1-4.md#des-014-session-closure-moments--departure-grace) | 2+ | DESIGN-phase1-4.md |
-| &emsp;[DES-015: Self-Revealing Navigation](DESIGN-phase1-4.md#des-015-self-revealing-navigation) | 1+ | DESIGN-phase1-4.md |
-| &emsp;[DES-016: Lotus as Unified Visual Motif](DESIGN-phase1-4.md#des-016-lotus-as-unified-visual-motif) | 1+ | DESIGN-phase1-4.md |
-| [DES-017: Multi-Language Strategy](DESIGN-phase1-4.md#des-017-multi-language-strategy) | 1 (infra), 10 (content) | DESIGN-phase1-4.md |
-| [DES-018: Cultural Design Considerations](DESIGN-phase5-plus.md#des-018-cultural-design-considerations) | 10+ | DESIGN-phase5-plus.md |
-| [DES-019: API Design (Next.js API Routes)](#des-019-api-design-nextjs-api-routes) | 0+ | DESIGN.md |
-| [DES-020: Platform Parity (Mobile Readiness)](DESIGN-phase1-4.md#des-020-platform-parity-mobile-readiness) | 1+ | DESIGN-phase1-4.md |
-| [DES-021: YouTube Video Section Architecture](DESIGN-phase1-4.md#des-021-youtube-video-section-architecture) | 1+ | DESIGN-phase1-4.md |
-| [DES-022: Events Section](DESIGN-phase1-4.md#des-022-events-section) | 1+ | DESIGN-phase1-4.md |
-| [DES-023: Sacred Places — Contemplative Geography](DESIGN-phase1-4.md#des-023-sacred-places-contemplative-geography) | 3+ | DESIGN-phase1-4.md |
-| [DES-024: Security Considerations](#des-024-security-considerations) | 0+ | DESIGN.md |
-| [DES-025: Accessibility Requirements (Phase 1 Foundation)](DESIGN-phase1-4.md#des-025-accessibility-requirements-phase-1-foundation) | 1+ | DESIGN-phase1-4.md |
-| [DES-026: Editorial Reading Threads — "Teachings in Conversation"](#des-026-editorial-reading-threads-teachings-in-conversation) | — | DESIGN.md |
-| [DES-027: Reverse Bibliography — "What Yogananda Read"](#des-027-reverse-bibliography-what-yogananda-read) | — | DESIGN.md |
-| [DES-028: Calendar-Aware Content Surfacing](DESIGN-phase1-4.md#des-028-calendar-aware-content-surfacing) | 4+ | DESIGN-phase1-4.md |
-| [ADR-048: Chunking Strategy](DESIGN-phase0.md#adr-048-chunking-strategy) | 0+ | DESIGN-phase0.md |
-| &emsp;[Semantic Density Classification](DESIGN-phase0.md#semantic-density-classification) | 3+ | DESIGN-phase0.md |
-| &emsp;[ADR-039 ext: Corpus Stylometric Fingerprint](DESIGN-phase0.md#adr-039-ext-corpus-stylometric-fingerprint) | 6+ | DESIGN-phase0.md |
-| [DES-029: The Quiet Index — Browsable Contemplative Taxonomy](#des-029-the-quiet-index-browsable-contemplative-taxonomy) | — | DESIGN.md |
-| [DES-030: Daily Email: Verbatim Passage Delivery](DESIGN-phase5-plus.md#des-030-daily-email-verbatim-passage-delivery) | 8+ | DESIGN-phase5-plus.md |
-| [ADR-084: Seeker Feedback — DELTA-Compliant Signal Collection](#adr-084-seeker-feedback-delta-compliant-signal-collection) | — | DESIGN.md |
-| [DES-031: MCP Server Strategy](DESIGN-phase0.md#des-031-mcp-server-strategy) | 0+ | DESIGN-phase0.md |
-| [DES-032: Content Management Strategy](DESIGN-phase5-plus.md#des-032-content-management-strategy) | 9+ | DESIGN-phase5-plus.md |
-| [ADR-082: Staff Experience Architecture](DESIGN-phase1-4.md#adr-082-staff-experience-architecture) | 4+ | DESIGN-phase1-4.md |
+| [DES-002: Architecture Overview](#des-002-architecture-overview) | 1, 4+ | DESIGN.md |
+| [DES-003: The AI Librarian: Search Architecture](DESIGN-arc1.md#des-003-the-ai-librarian-search-architecture) | 1–2a | DESIGN-arc1.md |
+| &emsp;[ADR-049: Search Suggestions & Autocomplete](DESIGN-arc1.md#adr-049-search-suggestions-autocomplete) | 1, 3a, 5b | DESIGN-arc1.md |
+| [DES-004: Data Model](DESIGN-arc1.md#des-004-data-model) | 1+ | DESIGN-arc1.md |
+| [DES-005: Content Ingestion Pipeline](DESIGN-arc1.md#des-005-content-ingestion-pipeline) | 1, 4+ | DESIGN-arc1.md |
+| [ADR-041: Arc 1 Bootstrap](DESIGN-arc1.md#adr-041-arc-1-bootstrap) | 1 | DESIGN-arc1.md |
+| [DES-006: Frontend Design](DESIGN-arc2-3.md#des-006-frontend-design) | 2a–5 | DESIGN-arc2-3.md |
+| &emsp;[DES-007: Opening Moment — Portal Threshold](DESIGN-arc2-3.md#des-007-opening-moment--portal-threshold) | 2a+ | DESIGN-arc2-3.md |
+| &emsp;[DES-008: Reader Typography Refinements](DESIGN-arc2-3.md#des-008-reader-typography-refinements) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-009: "Dwell" Interaction — Passage Contemplation Mode](DESIGN-arc2-3.md#des-009-dwell-interaction--passage-contemplation-mode) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-010: Layered Passage Depth — "Go Deeper Within the Text"](DESIGN-arc2-3.md#des-010-layered-passage-depth--go-deeper-within-the-text) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-011: Time-Aware Reading — Circadian Color Temperature](DESIGN-arc2-3.md#des-011-time-aware-reading--circadian-color-temperature) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-012: "Breath Between Chapters" — Chapter Transition Pacing](DESIGN-arc2-3.md#des-012-breath-between-chapters--chapter-transition-pacing) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-013: Keyboard-First Reading Navigation](DESIGN-arc2-3.md#des-013-keyboard-first-reading-navigation) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-014: Session Closure Moments — Departure Grace](DESIGN-arc2-3.md#des-014-session-closure-moments--departure-grace) | 2b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-015: Self-Revealing Navigation](DESIGN-arc2-3.md#des-015-self-revealing-navigation) | 2a+ | DESIGN-arc2-3.md |
+| &emsp;[DES-016: Lotus as Unified Visual Motif](DESIGN-arc2-3.md#des-016-lotus-as-unified-visual-motif) | 2a+ | DESIGN-arc2-3.md |
+| [DES-017: Multi-Language Strategy](DESIGN-arc2-3.md#des-017-multi-language-strategy) | 2a (infra), 5b (content) | DESIGN-arc2-3.md |
+| [DES-018: Cultural Design Considerations](DESIGN-arc4-plus.md#des-018-cultural-design-considerations) | 5b+ | DESIGN-arc4-plus.md |
+| [DES-019: API Design (Next.js API Routes)](#des-019-api-design-nextjs-api-routes) | 1+ | DESIGN.md |
+| [DES-020: Platform Parity (Mobile Readiness)](DESIGN-arc2-3.md#des-020-platform-parity-mobile-readiness) | 2a+ | DESIGN-arc2-3.md |
+| [DES-021: YouTube Video Section Architecture](DESIGN-arc2-3.md#des-021-youtube-video-section-architecture) | 2a+ | DESIGN-arc2-3.md |
+| [DES-022: Events Section](DESIGN-arc2-3.md#des-022-events-section) | 2a+ | DESIGN-arc2-3.md |
+| [DES-023: Sacred Places — Contemplative Geography](DESIGN-arc2-3.md#des-023-sacred-places-contemplative-geography) | 3a+ | DESIGN-arc2-3.md |
+| [DES-024: Security Considerations](#des-024-security-considerations) | 1+ | DESIGN.md |
+| [DES-025: Accessibility Requirements (Milestone 2a Foundation)](DESIGN-arc2-3.md#des-025-accessibility-requirements-milestone-2a-foundation) | 2a+ | DESIGN-arc2-3.md |
+| [DES-026: Editorial Reading Threads — "Teachings in Conversation"](#des-026-editorial-reading-threads-teachings-in-conversation) | 3c+ | DESIGN.md |
+| [DES-027: Reverse Bibliography — "What Yogananda Read"](#des-027-reverse-bibliography-what-yogananda-read) | 3c+ | DESIGN.md |
+| [DES-028: Calendar-Aware Content Surfacing](DESIGN-arc2-3.md#des-028-calendar-aware-content-surfacing) | 3b+ | DESIGN-arc2-3.md |
+| [ADR-048: Chunking Strategy](DESIGN-arc1.md#adr-048-chunking-strategy) | 1+ | DESIGN-arc1.md |
+| &emsp;[Semantic Density Classification](DESIGN-arc1.md#semantic-density-classification) | 3a+ | DESIGN-arc1.md |
+| &emsp;[ADR-039 ext: Corpus Stylometric Fingerprint](DESIGN-arc1.md#adr-039-ext-corpus-stylometric-fingerprint) | 3d+ | DESIGN-arc1.md |
+| [DES-029: The Quiet Index — Browsable Contemplative Taxonomy](#des-029-the-quiet-index-browsable-contemplative-taxonomy) | 3b+ | DESIGN.md |
+| [DES-030: Daily Email: Verbatim Passage Delivery](DESIGN-arc4-plus.md#des-030-daily-email-verbatim-passage-delivery) | 5a+ | DESIGN-arc4-plus.md |
+| [ADR-084: Seeker Feedback — DELTA-Compliant Signal Collection](#adr-084-seeker-feedback-delta-compliant-signal-collection) | 3b+ | DESIGN.md |
+| [DES-031: MCP Server Strategy](DESIGN-arc1.md#des-031-mcp-server-strategy) | 1+ | DESIGN-arc1.md |
+| [DES-032: Content Management Strategy](DESIGN-arc4-plus.md#des-032-content-management-strategy) | 4+ | DESIGN-arc4-plus.md |
+| [ADR-082: Staff Experience Architecture](DESIGN-arc2-3.md#adr-082-staff-experience-architecture) | 3b+ | DESIGN-arc2-3.md |
 | [DES-033: Unified Review Queue Abstraction](#des-033-unified-review-queue-abstraction) | — | DESIGN.md |
 | [DES-034: Content Lifecycle Management](#des-034-content-lifecycle-management) | — | DESIGN.md |
 | [DES-035: AI-Assisted Editorial Workflows](#des-035-ai-assisted-editorial-workflows) | — | DESIGN.md |
 | [DES-036: Migration, Evolution, and Longevity](#des-036-migration-evolution-and-longevity) | — | DESIGN.md |
 | [ADR-007: Editorial Proximity Standard](#adr-007-editorial-proximity-standard) | — | DESIGN.md |
-| [DES-037: Observability](#des-037-observability) | 0+ | DESIGN.md |
-| [DES-038: Testing Strategy](#des-038-testing-strategy) | 0+ | DESIGN.md |
-| [DES-039: Infrastructure and Deployment](DESIGN-phase0.md#des-039-infrastructure-and-deployment) | 0 | DESIGN-phase0.md |
-| [DES-040: Design Tooling](DESIGN-phase1-4.md#des-040-design-tooling) | 1+ | DESIGN-phase1-4.md |
-| [DES-041: Magazine Section Architecture](DESIGN-phase5-plus.md#des-041-magazine-section-architecture) | 6+ | DESIGN-phase5-plus.md |
-| [DES-042: Glossary Architecture](DESIGN-phase1-4.md#des-042-glossary-architecture) | 4+ | DESIGN-phase1-4.md |
-| [DES-043: "What Is Humanity Seeking?" Dashboard Architecture](DESIGN-phase5-plus.md#des-043-what-is-humanity-seeking-dashboard-architecture) | 6+ | DESIGN-phase5-plus.md |
-| [DES-044: Additional New UI Pages](DESIGN-phase1-4.md#des-044-additional-new-ui-pages) | 1+ | DESIGN-phase1-4.md |
-| &emsp;[DES-045: `/journeys` — Calendar Reading Journeys](DESIGN-phase1-4.md#des-045-journeys-calendar-reading-journeys) | 4+ | DESIGN-phase1-4.md |
-| &emsp;[DES-046: Study Circle Sharing](DESIGN-phase5-plus.md#des-046-study-circle-sharing) | 14+ | DESIGN-phase5-plus.md |
-| &emsp;[DES-047: `/browse` — The Complete Index](DESIGN-phase1-4.md#des-047-browse-the-complete-index) | 1+ | DESIGN-phase1-4.md |
-| &emsp;[DES-048: `/guide` — The Spiritual Guide](DESIGN-phase1-4.md#des-048-guide-the-spiritual-guide) | 4+ | DESIGN-phase1-4.md |
-| [DES-049: Responsive Design Strategy](DESIGN-phase1-4.md#des-049-responsive-design-strategy) | 1+ | DESIGN-phase1-4.md |
-| [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | — | DESIGN.md |
-| [ADR-035, ADR-063, ADR-064: Image Serving Architecture](DESIGN-phase5-plus.md#adr-035-adr-063-adr-064-image-serving-architecture) | 6+ | DESIGN-phase5-plus.md |
+| [DES-037: Observability](#des-037-observability) | 1+ | DESIGN.md |
+| [DES-038: Testing Strategy](#des-038-testing-strategy) | 1+ | DESIGN.md |
+| [DES-039: Infrastructure and Deployment](DESIGN-arc1.md#des-039-infrastructure-and-deployment) | 1 | DESIGN-arc1.md |
+| [DES-040: Design Tooling](DESIGN-arc2-3.md#des-040-design-tooling) | 2a+ | DESIGN-arc2-3.md |
+| [DES-041: Magazine Section Architecture](DESIGN-arc4-plus.md#des-041-magazine-section-architecture) | 3d+ | DESIGN-arc4-plus.md |
+| [DES-042: Glossary Architecture](DESIGN-arc2-3.md#des-042-glossary-architecture) | 3b+ | DESIGN-arc2-3.md |
+| [DES-043: "What Is Humanity Seeking?" Dashboard Architecture](DESIGN-arc4-plus.md#des-043-what-is-humanity-seeking-dashboard-architecture) | 3d+ | DESIGN-arc4-plus.md |
+| [DES-044: Additional New UI Pages](DESIGN-arc2-3.md#des-044-additional-new-ui-pages) | 2a+ | DESIGN-arc2-3.md |
+| &emsp;[DES-045: `/journeys` — Calendar Reading Journeys](DESIGN-arc2-3.md#des-045-journeys-calendar-reading-journeys) | 3b+ | DESIGN-arc2-3.md |
+| &emsp;[DES-046: Study Circle Sharing](DESIGN-arc4-plus.md#des-046-study-circle-sharing) | 7b+ | DESIGN-arc4-plus.md |
+| &emsp;[DES-047: `/browse` — The Complete Index](DESIGN-arc2-3.md#des-047-browse-the-complete-index) | 2a+ | DESIGN-arc2-3.md |
+| &emsp;[DES-048: `/guide` — The Spiritual Guide](DESIGN-arc2-3.md#des-048-guide-the-spiritual-guide) | 3b+ | DESIGN-arc2-3.md |
+| [DES-049: Responsive Design Strategy](DESIGN-arc2-3.md#des-049-responsive-design-strategy) | 2a+ | DESIGN-arc2-3.md |
+| [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | 4, 7b | DESIGN.md |
+| [ADR-035, ADR-063, ADR-064: Image Serving Architecture](DESIGN-arc4-plus.md#adr-035-adr-063-adr-064-image-serving-architecture) | 3d+ | DESIGN-arc4-plus.md |
 | [DES-050: Seeker & User Persona Index](#des-050-seeker--user-persona-index) | — | DESIGN.md |
-| [DES-051: Portal Updates Page — "The Library Notice Board"](DESIGN-phase1-4.md#des-051-portal-updates-page-the-library-notice-board) | 4+ | DESIGN-phase1-4.md |
-| [DES-052: Outbound Webhook Event System](DESIGN-phase1-4.md#des-052-outbound-webhook-event-system) | 4+ | DESIGN-phase1-4.md |
+| [DES-051: Portal Updates Page — "The Library Notice Board"](DESIGN-arc2-3.md#des-051-portal-updates-page-the-library-notice-board) | 3b+ | DESIGN-arc2-3.md |
+| [DES-052: Outbound Webhook Event System](DESIGN-arc2-3.md#des-052-outbound-webhook-event-system) | 3b+ | DESIGN-arc2-3.md |
 | [DES-053: Unified Content Pipeline Pattern](#des-053-unified-content-pipeline-pattern) | — | DESIGN.md |
-| [DES-054: Knowledge Graph Ontology](DESIGN-phase0.md#des-054-knowledge-graph-ontology) | 0 (design), 4+ (batch) | DESIGN-phase0.md |
-| [DES-055: Concept/Word Graph](DESIGN-phase1-4.md#des-055-conceptword-graph) | 4+ | DESIGN-phase1-4.md |
-| [DES-056: Feature Catalog (RAG Architecture Proposal)](DESIGN-phase1-4.md#des-056-feature-catalog-rag-architecture-proposal) | 2–12+ | DESIGN-phase1-4.md |
+| [DES-054: Knowledge Graph Ontology](DESIGN-arc1.md#des-054-knowledge-graph-ontology) | 1 (design), 3b+ (batch) | DESIGN-arc1.md |
+| [DES-055: Concept/Word Graph](DESIGN-arc2-3.md#des-055-conceptword-graph) | 3b+ | DESIGN-arc2-3.md |
+| [DES-056: Feature Catalog (RAG Architecture Proposal)](DESIGN-arc2-3.md#des-056-feature-catalog-rag-architecture-proposal) | 2b–6+ | DESIGN-arc2-3.md |
 
 ---
 
@@ -83,9 +83,9 @@ This portal is a **digital library with an AI librarian**, not a chatbot or cont
 
 ## DES-002: Architecture Overview
 
-### Phase 0a Architecture (Prove — Pure Hybrid Search + Contentful)
+### Milestone 1a Architecture (Prove — Pure Hybrid Search + Contentful)
 
-Two content stores. No AI in the search path — pure hybrid retrieval. Contentful is the editorial source of truth from Phase 0 (ADR-010). (ADR-113)
+Two content stores. No AI in the search path — pure hybrid retrieval. Contentful is the editorial source of truth from Arc 1 (ADR-010). (ADR-113)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -127,14 +127,14 @@ One-time ingestion:
                                                     │
                                           Chunk ──► Embed ──► Neon
 
-Phase 0a has NO Claude API calls in the search path.
+Milestone 1a has NO Claude API calls in the search path.
 Claude is used only offline: ingestion QA (ADR-005 E4),
 enrichment (ADR-115), and search quality evaluation (ADR-005 E5).
 ```
 
-### Phase 0b Architecture (Foundation — AI-Enhanced Search + Contentful Webhooks)
+### Milestone 1b Architecture (Foundation — AI-Enhanced Search + Contentful Webhooks)
 
-Phase 0b adds Claude Haiku to the search path: query expansion,
+Milestone 1b adds Claude Haiku to the search path: query expansion,
 intent classification, and passage ranking. Deployed to Vercel.
 Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
 
@@ -179,12 +179,12 @@ Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
 │ └─────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 
-Contentful webhook sync (event-driven, Phase 0b+):
+Contentful webhook sync (event-driven, Milestone 1b+):
 
  Contentful publish ──► Webhook ──► Serverless fn ──► Chunk ──► Embed ──► Neon
 ```
 
-### Production Architecture (Full Stack — Phase 9+)
+### Production Architecture (Full Stack — Arc 4+)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -221,21 +221,21 @@ Contentful webhook sync (event-driven, Phase 0b+):
 │ │ Supporting Services │ │
 │ │ │ │
 │ │ • Claude API — query expansion + HyDE          │ │
-│ │ • Cohere Rerank 3.5 — passage reranking (Ph 2+)│ │
-│ │ • Graph batch pipeline — Python + NetworkX (4+) │ │
+│ │ • Cohere Rerank 3.5 — passage reranking (M2b+) │ │
+│ │ • Graph batch pipeline — Python + NetworkX (3b+)│ │
 │ │ • Retool — admin panel (content review, analytics) │ │
 │ │ • Cloudflare — CDN, edge caching, security │ │
 │ └──────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Key principle (Phase 0+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Phase 0 (ADR-010). The production diagram above adds services that arrive in later phases (Cohere Rerank, graph pipeline, Retool, Cloudflare CDN) but the Contentful → Neon → Next.js architecture is established from Phase 0a.
+**Key principle (Arc 1+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Arc 1 (ADR-010). The production diagram above adds services that arrive in later arcs (Cohere Rerank, graph pipeline, Retool, Cloudflare CDN) but the Contentful → Neon → Next.js architecture is established from Milestone 1a.
 
 ---
 
 ## DES-019: API Design (Next.js API Routes)
 
-All API routes use a versioned prefix (`/api/v1/`) from Phase 0 per ADR-011. Language is passed as a query parameter on API routes (`?language=hi`), not as a path prefix — language is a property of content, not a namespace for operations (ADR-027). Frontend pages use locale path prefixes (`/hi/themes/peace`) for SEO and `hreflang` linking. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
+All API routes use a versioned prefix (`/api/v1/`) from Arc 1 per ADR-011. Language is passed as a query parameter on API routes (`?language=hi`), not as a path prefix — language is a property of content, not a namespace for operations (ADR-027). Frontend pages use locale path prefixes (`/hi/themes/peace`) for SEO and `hreflang` linking. This enables mobile apps pinned to older API versions to coexist with the evolving web frontend. List endpoints use cursor-based pagination for mobile compatibility.
 
 ### Design Rationale
 
@@ -494,7 +494,7 @@ Implementation:
 ```
 Query params:
  language (optional) — default 'en'. Returns books available in user's locale.
- Phase 10: also returns an "also_available_in_english"
+ Milestone 5b: also returns an "also_available_in_english"
  section for untranslated works (per ADR-075).
 
 Response (complete collection — see § API Conventions):
@@ -708,19 +708,19 @@ The outer layer stops abuse before it reaches the application — the 15 search/
 
 All services that process data on the portal's behalf, with their roles, data touched, and geographic regions. Maintained as part of the privacy policy (`/privacy`).
 
-| Service | GDPR Role | Data Touched | Region | Phase |
-|---------|-----------|-------------|--------|-------|
-| **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica Phase 9+ | 0+ |
-| **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | 0+ |
-| **Cloudflare** | Processor | Request metadata, IP for WAF (transient, not stored by portal) | Global | 0+ |
-| **Amplitude** | Processor | Anonymized events with country_code (no user ID) | US | 6+ |
-| **Sentry** | Processor | Error stack traces, request context | US | 0+ |
-| **New Relic** | Processor | Performance metrics, log aggregation | US | 6+ |
-| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | 0+ |
-| **OpenAI** | Processor | Corpus text at embedding time (one-time, not retained) | US | 0+ |
-| **Resend/SES** | Processor | Subscriber email addresses | US | 8+ |
-| **Auth0** | Processor | User accounts (if implemented) | US | 13+ |
-| **Contentful** | Processor | Editorial content (no personal data) | EU | 0+ |
+| Service | GDPR Role | Data Touched | Region | Milestone |
+|---------|-----------|-------------|--------|-----------|
+| **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica Arc 4+ | 1a+ |
+| **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | 1a+ |
+| **Cloudflare** | Processor | Request metadata, IP for WAF (transient, not stored by portal) | Global | 1a+ |
+| **Amplitude** | Processor | Anonymized events with country_code (no user ID) | US | 3d+ |
+| **Sentry** | Processor | Error stack traces, request context | US | 1a+ |
+| **New Relic** | Processor | Performance metrics, log aggregation | US | 3d+ |
+| **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-east-1` | 1+ |
+| **OpenAI** | Processor | Corpus text at embedding time (one-time, not retained) | US | 1+ |
+| **Resend/SES** | Processor | Subscriber email addresses | US | 5a+ |
+| **Auth0** | Processor | User accounts (if implemented) | US | 7a+ |
+| **Contentful** | Processor | Editorial content (no personal data) | EU | 1+ |
 
 EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. Review when services are added or changed.
 
@@ -738,7 +738,7 @@ The `chunk_relations` table (ADR-050) connects passages by semantic similarity. 
 
 **Example:** "Yogananda on Fear" — 8 passages from 4 books, editorially ordered to build a coherent contemplation.
 
-**Example:** "The Path of Practice" (ADR-104) — a curated passage sequence tracing Yogananda's published arc from reading to practice: why meditate → what meditation is → what Kriya Yoga is → the lineage (Babaji, Lahiri Mahasaya, Sri Yukteswar, Yogananda) → the invitation to practice. All passages verbatim, all cited. The final entry signposts SRF's free Beginner's Meditation (`yogananda.org/a-beginners-meditation`) and the SRF Lessons (`yogananda.org/lessons`). This thread is the corpus-grounded version of what SRF's website provides through editorial copy — but here it is Yogananda's own voice making the invitation. Requires multi-book corpus (Phase 5+).
+**Example:** "The Path of Practice" (ADR-104) — a curated passage sequence tracing Yogananda's published arc from reading to practice: why meditate → what meditation is → what Kriya Yoga is → the lineage (Babaji, Lahiri Mahasaya, Sri Yukteswar, Yogananda) → the invitation to practice. All passages verbatim, all cited. The final entry signposts SRF's free Beginner's Meditation (`yogananda.org/a-beginners-meditation`) and the SRF Lessons (`yogananda.org/lessons`). This thread is the corpus-grounded version of what SRF's website provides through editorial copy — but here it is Yogananda's own voice making the invitation. Requires multi-book corpus (Milestone 3c+).
 
 The "Seeking..." entry points already hint at this. Threads make the connection explicit and browsable.
 
@@ -746,7 +746,7 @@ The "Seeking..." entry points already hint at this. Threads make the connection 
 
 ```sql
 -- ============================================================
--- EDITORIAL THREADS (curated multi-book reading paths — Phase 5+)
+-- EDITORIAL THREADS (curated multi-book reading paths — Milestone 3c+)
 -- ============================================================
 CREATE TABLE editorial_threads (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -805,7 +805,7 @@ This is a "Classifying" category use — JSON output, no prose. Spot-checked by 
 
 ```sql
 -- ============================================================
--- EXTERNAL REFERENCES (reverse bibliography — Phase 5+)
+-- EXTERNAL REFERENCES (reverse bibliography — Milestone 3c+)
 -- ============================================================
 CREATE TABLE external_references (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -844,7 +844,7 @@ Scholars, interfaith seekers, and devotees who want to understand Yogananda's in
 
 ## DES-029: The Quiet Index — Browsable Contemplative Taxonomy
 
-Phase 4 plans E3 (Passage Accessibility Rating) and E8 (Tone Classification). The Quiet Index combines these two planned classifications into a browsable dimension: passages organized by their contemplative texture.
+Milestone 3b plans E3 (Passage Accessibility Rating) and E8 (Tone Classification). The Quiet Index combines these two planned classifications into a browsable dimension: passages organized by their contemplative texture.
 
 ### Passage Textures
 
@@ -909,7 +909,7 @@ The feedback form includes the notice: *"Please do not include personal informat
 
 ### Editorial Integration
 
-Feedback appears in the editorial review portal (Phase 4) as a "Seeker Feedback" queue alongside theme tag review and ingestion QA. Citation error reports are highest priority — they directly affect the portal's fidelity guarantee.
+Feedback appears in the editorial review portal (Milestone 3b) as a "Seeker Feedback" queue alongside theme tag review and ingestion QA. Citation error reports are highest priority — they directly affect the portal's fidelity guarantee.
 
 ---
 
@@ -964,7 +964,7 @@ This is a **UI pattern, not a new data model.** Each underlying content type kee
 
 ### Queue Health Monitoring
 
-Review queues grow with every phase. Without monitoring, backlogs can exceed a monastic editor's 2–3 hour daily window for weeks.
+Review queues grow with every arc. Without monitoring, backlogs can exceed a monastic editor's 2–3 hour daily window for weeks.
 
 **Queue health indicators:**
 - **Oldest unreviewed item** — displayed on editorial home screen
@@ -983,8 +983,8 @@ The portal's content — book text, theme tags, translations, editorial threads,
 
 ### Book Ingestion Workflow
 
-**Phase 0a:** PDF → marker → Human QA → Contentful (import via Management API) → batch sync → chunk → embed → Neon.
-**Phase 0b+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
+**Milestone 1a:** PDF → marker → Human QA → Contentful (import via Management API) → batch sync → chunk → embed → Neon.
+**Milestone 1b+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
 
 #### Pre-Ingestion Planning
 
@@ -996,7 +996,7 @@ Before running the pipeline, the book ingestion operator completes a planning ch
 4. **Special handling:** Devanāgarī content? IAST diacritics? Epigraphs? Poetry blocks? (ADR-080, ADR-048)
 5. **Source quality:** PDF scan quality, OCR confidence expectation, known problem areas.
 
-The admin portal surfaces this as a structured form (Phase 4+). For Phases 0–2, the checklist lives in the book's ingestion script configuration.
+The admin portal surfaces this as a structured form (Milestone 3b+). For Milestones 1a–2b, the checklist lives in the book's ingestion script configuration.
 
 #### Pipeline Dashboard
 
@@ -1014,8 +1014,8 @@ After automated processing but before human QA, the operator sees a pipeline sum
 
 New book content is reviewable in a "preview" state before going live:
 
-- **Phase 0a:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
-- **Phase 0b+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries. The Neon `is_published` flags remain as a cache of Contentful state.
+- **Milestone 1a:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
+- **Milestone 1b+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries. The Neon `is_published` flags remain as a cache of Contentful state.
 
 The operator publishes chapter-by-chapter or the whole book at once. Publication triggers chunk relation computation for the new content.
 
@@ -1088,7 +1088,7 @@ By year 3, the people operating the portal may be different from those who built
 - How to onboard a new staff member to the admin portal
 - How to run the quarterly backup restore drill
 
-**Location:** `/docs/operational/playbook.md` — created during Phase 4 when the editorial review portal ships. Updated as new workflows are added in subsequent phases. Referenced from the admin portal's help section.
+**Location:** `/docs/operational/playbook.md` — created during Milestone 3b when the editorial review portal ships. Updated as new workflows are added in subsequent milestones. Referenced from the admin portal's help section.
 
 ---
 
@@ -1100,26 +1100,26 @@ The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. Thi
 
 ### Existing AI-Assisted Workflows (Designed in Individual ADRs)
 
-| Task | AI Role | Human Role | Phase | ADR |
+| Task | AI Role | Human Role | Milestone | ADR |
 |---|---|---|---|---|
-| Theme tag classification | Proposes tags with confidence scores | Approves/rejects per passage | 4 | ADR-032 |
-| Query expansion | Expands conceptual queries to search terms | Reviews spiritual-terms.json periodically | 0 | ADR-005 E2 |
-| Ingestion QA | Flags probable OCR errors, formatting issues | Makes every correction decision | 0 | ADR-005 E4 |
-| Tone classification | Classifies passage tone (consoling/joyful/challenging/contemplative/practical) | Spot-checks | 4 | ADR-005 E8 |
-| Accessibility rating | Classifies passage depth (universal/accessible/deep) | Spot-checks | 4 | ADR-005 E3 |
-| UI string translation | Drafts translations for all ~200–300 UI strings | Reviews every string before production | 10 | ADR-078 |
-| Alt text generation | Generates reverential alt text for photographs | Reviews before publication | 1 | ADR-005 E7 |
-| Social media captions | Generates caption text with citation | Reviews and edits before posting | 8 | ADR-092 |
-| Relation type classification | Classifies cross-book relation types | Spot-checks | 5 | ADR-005 E6 |
-| External reference extraction | Extracts Bible, Gita, Patanjali references from text | Three-state review (auto → reviewed → manual) | 5 | DES-027 |
-| `/guide` page drafts (need-based) | Drafts recommendation text for seeker need pathways | Reviews before publication | 4 | DES-048 |
-| `/guide` worldview pathways | Generates corpus-grounded guide sections for 12 worldview perspectives using seed queries, reverse bibliography, and vocabulary bridge | Theological review before publication | 4+ | DES-048, DES-027 |
-| `/guide` life-phase pathways | Generates guide sections for 9 life-phase perspectives using tone filters, accessibility levels, situation themes, and characteristic questions as generation anchors | Editorial + theological review | 4+ | DES-048 |
-| `/guide` practice pathway | Drafts the "If You Feel Drawn to Practice" pathway framing text, selecting corpus passages about the primacy of practice and Kriya Yoga's public description | Theological review before publication | 4 | DES-048, ADR-104 |
-| Practice bridge candidate tagging | Proposes `practice_bridge: true` on passages where Yogananda explicitly invites the reader to practice | Human approval required for every tag | 4+ | ADR-104 |
-| Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search/practice) | Implicit — classification rules are human-authored | 0 | ADR-005 E1 |
-| Search quality evaluation | Automated judge assessing search result relevance in CI | Sets expected-passage test suite | 0 | ADR-005 E5 |
-| Portal update drafting | Reads deployment metadata and git history, drafts seeker-facing release note in portal voice (ADR-074) | Reviews and edits before publication | 4 | ADR-105 |
+| Theme tag classification | Proposes tags with confidence scores | Approves/rejects per passage | 3b | ADR-032 |
+| Query expansion | Expands conceptual queries to search terms | Reviews spiritual-terms.json periodically | 1a | ADR-005 E2 |
+| Ingestion QA | Flags probable OCR errors, formatting issues | Makes every correction decision | 1a | ADR-005 E4 |
+| Tone classification | Classifies passage tone (consoling/joyful/challenging/contemplative/practical) | Spot-checks | 3b | ADR-005 E8 |
+| Accessibility rating | Classifies passage depth (universal/accessible/deep) | Spot-checks | 3b | ADR-005 E3 |
+| UI string translation | Drafts translations for all ~200–300 UI strings | Reviews every string before production | 5b | ADR-078 |
+| Alt text generation | Generates reverential alt text for photographs | Reviews before publication | 2a | ADR-005 E7 |
+| Social media captions | Generates caption text with citation | Reviews and edits before posting | 5a | ADR-092 |
+| Relation type classification | Classifies cross-book relation types | Spot-checks | 3c | ADR-005 E6 |
+| External reference extraction | Extracts Bible, Gita, Patanjali references from text | Three-state review (auto → reviewed → manual) | 3c | DES-027 |
+| `/guide` page drafts (need-based) | Drafts recommendation text for seeker need pathways | Reviews before publication | 3b | DES-048 |
+| `/guide` worldview pathways | Generates corpus-grounded guide sections for 12 worldview perspectives using seed queries, reverse bibliography, and vocabulary bridge | Theological review before publication | 3b+ | DES-048, DES-027 |
+| `/guide` life-phase pathways | Generates guide sections for 9 life-phase perspectives using tone filters, accessibility levels, situation themes, and characteristic questions as generation anchors | Editorial + theological review | 3b+ | DES-048 |
+| `/guide` practice pathway | Drafts the "If You Feel Drawn to Practice" pathway framing text, selecting corpus passages about the primacy of practice and Kriya Yoga's public description | Theological review before publication | 3b | DES-048, ADR-104 |
+| Practice bridge candidate tagging | Proposes `practice_bridge: true` on passages where Yogananda explicitly invites the reader to practice | Human approval required for every tag | 3b+ | ADR-104 |
+| Search intent classification | Routes queries to optimal experience (theme/reader/empathic/search/practice) | Implicit — classification rules are human-authored | 1 | ADR-005 E1 |
+| Search quality evaluation | Automated judge assessing search result relevance in CI | Sets expected-passage test suite | 1 | ADR-005 E5 |
+| Portal update drafting | Reads deployment metadata and git history, drafts seeker-facing release note in portal voice (ADR-074) | Reviews and edits before publication | 3b | ADR-105 |
 
 ### Additional AI-Assisted Workflows
 
@@ -1151,7 +1151,7 @@ For every new UI string (error messages, empty states, ARIA labels, loading text
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Phase:** 1 (when UI strings are first externalized to `messages/en.json`). The AI draft workflow becomes part of the locale file creation process for every subsequent phase. Consistent with ADR-074 editorial voice guide and ADR-078 translation workflow.
+**Milestone:** 2a (when UI strings are first externalized to `messages/en.json`). The AI draft workflow becomes part of the locale file creation process for every subsequent milestone. Consistent with ADR-074 editorial voice guide and ADR-078 translation workflow.
 
 **Service file:** `/lib/services/copy.ts` — UI copy generation, option ranking, editorial voice prompt construction.
 
@@ -1165,13 +1165,13 @@ Claude reviews the next 14 days of daily passages and suggests adjustments:
 
 Human editor reviews Claude's suggestions alongside the current 14-day schedule, accepts/adjusts/ignores. This runs as a weekly scheduled task surfaced in the editorial home screen.
 
-**Phase:** 4 (alongside daily passage curation workflow).
+**Milestone:** 3b (alongside daily passage curation workflow).
 
 #### Calendar-Aware Content Suggestions
 
 When a calendar event approaches (within 30 days), Claude scans the corpus for thematically related passages and suggests passage-event associations. For example, approaching Christmas meditation: Claude identifies passages about Christ, the Nativity, and universal spirituality from across the library. Human curator reviews, selects, and links.
 
-**Phase:** 4 (alongside calendar event management, deliverable 4.8).
+**Milestone:** 3b (alongside calendar event management, deliverable 3b.8).
 
 #### Community Collection Pre-Review
 
@@ -1185,7 +1185,7 @@ Before staff sees a community collection submission, Claude provides a prelimina
 
 This does **not** auto-approve or auto-reject. It reduces the reviewer's cognitive load by pre-screening for common issues, allowing the human reviewer to focus on theological judgment.
 
-**Phase:** 14 (alongside community collection gallery, deliverable 14.9).
+**Milestone:** 7b (alongside community collection gallery).
 
 #### Curation Brief Drafting
 
@@ -1198,7 +1198,7 @@ Staff describes a high-level need ("We need a collection about courage for autum
 
 Staff edits and publishes the brief. VLD members see a well-structured assignment with concrete guidance, reducing the ambiguity that makes volunteer work difficult.
 
-**Phase:** 14 (alongside VLD curation pipeline, deliverable 14.11).
+**Milestone:** 7b (alongside VLD curation pipeline).
 
 #### Feedback Categorization
 
@@ -1216,7 +1216,7 @@ Seeker feedback (ADR-084) arrives as free text. Claude categorizes it before it 
 
 Human sees pre-categorized feedback with Claude's reasoning, adjusts categories as needed. The categorization itself is never shown to the seeker — it's an internal routing aid.
 
-**Phase:** 4 (alongside seeker feedback mechanism, deliverable 4.17).
+**Milestone:** 3b (alongside seeker feedback mechanism, deliverable 3b.9).
 
 #### Ingestion Changelog Generation
 
@@ -1230,7 +1230,7 @@ After a new book is ingested, Claude generates a human-readable summary:
 
 Staff gets a concise summary without querying the database. Displayed in the admin portal's pipeline dashboard.
 
-**Phase:** 3 (alongside book ingestion workflow improvements).
+**Milestone:** 3a (alongside book ingestion workflow improvements).
 
 #### Worldview Guide Pathway Generation (Corpus-Grounded)
 
@@ -1301,15 +1301,15 @@ Output format: {json_schema}
 
 Life-phase prompts are stored alongside worldview prompts in `/lib/data/guide-prompts/` with a `life-phase/` subdirectory.
 
-**Regeneration after corpus growth:** When a new book is ingested (Phase 3+), the admin portal flags which worldview and life-phase pathways may benefit from regeneration based on the new book's theme density and reference profile. E.g., ingesting *The Second Coming of Christ* triggers a regeneration flag for the Christian contemplative pathway; ingesting *Scientific Healing Affirmations* triggers a flag for the Facing Illness life-phase pathway. Staff decides whether to regenerate, and regenerated drafts go through the same review pipeline.
+**Regeneration after corpus growth:** When a new book is ingested (Milestone 3a+), the admin portal flags which worldview and life-phase pathways may benefit from regeneration based on the new book's theme density and reference profile. E.g., ingesting *The Second Coming of Christ* triggers a regeneration flag for the Christian contemplative pathway; ingesting *Scientific Healing Affirmations* triggers a flag for the Facing Illness life-phase pathway. Staff decides whether to regenerate, and regenerated drafts go through the same review pipeline.
 
-**Phase:** 4+ (requires theme system, reverse bibliography, vocabulary bridge, editorial review infrastructure). Initial pathways generated for English; Phase 10 adds per-locale cultural adaptation of each pathway.
+**Milestone:** 3b+ (requires theme system, reverse bibliography, vocabulary bridge, editorial review infrastructure). Initial pathways generated for English; Milestone 5b adds per-locale cultural adaptation of each pathway.
 
 **Service file:** `/lib/services/guide-generation.ts` — prompt template loading, corpus query orchestration, structured output parsing, admin portal integration.
 
 #### Impact Report Drafting
 
-For the annual "What Is Humanity Seeking?" report (Phase 14, deliverable 14.8), Claude drafts narrative text from aggregated data:
+For the annual "What Is Humanity Seeking?" report (Milestone 7b), Claude drafts narrative text from aggregated data:
 
 - "In 2027, seekers from 142 countries searched the portal. The most common theme was 'peace' — reflecting a world seeking inner stillness."
 - "Grief-related searches peaked in November, suggesting a seasonal pattern of reflection around holidays and year's end."
@@ -1317,7 +1317,7 @@ For the annual "What Is Humanity Seeking?" report (Phase 14, deliverable 14.8), 
 
 Human curator edits the draft into the final report. The data is real; the narrative framing is AI-drafted, human-approved.
 
-**Phase:** 14 (alongside annual report, deliverable 14.8).
+**Milestone:** 7b (alongside annual report).
 
 ### AI Tone in the Admin Portal
 
@@ -1364,7 +1364,7 @@ AI proposals improve over time through systematic feedback, not model fine-tunin
 
 | Observation Type | Example | Cadence |
 |---|---|---|
-| **Theme diversity drift** | "The theme 'Peace' is now 60% dominated by passages from one book. Diversity has decreased since Phase 5." | Weekly |
+| **Theme diversity drift** | "The theme 'Peace' is now 60% dominated by passages from one book. Diversity has decreased since Milestone 3c." | Weekly |
 | **Classification staleness** | "142 theme tags were classified > 18 months ago with prompt version 1.2. Current prompt is 2.1. Reclassification may improve accuracy." | Monthly |
 | **Coverage gaps** | "No passages in the corpus address 'Forgiveness' from a practical perspective — only contemplative. This affects the Facing Guilt life-phase pathway." | After each book ingestion |
 | **Cross-workflow inconsistency** | "Passage #247 is tagged 'joyful' by tone classification but selected for the Grief & Loss guide pathway." | Nightly batch |
@@ -1372,7 +1372,7 @@ AI proposals improve over time through systematic feedback, not model fine-tunin
 
 Observations are **never actionable recommendations** — they state a condition. The editorial team decides whether the condition matters. Many observations will be dismissed. The AI doesn't need to know which.
 
-**Phase:** 4 (alongside editorial home screen, which becomes the natural surface for observations).
+**Milestone:** 3b (alongside editorial home screen, which becomes the natural surface for observations).
 
 **Service file:** `/lib/services/ai-observations.ts` — observation generation, staleness detection, diversity metrics, consistency checks.
 
@@ -1390,7 +1390,7 @@ Sometimes the right AI behavior is to decline. A low-confidence proposal can be 
 
 **Abstention rates** are tracked per workflow as a health metric. Rising abstention in a workflow signals either corpus gaps or prompt degradation — both worth investigating.
 
-**Phase:** 0 (abstention capability ships with the first AI-assisted workflow; confidence floors are calibrated during Full Review operation).
+**Arc:** 1 (abstention capability ships with the first AI-assisted workflow; confidence floors are calibrated during Full Review operation).
 
 ### Workflow Dependency Graph
 
@@ -1422,7 +1422,7 @@ DES-035 workflows have implicit dependencies. When an upstream workflow's output
 
 **Staleness signaling:** When an upstream workflow's output changes (OCR correction alters passage text, a theme tag is reclassified), downstream workflows that consumed the old output are flagged in the editorial queue: "This passage's theme tags changed since it was included in the Christmas pathway. Review recommended." This is not automatic re-execution — it is a staleness signal that the editor can act on or dismiss.
 
-**Phase:** 4 (staleness signaling requires the editorial queue infrastructure).
+**Milestone:** 3b (staleness signaling requires the editorial queue infrastructure).
 
 ### Unified Prompt Versioning
 
@@ -1466,7 +1466,7 @@ Each prompt file includes:
 
 The existing `/lib/data/guide-prompts/` directory is subsumed into the unified structure. The `/lib/data/spiritual-terms.json` vocabulary bridge remains a separate file consumed by multiple prompts.
 
-**Phase:** 0 (directory structure created at repo setup; initial prompts for search intent classification and ingestion QA are the first entries).
+**Arc:** 1 (directory structure created at repo setup; initial prompts for search intent classification and ingestion QA are the first entries).
 
 *Section revised: 2026-02-21, ADR-100 deep exploration — added maturity model, feedback loops, AI Observes, AI Abstains, dependency graph, unified prompt versioning*
 
@@ -1566,7 +1566,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 
 ## ADR-007: Editorial Proximity Standard
 
-> **Phase:** — (cross-cutting, applies to all phases that place non-Yogananda prose near sacred text)
+> **Arc:** — (cross-cutting, applies to all arcs that place non-Yogananda prose near sacred text)
 
 Multiple features place portal-authored prose within visual proximity of Yogananda's verbatim text: editorial reading threads (DES-026), glossary definitions, search suggestion hints (ADR-049), crisis resource text (ADR-071), social media captions (ADR-092), magazine articles, the `/guide` page (DES-047), and chant instructions metadata (ADR-059). Each feature has its own ADR, but no single standard governs the shared boundary. This section establishes one.
 
@@ -1694,13 +1694,13 @@ No user identification. No IP addresses. No session IDs.
 | `center_locator_clicked` | `{}` | Digital → physical bridge |
 | `search_performed` | `{ language, result_count, zero_results }` | Search usage volume, zero-result rate |
 
-**`requested_language` rationale:** The `page_viewed` event carries `language` (the locale actually served) and `requested_language` (the seeker's `Accept-Language` header preference). The delta between requested and served is a direct measure of unmet language demand — e.g., how many seekers per week arrive wanting Hindi but receive English. This signal is impossible to backfill and directly informs Phase 10 language prioritization. When `requested_language === language`, the property adds no information and can be elided in analysis.
+**`requested_language` rationale:** The `page_viewed` event carries `language` (the locale actually served) and `requested_language` (the seeker's `Accept-Language` header preference). The delta between requested and served is a direct measure of unmet language demand — e.g., how many seekers per week arrive wanting Hindi but receive English. This signal is impossible to backfill and directly informs Milestone 5b language prioritization. When `requested_language === language`, the property adds no information and can be elided in analysis.
 
-**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Phase 6 Retool dashboard (deliverable 6.4) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
+**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Milestone 3d Retool dashboard (deliverable 3d.4) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
 
 ### Standing Operational Metrics
 
-Beyond the Amplitude event allowlist and APM tooling, the following derived metrics should be computed and surfaced in the Phase 6 Retool dashboard for ongoing operational awareness:
+Beyond the Amplitude event allowlist and APM tooling, the following derived metrics should be computed and surfaced in the Milestone 3d Retool dashboard for ongoing operational awareness:
 
 | Metric | Source | Refresh | Dashboard |
 |--------|--------|---------|-----------|
@@ -1708,7 +1708,7 @@ Beyond the Amplitude event allowlist and APM tooling, the following derived metr
 | Most common zero-result queries (top 20) | `search_queries` table | Daily | Retool (staff) |
 | Search degradation mode distribution | Structured logs (`searchMode` field) | Daily | Retool (staff) |
 | AI cost (Claude Haiku calls × per-call cost) | AWS Bedrock billing / CloudWatch | Daily | Retool (staff) |
-| Unmet language demand (requested ≠ served) | `page_viewed` events | Weekly | Retool (staff) + Impact Dashboard (Phase 10) |
+| Unmet language demand (requested ≠ served) | `page_viewed` events | Weekly | Retool (staff) + Impact Dashboard (Milestone 5b) |
 | Content availability matrix (books × languages) | `books` + `book_chunks` tables | On content change | Impact Dashboard |
 | Editorial queue depth by type | `review_queue` tables | Real-time | Admin portal pipeline dashboard |
 | Geographic Core Web Vitals (per target region) | New Relic Synthetics | Continuous | New Relic |
@@ -1723,16 +1723,16 @@ Testing is a fidelity guarantee, not optional polish. A bug that misattributes a
 
 ### Test Layers
 
-| Layer | Tool | What It Tests | Phase |
-|-------|------|---------------|-------|
-| **Unit / Integration** | Vitest + React Testing Library | Service functions, API route handlers, component rendering | Phase 1 |
-| **End-to-End** | Playwright | Full user flows: search → read → share → navigate. Cross-browser. | Phase 1 |
-| **Accessibility** | axe-core (CI) + Playwright a11y | Automated WCAG checks. Keyboard navigation flows. | Phase 1 |
-| **Search quality** | Custom Vitest suite | ~30 queries with expected passages. Precision/recall. | Phase 1 |
-| **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Phase 5 |
-| **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Phase 1 |
-| **Visual** | Storybook | Component documentation, design token consistency | Phase 1 |
-| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes | Phase 11 |
+| Layer | Tool | What It Tests | Milestone |
+|-------|------|---------------|-----------|
+| **Unit / Integration** | Vitest + React Testing Library | Service functions, API route handlers, component rendering | Milestone 2a |
+| **End-to-End** | Playwright | Full user flows: search → read → share → navigate. Cross-browser. | Milestone 2a |
+| **Accessibility** | axe-core (CI) + Playwright a11y | Automated WCAG checks. Keyboard navigation flows. | Milestone 2a |
+| **Search quality** | Custom Vitest suite | ~30 queries with expected passages. Precision/recall. | Milestone 2a |
+| **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Milestone 3c |
+| **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Milestone 2a |
+| **Visual** | Storybook | Component documentation, design token consistency | Milestone 2a |
+| **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes | Arc 5 |
 
 ### Database Test Isolation via Neon Branching
 
@@ -1764,7 +1764,7 @@ On every PR:
 All must pass before merge.
 ```
 
-### Key E2E Test Scenarios (Phase 1)
+### Key E2E Test Scenarios (Milestone 2a)
 
 | Scenario | Flow |
 |----------|------|
@@ -1778,9 +1778,9 @@ All must pass before merge.
 | **Continue the Thread** | Read to end of chapter → verify "Continue the Thread" section shows cross-book passages → click one → verify navigation |
 | **Seeking entry points** | Homepage → scroll to "Seeking..." → click entry point → verify search results page with relevant passages |
 
-### Related Content Quality Evaluation (Phase 5+)
+### Related Content Quality Evaluation (Milestone 3c+)
 
-Mirrors the search quality evaluation (deliverable 0a.8) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
+Mirrors the search quality evaluation (deliverable 1a.9) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
 
 **Test suite:**
 
@@ -1805,12 +1805,12 @@ The Study Workspace (ADR-083) enables personal passage collection. Community Col
 
 ### Four-Tier Visibility
 
-| Tier | Audience | Review | Phase |
-|------|----------|--------|-------|
-| **Private** | Creator only | None | 7 (existing Study Workspace) |
-| **Shared link** | Anyone with URL | None | 7 |
-| **Published** | Everyone (gallery) | Staff review required | 14 |
-| **Featured** | Everyone (prominent) | Staff-promoted | 14 |
+| Tier | Audience | Review | Milestone |
+|------|----------|--------|-----------|
+| **Private** | Creator only | None | Arc 4 (existing Study Workspace) |
+| **Shared link** | Anyone with URL | None | Arc 4 |
+| **Published** | Everyone (gallery) | Staff review required | 7b |
+| **Featured** | Everyone (prominent) | Staff-promoted | 7b |
 
 **Shared link** is the workhorse for study circles: a center leader curates a reading plan in the Study Workspace, clicks "Share," and gets a URL to send via WhatsApp or email. No account required. No staff review needed — the content is already-public SRF text. The page carries a note: *"This collection was curated by a community member, not by SRF."*
 
@@ -1848,7 +1848,7 @@ ALTER TABLE study_outlines ADD COLUMN language TEXT DEFAULT 'en';
 |-------|---------|------|
 | `/collections` | Gallery of published/featured collections. Filter by type, theme, language. | Public |
 | `/collections/[share-hash]` | Single collection view (shared-link, published, or featured) | Public |
-| `/study` | Study Workspace (existing). "Share" and "Submit" buttons for server-synced collections. | Public (Phase 13 for server sync) |
+| `/study` | Study Workspace (existing). "Share" and "Submit" buttons for server-synced collections. | Public (Milestone 7a for server sync) |
 
 ### Gallery Page (`/collections`)
 
@@ -1982,27 +1982,27 @@ Work | Relationships | Parenting | Health/Wellness | Loss & Grief | Aging | Faci
 
 Full profiles in ADR-082. Summary index:
 
-| Persona | Type | Phase Active |
+| Persona | Type | Active From |
 |---|---|---|
-| Monastic content editor | Core staff | Phase 4+ |
-| Theological reviewer | Core staff | Phase 4+ |
-| AE social media staff | Core staff | Phase 6+ |
-| Translation reviewer | Core staff (or volunteer) | Phase 10+ |
-| AE developer | Core staff | Phase 0+ |
-| Leadership (monastic) | Core staff | Phase 4+ |
-| Portal coordinator | Operational (unstaffed) | Phase 4+ |
-| Book ingestion operator | Operational (unstaffed) | Phase 1+ |
-| VLD coordinator | Operational (unstaffed) | Phase 8+ |
+| Monastic content editor | Core staff | Milestone 3b+ |
+| Theological reviewer | Core staff | Milestone 3b+ |
+| AE social media staff | Core staff | Milestone 3d+ |
+| Translation reviewer | Core staff (or volunteer) | Milestone 5b+ |
+| AE developer | Core staff | Arc 1+ |
+| Leadership (monastic) | Core staff | Milestone 3b+ |
+| Portal coordinator | Operational (unstaffed) | Milestone 3b+ |
+| Book ingestion operator | Operational (unstaffed) | Milestone 2a+ |
+| VLD coordinator | Operational (unstaffed) | Milestone 5a+ |
 
 ### Volunteer Personas
 
-| Persona | Phase Active |
+| Persona | Active From |
 |---|---|
-| VLD curation volunteer | Phase 8+ |
-| VLD translation volunteer | Phase 10+ |
-| VLD theme tag reviewer | Phase 8+ |
-| VLD feedback triager | Phase 8+ |
-| VLD content QA reviewer | Phase 8+ |
+| VLD curation volunteer | Milestone 5a+ |
+| VLD translation volunteer | Milestone 5b+ |
+| VLD theme tag reviewer | Milestone 5a+ |
+| VLD feedback triager | Milestone 5a+ |
+| VLD content QA reviewer | Milestone 5a+ |
 
 ### External Personas
 
@@ -2054,7 +2054,7 @@ These questions are tracked in CONTEXT.md § Open Questions (Stakeholder) and re
 
 ## DES-053: Unified Content Pipeline Pattern
 
-Content enters the portal through five media-type-specific pipelines: books (DES-005), magazine articles (ADR-040), video transcripts (ADR-055), audio transcripts (ADR-057), and images (ADR-035). Each is specified independently, but all follow a shared seven-stage pattern. This section names the pattern explicitly, so that Phase 12+ implementations and future content types inherit the structure rather than re-inventing it.
+Content enters the portal through five media-type-specific pipelines: books (DES-005), magazine articles (ADR-040), video transcripts (ADR-055), audio transcripts (ADR-057), and images (ADR-035). Each is specified independently, but all follow a shared seven-stage pattern. This section names the pattern explicitly, so that Arc 6+ implementations and future content types inherit the structure rather than re-inventing it.
 
 ### The Seven Stages
 
@@ -2086,7 +2086,7 @@ The stages are shared; the implementations differ:
 
 ### When to use this pattern
 
-Any new content type entering the portal in future phases (e.g., letters, unpublished manuscripts, study guides) should follow this seven-stage pattern. The implementation checklist for a new content type:
+Any new content type entering the portal in future arcs (e.g., letters, unpublished manuscripts, study guides) should follow this seven-stage pattern. The implementation checklist for a new content type:
 
 1. Define source format and normalization process
 2. Choose chunking strategy (or declare single-chunk if the unit is atomic)
@@ -2098,7 +2098,7 @@ Any new content type entering the portal in future phases (e.g., letters, unpubl
 
 ### Not a premature abstraction
 
-Phases 0–6 implement each pipeline independently — books, magazine, then video/audio/images. The unified content hub (ADR-060) arrives in Phase 12 as a deliberate migration. This section documents the *pattern* shared across independent implementations, not a shared codebase. If a shared `ContentPipeline` base class emerges naturally during Phase 12, it should be extracted from working code, not designed in advance.
+Arcs 1–3 implement each pipeline independently — books, magazine, then video/audio/images. The unified content hub (ADR-060) arrives in Arc 6 as a deliberate migration. This section documents the *pattern* shared across independent implementations, not a shared codebase. If a shared `ContentPipeline` base class emerges naturally during Arc 6, it should be extracted from working code, not designed in advance.
 
 *Section added: 2026-02-22, ADR-060, ADR-112*
 

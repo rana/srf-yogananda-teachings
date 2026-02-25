@@ -46,7 +46,7 @@ The technique boundary is absolute: the portal never teaches Kriya Yoga, Hong-Sa
 
 "Throughout the world" is not metaphor — it is an engineering requirement. The world includes seekers paying per megabyte on JioPhones, elderly devotees sharing a family smartphone, practitioners in cybercafes, and monks navigating by screen reader. Every one of them has a full claim on the beauty and depth of the portal. Neither experience is a compromised version of the other.
 
-The commitments are specific: homepage initial payload under 50KB; text-only mode toggle (no images, no web fonts, no decorative elements — a *considered* experience, not a degraded one); aggressive caching so repeat visits cost zero data; progressive enhancement so the reading experience works with JavaScript disabled; Phase 1 KaiOS emulator in CI; 48px touch targets on pages likely accessed from feature phones; no "Welcome back" personalization that would expose one family member's reading to another on shared devices.
+The commitments are specific: homepage initial payload under 50KB; text-only mode toggle (no images, no web fonts, no decorative elements — a *considered* experience, not a degraded one); aggressive caching so repeat visits cost zero data; progressive enhancement so the reading experience works with JavaScript disabled; Milestone 2a KaiOS emulator in CI; 48px touch targets on pages likely accessed from feature phones; no "Welcome back" personalization that would expose one family member's reading to another on shared devices.
 
 When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global Equity does not constrain ambition. It demands that ambition serve everyone.
 
@@ -60,17 +60,17 @@ Standard web patterns — aggressive CTAs, notification badges, engagement dashb
 
 The design system is derived from existing SRF properties (yogananda.org, the Online Meditation Center, the convocation site), enhanced with Calm Technology constraints: generous whitespace as "digital silence," warm backgrounds (never pure white), no decorative animations beyond subtle 0.3s transitions, pill-shaped buttons from SRF's established interaction patterns. The portal's visual language should feel like entering a library, not a marketplace.
 
-Personalization features are classified into three tiers (ADR-002): build (language preference, font size, bookmarks — genuinely helpful); build with caution (search history — opt-in only, user-clearable, never inferred); never build (reading streaks, behavioral recommendations, social features, push notifications, engagement dashboards). The portal's anonymous experience through Phase 12 must be excellent without any personalization.
+Personalization features are classified into three tiers (ADR-002): build (language preference, font size, bookmarks — genuinely helpful); build with caution (search history — opt-in only, user-clearable, never inferred); never build (reading streaks, behavioral recommendations, social features, push notifications, engagement dashboards). The portal's anonymous experience through Arc 6 must be excellent without any personalization.
 
 ---
 
-## 6. Accessibility from Phase 1
+## 6. Accessibility from Milestone 2a
 
 **WCAG 2.1 AA from the first component.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44x44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 
 SRF's mission is to serve "all of humanity." "All" includes people with disabilities. This is a theological imperative, not a compliance exercise. SRF's existing app already invested in screen reader support — the portal must meet or exceed that standard.
 
-Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free. Semantic HTML, keyboard navigation, and ARIA landmarks cost nothing if done from the start. They cost massive effort to retrofit after inaccessible patterns get baked into components and propagated. Phase 11 becomes the audit and polish phase (professional WCAG audit, TTS, advanced reading mode), not the "add accessibility" phase.
+Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free. Semantic HTML, keyboard navigation, and ARIA landmarks cost nothing if done from the start. They cost massive effort to retrofit after inaccessible patterns get baked into components and propagated. Later milestones handle audit and polish (professional WCAG audit, TTS, advanced reading mode) — accessibility is not a late-stage addition.
 
 Screen reader quality goes beyond mere compliance. ADR-073 specifies that the spoken interface should carry the same warmth as the visual one — not just "Bookmark button" but a voice that conveys the portal's devotional register. ADR-072 addresses cognitive accessibility: consistent navigation, no autoplay, clear language, predictable behavior.
 
@@ -92,7 +92,7 @@ The consequence for code: never install analytics that track users. Never add se
 
 **Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 
-The multilingual commitment shapes technical decisions made long before any translation exists. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — even though Phase 0 is English only. pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Phase 1 so RTL languages work without layout redesign.
+The multilingual commitment shapes technical decisions made long before any translation exists. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — even though Arc 1 is English only. pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
 
 The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
@@ -100,9 +100,9 @@ The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, e
 
 ## 9. API-First Architecture
 
-**All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Phase 13+). Cursor-based pagination. (ADR-011)
+**All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 
-Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Phases 0-12, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
+Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Arcs 1–6, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
 The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
 
@@ -114,7 +114,7 @@ The shared service layer (`/lib/services/`) is pure TypeScript with zero framewo
 
 The teaching portal serves Yogananda's published works — content that is timeless. The portal itself should be designed for an organization that thinks in decades, not quarters. SRF has existed since 1920. Component replacement is expected and planned for — it's maintenance, not failure.
 
-Three durability tiers: Tier 1 (effectively permanent, 10+ years) — PostgreSQL, the service layer, the data model, SQL migrations, REST + JSON APIs, HTML + CSS, Terraform HCL, WCAG standards. Tier 2 (stable, 5-7 years) — Next.js, Vercel, Contentful (editorial source of truth from Phase 0; ADR-010). Tier 3 (replaceable) — specific npm packages, Claude model versions, embedding model versions, Auth0, Amplitude. The five longevity guarantees: all data in PostgreSQL; business logic is framework-agnostic; raw SQL migrations; standard protocols at boundaries; decisions are documented.
+Three durability tiers: Tier 1 (effectively permanent, 10+ years) — PostgreSQL, the service layer, the data model, SQL migrations, REST + JSON APIs, HTML + CSS, Terraform HCL, WCAG standards. Tier 2 (stable, 5-7 years) — Next.js, Vercel, Contentful (editorial source of truth from Arc 1; ADR-010). Tier 3 (replaceable) — specific npm packages, Claude model versions, embedding model versions, Auth0, Amplitude. The five longevity guarantees: all data in PostgreSQL; business logic is framework-agnostic; raw SQL migrations; standard protocols at boundaries; decisions are documented.
 
 The search quality test suite (50-query golden set) serves as the acceptance gate for any AI model migration — you can swap embedding models or LLM providers and verify the system still works.
 
@@ -126,6 +126,6 @@ The search quality test suite (50-query golden set) serves as the acceptance gat
 
 This principle protects the other ten. Without it, every operational parameter accumulates the governance weight of a principle. An engineer who needs to change a cache TTL from 5 minutes to 15 minutes should not feel they are violating an architectural decision. The distinction *preserves* the authority of actual principles by preventing parameter-level fatigue from eroding respect for the governance process.
 
-Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Phase 0a.8 (search quality evaluation) and Phase 2 success criteria explicitly include parameter validation as deliverables.
+Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Milestone 1a.8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables.
 
 In year 7, a new developer can identify what's tunable versus what's sacred without reading the full DECISIONS.md archive.

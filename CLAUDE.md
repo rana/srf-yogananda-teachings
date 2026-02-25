@@ -11,25 +11,25 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 1. **PRINCIPLES.md** — The 11 immutable commitments that define the project, with rationale. Always load this.
 2. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 3. **DESIGN.md** — Cross-cutting architecture, API design, observability, testing, personas, editorial patterns
-4. **DESIGN-phase0.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
-5. **DESIGN-phase1-4.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
-6. **DESIGN-phase5-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — Index and navigational summaries for 123 ADRs across 11 topical groups. ADR bodies split into three files:
-   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–053, 114–121). Phase 0+.
-   - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Phase 1+.
-   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–103, 105–113, 123). Phase 4+.
-8. **ROADMAP.md** — 15 phases (0a–14) from foundation through community curation at scale, with deliverables, success criteria, and phase gates
+4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
+5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
+6. **DESIGN-arc4-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
+7. **DECISIONS.md** — Index and navigational summaries for 118 ADRs across 11 topical groups. ADR bodies split into three files:
+   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–053, 114–121). Arc 1+.
+   - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
+   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123). Arc 3+.
+8. **ROADMAP.md** — 7 arcs from foundation through community curation at scale, with milestones, deliverables, success criteria, and arc gates
 9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
-**Phase-gated reading.** Do not read front-to-back. Load what the task requires:
-- **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current phase
-- **When implementing Phase 0a (Prove):** DESIGN.md (root) + DESIGN-phase0.md + DECISIONS-core.md (ADRs referenced by those sections)
-- **When implementing Phase 0b (Foundation):** Same as 0a, plus DES-037 (Observability) and DES-038 (Testing) from DESIGN.md
-- **When implementing Phases 1–4:** DESIGN.md (root) + DESIGN-phase1-4.md + DECISIONS-core.md + DECISIONS-experience.md
-- **When implementing Phase 5+:** DESIGN.md (root) + DESIGN-phase5-plus.md + all DECISIONS files as needed
+**Arc-gated reading.** Do not read front-to-back. Load what the task requires:
+- **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current arc/milestone
+- **When implementing Arc 1 (Foundation — Milestones 1a/1b):** DESIGN.md (root) + DESIGN-arc1.md + DECISIONS-core.md (ADRs referenced by those sections)
+- **When implementing Arc 2 (Presence — Milestones 2a/2b):** DESIGN.md (root) + DESIGN-arc2-3.md + DECISIONS-core.md + DECISIONS-experience.md
+- **When implementing Arc 3 (Wisdom — Milestones 3a–3d):** DESIGN.md (root) + DESIGN-arc2-3.md + DECISIONS-core.md + DECISIONS-experience.md
+- **When implementing Arc 4+:** DESIGN.md (root) + DESIGN-arc4-plus.md + all DECISIONS files as needed
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
-- **When evaluating proposals or at phase boundaries:** PROPOSALS.md
-- **Not needed for Phase 0a/0b:** DESIGN-phase1-4.md, DESIGN-phase5-plus.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
+- **When evaluating proposals or at arc boundaries:** PROPOSALS.md
+- **Not needed for Arc 1:** DESIGN-arc2-3.md, DESIGN-arc4-plus.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
 
 ## Ignore
 
@@ -53,16 +53,16 @@ Eleven principles define the project's identity and directly constrain code gene
 3. **Signpost, not destination.** The portal leads seekers toward practice — it never substitutes for it. Practice Bridge routes technique queries to SRF Lessons information. Crisis query detection provides safety interstitials. The AI never interprets meditation techniques or spiritual practices. (ADR-104, ADR-122, ADR-069)
 4. **Global Equity.** A seeker in rural Bihar on 2G and a seeker in San Francisco on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Performance budgets enforce this. (ADR-006)
 5. **Calm Technology.** No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI. The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
-6. **Accessibility from Phase 1.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
+6. **Accessibility from Milestone 2a.** WCAG 2.1 AA from the first component. Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 7. **DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. (ADR-095, ADR-099)
 8. **Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
-9. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Phase 13+). Cursor-based pagination. (ADR-011)
+9. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 10. **10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
 11. **Parameters as named constants.** Specific numeric values throughout the documents (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. (ADR-123)
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Contentful (Phase 0+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Phase 2+, ADR-119), Python + NetworkX graph batch pipeline (Phase 4+, ADR-117), Redis/ElastiCache (suggestions, Phase 2+, ADR-120), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL + pgvector + pg_search/ParadeDB, Contentful (Arc 1+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Milestone 2b+, ADR-119), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Redis/ElastiCache (suggestions, Milestone 2b+, ADR-120), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
@@ -73,35 +73,35 @@ Eleven principles define the project's identity and directly constrain code gene
 /app/api/v1/ — Versioned API routes
 /migrations/ — Numbered SQL migrations (dbmate)
 /terraform/ — Infrastructure as Code
-/lambda/ — AWS Lambda handlers (Phase 1+, ADR-017)
+/lambda/ — AWS Lambda handlers (Milestone 2a+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
 /scripts/ — CI-agnostic deployment scripts
 /docs/reference/ — Background research (not active project docs)
-/docs/operational/ — Operational playbook (Phase 4+: procedures for editorial, ingestion, VLD)
+/docs/operational/ — Operational playbook (Milestone 3b+: procedures for editorial, ingestion, VLD)
 ```
 
 **Design tokens:** Merriweather + Lora + Open Sans. SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
-**MCP servers:** Neon (now), Sentry (Phase 0), Contentful (Phase 0b+), SRF Corpus (unscheduled — see ROADMAP.md § Unscheduled Features; ADR-101). Details in DESIGN-phase0.md § MCP Server Strategy.
+**MCP servers:** Neon (now), Sentry (Arc 1), Contentful (Milestone 1b+), SRF Corpus (unscheduled — see ROADMAP.md § Unscheduled Features; ADR-101). Details in DESIGN-arc1.md § MCP Server Strategy.
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 123 records (ADR-001 through ADR-123), organized into 11 topical groups. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
+**ADR-NNN** (Architecture Decision Records) — 118 records organized into 11 topical groups (some numbers retired). DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-123 in the appropriate body file. Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`.
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)
 - **Active** — Governing current or imminent implementation. (`Accepted`)
-- **Provisional** — Thorough direction for future phases. May be revised or suspended. (`Accepted (Provisional — Phase N+)`)
+- **Provisional** — Thorough direction for future arcs. May be revised or suspended. (`Accepted (Provisional — Arc N+)`)
 - **Suspended** — Moved to PROPOSALS.md. Reasoning preserved in ADR body. (`Suspended → PRO-NNN`)
 - **Implemented** — Validated through code. (`Implemented — see [code path]`)
 
-**DES-NNN** (Design Sections) — 56 sections (DES-001 through DES-056) split across four files: DESIGN.md (cross-cutting), DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
+**DES-NNN** (Design Sections) — 56 sections (DES-001 through DES-056) split across four files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
 
-**PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Phase refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
+**PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Milestone refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`, `PRO-001`. Always zero-pad to three digits.
 
-**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS.md and DESIGN-phase0.md). Rule: DECISIONS.md carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS.md.
+**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS.md and DESIGN-arc1.md). Rule: DECISIONS.md carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS.md.
 
 ## Project Skills
 
@@ -123,7 +123,7 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
@@ -131,20 +131,20 @@ Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase fi
 | New decision made | Add ADR to the appropriate DECISIONS body file (core/experience/operations) and update the DECISIONS.md index |
 | Open question resolved | Move from "Open Questions" to "Resolved Questions" in CONTEXT.md |
 | Open question added | Add to CONTEXT.md § Open Questions (appropriate tier). Cross-reference from relevant DESIGN.md section if applicable. |
-| Phase deliverable changed | Update ROADMAP.md deliverable table/bullets and success criteria |
-| Phase status changes | Update "Current State" section in CONTEXT.md |
+| Arc/milestone deliverable changed | Update ROADMAP.md deliverable table/bullets and success criteria |
+| Arc/milestone status changes | Update "Current State" section in CONTEXT.md |
 | New technology adopted | Update DESIGN.md tech stack table |
-| New content type added | DESIGN.md § Data Model + API section, ROADMAP.md phase, new ADR. Also: Knowledge Graph node/edge types, ADR-062 checklist, DES-053 media-type variations. |
+| New content type added | DESIGN.md § Data Model + API section, ROADMAP.md arc/milestone, new ADR. Also: Knowledge Graph node/edge types, ADR-062 checklist, DES-053 media-type variations. |
 | New API endpoint added | Follow DES-019 § API Conventions (ADR-110). Paginated lists: `data`/`pagination`/`meta`; complete collections: `data`/`meta`; single resources: object directly. |
 | Exploration ready for curation | Run `/dedup-proposals` to consolidate `.elmer/proposals/` explorations into PRO-NNN entries in PROPOSALS.md. |
 | Proposal approved for merge | Run `/proposal-merge <PRO-NNN>` or `/theme-integrate <PRO-NNN>`. Skill handles ADR/DES creation and updates PRO status to Adopted. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section. Update governing ADR status if applicable. |
 | Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
-| Feature idea without a phase | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
-| Feature cut from a phase during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original phase, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
+| Feature idea without an arc | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
+| Feature cut from an arc during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original arc/milestone, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
 | ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). Update ADR status to `Suspended → PRO-NNN`. ADR body stays in DECISIONS file. Update ROADMAP.md § Unscheduled Features summary table. |
 
-At phase boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.
+At arc boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.
 
 ## Documentation–Code Transition
 

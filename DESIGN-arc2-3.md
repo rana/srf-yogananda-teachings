@@ -1,8 +1,8 @@
-# SRF Online Teachings Portal — Phases 1–4 Design (Build through Operate)
+# SRF Online Teachings Portal — Arcs 2–3 Design (Presence + Wisdom)
 
-> **Scope.** This file contains the technical design sections relevant to **Phases 1–4** — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Phase 0, see [DESIGN-phase0.md](DESIGN-phase0.md). For Phase 5+, see [DESIGN-phase5-plus.md](DESIGN-phase5-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 2: Presence** (Milestones 2a/2b) and **Arc 3: Wisdom** (Milestones 3a–3d) — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -28,14 +28,14 @@
 | `/places/[slug]` | Individual place detail with book cross-references | Neon `places` + `chunk_places` (ISR) | ISR (7 days) | Yes |
 | `/videos` | Video library — categorized by playlist | YouTube API (ISR) | ISR (1 hr) | Yes |
 | `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) | ISR (1 hr) | Yes |
-| `/study` | Study Workspace — passage collection, teaching arc assembly, export (Phase 7, ADR-083) | `localStorage` (no server) | CSR | No (`noindex`) |
-| `/collections` | Community Collections gallery — published/featured curated passage collections (Phase 14, ADR-086) | Neon (`study_outlines` where visibility = published/featured) | ISR (1 hr) | Yes |
-| `/collections/[share-hash]` | Single community collection view (Phase 7 shared-link, Phase 14 published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) | ISR (24 hr) | Yes |
-| `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Phase 4, ADR-084) | Neon (`seeker_feedback`) | SSR | No (`noindex`) |
-| `/privacy` | Privacy policy — what data is collected, why, how long, sub-processors, data subject rights (Phase 1, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
-| `/legal` | Legal information — terms of use, copyright, content licensing (Phase 1, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
-| `/browse` | Complete content index — all navigable content by category (Phase 1, DES-047) | Neon (ISR) | ISR (24 hr) | Yes |
-| `/updates` | Portal updates — new books, features, languages (Phase 8+, ADR-105) | Neon `portal_updates` | ISR (1 hr) | Yes |
+| `/study` | Study Workspace — passage collection, teaching arc assembly, export (Arc 4, ADR-083) | `localStorage` (no server) | CSR | No (`noindex`) |
+| `/collections` | Community Collections gallery — published/featured curated passage collections (Milestone 7b, ADR-086) | Neon (`study_outlines` where visibility = published/featured) | ISR (1 hr) | Yes |
+| `/collections/[share-hash]` | Single community collection view (Arc 4 shared-link, Milestone 7b published) | Neon (`study_outlines` + `study_outline_sections` + `study_outline_passages`) | ISR (24 hr) | Yes |
+| `/feedback` | Seeker feedback — citation errors, search suggestions, general feedback (Milestone 3b, ADR-084) | Neon (`seeker_feedback`) | SSR | No (`noindex`) |
+| `/privacy` | Privacy policy — what data is collected, why, how long, sub-processors, data subject rights (Milestone 2a, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
+| `/legal` | Legal information — terms of use, copyright, content licensing (Milestone 2a, ADR-099) | Static (ISR) | ISR (30 days) | Yes |
+| `/browse` | Complete content index — all navigable content by category (Milestone 2a, DES-047) | Neon (ISR) | ISR (24 hr) | Yes |
+| `/updates` | Portal updates — new books, features, languages (Milestone 5a+, ADR-105) | Neon `portal_updates` | ISR (1 hr) | Yes |
 
 **Rendering key:** ISR = Incremental Static Regeneration (server-rendered, cached at CDN, revalidated on schedule). SSR = Server-Side Rendered (fresh on every request). CSR = Client-Side Rendered (JavaScript only, no server HTML). All ISR and SSR pages deliver complete HTML with JSON-LD, OG tags, Twitter Card tags, and full content to crawlers — no content page depends on client-side data fetching. Content negotiation (ADR-081 §11): all ISR/SSR routes also respond with structured JSON when the `Accept: application/json` header is sent. See ADR-081 §15 for the full rendering strategy rationale.
 
@@ -250,7 +250,7 @@ Client computes:
 
 **Implementation cost:** ~5KB client-side (timezone+country → latitude table ~3KB + suncalc ~2KB). The client computes `time_band` and sends it as a query parameter — the server never sees timezone, country, or coordinates. No new database columns. No server-side location processing. The server receives only a band name (`dawn`, `night`, `brahmamuhurta`, etc.) — the same opacity as the current fixed-clock design.
 
-**Phase:** Solar-aware circadian ships alongside the circadian color temperature in Phase 11. Indian locale brahmamuhurta override ships in Phase 10 with the Hindi/Bengali launch.
+**Milestone:** Solar-aware circadian ships alongside the circadian color temperature (distributed across arcs as capabilities mature). Indian locale brahmamuhurta override ships in Milestone 5b with the Hindi/Bengali launch.
 
 **API:**
 
@@ -286,15 +286,15 @@ Six **quality** theme cards displayed below the search bar. Each links to `/them
 
 **Exploration categories on `/themes`:**
 
-| Category | Section Heading | Examples | Phase |
-|----------|----------------|----------|-------|
-| `quality` | "Doors of Entry" | Peace, Courage, Healing, Joy, Purpose, Love | 4 |
-| `situation` | "Life Circumstances" | Relationships, Parenting, Loss & Grief, Work | 4+ |
-| `person` | "Spiritual Figures" | Christ, Krishna, Lahiri Mahasaya, Sri Yukteswar, Patanjali, Kabir | 5+ |
-| `principle` | "Yogic Principles" | Ahimsa (Non-violence), Satya (Truthfulness), Tapas (Self-discipline), etc. | 5+ |
-| `scripture` | "Sacred Texts" | Yoga Sutras of Patanjali, Bhagavad Gita, Bible, Rubaiyat of Omar Khayyam | 5+ |
-| `practice` | "Spiritual Practices" | Meditation, Concentration, Pranayama, Affirmation, Energization | 4+ |
-| `yoga_path` | "Paths of Yoga" | Kriya Yoga, Raja Yoga, Bhakti Yoga, Karma Yoga, Jnana Yoga, Hatha Yoga, Mantra Yoga | 5+ |
+| Category | Section Heading | Examples | Milestone |
+|----------|----------------|----------|-----------|
+| `quality` | "Doors of Entry" | Peace, Courage, Healing, Joy, Purpose, Love | 3b |
+| `situation` | "Life Circumstances" | Relationships, Parenting, Loss & Grief, Work | 3b+ |
+| `person` | "Spiritual Figures" | Christ, Krishna, Lahiri Mahasaya, Sri Yukteswar, Patanjali, Kabir | 3c+ |
+| `principle` | "Yogic Principles" | Ahimsa (Non-violence), Satya (Truthfulness), Tapas (Self-discipline), etc. | 3c+ |
+| `scripture` | "Sacred Texts" | Yoga Sutras of Patanjali, Bhagavad Gita, Bible, Rubaiyat of Omar Khayyam | 3c+ |
+| `practice` | "Spiritual Practices" | Meditation, Concentration, Pranayama, Affirmation, Energization | 3b+ |
+| `yoga_path` | "Paths of Yoga" | Kriya Yoga, Raja Yoga, Bhakti Yoga, Karma Yoga, Jnana Yoga, Hatha Yoga, Mantra Yoga | 3c+ |
 
 **Kriya Yoga theme page scope note (ADR-104):** The Kriya Yoga theme page (`/themes/kriya-yoga`) shows Yogananda's *published descriptions* of Kriya Yoga and its place in the yoga tradition — not technique instruction. An editorial note at the top of the page, styled as a quiet `--portal-text-muted` block: "Yogananda's published descriptions of Kriya Yoga and its place in the yoga tradition. Formal instruction in Kriya Yoga is available through the SRF Lessons → yogananda.org/lessons." This note is editorial content in `messages/{locale}.json`, SRF-reviewed. The note appears only on the Kriya Yoga theme page, not on other `yoga_path` themes. Below the note, the standard theme page layout: tagged passages, "Read in context" links, "Show more" — same as every other theme.
 
@@ -327,7 +327,7 @@ Learn about the SRF Lessons → yogananda.org/lessons
 
 Styled in `--portal-text-muted`, Merriweather 300, `--text-sm` — the same visual weight as the "Find this book" bookstore link. Not a modal, not a card, not a CTA. A signpost, not a funnel. Present on every occurrence of the tagged passage across the portal.
 
-**Content:** The note text is editorial content in `messages/{locale}.json` — localized in Phase 10+, SRF-reviewed in all locales. The external URLs (`yogananda.org/meditate`, `yogananda.org/lessons`) are constants, not per-locale (SRF's site handles its own locale routing).
+**Content:** The note text is editorial content in `messages/{locale}.json` — localized in Milestone 5b+, SRF-reviewed in all locales. The external URLs (`yogananda.org/meditate`, `yogananda.org/lessons`) are constants, not per-locale (SRF's site handles its own locale routing).
 
 **Schema addition:**
 
@@ -335,7 +335,7 @@ Styled in `--portal-text-muted`, Merriweather 300, `--text-sm` — the same visu
 ALTER TABLE book_chunks ADD COLUMN practice_bridge BOOLEAN NOT NULL DEFAULT false;
 ```
 
-**Phase:** 4+ (alongside the theme tagging pipeline). Initial tagging pass during multi-book corpus expansion (Phase 3–4).
+**Milestone:** 3b+ (alongside the theme tagging pipeline). Initial tagging pass during multi-book corpus expansion (Milestones 3a–3b).
 
 #### "Seeking..." (Empathic Entry Points)
 
@@ -359,17 +359,17 @@ Framed through aspiration, not suffering. "Seeking" aligns with the search bar's
 - Style: `--portal-text-muted`, Merriweather Light, gentle `--srf-gold` underline on hover
 - The section heading "Seeking..." is in Merriweather Light, not bold — it's an invitation, not a label
 - Editorially curated: the portal team can add, remove, or refine entry points based on anonymized search trends (from `search_queries` table)
-- **Cultural adaptation (Phase 10):** The "Seeking..." entry points are deeply English-idiomatic ("The heart to forgive," "Peace in a restless mind"). These need cultural adaptation, not mechanical translation. Treat them as **editorial content per locale** — each language's reviewer may rephrase, reorder, or replace entry points to match cultural expression. Include these in the ADR-078 human review scope alongside UI strings.
+- **Cultural adaptation (Milestone 5b):** The "Seeking..." entry points are deeply English-idiomatic ("The heart to forgive," "Peace in a restless mind"). These need cultural adaptation, not mechanical translation. Treat them as **editorial content per locale** — each language's reviewer may rephrase, reorder, or replace entry points to match cultural expression. Include these in the ADR-078 human review scope alongside UI strings.
 - Mobile: full-width, stacked list
 - This section is below the fold — a deliberate choice. The above-the-fold experience (Today's Wisdom + search bar) is for all visitors; this section is for the ones who scroll because they need more
 
-**Grief elevated to primary theme :** "Comfort after loss" is the entry point; grief/loss also becomes a dedicated theme page (`/themes/grief`) in Phase 4 with deep, curated content on the immortality of the soul, reunion after death, the purpose of suffering, and direct consolation. Grief is arguably the most common reason someone turns to spiritual literature — the portal should be the definitive resource for seekers Googling "what happens after death Yogananda."
+**Grief elevated to primary theme :** "Comfort after loss" is the entry point; grief/loss also becomes a dedicated theme page (`/themes/grief`) in Milestone 3b with deep, curated content on the immortality of the soul, reunion after death, the purpose of suffering, and direct consolation. Grief is arguably the most common reason someone turns to spiritual literature — the portal should be the definitive resource for seekers Googling "what happens after death Yogananda."
 
 **DELTA alignment:** No behavioral profiling. The entry points are the same for every visitor. They are informed by aggregated search trends ("What is humanity seeking?"), not individual tracking.
 
 ### The Library (`/books`) and Book Landing Page (`/books/[slug]`)
 
-The library is how seekers browse and discover books. Even with a single book in Phase 1, the page should feel like the entrance to a real library — warm, unhurried, and honest about what's inside.
+The library is how seekers browse and discover books. Even with a single book in Milestone 2a, the page should feel like the entrance to a real library — warm, unhurried, and honest about what's inside.
 
 #### The Library (`/books`)
 
@@ -409,7 +409,7 @@ The library is how seekers browse and discover books. Even with a single book in
 - **Honest about scope.** "More books are being added" is truthful and forward-looking. No fixed promises, no dates.
 - **The SRF Bookstore link** is a natural signpost: seekers can explore the full catalog of physical books while the digital library grows.
 - **Each book entry is a generous card** — not a cramped grid item. Whitespace, the cover image (if available from SRF), and a brief editorial description give each book the space it deserves.
-- **No "empty state" design needed in Phase 1** — there will always be at least one book.
+- **No "empty state" design needed in Milestone 2a** — there will always be at least one book.
 
 **Book card contents:**
 - Cover image (if available; graceful fallback to a warm cream card with title in Merriweather)
@@ -420,9 +420,9 @@ The library is how seekers browse and discover books. Even with a single book in
 - "Begin reading →" link to chapter 1
 - "Find this book →" link to SRF Bookstore
 
-**Phase 3 growth:** As Wave 2a–2d books are ingested, the library page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-030), which mirrors life-impact ordering.
+**Milestone 3a growth:** As Wave 2a–2d books are ingested, the library page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-030), which mirrors life-impact ordering.
 
-**Phase 10 multi-language:** The library shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-075 content availability matrix).
+**Milestone 5b multi-language:** The library shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-075 content availability matrix).
 
 **API:** `GET /api/v1/books` (already defined). Returns all books with metadata, chapter count, and slugs.
 
@@ -529,7 +529,7 @@ The single most important typographic decision: **line length**. Optimal for ext
 
 | Property | Value | Rationale |
 |----------|-------|-----------|
-| Max text width | `38rem` (~65-75 chars) | Optimal reading line length. **CJK note (Phase 10):** 38rem holds ~30–35 CJK characters per line — within the traditional optimal range for Japanese (25–40 chars/line). Line height should tighten from 1.8 to 1.6–1.7 for CJK text. Validate with actual translated content before launch. |
+| Max text width | `38rem` (~65-75 chars) | Optimal reading line length. **CJK note (Milestone 5b):** 38rem holds ~30–35 CJK characters per line — within the traditional optimal range for Japanese (25–40 chars/line). Line height should tighten from 1.8 to 1.6–1.7 for CJK text. Validate with actual translated content before launch. |
 | Font | Merriweather 400 | Serif for extended reading |
 | Size | `--text-base` (18px) | Comfortable for long reading sessions |
 | Line height | `--leading-relaxed` (1.8) | Spacious for contemplation |
@@ -544,7 +544,7 @@ The right side panel displays passages from *other books* that are semantically 
 **Reading focus detection — the "settled paragraph" model:**
 - Intersection Observer watches all paragraphs within a **focus zone** (upper-middle 45% of the viewport, `rootMargin: "-20% 0px -35% 0px"` — biased toward where readers' eyes naturally rest)
 - Each visible paragraph gets a **prominence score**: `intersectionRatio × elementHeight` — favors the paragraph the reader is immersed in, not a one-liner passing through
-- A **1.2-second debounce** prevents updates during active scrolling. Only when scrolling stops for 1.2s does the highest-prominence paragraph become the "settled paragraph" *[Parameter — default: 1200ms, evaluate: Phase 2 user testing]*
+- A **1.2-second debounce** prevents updates during active scrolling. Only when scrolling stops for 1.2s does the highest-prominence paragraph become the "settled paragraph" *[Parameter — default: 1200ms, evaluate: Milestone 2b user testing]*
 - If the settled paragraph changes, the side panel crossfades (300ms) to the new relations
 - **Source indication:** the side panel header shows the first ~40 characters of the settled paragraph (*"Related to: 'My body became immovably...'"*) — closing the feedback loop without adding any chrome to the main text column
 
@@ -561,8 +561,8 @@ The right side panel displays passages from *other books* that are semantically 
 
 **Filters (in "Explore all" expanded view):**
 - By book (dropdown of all available books)
-- By content type: Books / Videos (once transcripts exist, Phase 12)
-- By language (when multi-language content available, Phase 10)
+- By content type: Books / Videos (once transcripts exist, Arc 6)
+- By language (when multi-language content available, Milestone 5b)
 - By topic (Peace, Courage, Christ, Meditation, Yoga Sutras, etc.)
 
 **Data source and loading strategy :**
@@ -709,7 +709,7 @@ A `@media print` stylesheet ensures passages and chapters print beautifully:
 - Portal URL in small footer: `teachings.yogananda.org`
 - Page breaks between chapters (for full chapter printing)
 - No background colors (saves ink, respects user paper)
-- **Non-Latin font support (Phase 10):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Thai for Thai, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
+- **Non-Latin font support (Milestone 5b):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Thai for Thai, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
 
 #### ADR-059: Chant Reader Variant
 
@@ -776,7 +776,7 @@ When a chant has `performance_of` relations in `chunk_relations`, audio/video re
 
 The reader's typographic details signal care and reverence for the words. These are the micro-details that distinguish a sacred text presentation from a blog post:
 
-**Drop capitals:** Each chapter opens with a drop capital — Merriweather 700, `--srf-navy`, spanning 3 lines. Uses CSS `::first-letter`. A tradition from illuminated manuscripts signaling "something begins here." **Language-conditional (Phase 10):** Drop capitals are enabled for Latin-script languages only. CSS `::first-letter` behaves unpredictably with CJK and Indic scripts, and the illuminated-manuscript tradition is Western. For Japanese, Hindi, and Bengali, substitute a culturally appropriate chapter-opening treatment: generous whitespace with a subtle `--srf-gold` rule above the first paragraph.
+**Drop capitals:** Each chapter opens with a drop capital — Merriweather 700, `--srf-navy`, spanning 3 lines. Uses CSS `::first-letter`. A tradition from illuminated manuscripts signaling "something begins here." **Language-conditional (Milestone 5b):** Drop capitals are enabled for Latin-script languages only. CSS `::first-letter` behaves unpredictably with CJK and Indic scripts, and the illuminated-manuscript tradition is Western. For Japanese, Hindi, and Bengali, substitute a culturally appropriate chapter-opening treatment: generous whitespace with a subtle `--srf-gold` rule above the first paragraph.
 
 **Decorative opening quotation marks:** Every displayed Yogananda passage (search results, quote cards, shared passages) uses a large decorative opening quote mark — Merriweather 700, 48px, `--srf-gold` at 40% opacity, positioned as a hanging element above-left. This visual language instantly says: *these are his words*.
 
@@ -880,7 +880,7 @@ A passage about concentration means something different on the first reading ver
 
 **API:** No new endpoints. Uses existing `/api/v1/chunks/[chunk-id]/related` and chunk neighbor queries. The "context" layer is fetched from the chapter data already loaded in the reader.
 
-**Phase:** Phase 5 (alongside editorial reading threads, DES-026). Requires Related Teachings (ADR-050, Phase 2) and chapter data already in the reader.
+**Milestone:** 3c (alongside editorial reading threads, DES-026). Requires Related Teachings (ADR-050, Milestone 2b) and chapter data already in the reader.
 
 ---
 
@@ -937,7 +937,7 @@ A lightweight, private bookmarking system using `localStorage`:
 
 **Storage:** `localStorage` under `srf-portal:bookmarks`. No server, no accounts, no tracking. Clearing browser data removes bookmarks. This is stated clearly on the bookmarks page.
 
-**Phase 13 migration:** When optional accounts arrive, `localStorage` bookmarks are offered for import and server sync.
+**Milestone 7a migration:** When optional accounts arrive, `localStorage` bookmarks are offered for import and server sync.
 
 ### DES-013: Keyboard-First Reading Navigation
 
@@ -967,7 +967,7 @@ All shortcuts are single-key (no modifier), active only when no input/textarea i
 - Keyboard navigation: full vim-style shortcuts (see above, DES-013)
 - Skip link: "Skip to chapter text" at page top
 - Each paragraph is an `<article>` with `role="article"` and `aria-label` including page number
-- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until Phase 11
+- Font size adjustable via `Ctrl`+`+`/`-` (browser native) — no custom control until the calm technology design system ships (distributed across arcs)
 - `prefers-reduced-motion`: side panel updates without animation, dwell transitions instant, breath between chapters skipped, opening moment skipped
 - Dwell mode: screen reader announcements on enter/exit
 - All keyboard shortcuts suppressed when input elements have focus
@@ -988,7 +988,7 @@ The reader responds to the seeker's engagement with subtle visual warmth. All st
 - All effects at ≤ 40% opacity. Felt, not seen.
 - `prefers-reduced-motion`: hover transitions instant, static states preserved.
 - Reading state stored under `srf-portal:reading-state` — chapter IDs only, no timestamps, no duration, no scroll position. Clearing browser data removes all state.
-- Phase 13 migration: when optional accounts arrive, reading state is offered for import alongside bookmarks.
+- Milestone 7a migration: when optional accounts arrive, reading state is offered for import alongside bookmarks.
 
 *Adopted from Visual Design Language Enhancement proposal (2026-02-23). Inspired by spiritual eye symbolism — the golden ring of awareness that deepens with attention.*
 
@@ -1210,7 +1210,7 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - Uses `@vercel/og` (Satori) to render a PNG: passage text in Merriweather on warm cream, citation below, subtle SRF lotus mark, portal URL at bottom
 - Same image used for OG cards and "Save as image" download
 - Suitable for messaging apps, social media, printing, phone wallpaper
-- **Non-Latin script support (Phase 10):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Japanese or Hindi quote image will render as empty boxes unless the build bundles Noto font subsets for each active script. The OG image route must select the correct font based on the passage's `language` column. Font map: `ja` → Noto Serif JP, `hi` → Noto Serif Devanagari, `bn` → Noto Serif Bengali. All Latin-script languages use Merriweather.
+- **Non-Latin script support (Milestone 5b):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Japanese or Hindi quote image will render as empty boxes unless the build bundles Noto font subsets for each active script. The OG image route must select the correct font based on the passage's `language` column. Font map: `ja` → Noto Serif JP, `hi` → Noto Serif Devanagari, `bn` → Noto Serif Bengali. All Latin-script languages use Merriweather.
 
 **Email sharing :**
 - "Email this passage" opens the seeker's email client via `mailto:` link
@@ -1221,8 +1221,8 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 
 **PDF generation :**
 - Passage PDF: single A4 page — Merriweather 14pt, warm cream background, citation, lotus watermark (8% opacity, bottom-right), portal URL
-- Chapter PDF (Phase 7): cover page, running headers, page numbers, drop capitals, lotus watermark on first page
-- Book PDF (Phase 7): title page, table of contents, all chapters, colophon
+- Chapter PDF (Arc 4): cover page, running headers, page numbers, drop capitals, lotus watermark on first page
+- Book PDF (Arc 4): title page, table of contents, all chapters, colophon
 - API: `GET /api/v1/books/{slug}/pdf` (full book), `GET /api/v1/books/{slug}/chapters/{n}/pdf` (chapter), `POST /api/v1/exports/pdf` with `{ "type": "passages", "ids": ["{chunk-id}"] }` (single passage). See ADR-025 — PDFs are sub-paths of their parent resource, not a parallel `/pdf/` namespace.
 
 **Share menu:**
@@ -1270,7 +1270,7 @@ Every word the portal speaks — beyond Yogananda's own — is part of the seeke
 
 **ARIA labels carry warmth (ADR-073).** Screen reader announcements are not markup — they are the only voice the portal has for blind seekers. "You are now in the Quiet Corner, a space for stillness" not "Main content region, The Quiet Corner." "Five passages found about courage" not "Search results: 5 items." See § Screen Reader Emotional Quality under Accessibility for full specification.
 
-**Maintained in:** `/docs/editorial/ui-copy-guide.md` — voice principles, vocabulary glossary, and annotated examples per page. Created during Phase 1 alongside locale file externalization.
+**Maintained in:** `/docs/editorial/ui-copy-guide.md` — voice principles, vocabulary glossary, and annotated examples per page. Created during Milestone 2a alongside locale file externalization.
 
 ### DES-014: Session Closure Moments — Departure Grace
 
@@ -1293,7 +1293,7 @@ The portal has an opening gesture (DES-007, Portal Threshold). It also has closi
 - Line 1: `If you'd like to deepen your meditation practice → yogananda.org/meditate`
 - Line 2: `Experience a guided meditation with SRF monastics → yogananda.org/meditate`
 
-The second line serves seekers who tried silence and want instruction — SRF's guided meditations are complementary to the Quiet Corner's unguided stillness. Styled in `--portal-text-muted`, `--text-sm`, Merriweather 300 — quieter than the parting passage itself. This is the moment of maximum receptivity: the seeker has just experienced stillness and may be most open to understanding that deeper practice exists. Two lines maximum — never a card, never promotional. Both links open in new tabs. Content is in `messages/{locale}.json` for Phase 10+ localization.
+The second line serves seekers who tried silence and want instruction — SRF's guided meditations are complementary to the Quiet Corner's unguided stillness. Styled in `--portal-text-muted`, `--text-sm`, Merriweather 300 — quieter than the parting passage itself. This is the moment of maximum receptivity: the seeker has just experienced stillness and may be most open to understanding that deeper practice exists. Two lines maximum — never a card, never promotional. Both links open in new tabs. Content is in `messages/{locale}.json` for Milestone 5b+ localization.
 
 **Design constraint:** The parting word appears *below* primary navigation (e.g., below "Next Chapter →"). Seekers continuing to the next chapter never scroll down to it. It exists only for the seeker who has finished for now.
 
@@ -1313,7 +1313,7 @@ The portal is equally excellent for seekers who never touch the search bar. Seve
 
 **3. The daily visitor** (homepage → Today's Wisdom → "Show me another" → contemplate → leave).
 - "Show me another" feels inexhaustible. SessionStorage-based exclusion list prevents repeats within a visit — the seeker cycles through all available passages before any repetition.
-- Phase 0 pool depth is an open question (see CONTEXT.md).
+- Arc 1 pool depth is an open question (see CONTEXT.md).
 
 **4. The Quiet Corner seeker** (`/quiet` directly, often in crisis).
 - Self-contained: header collapses to lotus mark only, footer suppressed. Minimal cognitive load.
@@ -1326,13 +1326,13 @@ The portal is equally excellent for seekers who never touch the search bar. Seve
 **6. The devoted practitioner** (returns daily or weekly, uses search to find half-remembered passages, builds collections, compares across books).
 - This is the portal's highest-frequency user — someone who has practiced Kriya Yoga or studied Yogananda's writings for years and uses the portal as a study companion, not for discovery.
 - Advanced search supports their recall pattern: partial-phrase matching, book-scoped search, cross-book comparison via Related Teachings.
-- Personal collections (Phase 12) and study circle sharing (Phase 14) serve this seeker directly. Until then, browser bookmarks and the reading history (sessionStorage) provide lightweight persistence.
+- Personal collections (Arc 6) and study circle sharing (Milestone 7b) serve this seeker directly. Until then, browser bookmarks and the reading history (sessionStorage) provide lightweight persistence.
 - The Practice Bridge signposts (ADR-104) are confirmations for this seeker, not introductions — they already know the path. The signpost tone acknowledges this.
 
 **7. The scholar** (citation-driven, cross-referencing, export-oriented).
 - Academic researchers, seminary students, comparative religion faculty, digital humanities scholars who need Yogananda's words in citable form.
 - Stable canonical URLs for every passage (`/passage/[chunk-id]`) serve as persistent citations.
-- Citation export (Chicago, MLA, BibTeX) from the passage detail view (Phase 6 knowledge graph features the cross-reference layer that makes this natural).
+- Citation export (Chicago, MLA, BibTeX) from the passage detail view (Milestone 3d knowledge graph features the cross-reference layer that makes this natural).
 - The Knowledge Graph `/explore` view (ADR-043, ADR-061, ADR-062) is this seeker's primary discovery tool — they navigate by relationship, not by theme or emotion.
 - This path is how Yogananda's teachings enter university syllabi, interfaith anthologies, and peer-reviewed scholarship. The portal's bibliographic integrity directly serves this.
 
@@ -1450,7 +1450,7 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --portal-text: #2C2C2C; /* Primary reading text — softer than black */
  --portal-text-muted: #595959; /* Citations, metadata, secondary text (corrected from #6B6B6B for WCAG AA contrast on cream) */
 
- /* === Time-Aware Reading Bands (DES-011) — defined in Phase 11 === */
+ /* === Time-Aware Reading Bands (DES-011) — defined when circadian color temperature ships === */
  /* --portal-bg-morning, --portal-bg-evening, --portal-bg-night, --portal-text-night
  are introduced when circadian color temperature is implemented. */
 
@@ -1484,17 +1484,17 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
  /* === Non-Latin Script Fonts (ADR-077, ADR-080) === */
- /* Noto Sans Devanagari loaded from Phase 0 — God Talks with Arjuna
+ /* Noto Sans Devanagari loaded from Arc 1 — God Talks with Arjuna
  contains original Bhagavad Gita verses in Devanāgarī script.
  Loaded conditionally: only on pages containing Devanāgarī characters.
- Phase 10 adds Thai and Bengali font stacks. */
+ Milestone 5b adds Thai and Bengali font stacks. */
  --font-devanagari: 'Noto Sans Devanagari', 'Noto Serif Devanagari', sans-serif;
- --font-thai: 'Noto Sans Thai', 'Noto Serif Thai', sans-serif; /* Phase 10 */
- --font-bengali: 'Noto Sans Bengali', sans-serif; /* Phase 10 */
+ --font-thai: 'Noto Sans Thai', 'Noto Serif Thai', sans-serif; /* Milestone 5b */
+ --font-bengali: 'Noto Sans Bengali', sans-serif; /* Milestone 5b */
 
  /* === Font Scale === */
  /* Current scale: manually tuned for readability at each level.
-    Evaluate golden-ratio alternative (1.618 ratio) during Phase 1 design QA:
+    Evaluate golden-ratio alternative (1.618 ratio) during Milestone 2a design QA:
     base 1.125rem → 1.819rem → 2.943rem → 4.761rem.
     The golden ratio produces naturally harmonious proportions that echo
     sacred geometry — but only adopt if it serves readability. The current
@@ -1535,7 +1535,7 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
 | Chapter titles in reader | Lora | 400 | `--text-xl` | `--leading-tight` |
 | Devanāgarī verses (Gita) | Noto Sans Devanagari | 400 | `--text-base` (18px) | `--leading-relaxed` (1.8) |
 
-**IAST diacritics note (ADR-080):** Merriweather and Lora must render IAST combining characters (ā, ī, ū, ṛ, ṃ, ḥ, ñ, ṅ, ṭ, ḍ, ṇ, ś, ṣ) correctly at all sizes. Verify during Phase 1 design QA — particularly at `--text-sm` (15px) where combining marks are most likely to collide or render incorrectly.
+**IAST diacritics note (ADR-080):** Merriweather and Lora must render IAST combining characters (ā, ī, ū, ṛ, ṃ, ḥ, ñ, ṅ, ṭ, ḍ, ṇ, ś, ṣ) correctly at all sizes. Verify during Milestone 2a design QA — particularly at `--text-sm` (15px) where combining marks are most likely to collide or render incorrectly.
 
 #### Spacing, Borders, and Radii
 
@@ -1652,13 +1652,13 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 
 ### Three-Layer Localization
 
-| Layer | What | Approach | Phase |
-|-------|------|----------|-------|
-| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-078). | Infrastructure in Phase 1. Translations in Phase 10. |
-| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Phase 0, activated in Phase 10). **Never machine-translate sacred text.** | Phase 10 |
-| **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | Phase 10 |
+| Layer | What | Approach | Milestone |
+|-------|------|----------|-----------|
+| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-078). | Infrastructure in Milestone 2a. Translations in Milestone 5b. |
+| **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Arc 1, activated in Milestone 5b). **Never machine-translate sacred text.** | 5b |
+| **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | 5b |
 
-### Phase 1 — English Only, i18n-Ready
+### Milestone 2a — English Only, i18n-Ready
 
 Content is English only. But the i18n infrastructure is in place from day one:
 
@@ -1747,9 +1747,9 @@ The `[EN]` tag is a small, muted language indicator. It is honest, not apologeti
 
 **Full-text search:** PostgreSQL language dictionaries handle stemming, stop words, and normalization per language.
 
-> **Note:** The `content_tsv` column and its language-aware trigger (defined in § Data Model) already handle per-language full-text search. The trigger maps each chunk's `language` code to the appropriate PostgreSQL dictionary at insert/update time. No additional column or index is needed when new languages are added in Phase 10 — only new content rows with the correct `language` value.
+> **Note:** The `content_tsv` column and its language-aware trigger (defined in § Data Model) already handle per-language full-text search. The trigger maps each chunk's `language` code to the appropriate PostgreSQL dictionary at insert/update time. No additional column or index is needed when new languages are added in Milestone 5b — only new content rows with the correct `language` value.
 
-**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Phase 0 remain valid when Spanish, German, and Japanese chunks are added in Phase 10 — no re-embedding of the English corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Phase 10 (Deliverable 10.10). Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
+**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. OpenAI's text-embedding-3-small handles multilingual text and places semantically equivalent passages in different languages close together in vector space. This means English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
 **Query expansion:** Claude handles all target languages. The expansion prompt includes the target language:
 
@@ -1784,13 +1784,13 @@ The multilingual architecture serves two practical use cases, not arbitrary cros
 
 2. **Cross-language passage alignment.** When the same book exists in multiple translations, the `canonical_chunk_id` column on `book_chunks` links a translated chunk to its English original. This enables "Read this passage in Spanish →" navigation between editions. Alignment is done during ingestion by matching (canonical_book_id, chapter_number, paragraph_index). Edge cases (translator's notes, merged paragraphs) are resolved in the human QA step.
 
-**Cross-language search as optional future feature:** The multilingual embedding model places semantically equivalent text in different languages close together in vector space. If usage data (Phase 10 analytics) reveals demand for searching across all languages simultaneously, this can be enabled by calling `hybrid_search` without the `language` filter. But this is not a core Phase 10 deliverable — locale + English fallback covers the practical need.
+**Cross-language search as optional future feature:** The multilingual embedding model places semantically equivalent text in different languages close together in vector space. If usage data (Milestone 5b analytics) reveals demand for searching across all languages simultaneously, this can be enabled by calling `hybrid_search` without the `language` filter. But this is not a core Milestone 5b deliverable — locale + English fallback covers the practical need.
 
 ### Chunk Relations in a Multilingual Corpus
 
 The `chunk_relations` table stores pre-computed semantic similarity. In a multilingual corpus, a naive "top 30 global" approach would leave non-English languages underserved — most of the 30 slots would be consumed by chunks in other languages (predominantly English, which will be the largest corpus).
 
-**Computation strategy (Phase 10):**
+**Computation strategy (Milestone 5b):**
 - For each chunk, store **top 30 same-language** relations + **top 10 English supplemental** relations (best from English corpus when the chunk is non-English; empty for English chunks)
 - Total: up to 40 rows per chunk (at 400K chunks across all languages = 16M rows — trivial for PostgreSQL)
 - Same-language relations power the default "Related Teachings" side panel
@@ -1845,17 +1845,17 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 1. **Locale-first search:** The `language` API parameter means the user's locale, not the detected query language. No auto-detection of query language. English fallback implemented at service layer.
 2. **Theme slugs stay in English** for URL stability (`/es/themes/peace`, not `/es/temas/paz`). Display names localized via `topic_translations` table.
-3. **Embedding model must be multilingual.** Explicit requirement (not accident). Ensures Phase 0 embeddings remain valid when Phase 10 adds new languages.
+3. **Embedding model must be multilingual.** Explicit requirement (not accident). Ensures Arc 1 embeddings remain valid when Milestone 5b adds new languages.
 4. **`reader_url` is locale-relative.** API returns `/books/slug/chapter#chunk`. Client prepends locale prefix. API stays presentation-agnostic.
 5. **`chunk_relations` store per-language.** Top 30 same-language + top 10 English supplemental per chunk. Ensures non-English languages get full related teachings with English fallback.
 6. **Locale + English fallback is the multilingual model.** Arbitrary cross-language search (e.g., Japanese query finding German results) is deferred as optional — the practical need is the user's language plus English fallback, not N×N language combinations. The multilingual embedding model enables cross-language search at near-zero cost if usage data later justifies it.
-7. **Chunk size must be validated per language (Phase 10).** Token economies differ across scripts — a 300-token chunk in Japanese may hold less semantic content than 300 English tokens. Per-language chunk size benchmarking is required before ingesting non-English content. At minimum, validate that English-calibrated chunk sizes produce acceptable retrieval quality in all target languages.
+7. **Chunk size must be validated per language (Milestone 5b).** Token economies differ across scripts — a 300-token chunk in Japanese may hold less semantic content than 300 English tokens. Per-language chunk size benchmarking is required before ingesting non-English content. At minimum, validate that English-calibrated chunk sizes produce acceptable retrieval quality in all target languages.
 
 ### Open Questions (Require SRF Input)
 
-> **Central registry:** CONTEXT.md § Open Questions. The Phase 10 questions below are tracked there with the full stakeholder list.
+> **Central registry:** CONTEXT.md § Open Questions. The Milestone 5b questions below are tracked there with the full stakeholder list.
 
-- Digital text availability of official translations for all 9 non-English core languages (highest-impact Phase 10 question)
+- Digital text availability of official translations for all 9 non-English core languages (highest-impact Milestone 5b question)
 - Translation reviewer staffing per language
 - YSS portal branding for Hindi/Bengali/Thai locales
 - Whether translated editions preserve paragraph structure (affects `canonical_chunk_id` alignment)
@@ -1865,7 +1865,7 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 ## DES-020: Platform Parity (Mobile Readiness)
 
-The portal is a web application, but its API surface will likely be consumed by native mobile apps eventually — either a standalone portal app, integration into the existing SRF mobile app, or both. ADR-011 establishes the architectural conventions that make this possible at zero Phase 0 cost.
+The portal is a web application, but its API surface will likely be consumed by native mobile apps eventually — either a standalone portal app, integration into the existing SRF mobile app, or both. ADR-011 establishes the architectural conventions that make this possible at zero Arc 1 cost.
 
 ### Shared Service Layer
 
@@ -1902,7 +1902,7 @@ import { neon } from '@neondatabase/serverless';
 // - Each function invocation creates a lightweight client, no pool management needed
 // - Neon's built-in connection pooler (PgBouncer-compatible) handles concurrency server-side
 //
-// For Lambda batch workloads (Phase 1+, ADR-017):
+// For Lambda batch workloads (Milestone 2a+, ADR-017):
 // - Use Neon's pooled connection string (port 5432 → pooler endpoint)
 // - Connection limit: Neon free tier allows 100 concurrent connections;
 // paid tier scales with compute size
@@ -1921,7 +1921,7 @@ export { sql };
 | Convention | Rule | Rationale |
 |------------|------|-----------|
 | **Versioning** | All routes prefixed `/api/v1/`. Never break v1 after mobile apps ship. | Mobile apps can't force-update users. |
-| **Auth** | All routes public (no auth) through Phase 12. Auth added only if/when Phase 13 accounts are implemented. | Frictionless access is the mission. Auth is additive, never a gate on reading or search. |
+| **Auth** | All routes public (no auth) through Arc 6. Auth added only if/when Milestone 7a accounts are implemented. | Frictionless access is the mission. Auth is additive, never a gate on reading or search. |
 | **Pagination** | Cursor-based: `{ results, cursor, hasMore }`. No page-number pagination. | Stable across data changes; mobile infinite scroll. |
 | **Cache headers** | Explicit `Cache-Control` on every response. Book text: long-lived. Search: no-store. Daily passage: 1 hour. | Mobile apps cache intelligently without custom logic. |
 | **Response shape** | Presentation-agnostic JSON. No HTML in responses. No assumptions about rendering. | Same response serves web, mobile, and any future consumer. |
@@ -1957,14 +1957,14 @@ export { sql };
 
 | Trigger | Mechanism | Scope |
 |---------|-----------|-------|
-| Content correction (Phase 0b+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
+| Content correction (Milestone 1b+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
 | Daily passage rotation | TTL-based (`max-age=3600`) | No explicit invalidation — 1-hour cache is acceptable for daily content |
 | Theme tag changes | Manual Cloudflare purge via API or dashboard | Theme pages and related API responses |
 | New book ingestion | Automated purge of `/books` catalog and search index | Book catalog, search results |
 | Static assets (JS/CSS) | Content-hashed filenames (`main.abc123.js`) | Infinite cache, new deploy = new hash |
 | Emergency content fix | Cloudflare "Purge Everything" via API | Last resort — clears entire CDN cache |
 
-**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The webhook sync service (Phase 0b+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Phase 0a (batch sync, no webhooks), cache invalidation is manual — acceptable given the low frequency of content changes during initial ingestion.
+**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The webhook sync service (Milestone 1b+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Milestone 1a (batch sync, no webhooks), cache invalidation is manual — acceptable given the low frequency of content changes during initial ingestion.
 
 ### Deep Link Readiness
 
@@ -1977,7 +1977,7 @@ Passage URLs (`/passage/[chunk-id]`) are designed for universal link interceptio
 
 These files are added when a native app launches. The URL structure that makes them work is established now.
 
-### PWA Readiness (Phase 11)
+### PWA Readiness (Distributed Across Arcs)
 
 Before native apps, a Progressive Web App provides offline reading, home screen installation, and a lighter footprint. See ADR-012.
 
@@ -2180,7 +2180,7 @@ Videos play via YouTube's embedded player (no Vimeo needed for public YouTube co
 
 Using `youtube-nocookie.com` for privacy-enhanced mode (no tracking cookies until play).
 
-### ADR-055: Future: Video-to-Book Cross-Reference (Phase 10)
+### ADR-055: Future: Video-to-Book Cross-Reference (Milestone 5b)
 
 When monastic talks are transcribed, the transcripts become a new content type alongside book chunks, enabling unified cross-media search and time-synced playback.
 
@@ -2199,7 +2199,7 @@ When monastic talks are transcribed, the transcripts become a new content type a
 
 ```sql
 -- ============================================================
--- VIDEO TRANSCRIPTS (Phase 12)
+-- VIDEO TRANSCRIPTS (Arc 6)
 -- ============================================================
 CREATE TABLE video_transcripts (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2212,7 +2212,7 @@ CREATE TABLE video_transcripts (
 );
 
 -- ============================================================
--- VIDEO CHUNKS (time-synced, embeddable, searchable — Phase 12)
+-- VIDEO CHUNKS (time-synced, embeddable, searchable — Arc 6)
 -- ============================================================
 -- Same chunking strategy as book_chunks. Each chunk carries start/end
 -- timestamps enabling direct links to the exact video playback moment.
@@ -2338,10 +2338,10 @@ Located at `/events` (dedicated page — consistent with the routes table in § 
 
 ### Implementation
 
-- **Phase 8:** Static content. MDX or hardcoded in a Next.js page. No CMS needed.
+- **Milestone 5a:** Static content. MDX or hardcoded in a Next.js page. No CMS needed.
 - **Production:** Contentful entry type `event` with fields: `title`, `date`, `description`, `externalUrl`, `image`. Editors update annually.
 - **No dynamic event data.** The portal does not fetch from SRF's event systems. It links to them.
-- **Lightweight calendar awareness (Phase 8):** The Convocation hero card displays the next Convocation date. Since Convocation is always in August, a simple date comparison promotes the card from "annual event" to "upcoming event" when the current date is within a configurable window (e.g., April–August). During this window, the card's description adds "Registration is open" with link. Outside the window: "Held each August." This is not the full DES-028 calendar-aware surfacing system — it's a single date check on a static page. Commemorations can use similar lightweight date proximity when full DES-028 ships (Phase 4+).
+- **Lightweight calendar awareness (Milestone 5a):** The Convocation hero card displays the next Convocation date. Since Convocation is always in August, a simple date comparison promotes the card from "annual event" to "upcoming event" when the current date is within a configurable window (e.g., April–August). During this window, the card's description adds "Registration is open" with link. Outside the window: "Held each August." This is not the full DES-028 calendar-aware surfacing system — it's a single date check on a static page. Commemorations can use similar lightweight date proximity when full DES-028 ships (Milestone 3b+).
 
 ---
 
@@ -2471,7 +2471,7 @@ CREATE INDEX idx_chunk_places_chunk ON chunk_places(chunk_id);
 │ │ 📖 Read Chapter 12 → │ │
 │ └────────────────────────────────────────────┘ │
 │ │
-│ [Phase 11: Street View links on place cards] │
+│ [Future: Street View links on place cards]   │
 │ │
 │ ── Find a Meditation Group Near You ─────────── │
 │ External link → yogananda.org/center-locator │
@@ -2501,7 +2501,7 @@ Referenced in:
  • Autobiography of a Yogi, Chapter 42 — "Last days with my guru"
 ```
 
-### Place Links Strategy (Phase 11)
+### Place Links Strategy (Distributed Across Arcs)
 
 No embedded map library. Each place card links out to external maps services — zero map dependencies, zero tile servers, zero maintenance. See ADR-070.
 
@@ -2575,23 +2575,23 @@ Response:
 
 ### Phasing
 
-| Phase | Scope |
-|-------|-------|
-| **Phase 8** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." "Take a Virtual Tour" links for properties with SRF virtual pilgrimage tours (Mother Center, Lake Shrine, Hollywood Temple, Encinitas). Cross-references with Autobiography passages. Convocation cross-link on LA-area SRF property cards: "This site is part of the annual SRF World Convocation pilgrimage. Learn more → convocation.yogananda.org." No maps. |
-| **Phase 11** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi, Dakshineswar). "See This Place" Street View links on place cards (ADR-070). Reader ↔ Place cross-reference cards. **Indian biographical site note:** Google Street View coverage in rural India (Gorakhpur, Serampore, Ranchi) is patchy or absent. Where Street View is unavailable, commissioned photography or editorial descriptions should be the primary experience, with maps as secondary. Query YSS for photographic archives of these sites (see CONTEXT.md § Open Questions). "Get Directions" for Indian sites serves a pilgrimage context more than a driving-directions context — consider "Visit this place" framing for Indian biographical sites. |
-| **Future** | Dynamic center locator (if SRF provides data). Multi-language place descriptions (Phase 10). |
+| Milestone | Scope |
+|-----------|-------|
+| **5a** | Static Sacred Places page with SRF/YSS properties. Text + images + external links + "Get Directions." "Take a Virtual Tour" links for properties with SRF virtual pilgrimage tours (Mother Center, Lake Shrine, Hollywood Temple, Encinitas). Cross-references with Autobiography passages. Convocation cross-link on LA-area SRF property cards: "This site is part of the annual SRF World Convocation pilgrimage. Learn more → convocation.yogananda.org." No maps. |
+| **Distributed** | Add biographical sites (Gorakhpur, Serampore, Puri, Varanasi, Dakshineswar). "See This Place" Street View links on place cards (ADR-070). Reader ↔ Place cross-reference cards. **Indian biographical site note:** Google Street View coverage in rural India (Gorakhpur, Serampore, Ranchi) is patchy or absent. Where Street View is unavailable, commissioned photography or editorial descriptions should be the primary experience, with maps as secondary. Query YSS for photographic archives of these sites (see CONTEXT.md § Open Questions). "Get Directions" for Indian sites serves a pilgrimage context more than a driving-directions context — consider "Visit this place" framing for Indian biographical sites. |
+| **Future** | Dynamic center locator (if SRF provides data). Multi-language place descriptions (Milestone 5b). |
 
 ---
 
-## DES-025: Accessibility Requirements (Phase 1 Foundation)
+## DES-025: Accessibility Requirements (Milestone 2a Foundation)
 
-Accessibility is not a polish phase — it is a theological requirement. The DELTA Dignity principle demands that every seeker, regardless of ability, can access the teachings. Building on an inaccessible foundation creates exponentially more remediation work later.
+Accessibility is not a polish step — it is a theological requirement. The DELTA Dignity principle demands that every seeker, regardless of ability, can access the teachings. Building on an inaccessible foundation creates exponentially more remediation work later.
 
 (See ADR-003 for full rationale.)
 
 ### WCAG 2.1 AA Compliance Target
 
-The portal targets WCAG 2.1 Level AA conformance from Phase 1. Level AAA criteria are adopted where achievable without significant trade-offs (e.g., 7:1 contrast for body text is met by our existing token choices).
+The portal targets WCAG 2.1 Level AA conformance from Milestone 2a. Level AAA criteria are adopted where achievable without significant trade-offs (e.g., 7:1 contrast for body text is met by our existing token choices).
 
 ### Requirements by Category
 
@@ -2634,7 +2634,7 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 1. Level AAA criteri
 |-------------|---------------|
 | Video captions | YouTube embeds always load with captions enabled (`&cc_load_policy=1` parameter). Rely on YouTube's auto-captions and SRF's uploaded captions. |
 | Quiet Corner chime | The timer completion chime has a visual equivalent: a gentle, full-screen pulse animation (`@media (prefers-reduced-motion: no-preference)`) or a text message ("Your time is complete") for users with `prefers-reduced-motion: reduce`. |
-| Audio content | Any future audio features (Phase 11 TTS, Phase 12 audio clips) must provide text transcripts. |
+| Audio content | Any future audio features (text-to-speech, Arc 6 audio clips) must provide text transcripts. |
 
 #### Motor and Mobility
 
@@ -2651,11 +2651,11 @@ The portal targets WCAG 2.1 Level AA conformance from Phase 1. Level AAA criteri
 | Requirement | Implementation |
 |-------------|---------------|
 | `prefers-reduced-motion` | All animations and transitions respect `@media (prefers-reduced-motion: reduce)`. When active: no hover animations, no page transitions, timer chime is text-only. |
-| `prefers-color-scheme` | Support `dark` scheme in Phase 11 (Reading mode). Phase 1 uses light theme only but CSS architecture supports future dark mode via custom properties. |
+| `prefers-color-scheme` | Support `dark` scheme when the calm technology design system ships. Milestone 2a uses light theme only but CSS architecture supports future dark mode via custom properties. |
 | `prefers-contrast` | When `more`, increase border widths and ensure all text exceeds 7:1 contrast. |
 | Clear language | All UI copy at 8th-grade reading level or below. Error messages are specific and actionable ("No passages found for this search. Try different words." not "Error 404"). |
 | Consistent navigation | Header and footer identical on every page. No layout shifts between pages. |
-| Reading mode | Phase 1: clean reader with generous whitespace. Phase 11: adjustable font size, sepia/dark mode. |
+| Reading mode | Milestone 2a: clean reader with generous whitespace. Calm technology design system: adjustable font size, sepia/dark mode. |
 
 #### ADR-072: Cognitive Accessibility — Beyond WCAG Minimums
 
@@ -2665,7 +2665,7 @@ WCAG 2.1 AA covers minimum cognitive requirements (consistent navigation, error 
 |-------------|---------------|
 | Progressive homepage disclosure | First visit (sessionStorage) shows simplified above-the-fold: Today's Wisdom + search bar + "Or explore a theme" link. Thematic doors, "Seeking..." entries, and videos are below the fold. Return visits show the full homepage. |
 | Passage accessibility classification | Passages tagged during ingestion QA: `accessible` (short, clear, affirmation-like), `moderate` (standard prose), `dense` (philosophical, multi-clause). Used internally for pool selection — never displayed. Today's Wisdom favors `accessible`; Quiet Corner uses only `accessible`. |
-| Simplified reading mode ("Focus") | Optional toggle in reader header (Phase 2). Reduces reader to: reading column + Next Chapter. Related Teachings panel, keyboard shortcuts, dwell icon, and bookmark icon suppressed. Stored in `localStorage`. |
+| Simplified reading mode ("Focus") | Optional toggle in reader header (Milestone 2b). Reduces reader to: reading column + Next Chapter. Related Teachings panel, keyboard shortcuts, dwell icon, and bookmark icon suppressed. Stored in `localStorage`. |
 | Minimal gesture vocabulary for core tasks | The portal's essential experience (read, search, navigate) requires only: click, scroll, type. All other gestures (long-press, hover-wait, keyboard shortcuts) are enhancements. Explicitly tested in QA. |
 | Decision fatigue reduction | Non-search pages follow the single-invitation principle (ADR-067): each endpoint invites exactly one step deeper, never more. |
 
@@ -2688,7 +2688,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 
 **Passage citations read naturally.** Screen reader output flows as speech: "'The soul is ever free; it is deathless, birthless...' — from Autobiography of a Yogi, Chapter 26, page 312." Uses `aria-label` on passage containers for natural reading while visual HTML retains its formatting.
 
-**Testing criterion:** Phase 1 screen reader testing (VoiceOver, NVDA, TalkBack) evaluates not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
+**Testing criterion:** Milestone 2a screen reader testing (VoiceOver, NVDA, TalkBack) evaluates not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
 
 #### Performance as Accessibility (Global Equity Principle)
 
@@ -2698,7 +2698,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 | Core Web Vitals | LCP < 2.5s, FID < 100ms, CLS < 0.1. |
 | Progressive enhancement | Core reading and search functionality works without JavaScript (server-rendered HTML). JS enhances: "Show me another", infinite scroll, timer. |
 | Low-bandwidth support | All images lazy-loaded. Responsive images via `srcset`. No autoplay video. Homepage functional as text-only. `/browse` page (DES-047) designed text-first as < 20KB offline-cacheable portal index — the universal fallback for 2G, feature phones, and screen readers. |
-| Offline resilience | Phase 1: service worker caches the Quiet Corner page and current reading position. Full PWA in Phase 11 (ADR-012). |
+| Offline resilience | Milestone 2a: service worker caches the Quiet Corner page and current reading position. Full PWA when progressive web app readiness ships (ADR-012). |
 
 ### Accessibility Testing Strategy
 
@@ -2706,9 +2706,9 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 |--------|------|------|
 | Automated audit | Every build (CI) | axe-core via `@axe-core/react` or Lighthouse CI |
 | Manual keyboard testing | Every new component | Developer checklist |
-| Screen reader testing | Before each phase release | VoiceOver (macOS), NVDA (Windows) |
+| Screen reader testing | Before each milestone release | VoiceOver (macOS), NVDA (Windows) |
 | Color contrast validation | Design token changes | Chrome DevTools, WebAIM Contrast Checker |
-| Real-user testing | Phase 11 | Engage accessibility testers (consider SRF community members with disabilities) |
+| Real-user testing | When calm technology design system ships | Engage accessibility testers (consider SRF community members with disabilities) |
 
 ---
 
@@ -2734,7 +2734,7 @@ The `daily_passages` pool already supports optional seasonal weighting. Calendar
 
 ```sql
 -- ============================================================
--- CALENDAR EVENTS (date-to-passage associations — Phase 4+)
+-- CALENDAR EVENTS (date-to-passage associations — Milestone 3b+)
 -- ============================================================
 CREATE TABLE calendar_events (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2812,9 +2812,9 @@ The portal is maintained by a broader organizational ecosystem than just "staff.
 | **Philanthropist's foundation** | Quarterly or annually | Low | Impact report (PDF/web) | Pre-formatted, narrative impact report they can share with their board. Generated from Impact Dashboard data, curated into a story. No work required. |
 | **Study circle leader** | Weekly preparation | Moderate | Study Workspace + community collections | Find → collect → arrange → share → present. Power user of community collections and shared links. Weekly satsanga preparation is the primary use case. |
 
-**Study circle leader — expanded profile:** This is the portal's most demanding external power user and the primary driver for Phase 12 (Study Workspace) and Phase 14 (Community Curation) features. The weekly satsanga preparation workflow is: (1) identify a theme or topic for the week, (2) search and browse for relevant passages across multiple books, (3) collect passages into an ordered sequence that builds understanding, (4) add brief contextual notes for group discussion, (5) share the collection with group members via link, (6) present during satsanga using Presentation mode (ADR-006 §5). Until Phase 12, this seeker uses browser bookmarks, manual note-taking, and shared passage links — functional but friction-heavy. The study circle leader also serves as an informal portal evangelist, introducing the portal to group members who may become daily visitors, devoted practitioners, or Quiet Corner seekers. In Indian and Latin American contexts, the study circle leader may be the primary interface between the portal and seekers who are less digitally literate — they project the portal on a shared screen or read passages aloud. Presentation mode's early delivery (consider pulling to Phase 2–3 per CONTEXT.md technical open question) directly serves this population.
+**Study circle leader — expanded profile:** This is the portal's most demanding external power user and the primary driver for Arc 6 (Study Workspace) and Milestone 7b (Community Curation) features. The weekly satsanga preparation workflow is: (1) identify a theme or topic for the week, (2) search and browse for relevant passages across multiple books, (3) collect passages into an ordered sequence that builds understanding, (4) add brief contextual notes for group discussion, (5) share the collection with group members via link, (6) present during satsanga using Presentation mode (ADR-006 §5). Until Arc 6, this seeker uses browser bookmarks, manual note-taking, and shared passage links — functional but friction-heavy. The study circle leader also serves as an informal portal evangelist, introducing the portal to group members who may become daily visitors, devoted practitioners, or Quiet Corner seekers. In Indian and Latin American contexts, the study circle leader may be the primary interface between the portal and seekers who are less digitally literate — they project the portal on a shared screen or read passages aloud. Presentation mode's early delivery (consider pulling to Milestones 2b–3a per CONTEXT.md technical open question) directly serves this population.
 
-**Staffing open question:** Several operational personas (portal coordinator, book ingestion operator, VLD coordinator) are not yet assigned. SRF must determine whether these are monastic roles, AE team roles, or dedicated positions before Phase 4 begins. See CONTEXT.md § Open Questions (Stakeholder).
+**Staffing open question:** Several operational personas (portal coordinator, book ingestion operator, VLD coordinator) are not yet assigned. SRF must determine whether these are monastic roles, AE team roles, or dedicated positions before Milestone 3b begins. See CONTEXT.md § Open Questions (Stakeholder).
 
 ### The Editorial Review Portal (`/admin`)
 
@@ -2860,7 +2860,7 @@ When a staff member logs in, they see a personalized summary filtered by their r
 
 #### Review Workflows
 
-**Theme tag review** (Phase 4):
+**Theme tag review** (Milestone 3b):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Theme: Peace — Review Candidates (8 of 23) │
@@ -2884,7 +2884,7 @@ When a staff member logs in, they see a personalized summary filtered by their r
 
 Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session position saved — resume where you left off tomorrow.
 
-**Social media asset review** (Phase 8):
+**Social media asset review** (Milestone 5a):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Tomorrow's Passage — Review │
@@ -2909,7 +2909,7 @@ Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session po
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Translation review** (Phase 10):
+**Translation review** (Milestone 5b):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ German Translation Review — 14 strings remaining │
@@ -2928,7 +2928,7 @@ Keyboard-driven: `a` approve, `r` reject, `→` next, `←` previous. Session po
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Portal update review** (Phase 4):
+**Portal update review** (Milestone 3b):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Portal Update — Review                     AI-drafted       │
@@ -3014,24 +3014,24 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 - `/lib/services/graph.ts` — knowledge graph queries, subgraph extraction, cluster resolution (ADR-062)
 - `/lib/mcp/` — MCP server (three-tier corpus access layer, ADR-101): `server.ts` (tier routing, auth), `tools/corpus.ts`, `tools/editorial.ts`, `tools/graph.ts`, `tools/people.ts`, `tools/fidelity.ts` (external envelope wrapper). All tools delegate to `/lib/services/` — zero business logic in the MCP layer.
 
-### Phase Delivery
+### Milestone Delivery
 
-| Phase | Staff Experience Work |
+| Milestone | Staff Experience Work |
 |---|---|
-| **Phase 4** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check, portal update review (ADR-105). Auth0 integration. Email digest. |
-| **Phase 8** | Social media asset review added. |
-| **Phase 4** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. (Contentful available from Phase 0; Custom Apps ship with editorial portal.) |
-| **Phase 10** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
-| **Phase 10+** | Impact dashboard for leadership. |
-| **Phase 14** | VLD dashboard, curation briefs, trusted submitter workflow. VLD expansion to translation, theme tag, feedback, and QA tiers (as VLD capacity and SRF governance allow). |
+| **3b** | Minimal admin portal: editorial home, theme tag review, daily passage curation, calendar event management, content preview, tone/accessibility spot-check, portal update review (ADR-105). Auth0 integration. Email digest. |
+| **5a** | Social media asset review added. |
+| **3b** | Contentful Custom Apps (sidebar panels). Full editorial workflow bridging Contentful authoring and portal review queues. (Contentful available from Arc 1; Custom Apps ship with editorial portal.) |
+| **5b** | Translation review UI. Volunteer reviewer access with scoped permissions (`translator:{locale}`). |
+| **5b+** | Impact dashboard for leadership. |
+| **7b** | VLD dashboard, curation briefs, trusted submitter workflow. VLD expansion to translation, theme tag, feedback, and QA tiers (as VLD capacity and SRF governance allow). |
 
 ---
 
 ## DES-040: Design Tooling
 
-The portal uses a **code-first design process** during AI-led phases, with Figma as a collaboration mirror. See ADR-096.
+The portal uses a **code-first design process** during AI-led arcs, with Figma as a collaboration mirror. See ADR-096.
 
-### Phases 0–8: Code-First (AI-Led)
+### Arcs 1–5: Code-First (AI-Led)
 
 Design emerges through code iteration: generate CSS/components from DESIGN.md tokens, render in browser and Storybook, evaluate, refine. The browser rendering is the design artifact.
 
@@ -3045,10 +3045,10 @@ DESIGN.md specs (source of truth)
  tailwind.config.ts imports tokens
  │
  ▼
- Components rendered in browser + Storybook (Phase 0b+)
+ Components rendered in browser + Storybook (Milestone 1b+)
  │
  ▼
- Figma updated from tokens.json (collaboration mirror, Phase 1)
+ Figma updated from tokens.json (collaboration mirror, Milestone 2a)
 ```
 
 Three Figma design files document the core screens *after* they exist in code:
@@ -3059,7 +3059,7 @@ Three Figma design files document the core screens *after* they exist in code:
 | **Portal — Reader & Content** | Book reader, chapter navigation, Sacred Places, Events, About |
 | **Portal — Quiet & Utility** | Quiet Corner, error states, email subscription flow, language selector |
 
-### Phase 9+: Figma-First (Human Designers Active)
+### Human Designers Active: Figma-First
 
 When human designers join, the pipeline inverts. Figma becomes the upstream source:
 
@@ -3081,15 +3081,15 @@ Figma design tokens (via Figma Tokens plugin)
 
 Changes to design tokens in Figma propagate to `tokens.json`, which updates `tailwind.config.ts`, which is reflected in all components. The design language stays synchronized between design and code.
 
-### Phase 11: Calm Technology Design System
+### Calm Technology Design System
 
-When the shared component library begins (Phase 11), Figma Professional ($15/editor/month) enables:
+When the shared component library begins, Figma Professional ($15/editor/month) enables:
 - Shared component library with variants
 - Design system documentation alongside Storybook
 - Branching for design exploration
 - Multi-property reuse (portal, convocation site, future SRF projects)
 
-*Section revised: 2026-02-23, code-first design process for AI-led phases (ADR-096 revision).*
+*Section revised: 2026-02-23, code-first design process for AI-led arcs (ADR-096 revision).*
 
 ---
 
@@ -3101,8 +3101,8 @@ The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-051) is 
 
 The `glossary_terms` table (defined in ADR-038) gains three optional columns for Sanskrit and spiritual terminology support:
 
-- **`phonetic_guide`** — Simplified pronunciation guide (e.g., "PRAH-nah-YAH-mah" for prāṇāyāma). Editorially written, based on standard Sanskrit phonology. Ships with Phase 4 glossary.
-- **`pronunciation_url`** — URL to an SRF-approved audio pronunciation recording. Nullable; populated when SRF provides recordings (Phase 10+). Stakeholder question pending.
+- **`phonetic_guide`** — Simplified pronunciation guide (e.g., "PRAH-nah-YAH-mah" for prāṇāyāma). Editorially written, based on standard Sanskrit phonology. Ships with Milestone 3b glossary.
+- **`pronunciation_url`** — URL to an SRF-approved audio pronunciation recording. Nullable; populated when SRF provides recordings (Milestone 5b+). Stakeholder question pending.
 - **`has_teaching_distinction`** — Boolean flag for terms where Yogananda's usage intentionally differs from common usage and the difference itself is part of the teaching (e.g., Aum vs. Om, "meditation," "Self-realization"). When true, the glossary UI highlights the distinction as pedagogically significant.
 
 ### Glossary API Endpoints
@@ -3126,7 +3126,7 @@ GET /api/v1/glossary/{slug} → Single term with definition, Yogananda's explana
 ├── Category filter (Sanskrit, Yogic Concepts, Spiritual States, Scriptural, Cosmological, Practice)
 ├── Alphabetical term list
 │ ├── Term + phonetic guide (if available) + brief definition (1-2 sentences)
-│ ├── 🔊 Pronunciation (if audio available — Phase 10+)
+│ ├── 🔊 Pronunciation (if audio available — Milestone 5b+)
 │ ├── "Yogananda's explanation →" link to source passage
 │ ├── ⚡ Teaching distinction callout (if has_teaching_distinction)
 │ │ └── "Yogananda's usage differs from common usage..." with explanation
@@ -3145,7 +3145,7 @@ Browse available time-bound reading experiences. Lists evergreen, seasonal, and 
 
 ### ADR-061, ADR-062: `/explore` — Knowledge Graph Visualization
 
-Interactive visual map of the entire teaching corpus — every content type, every relationship. The graph evolves through phases, gaining new node and edge types as content types are added. See the consolidated `/explore` specification below for the full cross-media design.
+Interactive visual map of the entire teaching corpus — every content type, every relationship. The graph evolves through milestones, gaining new node and edge types as content types are added. See the consolidated `/explore` specification below for the full cross-media design.
 
 ### ADR-039: `/integrity` — Content Integrity Verification
 
@@ -3192,7 +3192,7 @@ The search suggestion system (ADR-049) maps modern terms ("mindfulness") to Yoga
 
 **Data source:** The terminology bridge mapping table already built for ADR-049 search suggestions. The vocabulary page is a human-readable view of the same data.
 
-**Phase:** Phase 4 (alongside Glossary, ADR-038). Content is editorial — the mapping between modern and Yogananda-specific vocabulary requires human curation.
+**Milestone:** 3b (alongside Glossary, ADR-038). Content is editorial — the mapping between modern and Yogananda-specific vocabulary requires human curation.
 
 ### DES-047: `/browse` — The Complete Index
 
@@ -3257,7 +3257,7 @@ A single, high-density text page listing every navigable content item in the por
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Data source:** Auto-generated from the database at build time (ISR). Zero editorial overhead. The page grows automatically as content is added across phases.
+**Data source:** Auto-generated from the database at build time (ISR). Zero editorial overhead. The page grows automatically as content is added across milestones.
 
 **Performance:** < 20KB HTML. Zero JavaScript required. Zero images. Cacheable by Service Worker as a single offline artifact — the one page that remains fully useful with no network after initial load.
 
@@ -3265,16 +3265,16 @@ A single, high-density text page listing every navigable content item in the por
 
 **Multilingual:** Shows content filtered by seeker's language preference. When a book is available in multiple languages, indicates availability ("Also in: हिन्दी, Español"). Language filtering via the same `language` parameter used by all content APIs.
 
-**Phased growth:**
-| Phase | Content shown |
-|-------|---------------|
-| 1 | Books only (with chapter counts) |
-| 4 | + Themes (all active categories), Glossary terms, Quiet Corner textures |
-| 5 | + People, External References, Reading Threads |
-| 6+ | + Knowledge Graph link, Calendar Journeys |
-| 7+ | + Magazine archives, Ontology concepts |
+**Growth by milestone:**
+| Milestone | Content shown |
+|-----------|---------------|
+| 2a | Books only (with chapter counts) |
+| 3b | + Themes (all active categories), Glossary terms, Quiet Corner textures |
+| 3c | + People, External References, Reading Threads |
+| 3d+ | + Knowledge Graph link, Calendar Journeys |
+| Arc 4+ | + Magazine archives, Ontology concepts |
 
-**Phase:** Phase 1 (initial, books-only version). Grows automatically with each subsequent phase.
+**Milestone:** 2a (initial, books-only version). Grows automatically with each subsequent milestone.
 
 ### DES-048: `/guide` — The Spiritual Guide
 
@@ -3336,13 +3336,13 @@ A curated recommendation page organized by spiritual need. Where `/browse` answe
 
 **Provenance:** Same three-state model as editorial threads (DES-026). Claude can draft initial recommendation text (`auto`), but all user-facing content requires human review (`reviewed`) or human authorship (`manual`).
 
-**Cultural adaptation:** Per-locale guide variants in Phase 10+ (stored in `messages/{locale}.json`). Different cultures have different spiritual entry points — an Indian seeker may start with karma and dharma; a Western seeker may start with meditation and self-improvement.
+**Cultural adaptation:** Per-locale guide variants in Milestone 5b+ (stored in `messages/{locale}.json`). Different cultures have different spiritual entry points — an Indian seeker may start with karma and dharma; a Western seeker may start with meditation and self-improvement.
 
 **Worldview adaptation:** Seekers arrive not only from different cultures and languages but from different epistemological starting points — and Yogananda's corpus speaks to many of them directly. A Christian contemplative finds *The Second Coming of Christ*. A Sufi or poetry lover finds *Wine of the Mystic*. A Buddhist meditator finds Yogananda's scientific descriptions of concentration and consciousness. A scholar of comparative religion finds the reverse bibliography (DES-027). An agnostic interested in the science of spirituality finds Yogananda's engagement with Einstein, physics, and the experimental method. The `/guide` page can serve these worldview entry points alongside need-based pathways, using the same editorial template — "If you come from a Christian contemplative tradition," "If you have a Buddhist meditation practice," "If you are interested in the intersection of science and spirituality." These are editorial content, not architectural changes. They surface affinities already present in the corpus rather than imposing an interfaith framing from outside. Whether to include worldview pathways is an SRF editorial decision — see CONTEXT.md § Open Questions (Stakeholder).
 
-**Navigation:** Linked from site footer ("Where to begin"), from the "Start Here" newcomer path (Phase 1.13), and from `/browse` (bidirectional link). Each recommendation section links to the relevant destination page.
+**Navigation:** Linked from site footer ("Where to begin"), from the "Start Here" newcomer path (Milestone 2a), and from `/browse` (bidirectional link). Each recommendation section links to the relevant destination page.
 
-**Phase:** Phase 4 (requires theme system, glossary, and editorial infrastructure). Grows editorially through Phase 5+ as reading threads, people, and references become available.
+**Milestone:** 3b (requires theme system, glossary, and editorial infrastructure). Grows editorially through Milestone 3c+ as reading threads, people, and references become available.
 
 #### Worldview Pathway Catalog
 
@@ -3370,7 +3370,7 @@ The following catalog defines each perspective, its corpus affinity points, the 
 | WP-14 | **Agnostic / Skeptical-but-Curious** | Yogananda's engagement with science, his insistence on verifiable experience over blind faith, experimental method in meditation | *Autobiography* (science chapters, "The Law of Miracles"), *Man's Eternal Quest* | Scientific vocabulary bridge, consciousness, practical technique | No tradition-specific bridge — entry is through questions: "Is consciousness more than the brain?", "Can meditation be verified?", "What did Yogananda mean by 'scientific' spirituality?" Distinct from WP-06 (Science Explorer) in that WP-14 does not assume interest in consciousness *per se* — it meets skepticism directly. |
 | WP-15 | **Documentary Viewer ("Awake")** | Discovered Yogananda through the *Awake: The Life of Yogananda* documentary film; may have no prior spiritual reading practice; entry is visual/emotional, not textual | *Autobiography of a Yogi* (the source the film draws from), *Where There Is Light* (accessible entry point), *Man's Eternal Quest* | No tradition-specific themes — entry is biographical and emotional: Yogananda's life story, his journey to America, his legacy | film ↔ book, scenes ↔ chapters, biographical narrative ↔ spiritual autobiography. The pathway bridges from a passive viewing experience to active engagement with Yogananda's own words. "You saw his life on screen — now read it in his voice." The *Autobiography* is the natural first book. The documentary is third-party (Counterpoint Films, SRF-endorsed) and linked via its distribution URLs, not hosted on the portal. |
 
-**Generation priority:** Pathways WP-01, WP-03, WP-06, WP-07, WP-09 have the strongest corpus affinity and address the largest seeker populations. Generate and review these first. WP-02, WP-04, WP-08, WP-13 have deep corpus support but smaller initial English-language audiences (WP-02 becomes high-priority for Hindi/Bengali locales). WP-05, WP-10, WP-11, WP-12, WP-14 require multi-book corpus (Phase 3+) for meaningful content. WP-15 (Documentary Viewer) requires only the *Autobiography* and is high-priority for the film's existing audience — many seekers discover Yogananda through the documentary before encountering his books. Whether to include WP-13 (Muslim/Sufi) and WP-14 (Agnostic) requires SRF editorial approval. Whether to include WP-15 requires confirming SRF's posture toward the *Awake* documentary as an endorsed entry point (see CONTEXT.md § Open Questions).
+**Generation priority:** Pathways WP-01, WP-03, WP-06, WP-07, WP-09 have the strongest corpus affinity and address the largest seeker populations. Generate and review these first. WP-02, WP-04, WP-08, WP-13 have deep corpus support but smaller initial English-language audiences (WP-02 becomes high-priority for Hindi/Bengali locales). WP-05, WP-10, WP-11, WP-12, WP-14 require multi-book corpus (Milestone 3a+) for meaningful content. WP-15 (Documentary Viewer) requires only the *Autobiography* and is high-priority for the film's existing audience — many seekers discover Yogananda through the documentary before encountering his books. Whether to include WP-13 (Muslim/Sufi) and WP-14 (Agnostic) requires SRF editorial approval. Whether to include WP-15 requires confirming SRF's posture toward the *Awake* documentary as an endorsed entry point (see CONTEXT.md § Open Questions).
 
 **What is NOT a worldview pathway:** A pathway that would require the portal to adopt a theological position. "If you believe all religions are one" is a claim; "If you come from a Christian contemplative tradition" is a starting point. The pathways acknowledge where the seeker is, then point to where Yogananda's words are. They do not assert what Yogananda "would say to a Buddhist" — they show where he actually wrote about the themes that tradition cares about.
 
@@ -3564,7 +3564,7 @@ This pathway is distinct from the others because it bridges *from the portal to 
 
 **Provenance:** Same three-state model as all pathways. Claude drafts initial text; theological reviewer approves.
 
-**Phase:** 4 (with the rest of `/guide`). Requires the Kriya Yoga theme page (Phase 5+) for the theme link; until then, the link points to Autobiography Ch. 26 only.
+**Milestone:** 3b (with the rest of `/guide`). Requires the Kriya Yoga theme page (Milestone 3c+) for the theme link; until then, the link points to Autobiography Ch. 26 only.
 
 ---
 
@@ -3684,13 +3684,13 @@ When `navigator.connection.effectiveType` reports `'2g'` or `'slow-2g'`, the por
 
 ### ADR-043, ADR-061, ADR-062: `/explore` — Knowledge Graph and Passage Constellation
 
-Interactive visual map of the entire teaching corpus. Three visualization modes, evolving across phases. The graph is the portal's universal navigation layer — every node is clickable, navigating to the corresponding page.
+Interactive visual map of the entire teaching corpus. Three visualization modes, evolving across milestones. The graph is the portal's universal navigation layer — every node is clickable, navigating to the corresponding page.
 
-**Mode 1: Knowledge Graph** (ADR-061, ADR-062) — Node-edge visualization showing relationships between all content types: passages, themes, people, places, concepts, and every media format. Pre-computed graph JSON, client-side rendering. Evolves from book-only (Phase 6) to full cross-media (Phase 12+).
+**Mode 1: Knowledge Graph** (ADR-061, ADR-062) — Node-edge visualization showing relationships between all content types: passages, themes, people, places, concepts, and every media format. Pre-computed graph JSON, client-side rendering. Evolves from book-only (Milestone 3d) to full cross-media (Arc 6+).
 
 **Mode 2: Passage Constellation** — A 2D spatial exploration where passages are positioned by semantic similarity, derived from embedding vectors reduced to two dimensions (UMAP or t-SNE, pre-computed at build time).
 
-**Mode 3: Concept Map** (ADR-043) — The ontology layer: spiritual concepts and their structural relationships (prerequisite, component, leads_to). Available from Phase 7+.
+**Mode 3: Concept Map** (ADR-043) — The ontology layer: spiritual concepts and their structural relationships (prerequisite, component, leads_to). Available from Arc 4+.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -3719,66 +3719,66 @@ Interactive visual map of the entire teaching corpus. Three visualization modes,
 
 #### ADR-062: Knowledge Graph Node Types
 
-| Node Type | Shape | Color | Size | Click Target | Phase |
-|-----------|-------|-------|------|-------------|-------|
-| Book | Rectangle | SRF Navy | Large (fixed) | `/books/[slug]` | 6 |
-| Book passage | Circle | SRF Navy (30%) | Small (density-scaled) | `/books/[slug]/[ch]#p[n]` | 6 |
-| Theme | Hexagon | SRF Gold | Medium (passage count) | `/themes/[slug]` | 6 |
-| Person | Portrait circle | Warm Cream border | Medium (fixed) | `/people/[slug]` | 6 |
-| Scripture/reference | Diamond | Earth tone | Medium (fixed) | `/references/[slug]` | 6 |
-| Magazine issue | Rectangle | Warm accent | Medium (fixed) | `/magazine/[issue-slug]` | 7 |
-| Magazine chunk | Circle | Warm accent (30%) | Small | `/magazine/[issue-slug]/[article-slug]` | 7 |
-| Ontology concept | Rounded rectangle | SRF Gold (dark) | Medium (relation count) | `/ontology/[slug]` | 7+ |
-| Sacred place | Map pin | Earth green | Medium (fixed) | `/places/[slug]` | 12 |
-| Video | Play-button circle | Teal accent | Medium (fixed) | `/videos/[slug]` | 12 |
-| Video chunk | Circle | Teal (30%) | Small | `/videos/[slug]?t=[ms]` | 12 |
-| Audio recording | Waveform circle | Amber accent | Medium (fixed) | `/audio/[slug]` | 12 |
-| Audio segment | Circle | Amber (30%) | Small | `/audio/[slug]?t=[ms]` | 12 |
-| Image | Rounded square | Neutral | Small (thumbnail) | `/images/[slug]` | 12 |
+| Node Type | Shape | Color | Size | Click Target | Milestone |
+|-----------|-------|-------|------|-------------|-----------|
+| Book | Rectangle | SRF Navy | Large (fixed) | `/books/[slug]` | 3d |
+| Book passage | Circle | SRF Navy (30%) | Small (density-scaled) | `/books/[slug]/[ch]#p[n]` | 3d |
+| Theme | Hexagon | SRF Gold | Medium (passage count) | `/themes/[slug]` | 3d |
+| Person | Portrait circle | Warm Cream border | Medium (fixed) | `/people/[slug]` | 3d |
+| Scripture/reference | Diamond | Earth tone | Medium (fixed) | `/references/[slug]` | 3d |
+| Magazine issue | Rectangle | Warm accent | Medium (fixed) | `/magazine/[issue-slug]` | Arc 4 |
+| Magazine chunk | Circle | Warm accent (30%) | Small | `/magazine/[issue-slug]/[article-slug]` | Arc 4 |
+| Ontology concept | Rounded rectangle | SRF Gold (dark) | Medium (relation count) | `/ontology/[slug]` | Arc 4+ |
+| Sacred place | Map pin | Earth green | Medium (fixed) | `/places/[slug]` | Arc 6 |
+| Video | Play-button circle | Teal accent | Medium (fixed) | `/videos/[slug]` | Arc 6 |
+| Video chunk | Circle | Teal (30%) | Small | `/videos/[slug]?t=[ms]` | Arc 6 |
+| Audio recording | Waveform circle | Amber accent | Medium (fixed) | `/audio/[slug]` | Arc 6 |
+| Audio segment | Circle | Amber (30%) | Small | `/audio/[slug]?t=[ms]` | Arc 6 |
+| Image | Rounded square | Neutral | Small (thumbnail) | `/images/[slug]` | Arc 6 |
 
 Yogananda's own voice recordings and photographs receive the sacred artifact treatment — a subtle golden ring distinguishing them from other audio/images (`is_yogananda_voice`, `is_yogananda_subject` flags).
 
 #### ADR-062: Knowledge Graph Edge Types
 
-| Edge | Source → Target | Width/Opacity | Phase |
-|------|----------------|---------------|-------|
-| Semantic similarity | Any content ↔ any content | Proportional to score | 6 (books), 12 (cross-media) |
-| Contains | Book/issue/video/recording → chunk/segment | Thin, fixed | 6+ |
-| Theme membership | Content → theme | Medium, fixed | 6 |
-| References scripture | Passage → external reference | Medium, dashed | 6 |
-| Mentions person | Passage → person | Medium, fixed | 6 |
-| Succeeded by | Person → person | Golden, directional | 6 |
-| Preceded by | Person → person | Golden, directional | 6 |
-| Mentions place | Content → sacred place | Medium, fixed | 12 |
-| Depicted at | Image → sacred place | Medium, fixed | 12 |
-| Photographed | Image → person | Medium, fixed | 12 |
-| Ontological relation | Concept → concept | Labeled (prerequisite, component, etc.) | 7+ |
-| Primary source | Passage → ontology concept | Thin, dashed | 7+ |
-| Editorial thread | Content → content (sequence) | Golden, directional | 6 (books), 12 (cross-media) |
-| Community collection | Content → content (curated) | Silver, directional | 14 |
+| Edge | Source → Target | Width/Opacity | Milestone |
+|------|----------------|---------------|-----------|
+| Semantic similarity | Any content ↔ any content | Proportional to score | 3d (books), Arc 6 (cross-media) |
+| Contains | Book/issue/video/recording → chunk/segment | Thin, fixed | 3d+ |
+| Theme membership | Content → theme | Medium, fixed | 3d |
+| References scripture | Passage → external reference | Medium, dashed | 3d |
+| Mentions person | Passage → person | Medium, fixed | 3d |
+| Succeeded by | Person → person | Golden, directional | 3d |
+| Preceded by | Person → person | Golden, directional | 3d |
+| Mentions place | Content → sacred place | Medium, fixed | Arc 6 |
+| Depicted at | Image → sacred place | Medium, fixed | Arc 6 |
+| Photographed | Image → person | Medium, fixed | Arc 6 |
+| Ontological relation | Concept → concept | Labeled (prerequisite, component, etc.) | Arc 4+ |
+| Primary source | Passage → ontology concept | Thin, dashed | Arc 4+ |
+| Editorial thread | Content → content (sequence) | Golden, directional | 3d (books), Arc 6 (cross-media) |
+| Community collection | Content → content (curated) | Silver, directional | 7b |
 
 #### Graph View Modes and Filtering
 
-| Mode | Default phase | What's visible |
-|------|--------------|----------------|
-| **Book map** | 6 (default) | Books, passages, themes, people, references |
-| **Concept map** | 7+ | Ontology concepts, relations, linked passages |
-| **All media** | 12+ (new default) | Everything — full cross-media fabric |
+| Mode | Default milestone | What's visible |
+|------|-------------------|----------------|
+| **Book map** | 3d (default) | Books, passages, themes, people, references |
+| **Concept map** | Arc 4+ | Ontology concepts, relations, linked passages |
+| **All media** | Arc 6+ (new default) | Everything — full cross-media fabric |
 | **Single book** | Any | One book's passages, themes, connections |
 | **Single theme** | Any | One theme's passages across all media |
 | **Single person** | Any | One person's passages, images, videos, places |
-| **Lineage** | 6+ | Person nodes only, connected by guru/succession edges, vertical directed layout (ADR-037) |
+| **Lineage** | 3d+ | Person nodes only, connected by guru/succession edges, vertical directed layout (ADR-037) |
 
 Media type toggles: show/hide books, magazine, video, audio, images independently. The filter bar appears at the top of the graph view.
 
-#### Phased Graph Evolution
+#### Graph Evolution by Milestone
 
-| Phase | Additions | Approximate Node Count |
-|-------|-----------|----------------------|
-| **6** | Books, passages, themes, people, references. Editorial thread paths. | ~5,000–10,000 |
-| **7** | + Magazine issues/chunks, ontology concepts. Constellation mode. | ~12,000–18,000 |
-| **12** | + Videos/chunks, sacred places. Content hub cross-media edges. + Audio recordings/segments, images. Sacred artifact styling. | ~20,000–50,000 |
-| **14** | + Community collection paths, editorial multi-media threads. | Same nodes, new paths |
+| Milestone | Additions | Approximate Node Count |
+|-----------|-----------|----------------------|
+| **3d** | Books, passages, themes, people, references. Editorial thread paths. | ~5,000–10,000 |
+| **Arc 4** | + Magazine issues/chunks, ontology concepts. Constellation mode. | ~12,000–18,000 |
+| **Arc 6** | + Videos/chunks, sacred places. Content hub cross-media edges. + Audio recordings/segments, images. Sacred artifact styling. | ~20,000–50,000 |
+| **7b** | + Community collection paths, editorial multi-media threads. | Same nodes, new paths |
 
 #### Performance Strategy
 
@@ -3844,7 +3844,7 @@ The subgraph endpoint powers embeddable mini-graphs in other pages: the reader's
 
 **Implementation:** UMAP dimensionality reduction from 1536-dim embeddings to 2D. Pre-computed nightly. Static JSON (~500KB for ~10,000 items). Canvas or WebGL rendering.
 
-**Phase:** Phase 7+ (constellation). Phase 6 delivers Knowledge Graph mode only.
+**Milestone:** Arc 4+ (constellation). Milestone 3d delivers Knowledge Graph mode only.
 
 Linked from Library and themes pages (not primary nav).
 
@@ -3874,7 +3874,7 @@ A human-readable view of the structured spiritual ontology (ADR-043). Presents Y
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Phase:** Phase 7+ (alongside ontology data model, ADR-043).
+**Milestone:** Arc 4+ (alongside ontology data model, ADR-043).
 
 ### ADR-083 ext: Personal Taxonomy in Study Workspace
 
@@ -3885,7 +3885,7 @@ The portal's themes (Peace, Courage, Healing) are universal. But seekers have *p
 - All client-side, all private, all deletable (consistent with ADR-083 localStorage pattern)
 - The portal's taxonomy is canonical and editorial; the seeker's taxonomy is intimate and uncurated
 - Personal collection names are never sent to the server, never appear in analytics, never inform the portal's theme system
-- Phase 13 server sync preserves personal names if the seeker opts in
+- Milestone 7a server sync preserves personal names if the seeker opts in
 
 This transforms the Study Workspace from a composition tool into a personal spiritual workspace — a private space for organizing the teachings around one's own life, not the portal's categories.
 
@@ -3996,15 +3996,15 @@ Located at `/updates` — linked from site footer as "What's new in the portal."
 
 ### RSS Feed
 
-`/feed/updates.xml` — RSS 2.0, alongside existing content feeds planned in Phase 8 (deliverable 8.6). Each item includes title, summary, category, and portal link.
+`/feed/updates.xml` — RSS 2.0, alongside existing content feeds planned in Milestone 5a. Each item includes title, summary, category, and portal link.
 
-### Phase Delivery
+### Milestone Delivery
 
-| Phase | What Ships |
-|-------|-----------|
-| **Phase 4** | `/updates` page, `portal_updates` table, AI draft pipeline, review queue. First entries cover Phases 0–4 retrospectively. |
-| **Phase 8** | `/feed/updates.xml` RSS feed alongside other RSS feeds. |
-| **Phase 10+** | Multilingual update notes via ADR-078 translation workflow. |
+| Milestone | What Ships |
+|-----------|-----------|
+| **3b** | `/updates` page, `portal_updates` table, AI draft pipeline, review queue. First entries cover Arcs 1–3 retrospectively. |
+| **5a** | `/feed/updates.xml` RSS feed alongside other RSS feeds. |
+| **5b+** | Multilingual update notes via ADR-078 translation workflow. |
 
 ### Accessibility
 
@@ -4034,7 +4034,7 @@ Content Lifecycle (book published, passage rotated, asset approved)
          │
          ▼
 ┌─────────────────────┐
-│ Delivery Worker      │  Vercel cron (Phase 8) or Lambda (Phase 10+)
+│ Delivery Worker      │  Vercel cron (Milestone 5a) or Lambda (Milestone 5b+)
 │ (background job)     │  Reads pending deliveries, POSTs to subscribers
 └────────┬────────────┘
          │
@@ -4055,7 +4055,7 @@ Content Lifecycle (book published, passage rotated, asset approved)
 
 Full catalog, envelope format, delivery semantics, and schema in ADR-106.
 
-### Admin UI (Phase 8, editorial portal)
+### Admin UI (Milestone 5a, editorial portal)
 
 - Subscriber list with event subscriptions and active/suspended status
 - Delivery log (30-day rolling) with success/failure and response codes
@@ -4072,7 +4072,7 @@ Events describe content lifecycle only — never seeker behavior. No PII in any 
 
 ## DES-055: Concept/Word Graph
 
-The Concept/Word Graph is a specialized subgraph within the knowledge graph (DES-054) focused on vocabulary relationships — how Yogananda's terminology connects across traditions, Sanskrit sources, and progressive spiritual development. It powers word graph query expansion in the search pipeline (Phase 4+, Path C in DES-003) and the Concept Graph UI exploration (Phase 12).
+The Concept/Word Graph is a specialized subgraph within the knowledge graph (DES-054) focused on vocabulary relationships — how Yogananda's terminology connects across traditions, Sanskrit sources, and progressive spiritual development. It powers word graph query expansion in the search pipeline (Milestone 3b+, Path C in DES-003) and the Concept Graph UI exploration (Arc 6).
 
 ### Term Node Schema
 
@@ -4108,26 +4108,26 @@ Each term in the concept graph is a node with:
 ### Construction Process
 
 ```
-Phase 4: Canonical Vocabulary Seed
+Milestone 3b: Canonical Vocabulary Seed
  └── Extract from entity_registry + sanskrit_terms tables
  └── Claude generates initial edges from domain knowledge
  └── Human review validates all edges
 
-Phase 8: Cross-Tradition Extraction
+Milestone 5a: Cross-Tradition Extraction
  └── Mine Yogananda's explicit cross-tradition statements from corpus
  └── "The Hindu scriptures teach that [...] is what Christ called [...]"
  └── Constrained to Yogananda's own explicit mappings only
 
-Phase 8: Progression Chains
+Milestone 5a: Progression Chains
  └── Extract sequential development paths from teaching passages
  └── Validate against SRF pedagogical tradition
 
-Phase 8: Co-occurrence Edges
+Milestone 5a: Co-occurrence Edges
  └── Statistical co-occurrence from chunk enrichment data
  └── Filtered: minimum 3 co-occurrences, mutual information > threshold
 ```
 
-### Word Graph Query Expansion (Phase 4+)
+### Word Graph Query Expansion (Milestone 3b+)
 
 When the search pipeline reaches the graph traversal step (DES-003, Step 6, Path C), the concept graph enables vocabulary-aware expansion:
 
@@ -4159,21 +4159,21 @@ Cross-tradition mappings are limited to Yogananda's own explicit mappings. The p
 
 ## DES-056: Feature Catalog (RAG Architecture Proposal)
 
-This section catalogs the features proposed in the RAG Architecture Proposal (`docs/reference/RAG_Architecture_Proposal.md`) that were accepted for integration into the project. Each feature has a phase assignment, governing ADRs, and key dependencies. The reference document contains the full design exploration; this catalog tracks what was adopted and when it ships.
+This section catalogs the features proposed in the RAG Architecture Proposal (`docs/reference/RAG_Architecture_Proposal.md`) that were accepted for integration into the project. Each feature has a milestone assignment, governing ADRs, and key dependencies. The reference document contains the full design exploration; this catalog tracks what was adopted and when it ships.
 
 ### Accepted for Design Integration
 
 These features are actively designed into the architecture and have governing ADRs:
 
-| Feature | Phase | Governing ADRs | Key Dependencies |
-|---------|-------|----------------|------------------|
-| **Related Teachings — Categorized** | 3 (similarity), 4+ (graph-categorized) | ADR-050, ADR-117 | Chunk relations (Phase 0), graph batch pipeline (Phase 4) |
-| **Contemplative Companion** | 6+ | ADR-050, ADR-115, ADR-117 | Enrichment metadata (experiential_depth, voice_register), knowledge graph |
-| **Scripture-in-Dialogue** | 6 | ADR-117, ADR-116 | Scripture nodes in knowledge graph, verse-level chunking for Gita/Bible commentaries |
-| **Reading Arc** | 8 | ADR-117, ADR-115 | Graph algorithms (PageRank, betweenness centrality), experiential depth progression |
-| **Living Commentary** | 6 | ADR-050, ADR-115 | Cross-reference extraction in enrichment pipeline, inline reference cards |
+| Feature | Milestone | Governing ADRs | Key Dependencies |
+|---------|-----------|----------------|------------------|
+| **Related Teachings — Categorized** | 3a (similarity), 3b+ (graph-categorized) | ADR-050, ADR-117 | Chunk relations (Arc 1), graph batch pipeline (Milestone 3b) |
+| **Contemplative Companion** | 3d+ | ADR-050, ADR-115, ADR-117 | Enrichment metadata (experiential_depth, voice_register), knowledge graph |
+| **Scripture-in-Dialogue** | 3d | ADR-117, ADR-116 | Scripture nodes in knowledge graph, verse-level chunking for Gita/Bible commentaries |
+| **Reading Arc** | 5a | ADR-117, ADR-115 | Graph algorithms (PageRank, betweenness centrality), experiential depth progression |
+| **Living Commentary** | 3d | ADR-050, ADR-115 | Cross-reference extraction in enrichment pipeline, inline reference cards |
 
-**Related Teachings — Categorized:** When a seeker reads a passage, the side panel shows not just *that* other passages are related but *why*. Five relationship categories: Same Concept, Deeper in This Theme, Another Teacher's Expression, Parallel Tradition, Technique for This State. Phase 3 uses embedding similarity to approximate categories. Phase 4+ uses graph traversal for true categorization.
+**Related Teachings — Categorized:** When a seeker reads a passage, the side panel shows not just *that* other passages are related but *why*. Five relationship categories: Same Concept, Deeper in This Theme, Another Teacher's Expression, Parallel Tradition, Technique for This State. Milestone 3a uses embedding similarity to approximate categories. Milestone 3b+ uses graph traversal for true categorization.
 
 **Contemplative Companion:** A depth-aware reading mode that, given a passage, surfaces the contemplative arc: preparatory teachings → the passage itself → deeper explorations → related practices. Uses experiential_depth (1–7 scale) and voice_register enrichment metadata to build the arc. Not a chatbot — a curated pathway through existing content.
 
@@ -4183,20 +4183,20 @@ These features are actively designed into the architecture and have governing AD
 
 **Living Commentary:** Yogananda's commentaries are dense with internal cross-references ("as I explained in Chapter X"). The enrichment pipeline extracts these references; Living Commentary makes them navigable. Inline reference cards show a verbatim preview of the referenced passage without leaving the current reading position.
 
-### Deferred with Phase Assignment
+### Deferred with Milestone Assignment
 
-These features are documented and phase-assigned but not yet actively designed. Features without a phase assignment belong in ROADMAP.md § Unscheduled Features instead.
+These features are documented and milestone-assigned but not yet actively designed. Features without a milestone assignment belong in ROADMAP.md § Unscheduled Features instead.
 
-| Feature | Phase | Key Dependency | Notes |
-|---------|-------|---------------|-------|
-| **Knowledge Graph Exploration UI** | 12 | DES-054, graph batch | react-force-graph-3d, interactive 3D visualization |
-| **Concept/Word Graph Exploration UI** | 12 | DES-055, graph batch | D3 + WebGL progressive enhancement |
-| **Lineage Voice Comparator** | 8 | ADR-117, ADR-115 | Compare how Yogananda and his gurus discuss the same concept |
-| **Evolution of a Teaching** | 8 | ADR-117, temporal metadata | How Yogananda's expression of a concept evolved across books over decades |
-| **Cosmic Chants as Portal** | 9 | ADR-117, chant content | If chants are in corpus scope: verse-by-verse with Yogananda's explanations |
-| **Passage Genealogy** | 8 | ADR-117, cross-reference extraction | The lineage of thought behind each passage — what influenced it |
-| **Semantic Drift Detection** | 8 | ADR-115, temporal metadata | Staff tool: detect when the same term shifts meaning across books |
-| **Consciousness Cartography** | 12+ | DES-054, DES-055, graph batch | Stretch goal: visual map of consciousness states and their relationships |
+| Feature | Milestone | Key Dependency | Notes |
+|---------|-----------|---------------|-------|
+| **Knowledge Graph Exploration UI** | Arc 6 | DES-054, graph batch | react-force-graph-3d, interactive 3D visualization |
+| **Concept/Word Graph Exploration UI** | Arc 6 | DES-055, graph batch | D3 + WebGL progressive enhancement |
+| **Lineage Voice Comparator** | 5a | ADR-117, ADR-115 | Compare how Yogananda and his gurus discuss the same concept |
+| **Evolution of a Teaching** | 5a | ADR-117, temporal metadata | How Yogananda's expression of a concept evolved across books over decades |
+| **Cosmic Chants as Portal** | Distributed | ADR-117, chant content | If chants are in corpus scope: verse-by-verse with Yogananda's explanations |
+| **Passage Genealogy** | 5a | ADR-117, cross-reference extraction | The lineage of thought behind each passage — what influenced it |
+| **Semantic Drift Detection** | 5a | ADR-115, temporal metadata | Staff tool: detect when the same term shifts meaning across books |
+| **Consciousness Cartography** | Arc 6+ | DES-054, DES-055, graph batch | Stretch goal: visual map of consciousness states and their relationships |
 
 ### Explicitly Omitted
 

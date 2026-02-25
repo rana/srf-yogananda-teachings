@@ -18,7 +18,7 @@ Audit against the project's stated principles:
 6. **Global equity** (ADR-006) — One product, complete at every level. Bihar to San Francisco. Performance budgets, progressive enhancement, data-cost awareness.
 7. **Content availability honesty** — No machine-translated substitutes. Honest about scope. English fallback always marked `[EN]`.
 8. **10-year architecture horizon** (ADR-004, ADR-013) — Dependencies as commitments. Data in PostgreSQL. Business logic framework-agnostic.
-9. **Accessibility from Phase 1** (ADR-003) — WCAG 2.1 AA. Semantic HTML, keyboard navigation, 44x44px touch targets. Performance for 3G in rural India.
+9. **Accessibility from Milestone 2a** (ADR-003) — WCAG 2.1 AA. Semantic HTML, keyboard navigation, 44x44px touch targets. Performance for 3G in rural India.
 10. **Multilingual from foundation** (ADR-075-078) — Every content table has `language`. Every API accepts `language`. Zero schema migrations to add a language.
 11. **SRF Lessons boundary** — Lesson content permanently excluded. Published descriptions of Kriya Yoga (e.g., Autobiography Ch. 26) included. Practice Bridge links to SRF resources.
 

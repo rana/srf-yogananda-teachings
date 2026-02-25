@@ -2,17 +2,17 @@
 
 ## Current State
 
-**Phase:** Design complete. Ready to begin Phase 0a (Prove).
+**Arc:** Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.
 
-**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture, 18 sections) + three phase-scoped design files (DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (navigational index with group summaries) + three phase-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 123 ADRs total, ADR-001 through ADR-123), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (15 phases, 0a–14). Document architecture restructured 2026-02-23: PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md and DECISIONS.md split by phase for context-window efficiency. PROPOSALS.md added 2026-02-24: three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, PRO-NNN identifier namespace. RAG Architecture Proposal merged into project documents (2026-02-23). 20 elmer explorations in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting dedup into PROPOSALS.md PRO-NNN entries. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) created 2026-02-23, updated 2026-02-24 for PRO-NNN workflow. No code yet.
+**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture, 18 sections) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 118 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 20 elmer explorations in `.elmer/proposals/` covering 10 topics (themes, features, policy, retrospectives) awaiting dedup into PROPOSALS.md PRO-NNN entries. Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
 
-**What's next:** Phase 0a — Prove. Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Phase 0), Neon + schema (pgvector + pg_search), PDF ingestion into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Phase 0b (Foundation) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
+**What's next:** Milestone 1a — Prove. Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), PDF ingestion into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
 ---
 
 ## Project Methodology
 
-This portal is designed and implemented through AI-human collaboration. The human principal directs strategy, makes stakeholder decisions, and provides editorial judgment. The AI (Claude) serves as architect, implementer, and maintainer across sessions. The documentation volume — CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md (+ phase files), DECISIONS.md, and ROADMAP.md — is intentional: it is the project's institutional memory, enabling continuity across AI context windows where no persistent memory exists. Phase-gated reading guidance in CLAUDE.md ensures each session loads only what the task requires.
+This portal is designed and implemented through AI-human collaboration. The human principal directs strategy, makes stakeholder decisions, and provides editorial judgment. The AI (Claude) serves as architect, implementer, and maintainer across sessions. The documentation volume — CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md (+ arc files), DECISIONS.md, and ROADMAP.md — is intentional: it is the project's institutional memory, enabling continuity across AI context windows where no persistent memory exists. Arc-gated reading guidance in CLAUDE.md ensures each session loads only what the task requires.
 
 Roles the AI cannot fill: editorial judgment on sacred text, theological review, SRF stakeholder decisions, community relationship management, and the inner orientation described in the Spiritual Design Principles below. These require human presence and spiritual sensitivity that architecture cannot substitute.
 
@@ -20,25 +20,25 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 ## Open Questions
 
-### Tier 1: Blocks Phase 0a (resolve before coding begins)
+### Tier 1: Blocks Milestone 1a (resolve before coding begins)
 
 **Technical**
 - [x] ~~Which edition of Autobiography of a Yogi is the canonical page-number reference?~~ *(Resolved 2026-02-24: use edition indicated in PDF source from spiritmaji.com. Configure as parameter per ADR-123 for later adjustment.)* (ADR-034)
 - [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). (ADR-048)
 - [ ] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages spanning narrative, poetry, dialogue, and technical instruction. Validate consistency of experiential_depth, voice_register, and entity extraction.
 - [ ] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? Single authoritative edition per book, or acknowledge variants? Affects content integrity hashing (ADR-039), citation page numbers, and the meaning of "verbatim." (ADR-001, ADR-034, ADR-039, ADR-007)
-- [ ] Phase 0a parameter validation: should success criteria explicitly include evaluating and adjusting magic numbers (RRF k, chunk size, overlap, debounce, cache TTLs) based on first-contact data? (ADR-123)
+- [ ] Milestone 1a parameter validation: should success criteria explicitly include evaluating and adjusting magic numbers (RRF k, chunk size, overlap, debounce, cache TTLs) based on first-contact data? (ADR-123)
 
 **Stakeholder**
 - [ ] Which books have official translations in which languages? (Content availability matrix — determines what each language's portal experience looks like.) (ADR-075, ADR-077)
 - [ ] *God Talks with Arjuna* Devanāgarī content: confirm display of original Devanāgarī Bhagavad Gita verses alongside English commentary. Does SRF have a preferred Devanāgarī typeface, or is Noto Sans Devanagari acceptable? (ADR-080, ADR-048)
 
-### Tier 2: Resolve During Phase 0 (not 0a-specific)
+### Tier 2: Resolve During Arc 1 (not 1a-specific)
 
 **Technical**
-- [ ] Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks). Evaluate paid tier need at Phase 3 (multi-book corpus). Monitor record count during ingestion.
-- [ ] fastText vs. alternative language detection for short queries containing Sanskrit terms. Evaluate during Phase 0 search quality testing.
-- [ ] Devanāgarī font timing: Phase 1 English corpus contains Devanāgarī in *God Talks with Arjuna*. ADR-080 moves Noto Sans Devanagari to Phase 0. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
+- [ ] Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks). Evaluate paid tier need at Milestone 3a (multi-book corpus). Monitor record count during ingestion.
+- [ ] fastText vs. alternative language detection for short queries containing Sanskrit terms. Evaluate during Arc 1 search quality testing.
+- [ ] Devanāgarī font timing: Milestone 2a English corpus contains Devanāgarī in *God Talks with Arjuna*. ADR-080 moves Noto Sans Devanagari to Arc 1. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
 - [ ] Abuse and misuse patterns: extraction at scale, quote weaponization, SEO parasitism. Should the portal include rate limiting tiers, `rel=canonical` enforcement, MCP usage policy, or text watermarking? (ADR-001, ADR-011, ADR-101, ADR-063, ADR-081)
 
 **Stakeholder**
@@ -55,20 +55,20 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Portal updates page posture: visible evolution (`/updates` page) or timeless atmosphere? (ADR-105, ADR-074)
 - [ ] Visual design language: should the portal feel timeless or contemporary? The spiritual eye symbolism (navy=infinite blue, gold=divine ring, cream=star-white) is already latent in the palette — how explicitly should it be acknowledged in design documentation and token naming? (DES-006, DES-011)
 
-### Tier 3: Resolve During Phases 0b–2
+### Tier 3: Resolve During Milestones 1b–2b
 
 **Technical**
-- [ ] Query expansion prompt engineering (test with diverse query types). (Phase 0b)
+- [ ] Query expansion prompt engineering (test with diverse query types). (Milestone 1b)
 - [ ] AWS Bedrock abstraction: thin `/lib/services/claude.ts` supporting both Bedrock and direct Anthropic API for 10-year optionality? (ADR-014, ADR-004)
 - [ ] Content-addressable passage deep links: should resolution chain include a semantic/normalized hash tier between exact match and fuzzy search? (ADR-022, ADR-034)
-- [ ] IAST diacritics rendering verification: Merriweather and Lora at all font sizes, particularly 15px. Include in Phase 1 design QA. (ADR-080, ADR-003)
+- [ ] IAST diacritics rendering verification: Merriweather and Lora at all font sizes, particularly 15px. Include in Milestone 2a design QA. (ADR-080, ADR-003)
 - [ ] Circadian content choreography: solar-position awareness vs. fixed clock hours? Browser timezone maps to coordinates for DELTA-compliant calculation. (DES-011, DES-028, ADR-095)
 - [ ] Mobile search suggestion UX: fewer suggestions, different trigger on mobile? (ADR-049)
 
 **Stakeholder**
-- [ ] SRF temple singing bowl recordings for Quiet Corner audio. (Phase 1)
-- [ ] @YoganandaSRF YouTube channel ID and playlist inventory. (Phase 1)
-- [ ] About page content: approved biography text for Yogananda and line of gurus? (Phase 1)
+- [ ] SRF temple singing bowl recordings for Quiet Corner audio. (Milestone 2a)
+- [ ] @YoganandaSRF YouTube channel ID and playlist inventory. (Milestone 2a)
+- [ ] About page content: approved biography text for Yogananda and line of gurus? (Milestone 2a)
 - [ ] Who reviews AI-drafted UI translations (~200–300 strings)? (ADR-078)
 - [ ] Pastoral care resources: center contacts, counselors for locales where helplines are underserved? (ADR-071)
 - [ ] Crisis resource policy: display locale-appropriate helpline information alongside grief content? (ADR-071)
@@ -84,12 +84,12 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Youth and young adult program signposts. (DES-048, DES-022)
 - [ ] "Awake" documentary as endorsed entry point / worldview pathway? (DES-048)
 
-### Tier 4: Requires SRF Input Before Phase 4
+### Tier 4: Requires SRF Input Before Milestone 3b
 
-**Strategic** (from Phase Sizing Analysis, ADR-102)
-- [ ] Calendar timeline: what is the assumed team size and velocity? (ADR-102)
-- [ ] Minimum lovable product: which phase constitutes "launched" — publicly available to seekers? (ADR-102)
-- [ ] Editorial capacity curve: at what phase does the monastic editor's 2–3 hour daily window become insufficient? (ADR-082, ADR-102)
+**Strategic** (from Arc Sizing Analysis)
+- [ ] Calendar timeline: what is the assumed team size and velocity?
+- [ ] Minimum lovable product: which milestone constitutes "launched" — publicly available to seekers?
+- [ ] Editorial capacity curve: at what milestone does the monastic editor's 2–3 hour daily window become insufficient? (ADR-082)
 
 **Technical**
 - [ ] Sacred Places fallback hierarchy: ranked array of external links per place rather than Google Street View only? (DES-023, ADR-070)
@@ -97,14 +97,14 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 **Stakeholder**
 - [ ] Portal-app relationship: complementary or overlapping reader? Will portal search power the app?
-- [x] ~~Hindi/Bengali co-launch timing: Phase 10 or 10a/10b split?~~ Resolved 2026-02-24: Wave structure removed. All 9 non-English core languages are Phase 10 peers with no ordering. (ADR-077 revised)
+- [x] ~~Hindi/Bengali co-launch timing: Milestone 5b or split?~~ Resolved 2026-02-24: Wave structure removed. All 9 non-English core languages are Milestone 5b peers with no ordering. (ADR-077 revised)
 - [ ] YSS co-equal or advisory authority over Hindi/Bengali/Thai design decisions. (ADR-077, ADR-079)
 - [ ] Translated editions: do they preserve paragraph structure? (Critical for cross-language alignment)
 - [ ] *Cosmic Chants* canonical volume or family of editions? (ADR-059)
 - [ ] Monastic content scope: content *by* vs. *about* monastics. (ADR-036, ADR-037, ADR-001)
 - [ ] Living monastic editorial sensitivity: biographical detail level for current monastics. (ADR-037)
 - [ ] Presidential succession editorial framing: factual data only, or editorial narrative? (ADR-037)
-- [ ] Portal coordinator role ownership: monastic, AE team, or dedicated position? Critical by Phase 4. (ADR-082)
+- [ ] Portal coordinator role ownership: monastic, AE team, or dedicated position? Critical by Milestone 3b. (ADR-082)
 - [ ] Inner orientation for editorial team: devotional service, professional positions, or both?
 - [ ] Monastic content editor's current digital workflow. (ADR-082)
 - [ ] Seasonal editorial calendar ownership. (DES-028, ADR-082)
@@ -112,28 +112,28 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Editorial intent preservation: should editorial decisions carry brief rationale notes? (ADR-032, ADR-098, ADR-007)
 - [ ] Virtual pilgrimage tour URLs and availability. (ADR-069, DES-023)
 
-### Phase 4+ Questions
+### Milestone 3b+ Questions
 
-Questions about Phase 4+ features — multilingual scale, multimedia, MCP distribution, personalization, community curation, VLD governance, and privacy regulations — are maintained separately in [docs/future-questions.md](docs/future-questions.md). They remain real questions, parked until their phase approaches. (~35 questions covering Phases 6–14.)
+Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP distribution, personalization, community curation, VLD governance, and privacy regulations — are maintained separately in [docs/future-questions.md](docs/future-questions.md). They remain real questions, parked until their milestone approaches. (~35 questions covering Arcs 3–7.)
 
 ### Resolved Questions
 
-1. **Contentful timing:** Phase 0, not Phase 9. Contentful is the editorial source of truth from the first phase — a stakeholder hard requirement. Content model (Book → Chapter → Section → TextBlock) created in Phase 0a. Webhook sync activated in Phase 0b. Avoids costly migration of 15+ books and editorial workflows from Neon-only to Contentful at Phase 9. *(Resolved 2026-02-24, ADR-010 revised.)*
-2. **PDF source:** spiritmaji.com accepted for Phase 0 proof-of-concept. Non-PDF digital text will be provided by SRF before launch and imported directly into Contentful. *(Resolved 2026-02-24.)*
-3. **Autobiography edition:** Use edition indicated in PDF source. Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition. Not a Phase 0a blocker. *(Resolved 2026-02-24.)*
-4. **SRF Corpus MCP scheduling:** All three tiers (Development, Internal, External) moved to Unscheduled Features. Architecture preserved in DESIGN-phase0.md § DES-031. Third-party MCP servers (Neon, Sentry, Contentful) remain on schedule. *(Resolved 2026-02-24, ADR-101 revised.)*
-5. **Embedding model for Phase 0:** Voyage voyage-3-large (1024 dimensions, 26 languages, asymmetric encoding). Selected for multilingual-first design, superior performance on literary/spiritual text, and unified cross-lingual embedding space. Replaces OpenAI text-embedding-3-small. ADR-046 provides the migration procedure; ADR-047 establishes the multilingual quality evaluation strategy. Phase 10 benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3). *(Resolved by ADR-118; supersedes earlier text-embedding-3-small decision.)*
-2. **AI provider:** Claude via AWS Bedrock with model tiering — Haiku for real-time search (query expansion, intent classification, HyDE generation), Opus for offline batch tasks (theme tagging, vocabulary extraction, unified enrichment). Cohere Rerank 3.5 for passage reranking (Phase 2+, replacing Claude Haiku ranking). *(Resolved by ADR-014, ADR-119.)*
-3. **Single database vs. multi-database:** Single-database architecture: Neon PostgreSQL for all content, relational data, embeddings, search, and graph intelligence. Neptune Analytics was evaluated and rejected — the bounded corpus (~50K chunks, ~500 entities) is too small to justify a second database. Graph intelligence implemented via Postgres tables + Python batch computation. *(Resolved by ADR-013; ADR-117 revised 2026-02-23.)*
-4. **Full-text search engine:** pg_search/ParadeDB BM25 replaces PostgreSQL tsvector. BM25 scoring, language-specific tokenizers (ICU for most languages, Jieba for Chinese, Lindera for Japanese). Enables hybrid search via Reciprocal Rank Fusion with pgvector. *(Resolved by ADR-114.)*
-5. **Graph intelligence layer:** Postgres-native, introduced in Phase 4. Knowledge graph ontology designed from Phase 0 (DES-054). Graph algorithms (PageRank, community detection, betweenness centrality) run as Python + NetworkX nightly batch jobs, results stored in Postgres columns. Neptune Analytics was evaluated and rejected (see ADR-117). *(Resolved by ADR-117, revised 2026-02-23.)*
-6. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-027.)*
-7. **Digital text availability:** SRF/YSS has digital text of official translated editions. Per-language OCR is not required. *(Resolved: confirmed by stakeholder.)*
-8. **Editorial workflow ownership:** Non-issue — resolved through organizational discussion. *(Resolved: confirmed by stakeholder.)*
-9. **SCM for Phases 0–8:** GitHub acceptable for Phases 0–8 with planned Phase 9 migration to GitLab. *(Resolved: confirmed by stakeholder.)*
-10. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
-11. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
-12. **Neptune Analytics vs. Postgres-only graph:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database. *(Resolved 2026-02-23, ADR-117 revised.)*
+1. **Contentful timing:** Arc 1, not Arc 6. Contentful is the editorial source of truth from the first arc — a stakeholder hard requirement. Content model (Book → Chapter → Section → TextBlock) created in Milestone 1a. Webhook sync activated in Milestone 1b. Avoids costly migration of 15+ books and editorial workflows from Neon-only to Contentful at Arc 6. *(Resolved 2026-02-24, ADR-010 revised.)*
+2. **PDF source:** spiritmaji.com accepted for Arc 1 proof-of-concept. Non-PDF digital text will be provided by SRF before launch and imported directly into Contentful. *(Resolved 2026-02-24.)*
+3. **Autobiography edition:** Use edition indicated in PDF source. Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition. Not a Milestone 1a blocker. *(Resolved 2026-02-24.)*
+4. **SRF Corpus MCP scheduling:** All three tiers (Development, Internal, External) moved to Unscheduled Features. Architecture preserved in DESIGN-arc1.md § DES-031. Third-party MCP servers (Neon, Sentry, Contentful) remain on schedule. *(Resolved 2026-02-24, ADR-101 revised.)*
+5. **Embedding model for Arc 1:** Voyage voyage-3-large (1024 dimensions, 26 languages, asymmetric encoding). Selected for multilingual-first design, superior performance on literary/spiritual text, and unified cross-lingual embedding space. Replaces OpenAI text-embedding-3-small. ADR-046 provides the migration procedure; ADR-047 establishes the multilingual quality evaluation strategy. Milestone 5b benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3). *(Resolved by ADR-118; supersedes earlier text-embedding-3-small decision.)*
+6. **AI provider:** Claude via AWS Bedrock with model tiering — Haiku for real-time search (query expansion, intent classification, HyDE generation), Opus for offline batch tasks (theme tagging, vocabulary extraction, unified enrichment). Cohere Rerank 3.5 for passage reranking (Milestone 2b+, replacing Claude Haiku ranking). *(Resolved by ADR-014, ADR-119.)*
+7. **Single database vs. multi-database:** Single-database architecture: Neon PostgreSQL for all content, relational data, embeddings, search, and graph intelligence. Neptune Analytics was evaluated and rejected — the bounded corpus (~50K chunks, ~500 entities) is too small to justify a second database. Graph intelligence implemented via Postgres tables + Python batch computation. *(Resolved by ADR-013, ADR-117.)*
+8. **Full-text search engine:** pg_search/ParadeDB BM25 replaces PostgreSQL tsvector. BM25 scoring, language-specific tokenizers (ICU for most languages, Jieba for Chinese, Lindera for Japanese). Enables hybrid search via Reciprocal Rank Fusion with pgvector. *(Resolved by ADR-114.)*
+9. **Graph intelligence layer:** Postgres-native, introduced in Milestone 3b. Knowledge graph ontology designed from Arc 1 (DES-054). Graph algorithms (PageRank, community detection, betweenness centrality) run as Python + NetworkX nightly batch jobs, results stored in Postgres columns. Neptune Analytics was evaluated and rejected (see ADR-117). *(Resolved by ADR-117.)*
+10. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-027.)*
+11. **Digital text availability:** SRF/YSS has digital text of official translated editions. Per-language OCR is not required. *(Resolved: confirmed by stakeholder.)*
+12. **Editorial workflow ownership:** Non-issue — resolved through organizational discussion. *(Resolved: confirmed by stakeholder.)*
+13. **SCM for Arcs 1–5:** GitHub acceptable for Arcs 1–5 with planned Arc 6 migration to GitLab. *(Resolved: confirmed by stakeholder.)*
+14. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
+15. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
+16. **Neptune Analytics vs. Postgres-only graph:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database. *(Resolved by ADR-117.)*
 
 ---
 
@@ -178,7 +178,7 @@ When a feature proposal seems to conflict with this principle, the response is n
 ### In Scope
 
 - **Free access** to Yogananda's published books and SRF/YSS publications
-- **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Phase 10 peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
+- **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Milestone 5b peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
 - **Intelligent Query Tool** — users ask questions and search across the entire library of books to find specific answers (e.g., "How do I deal with fear?")
 - **Life-theme navigation** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without needing to formulate a search query
 - **Today's Wisdom** — a different Yogananda passage on each visit, creating a living, dynamic homepage
@@ -189,7 +189,7 @@ When a feature proposal seems to conflict with this principle, the response is n
 
 ### Explicitly Out of Scope
 
-- **SRF Lessons** — the progressive home-study program is reserved and private. This portal does not include Lesson content, Kriya Yoga technique instruction, or any materials requiring the Lessons Pledge. (Note: the architecture is designed to accommodate future Lessons integration for authorized students if SRF decides to pursue this — see ADR-085 and the "Future Consideration: SRF Lessons" section under Content Scope. No Lessons code ships in any current phase.)
+- **SRF Lessons** — the progressive home-study program is reserved and private. This portal does not include Lesson content, Kriya Yoga technique instruction, or any materials requiring the Lessons Pledge. (Note: the architecture is designed to accommodate future Lessons integration for authorized students if SRF decides to pursue this — see ADR-085 and the "Future Consideration: SRF Lessons" section under Content Scope. No Lessons code ships in any current arc.)
 
 ### The "What Next" Bridge
 
@@ -247,21 +247,21 @@ Standard engagement metrics (time on site, session depth, retention) optimize fo
 
 ## Operational Staffing (Requires SRF Input)
 
-The editorial review portal (ADR-082) provides tooling for content governance. But tooling without humans is empty. The following operational roles require dedicated staff time, and SRF must determine *who* fills each role before Phase 4 launches the editorial workflows.
+The editorial review portal (ADR-082) provides tooling for content governance. But tooling without humans is empty. The following operational roles require dedicated staff time, and SRF must determine *who* fills each role before Milestone 3b launches the editorial workflows.
 
-| Role | Responsibility | Estimated Time | Phase Needed |
-|------|---------------|----------------|--------------|
-| **Content editor** | Theme tag review, daily passage curation, calendar event management | 2–3 hours/day | Phase 4 |
-| **Theological reviewer** | Final approval on theme associations, editorial thread accuracy | Periodic (high-stakes, low-frequency) | Phase 4 |
-| **On-call engineer** | Sentry alert response, infrastructure monitoring, Neon health | As needed (shared with AE team) | Phase 0 |
-| **Book ingestion operator** | Run ingestion pipeline for new books, coordinate human QA | Per-book (1–2 days per ingestion cycle) | Phase 3 |
-| **Portal coordinator** | Cross-queue editorial health, content pipeline status, VLD activity, calendar planning, feature request triage, portal update review and publication (ADR-105) | Regular (weekly minimum) | Phase 4 |
-| **Social media reviewer** | Review quote images and captions, distribute to platforms | 20–30 min/day | Phase 8 |
-| **Translation reviewer** | Compare AI-drafted translations with English source, approve/correct | Batch sessions (per language sprint) | Phase 10 |
-| **Impact report curator** | Curate "What Is Humanity Seeking?" data into narrative report | Annual | Phase 10+ |
-| **VLD coordinator** | Create curation briefs, monitor VLD submission quality, manage trusted submitter status | Weekly | Phase 14 |
+| Role | Responsibility | Estimated Time | Arc/Milestone Needed |
+|------|---------------|----------------|----------------------|
+| **Content editor** | Theme tag review, daily passage curation, calendar event management | 2–3 hours/day | Milestone 3b |
+| **Theological reviewer** | Final approval on theme associations, editorial thread accuracy | Periodic (high-stakes, low-frequency) | Milestone 3b |
+| **On-call engineer** | Sentry alert response, infrastructure monitoring, Neon health | As needed (shared with AE team) | Arc 1 |
+| **Book ingestion operator** | Run ingestion pipeline for new books, coordinate human QA | Per-book (1–2 days per ingestion cycle) | Milestone 3a |
+| **Portal coordinator** | Cross-queue editorial health, content pipeline status, VLD activity, calendar planning, feature request triage, portal update review and publication (ADR-105) | Regular (weekly minimum) | Milestone 3b |
+| **Social media reviewer** | Review quote images and captions, distribute to platforms | 20–30 min/day | Milestone 5a |
+| **Translation reviewer** | Compare AI-drafted translations with English source, approve/correct | Batch sessions (per language sprint) | Milestone 5b |
+| **Impact report curator** | Curate "What Is Humanity Seeking?" data into narrative report | Annual | Milestone 5b+ |
+| **VLD coordinator** | Create curation briefs, monitor VLD submission quality, manage trusted submitter status | Weekly | Milestone 7b |
 
-**Key question for SRF:** Does the monastic order, the AE team, a dedicated content editor, or some combination own these responsibilities? The answer shapes Phase 4's editorial workflow design. The portal coordinator and VLD coordinator roles are particularly important to staff early — they are the connective tissue between editorial content, technical operations, and volunteer service. See DESIGN.md § Staff & Organizational Personas for the complete persona survey.
+**Key question for SRF:** Does the monastic order, the AE team, a dedicated content editor, or some combination own these responsibilities? The answer shapes Milestone 3b's editorial workflow design. The portal coordinator and VLD coordinator roles are particularly important to staff early — they are the connective tissue between editorial content, technical operations, and volunteer service. See DESIGN.md § Staff & Organizational Personas for the complete persona survey.
 
 ---
 
@@ -301,7 +301,7 @@ Also aligned with: CCPA/CPRA (California), LGPD (Brazil), DPDPA (India), APPI (J
 
 The DELTA Dignity principle and the project's mission — making the teachings "available freely throughout the world" — demand that the portal be accessible to all seekers regardless of physical ability. A portal that excludes blind, deaf, or motor-impaired seekers contradicts its own purpose.
 
-Accessibility is therefore not a polish phase or a nice-to-have. It is a Phase 1 requirement:
+Accessibility is therefore not a polish phase or a nice-to-have. It is a Milestone 2a requirement:
 
 - **WCAG 2.1 AA** conformance from the first commit
 - Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support
@@ -309,21 +309,21 @@ Accessibility is therefore not a polish phase or a nice-to-have. It is a Phase 1
 - `prefers-reduced-motion` support for users with vestibular disorders
 - Performance budgets that serve seekers on low-bandwidth mobile connections (India, Africa, Latin America)
 
-Phase 11 exists for formal audit, advanced features (TTS, dark mode, high-contrast), and third-party testing — not for introducing accessibility after the fact. See ADR-003.
+Formal audit, advanced features (TTS, dark mode, high-contrast), and third-party testing are distributed across Arcs 2 and 5 — not for introducing accessibility after the fact. See ADR-003.
 
 ### Multilingual from the Foundation
 
-The philanthropist's question was about making Yogananda's books "available freely throughout the world." The world speaks thousands of languages. Multilingual support is not a late-stage feature to be bolted on — it is a foundational architectural principle that shapes every design decision from Phase 0 onward.
+The philanthropist's question was about making Yogananda's books "available freely throughout the world." The world speaks thousands of languages. Multilingual support is not a late-stage feature to be bolted on — it is a foundational architectural principle that shapes every design decision from Arc 1 onward.
 
 **What this means in practice:**
 
 - **Schema:** Every content table carries a `language` column from the first migration. Cross-language linking (`canonical_book_id`, `canonical_chunk_id`) is built into the data model, not retrofitted.
 - **API:** Every content-serving endpoint accepts a `language` parameter. URL structure uses locale prefixes (`/es/search`, `/de/quiet`). Theme slugs stay in English for URL stability; display names are localized.
-- **Search:** The embedding model is multilingual by explicit requirement — Phase 0 embeddings remain valid when Phase 10 adds new languages. The hybrid search function accepts `search_language` and uses language-appropriate PostgreSQL dictionaries. English fallback is implemented at the service layer.
-- **UI:** All strings are externalized to locale files (`messages/*.json`) from Phase 1. CSS logical properties (`margin-inline-start` not `margin-left`) are used throughout, ensuring RTL languages work without refactoring. The `lang` attribute is set on `<html>`.
+- **Search:** The embedding model is multilingual by explicit requirement — Arc 1 embeddings remain valid when Milestone 5b adds new languages. The hybrid search function accepts `search_language` and uses language-appropriate PostgreSQL dictionaries. English fallback is implemented at the service layer.
+- **UI:** All strings are externalized to locale files (`messages/*.json`) from Milestone 2a. CSS logical properties (`margin-inline-start` not `margin-left`) are used throughout, ensuring RTL languages work without refactoring. The `lang` attribute is set on `<html>`.
 - **Content fidelity:** Only official SRF/YSS human translations are served. Machine translation of Yogananda's words is never acceptable (see Sacred Text Fidelity above). If an official translation does not exist, the book is unavailable in that language — the portal is honest about content availability.
 
-Phase 0 launches in English only, but the architecture is locale-ready. Phase 10 activates multilingual content. The gap between "English only" and "multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-075, ADR-076, ADR-077, ADR-078.)
+Arc 1 launches in English only, but the architecture is locale-ready. Milestone 5b activates multilingual content. The gap between "English only" and "multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-075, ADR-076, ADR-077, ADR-078.)
 
 ### Calm Technology Principles
 
@@ -382,7 +382,7 @@ What this means in practice:
 - **Migrations are raw SQL.** dbmate, not an ORM's migration generator. SQL is readable, debuggable, and will outlive any ORM.
 - **Dependencies are commitments.** Every npm package, every API integration, every SaaS tool is a maintenance obligation for 10 years. Choose fewer, more durable dependencies.
 - **Components are tiered by replaceability.** Tier 1 (permanent): PostgreSQL, the service layer, the data model. Tier 2 (stable): Next.js, Vercel, Contentful. Tier 3 (replaceable): specific npm packages, Claude model versions, embedding model versions.
-- **Documentation is a permanent artifact.** Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) are as important as the code. New maintainers in year 7 should understand every decision.
+- **Documentation is a permanent artifact.** Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) are as important as the code. New maintainers in year 7 should understand every decision.
 
 ### Curation as Interpretation: The Fidelity Boundary
 
@@ -420,7 +420,7 @@ The constraints above are architectural and ethical. This section names somethin
 
 **Crisis-adjacent content carries responsibility.** The portal will reach people in acute distress. The grief entry point targets seekers searching "what happens after death" and "spiritual comfort after loss." Some of these seekers may be in active danger. Yogananda's passages about the immortality of the soul and the freedom of death are truthful, but without context could be read in unintended ways. The portal's response is not to withhold the teachings but to quietly, non-intrusively provide crisis resources alongside content that touches on death, suffering, and despair. Not a modal, not a gate — a gentle presence. (ADR-071)
 
-**The portal transmits Indian teachings through Western infrastructure — and holds this honestly.** The portal is designed in English, built on American technology (Vercel, AWS, Neon, Cloudflare), funded by a British philanthropist, and serves the teachings of an Indian master to seekers worldwide. Every individual decision is defensible. The aggregate pattern — who designed it, whose aesthetic it uses, whose languages come first, whose infrastructure it runs on — warrants honest acknowledgment and a design process that includes non-Western voices as co-creators, not only as reviewers of completed designs. Cultural consultation is not a Phase 10 deliverable — it is a posture maintained throughout all phases. YSS representatives, Indian designers, and Global South perspectives should participate in design decisions from Phase 0. (Relates to ADR-006, ADR-077, ADR-079)
+**The portal transmits Indian teachings through Western infrastructure — and holds this honestly.** The portal is designed in English, built on American technology (Vercel, AWS, Neon, Cloudflare), funded by a British philanthropist, and serves the teachings of an Indian master to seekers worldwide. Every individual decision is defensible. The aggregate pattern — who designed it, whose aesthetic it uses, whose languages come first, whose infrastructure it runs on — warrants honest acknowledgment and a design process that includes non-Western voices as co-creators, not only as reviewers of completed designs. Cultural consultation is not a Milestone 5b deliverable — it is a posture maintained throughout all arcs. YSS representatives, Indian designers, and Global South perspectives should participate in design decisions from Arc 1. (Relates to ADR-006, ADR-077, ADR-079)
 
 **The unmeasurable encounter is the highest success.** The metrics section (§ Measuring Success) carefully avoids engagement metrics. But the portal's highest impact will be in encounters that no analytics system can capture: the person who found exactly the right words at 2 AM, the seeker in rural India who read about meditation and sat quietly for the first time, the grieving parent who felt less alone. These encounters are the mission fulfilled. The "What Is Humanity Seeking?" dashboard (ADR-090) is the portal's best answer to the measurement problem — shifting the narrative from "how many users" to "what is the world asking." That reframing is itself a teaching about what matters.
 
@@ -465,11 +465,11 @@ The teaching portal should use these technologies wherever possible, introducing
 
 ## Content Scope
 
-### Phase 0 Focus Book
+### Arc 1 Focus Book
 
 **Autobiography of a Yogi** by Paramahansa Yogananda — the most widely read and accessible of Yogananda's works. Available in multiple editions and translations.
 
-### Broader Corpus (Phase 3+)
+### Broader Corpus (Milestone 3a+)
 
 - The Second Coming of Christ (2 volumes, ~1,600 pages)
 - God Talks With Arjuna: The Bhagavad Gita (2 volumes)
@@ -485,7 +485,7 @@ The teaching portal should use these technologies wherever possible, introducing
 - Self-Realization Magazine archives (Yogananda's articles as searchable teachings, monastic articles as opt-in commentary — ADR-040)
 - Other SRF/YSS publications
 
-### Audio Recordings (Phase 12+)
+### Audio Recordings (Arc 6+)
 
 SRF possesses audio recordings of Paramahansa Yogananda's own voice — lectures, informal talks, guided meditations, and chanting. These are sacred artifacts and content simultaneously. Yogananda's voice recordings are among the most direct expressions of his teachings; no book passage can substitute for hearing the Master speak. The portal will treat these with reverence in presentation and with full indexing for discoverability.
 
@@ -499,11 +499,11 @@ SRF has indicated that additional unreleased materials exist — books, audio, a
 
 ### Future Consideration: SRF Lessons
 
-The SRF Home Study Lessons are the organization's core spiritual curriculum — sequential private instruction in meditation and Kriya Yoga. They are **explicitly out of scope** for the public portal. However, SRF has indicated they might eventually be incorporated for authorized students (those enrolled in the Lessons) and Kriya Yoga initiates (kriyabans). This may never happen, or may be years away. The architecture is designed so it is not structurally impossible (ADR-085), but no Lessons-specific code ships in any current phase.
+The SRF Home Study Lessons are the organization's core spiritual curriculum — sequential private instruction in meditation and Kriya Yoga. They are **explicitly out of scope** for the public portal. However, SRF has indicated they might eventually be incorporated for authorized students (those enrolled in the Lessons) and Kriya Yoga initiates (kriyabans). This may never happen, or may be years away. The architecture is designed so it is not structurally impossible (ADR-085), but no Lessons-specific code ships in any current arc.
 
-### Phase 0 Content Sources
+### Arc 1 Content Sources
 
-For Phase 0 development, PDFs are available at https://spiritmaji.com/. These are unofficial scans and would be replaced with authoritative SRF-provided digital text for production.
+For Arc 1 development, PDFs are available at https://spiritmaji.com/. These are unofficial scans and would be replaced with authoritative SRF-provided digital text for production.
 
 ---
 

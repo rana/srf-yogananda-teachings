@@ -1,14 +1,16 @@
-# SRF Online Teachings Portal — Phase 5+ Design (Connect through Community)
+# SRF Online Teachings Portal — Arc 4+ Design (Service through Community)
 
-> **Scope.** This file contains the technical design sections relevant to **Phase 5 and beyond** — cultural adaptation, email delivery, content management, magazine, dashboard, study circles, and image serving. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Phase 0, see [DESIGN-phase0.md](DESIGN-phase0.md). For Phases 1–4, see [DESIGN-phase1-4.md](DESIGN-phase1-4.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 4: Service** through **Arc 7: Community** — cultural adaptation, email delivery, content management, magazine, dashboard, study circles, and image serving. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Scope by milestone.** This file covers Milestone 3c, Milestone 3d, Arc 4, Milestone 5a, Milestone 5b, Arc 6, and Milestone 7b.
+>
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
 ## DES-018: Cultural Design Considerations
 
-Each supported locale carries cultural, typographic, and platform expectations that go beyond translation. This section documents what we know, what we need to validate, and what adaptations each culture may require. It is a living reference — updated as Phase 10 implementation progresses and native-speaker reviewers provide input.
+Each supported locale carries cultural, typographic, and platform expectations that go beyond translation. This section documents what we know, what we need to validate, and what adaptations each culture may require. It is a living reference — updated as Milestone 5b implementation progresses and native-speaker reviewers provide input.
 
 ### English (en) — Default
 
@@ -21,7 +23,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 
 - **Primary platforms:** WhatsApp (dominant in Latin America), Google, YouTube, Instagram
 - **Script:** Latin. Standard design tokens work. Spanish diacritics (á, é, ñ) render correctly in Merriweather.
-- **Cultural notes:** Latin American spiritual culture favors warmth, emotional directness, and relational language. "Seeking..." entry points need cultural *adaptation*, not mechanical translation — e.g., "The heart to forgive" might become "Sanar el corazón" (healing the heart) or "Aprender a soltar" (learning to let go). WhatsApp integration (Phase 8, ADR-026) is high-priority for this audience.
+- **Cultural notes:** Latin American spiritual culture favors warmth, emotional directness, and relational language. "Seeking..." entry points need cultural *adaptation*, not mechanical translation — e.g., "The heart to forgive" might become "Sanar el corazón" (healing the heart) or "Aprender a soltar" (learning to let go). WhatsApp integration (Milestone 5a, ADR-026) is high-priority for this audience.
 - **Organizational:** SRF (not YSS) serves Latin America directly. Verify whether Latin American SRF centers have their own event calendars for the Events signpost.
 - **Open question:** Does SRF have digital text of Spanish translations?
 
@@ -103,7 +105,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 2. **Platform-aware distribution.** WhatsApp for Latin America, India, Africa. LINE for Japan. WeChat for China. KakaoTalk for Korea. The portal's messaging strategy must be locale-aware.
 3. **Script-aware typography.** Font size, line height, drop capitals, and line width all vary by script family. Design tokens should be locale-overridable.
 4. **Branding-aware identity.** SRF branding for Western locales. YSS branding for Indian locales. The portal's visual identity adapts to the organization the seeker knows.
-5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa, Thailand), the TTS "Listen" button (Phase 11) is a critical accessibility feature. For Hindi, Bengali, and Thai locales specifically, audio-first entry points should be prioritized earlier than the general TTS schedule. Yogananda's own voice recordings are the most direct form of the teachings. Consider an audio-first pilot alongside the Hindi/Bengali/Thai text launch (Phase 10) rather than deferring all audio to Phase 12. Yogananda's tradition includes kirtan (singing/chanting) and oral storytelling — inherently oral modes that the portal's text-first approach underserves.
+5. **The portal assumes literacy.** In countries with significant functional illiteracy (India, Brazil, Sub-Saharan Africa, Thailand), the TTS "Listen" button is a critical accessibility feature (capability distributed across arcs). For Hindi, Bengali, and Thai locales specifically, audio-first entry points should be prioritized earlier than the general TTS schedule. Yogananda's own voice recordings are the most direct form of the teachings. Consider an audio-first pilot alongside the Hindi/Bengali/Thai text launch (Milestone 5b) rather than deferring all audio to Arc 6. Yogananda's tradition includes kirtan (singing/chanting) and oral storytelling — inherently oral modes that the portal's text-first approach underserves.
 6. **What feels sacred is culturally specific.** The emotional register of the portal — what feels contemplative, welcoming, sacred — is not universal. The warm cream + Merriweather + bibliomantic aesthetic resonates with Western spiritual bookstore sensibility. Hindi spiritual print traditions carry more ornate visual warmth (deeper gold, ornamental dividers, generous Devanāgarī calligraphy). Bengali devotional culture values poetic beauty and literary refinement (Tagore's influence). Japanese *ma* (negative space) philosophy could genuinely inform the Quiet Corner differently. Bhakti traditions express devotion through fervent intensity, not only through stillness. Per-locale adaptation addresses emotional resonance, not just typography and platform preferences. Each locale's visual and editorial adaptation is a *translation of emotional register*, not just a typographic adjustment.
 7. **Unsupported language arrival is a design surface, not an error state.** A seeker arriving from Korea, Russia, or an Arabic-speaking country will encounter a portal that doesn't yet speak their language. This moment must be designed, not defaulted. The response: (a) detect the browser's `Accept-Language` header; (b) if the language is an evaluation candidate, display a brief, warm message in that language: "We are working to bring Yogananda's teachings to [language]. For now, the portal is available in [list of current languages]." This message is a static string in `messages/{locale}.json`, not a dynamic translation. (c) If the language is not on any roadmap, display the English welcome with no false promise. (d) Never auto-redirect — let the seeker choose. (e) The `[EN]` fallback marker (CLAUDE.md constraint #12) is always visible when English content is shown to a non-English browser locale. This principle extends to in-portal moments: when a seeker navigates to a book page that isn't yet available in their language, the page shows the English version with a clear `[EN]` marker and, if the translation is in progress, a note: "This book is being prepared in [language]." Honest about scope, not apologetic about it.
 
@@ -115,11 +117,11 @@ Each supported locale carries cultural, typographic, and platform expectations t
 
 A daily email delivering a single Yogananda passage — verbatim, with citation and a link to read in context. The email is the portal reaching out to meet the seeker, rather than waiting for the seeker to visit.
 
-### Phase 8: Non-Personalized Daily Email
+### Milestone 5a: Non-Personalized Daily Email
 
 All subscribers receive the same passage each day. The passage is selected from the `daily_passages` pool with optional seasonal weighting.
 
-### Phase 13: Theme-Preference Email
+### Milestone 7a: Theme-Preference Email
 
 Logged-in subscribers choose preferred themes (Peace, Courage, etc.). The daily email selects from theme-tagged passages matching their preferences.
 
@@ -137,7 +139,7 @@ CREATE TABLE email_subscribers (
  is_active BOOLEAN NOT NULL DEFAULT true, -- can unsubscribe
  confirm_token TEXT, -- for double opt-in confirmation
  unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
- theme_preferences TEXT[], -- Phase 13: ['peace', 'courage']
+ theme_preferences TEXT[], -- Milestone 7a: ['peace', 'courage']
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  confirmed_at TIMESTAMPTZ,
  unsubscribed_at TIMESTAMPTZ
@@ -181,7 +183,7 @@ CREATE INDEX idx_subscribers_active ON email_subscribers(is_active, is_confirmed
 
 **Design constraints:**
 - Plain HTML email (no JavaScript, no web fonts — fallback to Georgia/serif)
-- **Non-Latin script support (Phase 10):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Thai, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
+- **Non-Latin script support (Milestone 5b):** HTML email font rendering is unreliable across clients (Gmail, Apple Mail, Outlook). Non-Latin scripts (CJK, Thai, Devanagari, Bengali) must use system font stacks, not web fonts. Define per-locale email font stacks and test across the top 5 email clients per target market. Passage text must render correctly in the subscriber's language without depending on downloadable fonts.
 - Warm cream background (`#FAF8F5`), navy text (`#1A2744`)
 - Single passage, single CTA ("Read in context"), no other links except footer
 - Unsubscribe link uses `unsubscribe_token` — one-click, no login required
@@ -209,7 +211,7 @@ GET /api/v1/email/unsubscribe?token=xxx
 
 | Component | Service | Notes |
 |-----------|---------|-------|
-| Email delivery | Resend (free tier: 100 emails/day) or AWS SES (~$0.10 per 1,000) | Resend for early Phase 8; SES for scale |
+| Email delivery | Resend (free tier: 100 emails/day) or AWS SES (~$0.10 per 1,000) | Resend for early Milestone 5a; SES for scale |
 | Cron trigger | Vercel Cron Jobs (free tier: 1/day) or AWS EventBridge | Daily at 5:00 AM UTC |
 | Template | Server-rendered HTML string (no template engine needed) | Keep simple — one passage, one link |
 | Daily passage selection | Same logic as `/api/v1/daily-passage` but with a fixed daily seed | All subscribers receive the same passage on the same day |
@@ -255,22 +257,22 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 
 ### Content Flow by Type
 
-| Content Type | Phase 0 | Phases 1–3 | Phase 4+ (Editorial Portal) | Why |
+| Content Type | Arc 1 | Milestones 2a–3a | Milestone 3b+ (Editorial Portal) | Why |
 |---|---|---|---|---|
-| **Book text, chapters** | PDF → Contentful (import) → batch sync → Neon | Contentful → webhook sync → Neon | Same + Contentful Custom Apps sidebar | Editorial source of truth from Phase 0 (ADR-010). Webhook sync replaces batch in Phase 0b. |
+| **Book text, chapters** | PDF → Contentful (import) → batch sync → Neon | Contentful → webhook sync → Neon | Same + Contentful Custom Apps sidebar | Editorial source of truth from Arc 1 (ADR-010). Webhook sync replaces batch in Milestone 1b. |
 | **Theme tag review** | — | — | Admin portal review queue (bridged via Contentful sidebar) | AI proposes, humans approve — needs focused review UI |
 | **Daily passage curation** | Script-populated in Neon | Same | Admin portal curation view + Contentful entries | Content editors curate via the tool that best fits the task |
 | **Calendar events** | — | — | Contentful entries + admin portal for passage associations | Event definitions in Contentful; passage associations in admin portal |
 | **Social media assets** | — | — | Admin portal asset review | Visual review + caption editing + per-platform download |
-| **Translation review** | — | — | Admin portal side-by-side review (Phase 10) | Non-technical reviewers (possibly volunteers) need a focused UI, not Git |
+| **Translation review** | — | — | Admin portal side-by-side review (Milestone 5b) | Non-technical reviewers (possibly volunteers) need a focused UI, not Git |
 | **Sacred Places** | — | Static MDX or hardcoded | Contentful entries → sync → Neon | Editorial content with images |
 | **Search analytics** | — | Retool dashboard | Retool dashboard | Data-heavy, technical audience |
 | **Pipeline monitoring** | — | Retool dashboard | Retool dashboard | Technical operations |
-| **Impact reporting** | — | — | Admin portal `/admin/impact` (Phase 10+) | Beautiful, narrative, read-only — for leadership |
+| **Impact reporting** | — | — | Admin portal `/admin/impact` (Milestone 5b+) | Beautiful, narrative, read-only — for leadership |
 
 ### Contentful → Neon Sync
 
-The sync service is the primary coupling point between Contentful and Neon. Phase 0a uses a batch sync script; Phase 0b+ uses webhook-driven sync on Vercel. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
+The sync service is the primary coupling point between Contentful and Neon. Milestone 1a uses a batch sync script; Milestone 1b+ uses webhook-driven sync on Vercel. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
 
 ```
 Contentful (editorial) ──webhook──→ Serverless function ──→ Neon (search index)
@@ -386,9 +388,9 @@ Images are stored in S3 and served via CloudFront. At ingestion, the Lambda pipe
 **Download endpoint:** `GET /api/v1/images/{slug}/download?size=medium&format=webp` — returns 302 redirect to CloudFront URL with `Content-Disposition: attachment`.
 
 **Watermarking per tier (ADR-063):**
-- All tiers: EXIF/XMP metadata (Phase 1)
-- `medium`, `large`, `original`: C2PA Content Credentials (Phase 12)
-- `original` of sacred images: steganographic watermark (Phase 12)
+- All tiers: EXIF/XMP metadata (Milestone 2a)
+- `medium`, `large`, `original`: C2PA Content Credentials (Arc 6)
+- `original` of sacred images: steganographic watermark (Arc 6)
 
 **Service file:** `/lib/services/images.ts` — image queries, size resolution, download URL generation.
 

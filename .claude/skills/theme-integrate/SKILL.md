@@ -13,7 +13,7 @@ Read CONTEXT.md and the following DESIGN.md sections to ground in current theme 
 - DES-048 in DESIGN.md (Worldview Pathways)
 - DES-054 in DESIGN.md (Knowledge Graph Ontology)
 
-Also read `/lib/data/spiritual-terms.json` if it exists yet (may not in pre-code phase).
+Also read `/lib/data/spiritual-terms.json` if it exists yet (may not in pre-code stage).
 
 ## Theme Integration
 
@@ -28,7 +28,7 @@ Identify from the input:
 - **Yogananda vocabulary:** Terms Yogananda used for this topic
 - **Modern vocabulary:** Terms seekers might use that don't appear in the corpus
 - **Crisis adjacency:** Whether this theme touches grief, death, despair, or self-harm (triggers ADR-122 integration)
-- **Phase relevance:** Which books contain the richest material for this theme
+- **Source relevance:** Which books contain the richest material for this theme
 
 ### Step 2: Check Existing Taxonomy
 
@@ -126,7 +126,7 @@ On approval, write changes to the appropriate locations:
 
 1. **DECISIONS.md** — Amend ADR-032 taxonomy list, ADR-051 bridge entries, ADR-115 enrichment fields, ADR-122 patterns (if applicable)
 2. **DESIGN.md** — Amend DES-048 worldview pathways, DES-054 graph edges, DES-028 calendar associations (if applicable)
-3. **ROADMAP.md** — Add theme to the appropriate phase deliverables (usually Phase 1 for taxonomy, Phase 4 for graph edges)
+3. **ROADMAP.md** — Add theme to the appropriate arc/milestone deliverables (usually Milestone 2a for taxonomy, Milestone 3b for graph edges)
 4. **CONTEXT.md** — Add any unresolved editorial/stakeholder questions from the theme proposal as open questions
 
 Add revision notes to each amended section: `*Theme added: [theme-name], [date]*`
@@ -137,7 +137,7 @@ After execution, report:
 - Artifacts written (count and location)
 - Cross-references wired
 - Open questions added to CONTEXT.md
-- Deferred items (artifacts that depend on future phases)
+- Deferred items (artifacts that depend on future arcs)
 
 ---
 

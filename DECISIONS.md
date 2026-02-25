@@ -1,20 +1,20 @@
 # SRF Online Teachings Portal — Architecture Decision Records
 
-Each record captures architectural reasoning with full context — not just the direction chosen but *why*, and what alternatives were considered. In a pre-code project, "Accepted" means accepted as architectural direction. Implementation validates or revises. Foundational ADRs (Principles group) are immutable without full deliberation. Provisional ADRs (distant-phase groups) represent thorough thinking about future direction, not binding commitments. See ADR-098 for the maturity classification.
+Each record captures architectural reasoning with full context — not just the direction chosen but *why*, and what alternatives were considered. In a pre-code project, "Accepted" means accepted as architectural direction. Implementation validates or revises. Foundational ADRs (Principles group) are immutable without full deliberation. Provisional ADRs (distant-arc groups) represent thorough thinking about future direction, not binding commitments. See ADR-098 for the maturity classification.
 
-**ADR maturity:** Foundational (project identity, change requires deliberation) · Active (governing current/imminent implementation) · Provisional (thorough direction for future phases, may be revised or suspended) · Suspended (moved to PROPOSALS.md, reasoning preserved here) · Implemented (validated through code).
+**ADR maturity:** Foundational (project identity, change requires deliberation) · Active (governing current/imminent implementation) · Provisional (thorough direction for future arcs, may be revised or suspended) · Suspended (moved to PROPOSALS.md, reasoning preserved here) · Implemented (validated through code).
 
-**Phase navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Phases 0–6 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
+**Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
 ### Index by Concern
 
 **Foundational Constraints**
 
-Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Accessibility is a Phase 1 requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
 
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
-- ADR-003: Accessibility as Phase 1 Foundation
+- ADR-003: Accessibility Foundation
 - ADR-004: Architecture Longevity — 10-Year Design Horizon
 - ADR-005: Claude AI Usage Policy — Permitted Roles, Prohibited Uses, and Expansion Roadmap
 - ADR-006: Global Equity — Serving Earth's Underserved Seekers
@@ -32,8 +32,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-012: Progressive Web App as Mobile Intermediate Step
 - ADR-013: Single-Database Architecture — No DynamoDB
 - ADR-014: AWS Bedrock Claude with Model Tiering
-- ADR-015: Phase 0 Uses Vercel, Not AWS Lambda/DynamoDB
-- ADR-016: Infrastructure as Code from Phase 1 (Terraform)
+- ADR-016: Infrastructure as Code (Terraform)
 - ADR-017: Terraform-Native Lambda
 - ADR-018: CI-Agnostic Deployment Scripts
 - ADR-019: Database Backup to S3
@@ -45,15 +44,14 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-025: PDF Generation Strategy — Resource-Anchored Exports
 - ADR-026: Low-Tech and Messaging Channel Strategy
 - ADR-027: Language API Design — Locale Prefix on Pages, Query Parameter on API
-- ADR-028: Remove book_store_links Table — Simplify Bookstore Links
 - ADR-117: Postgres-Native Graph Intelligence Layer
 - ADR-120: Redis Suggestion Cache Architecture
 
 **Content & Data Model**
 
-Specifies what content the portal holds and how it is structured in the database. Autobiography of a Yogi is the Phase 0 focus book; ingestion priority follows life-impact over scholarly significance; the data model is edition-aware with teaching topics taxonomy, exploration themes, a living glossary, a people library (including monastic lineage), and a canonical entity registry with Sanskrit normalization. Content integrity verification, sacred image guidelines, and a structured spiritual ontology ensure fidelity and machine-readability.
+Specifies what content the portal holds and how it is structured in the database. Autobiography of a Yogi is the Arc 1 focus book; ingestion priority follows life-impact over scholarly significance; the data model is edition-aware with teaching topics taxonomy, exploration themes, a living glossary, a people library (including monastic lineage), and a canonical entity registry with Sanskrit normalization. Content integrity verification, sacred image guidelines, and a structured spiritual ontology ensure fidelity and machine-readability.
 
-- ADR-029: Autobiography of a Yogi as Phase 0 Focus
+- ADR-029: Autobiography of a Yogi as Focus Book
 - ADR-030: Book Ingestion Priority — Life-Impact Over Scholarly Significance
 - ADR-031: Teaching Topics — Curated Thematic Entry Points
 - ADR-032: Teaching Topics Multi-Category Taxonomy and Semi-Automated Tagging Pipeline
@@ -65,7 +63,7 @@ Specifies what content the portal holds and how it is structured in the database
 - ADR-038: Living Glossary — Spiritual Terminology as User-Facing Feature
 - ADR-039: Content Integrity Verification
 - ADR-040: Magazine Integration — Self-Realization Magazine as First-Class Content
-- ADR-041: Phase 0 Bootstrap Ceremony
+- ADR-041: Arc 1 Bootstrap
 - ADR-042: Sacred Image Usage Guidelines
 - ADR-043: Structured Spiritual Ontology — Machine-Readable Teaching Structure
 - ADR-116: Canonical Entity Registry and Sanskrit Normalization
@@ -75,7 +73,6 @@ Specifies what content the portal holds and how it is structured in the database
 Governs how seekers find passages and how AI assists retrieval. Search uses hybrid vector + BM25 retrieval fused via Reciprocal Rank Fusion, with Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text, and an advanced pipeline adding HyDE query expansion and Cohere Rerank 3.5. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The terminology bridge maps modern phrasing to Yogananda's vocabulary across books.
 
 - ADR-044: Hybrid Search (Vector + Full-Text)
-- ADR-045: Claude API for AI Features
 - ADR-046: Embedding Model Versioning and Migration (updated by ADR-118)
 - ADR-047: Multilingual Embedding Quality Strategy (updated by ADR-118)
 - ADR-048: Chunking Strategy Specification
@@ -124,10 +121,10 @@ Shapes how the portal feels and behaves for readers. The design system derives f
 
 **Internationalization**
 
-Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Phase 1 for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Phase 10 peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Milestone 5b peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
 
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
-- ADR-076: CSS Logical Properties from Phase 1
+- ADR-076: CSS Logical Properties
 - ADR-077: Core Language Set
 - ADR-078: AI-Assisted Translation Workflow
 - ADR-079: YSS Organizational Branding and Locale Strategy
@@ -174,16 +171,14 @@ Specifies how the portal is built, tested, and monitored. Engineering standards 
 
 **Governance**
 
-Controls how the project governs its own decisions, documents, and evolution. The thirteen-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 phase files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with phase-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Phase sizing was evaluated and restructured from 18 to 15 capability-themed phases, with Phase 0 split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+Controls how the project governs its own decisions, documents, and evolution. The thirteen-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with arc-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Thirteen-Document System with Phase-Gated Loading
+- ADR-098: Documentation Architecture — Thirteen-Document System with Arc-Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as Primary Framework
-- ADR-102: Phase Sizing Evaluation — Greenfield Analysis of the 18-Phase Roadmap
-- ADR-103: Roadmap Restructured to 15 Capability-Themed Phases
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
 - ADR-112: Content Versioning Strategy — Editions, Translations, and Archive Policy
-- ADR-113: Phase 0 Split — Prove Before Foundation
+- ADR-113: Prove Before Foundation (Arc 1 Milestone Split)
 - ADR-123: Principle vs. Parameter — Decision Classification and Governance Flexibility
 
 ---
@@ -192,9 +187,9 @@ Controls how the project governs its own decisions, documents, and evolution. Th
 
 ADR bodies are split across three files by concern group, mirroring the DESIGN file structure:
 
-| File | Groups | ADRs | Phase Relevance |
-|------|--------|------|-----------------|
-| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–053, 114–121 | Phase 0+ (implementation-critical) |
-| [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Phase 1+ (experience design) |
-| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–103, 105–113, 123 | Phase 4+ (operations and governance) |
+| File | Groups | ADRs | Arc Relevance |
+|------|--------|------|---------------|
+| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–053, 114–121 | Arc 1+ (implementation-critical) |
+| [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
+| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

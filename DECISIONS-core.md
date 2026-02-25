@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Architecture Decision Records (Core)
 
-> **Scope.** This file contains ADRs from the **Foundational Constraints**, **Architecture & Platform**, **Content & Data Model**, and **Search & AI** groups. These govern Phases 0–6 and require close attention during implementation. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
+> **Scope.** This file contains ADRs from the **Foundational Constraints**, **Architecture & Platform**, **Content & Data Model**, and **Search & AI** groups. These govern Arcs 1–3 and require close attention during implementation. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
 > **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
 
@@ -66,12 +66,12 @@ Classify personalization features into three tiers:
 
 **Build (genuinely helpful):**
 
-| Feature | Rationale | Phase |
-|---------|-----------|-------|
-| Language preference | Fundamental accessibility. Stored in cookie or account. | 11 |
-| Font size / reading preferences | Accessibility. Local storage, no account needed. | 4 |
-| Bookmarks ("My Passages") | Lets seekers curate a personal anthology of passages that moved them. | 4 (localStorage), 15 (server sync) |
-| Reading position | Saves your place in a book. Basic reader functionality. | 15 |
+| Feature | Rationale | Milestone |
+|---------|-----------|-----------|
+| Language preference | Fundamental accessibility. Stored in cookie or account. | 5b |
+| Font size / reading preferences | Accessibility. Local storage, no account needed. | 3b |
+| Bookmarks ("My Passages") | Lets seekers curate a personal anthology of passages that moved them. | 3b (localStorage), 7a (server sync) |
+| Reading position | Saves your place in a book. Basic reader functionality. | 7a |
 
 **Build with caution:**
 
@@ -101,35 +101,35 @@ Classify personalization features into three tiers:
 
 ### Consequences
 
-- Phase 13 (Optional User Accounts) remains the appropriate phase for bookmark/reading-position features
-- The "personalized daily passage" in Phase 13 must use explicit theme preference, not behavioral inference
-- The portal's anonymous experience (Phases 0–12) must be excellent without any personalization — personalization enhances but never gates the core experience
+- Milestone 7a (Optional User Accounts) remains the appropriate milestone for bookmark/reading-position features
+- The "personalized daily passage" in Milestone 7a must use explicit theme preference, not behavioral inference
+- The portal's anonymous experience (Arcs 1–5) must be excellent without any personalization — personalization enhances but never gates the core experience
 
 ---
 
 ---
 
-## ADR-003: Accessibility as Phase 1 Foundation
+## ADR-003: Accessibility Foundation
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
 
 ### Context
 
-The original roadmap placed accessibility in Phase 11 ("Calm Technology Polish & Accessibility"). This is too late. Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free if the right structural choices are made at the start.
+The original roadmap placed accessibility late in the schedule ("Calm Technology Polish & Accessibility"). This is too late. Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free if the right structural choices are made at the start.
 
 SRF's audience includes elderly devotees, seekers in developing countries on low-end devices, and visually impaired users. The Gemini research document specifically notes visually impaired devotees who described the SRF app's screen reader support as "transformative." Accessibility is not a feature — it is a theological imperative per SRF's mission to serve "all of humanity" and the DELTA framework's Dignity principle.
 
 | Approach | Cost | Risk |
 |----------|------|------|
-| **Phase 1 (build in)** | Low — semantic HTML, ARIA, keyboard nav are free if done from the start | None — this is best practice |
-| **Phase 11 (retrofit)** | High — requires auditing and rewriting markup, fixing tab order, adding ARIA after the fact | Significant — inaccessible patterns get baked into components and propagated |
+| **Milestone 2a (build in)** | Low — semantic HTML, ARIA, keyboard nav are free if done from the start | None — this is best practice |
+| **Late retrofit** | High — requires auditing and rewriting markup, fixing tab order, adding ARIA after the fact | Significant — inaccessible patterns get baked into components and propagated |
 
 ### Decision
 
-Move **core accessibility** from Phase 11 to **Phase 1**. Phase 11 becomes the audit and polish phase (professional WCAG audit, native TTS, advanced reading mode), not the "add accessibility" phase.
+Make **core accessibility** a **Milestone 2a** requirement from the start. Later arcs add the audit and polish milestone (professional WCAG audit, native TTS, advanced reading mode), not the "add accessibility" milestone.
 
-**Phase 1 accessibility requirements:**
+**Milestone 2a accessibility requirements:**
 
 | Category | Requirements |
 |----------|-------------|
@@ -141,7 +141,7 @@ Move **core accessibility** from Phase 11 to **Phase 1**. Phase 11 becomes the a
 | **Performance** | < 100KB initial load. Lazy-loaded images. `font-display: swap`. Progressive enhancement. |
 | **Reading** | Basic reading mode: font size adjustment, line spacing control, dark mode toggle for evening reading. |
 
-**Phase 11 (reframed as "Accessibility Audit & Polish"):**
+**Later arcs (Accessibility Audit & Polish):**
 - Professional WCAG 2.1 AA audit (automated + manual + real assistive technology users)
 - Native TTS "Listen" button in the reader (Web Speech API)
 - Advanced reading mode (sepia, custom fonts, reading ruler)
@@ -169,10 +169,10 @@ The existing design tokens have contrast failures that must be corrected before 
 
 ### Consequences
 
-- Every component built in Phases 0–1 must pass basic accessibility checks (Lighthouse, axe DevTools)
+- Every component built in Arc 1 and Milestone 2a must pass basic accessibility checks (Lighthouse, axe DevTools)
 - The design token `--portal-text-muted` must be corrected to `#595959` before implementation begins
 - `--srf-gold` must never be used as text on light backgrounds
-- Phase 11 scope shrinks (audit and polish, not build-from-scratch) but gains TTS and professional audit
+- Later accessibility arcs handle audit and polish (not build-from-scratch), plus TTS and professional audit
 
 ---
 
@@ -266,7 +266,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 - All architectural decisions are evaluated against a 10-year horizon, not just immediate needs
 - The shared service layer convention (ADR-011) is treated as the project's most important structural rule
 - Component replacement is expected and planned for — it's maintenance, not failure
-- The search quality test suite (deliverable 0a.8) serves as the acceptance gate for any AI model migration
+- The search quality test suite (deliverable 1a.9) serves as the acceptance gate for any AI model migration
 - Future developers can replace any Tier 3 component without touching Tier 1 or Tier 2 components
 - `pg_dump` export capability is documented as a deliberate architectural feature
 
@@ -280,7 +280,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 
 ### Context
 
-Claude API is used throughout the portal in carefully constrained roles. The governing metaphor — "the AI is a librarian, not an oracle" (ADR-001) — is well-established, but the specific permitted uses, hard prohibitions, and future expansion opportunities were scattered across ADR-001, ADR-045, ADR-092, ADR-078, and ADR-032 with no single authoritative reference. This created two risks:
+Claude API is used throughout the portal in carefully constrained roles. The governing metaphor — "the AI is a librarian, not an oracle" (ADR-001) — is well-established, but the specific permitted uses, hard prohibitions, and future expansion opportunities were scattered across ADR-001, ADR-014, ADR-092, ADR-078, and ADR-032 with no single authoritative reference. This created two risks:
 
 1. **Scope creep:** An engineer might add a chatbot or synthesis feature because "Claude can do it" without understanding the theological constraints.
 2. **Scope fear:** An engineer might avoid a valuable Claude use case because the boundaries weren't clear.
@@ -301,7 +301,7 @@ Every permitted use falls into one of three categories:
 
 ### Hard Prohibitions (Theological, Non-Negotiable)
 
-These prohibitions are absolute and permanent. No phase, feature, or stakeholder request overrides them.
+These prohibitions are absolute and permanent. No milestone, feature, or stakeholder request overrides them.
 
 Claude **never**:
 
@@ -315,20 +315,20 @@ Claude **never**:
 
 ### Currently Permitted Uses
 
-| # | Use Case | Phase | Category | ADR | Description |
-|---|----------|-------|----------|-----|-------------|
-| C1 | Query expansion | 1 | Finding | ADR-045 | Expands conceptual queries into semantic search terms. Returns JSON array of terms only. Optional — bypassed for simple keyword queries. |
-| C2 | Passage ranking | 1 | Finding | ADR-045 | Given user's question + 20 candidate passages, selects and ranks the 5 most relevant. Returns JSON array of passage IDs only. |
-| C3 | Highlight boundaries | 1 | Finding | ADR-045 | Identifies which sentences within a chunk best answer the query. Returns character offsets. |
-| C4 | Theme classification | 4 | Classifying | ADR-032 | Classifies ambiguous passages into teaching topics. Optional — supplements embedding similarity for borderline cases. Mandatory human review before tags are served. |
-| C5 | UI translation drafting | 9 | Drafting | ADR-078 | Translates UI chrome and portal-authored content (NOT Yogananda's text). Draft files undergo mandatory human review by fluent, SRF-aware reviewers. |
-| C6 | Social caption drafting | 7 | Drafting | ADR-092 | Generates suggested captions for daily quote images. Human reviews and posts — never auto-post. |
+| # | Use Case | Milestone | Category | ADR | Description |
+|---|----------|-----------|----------|-----|-------------|
+| C1 | Query expansion | 1a | Finding | ADR-014 | Expands conceptual queries into semantic search terms. Returns JSON array of terms only. Optional — bypassed for simple keyword queries. |
+| C2 | Passage ranking | 1a | Finding | ADR-014 | Given user's question + 20 candidate passages, selects and ranks the 5 most relevant. Returns JSON array of passage IDs only. |
+| C3 | Highlight boundaries | 1a | Finding | ADR-014 | Identifies which sentences within a chunk best answer the query. Returns character offsets. |
+| C4 | Theme classification | 3b | Classifying | ADR-032 | Classifies ambiguous passages into teaching topics. Optional — supplements embedding similarity for borderline cases. Mandatory human review before tags are served. |
+| C5 | UI translation drafting | 5b | Drafting | ADR-078 | Translates UI chrome and portal-authored content (NOT Yogananda's text). Draft files undergo mandatory human review by fluent, SRF-aware reviewers. |
+| C6 | Social caption drafting | Arc 4 | Drafting | ADR-092 | Generates suggested captions for daily quote images. Human reviews and posts — never auto-post. |
 
 ### Approved Expansion: High-Value Claude Uses
 
 The following use cases have been evaluated against the librarian model and approved for inclusion in the roadmap. Each stays within the Finding/Classifying/Drafting categories and respects all prohibitions.
 
-#### E1: Search Intent Classification (Phase 0)
+#### E1: Search Intent Classification (Arc 1)
 
 **Category:** Classifying | **Cost:** ~$0.002/query | **Human review:** No (search infrastructure)
 
@@ -348,7 +348,7 @@ Classify the seeker's query intent before search executes, routing to the optima
 
 **Why this matters:** The difference between a good search engine and a world-class one is understanding *what kind of answer the person needs*. A seeker typing "I'm scared" at 2 AM needs a different experience than one typing "fear Yogananda quotes."
 
-#### E2: Spiritual Terminology Bridge (Phase 0)
+#### E2: Spiritual Terminology Bridge (Arc 1)
 
 **Category:** Finding | **Cost:** Included in query expansion | **Human review:** No
 
@@ -369,7 +369,7 @@ Enhance query expansion with tradition-aware vocabulary mapping. Seekers arrive 
 
 **Why this matters:** The portal serves Earth's population. Most seekers worldwide have never read Yogananda. They arrive with the vocabulary of their own tradition, their therapist, or their Google search. If the portal can only find passages using Yogananda's exact terminology, it fails the people who need it most.
 
-#### E3: Passage Accessibility Rating (Phase 2)
+#### E3: Passage Accessibility Rating (Milestone 2b)
 
 **Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions — starts at Full Review, graduates to Spot-Check per governed criteria)
 
@@ -388,11 +388,11 @@ Rate each passage during ingestion on a newcomer-friendliness scale:
 
 **Why this matters:** This serves newcomers without tracking user behavior (DELTA-compliant). A first-time visitor encountering a passage about sabikalpa samadhi may feel the portal isn't for them. A passage about courage speaks to everyone. The portal should welcome before it deepens.
 
-#### E4: Ingestion QA Assistant (Phase 0)
+#### E4: Ingestion QA Assistant (Arc 1)
 
 **Category:** Classifying | **Cost:** ~$0.05/book (one-time) | **Human review:** Yes — every flag reviewed
 
-During the human QA step (Deliverable 0a.4), Claude pre-screens ingested text and flags:
+During the human QA step (Deliverable 1a.5), Claude pre-screens ingested text and flags:
 
 - Probable OCR errors ("Ood" → likely "God," "mediiation" → "meditation")
 - Inconsistent formatting (straight quotes mixed with smart quotes, inconsistent dashes)
@@ -404,11 +404,11 @@ During the human QA step (Deliverable 0a.4), Claude pre-screens ingested text an
 
 **Why this matters:** The entire portal rests on text quality. OCR errors in spiritual terminology (e.g., "Kriya" misread as "Krlya") silently degrade search retrieval. Catching these before publication protects the foundation everything else is built on.
 
-#### E5: Search Quality Evaluation Judge (Phase 0)
+#### E5: Search Quality Evaluation Judge (Arc 1)
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverable 0a.8) by using Claude as the evaluator:
+Automate the search quality evaluation (Deliverable 1a.9) by using Claude as the evaluator:
 
 - Given a benchmark query and the search results, does the expected passage appear in the top 5?
 - Is the ranking reasonable? (A passage directly addressing the query should rank above a tangentially related one.)
@@ -416,9 +416,9 @@ Automate the search quality evaluation (Deliverable 0a.8) by using Claude as the
 
 **Implementation:** CI job that runs the 30 benchmark queries against the search API, passes results to Claude for evaluation, and reports a quality score. Threshold: ≥ 80% of queries return at least one relevant passage in the top 3. Runs on every PR that touches the search pipeline, embedding model, or chunking strategy.
 
-**Why this matters:** Manual evaluation of 30 queries is feasible at launch but doesn't scale. As the corpus grows (Phase 3–6) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade.
+**Why this matters:** Manual evaluation of 30 queries is feasible at launch but doesn't scale. As the corpus grows (Milestone 3a through Arc 3) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade.
 
-#### E6: Cross-Book Conceptual Threading (Phase 5)
+#### E6: Cross-Book Conceptual Threading (Milestone 3c)
 
 **Category:** Classifying | **Cost:** ~$0.50/book pair (one-time) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions)
 
@@ -431,11 +431,11 @@ Enhance `chunk_relations` (ADR-050) with conceptual understanding. Vector simila
 | `personal_story` | A teaching principle + an autobiographical illustration of it | "Yogananda shares a personal experience of this in..." |
 | `practical_application` | A philosophical passage + a concrete technique or affirmation | "For a practical approach to this teaching, see..." |
 
-**Implementation:** During chunk relation computation (Phase 5, Deliverable 5.1), for the top 10 most similar cross-book passages per chunk, Claude classifies the relation type. Stored as a `relation_type` column on `chunk_relations`. Used to diversify the "Continue the Thread" suggestions and add context labels in the side panel.
+**Implementation:** During chunk relation computation (Milestone 3c, Deliverable 5.1), for the top 10 most similar cross-book passages per chunk, Claude classifies the relation type. Stored as a `relation_type` column on `chunk_relations`. Used to diversify the "Continue the Thread" suggestions and add context labels in the side panel.
 
 **Why this matters:** This is what a human librarian does that a search engine cannot. "If you liked this passage about courage, here's where he tells the story of his own test of courage" — that's a world-class reading experience. No physical book, no PDF, no ebook can do this.
 
-#### E7: Photograph Alt Text (Phase 1)
+#### E7: Photograph Alt Text (Milestone 2a)
 
 **Category:** Drafting | **Cost:** ~$0.01 total (one-time, <20 images) | **Human review:** Yes
 
@@ -447,7 +447,7 @@ Generate reverential, descriptive alt text for the portal's Yogananda photograph
 
 **Why this matters:** Direct accessibility improvement for visually impaired seekers. A portal that claims accessibility as a foundational principle should describe its sacred images with the same care it gives to its text.
 
-#### E8: Daily Passage Tone Classification (Phase 2)
+#### E8: Daily Passage Tone Classification (Milestone 2b)
 
 **Category:** Classifying | **Cost:** ~$0.01/chunk (one-time at ingestion) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions)
 
@@ -463,7 +463,7 @@ Classify passages in the `daily_passages` pool by emotional tone:
 
 **Implementation:** Stored as a `tone` column on `daily_passages`. The selection algorithm ensures tonal variety across the week (not three "challenging" passages in a row) without any user tracking. Pure editorial metadata.
 
-**Cultural note on tone categories:** These five categories were developed from a Western emotional vocabulary. Phase 10 editorial review should assess whether they resonate across cultures. Specific concerns:
+**Cultural note on tone categories:** These five categories were developed from a Western emotional vocabulary. Milestone 5b editorial review should assess whether they resonate across cultures. Specific concerns:
 
 - **"Challenging"** — In guru-disciple traditions, stern teaching is considered the *highest* compassion (*guru-kṛpā*), not a separate emotional register. Indian seekers may not experience "challenging" passages as distinct from "consoling" ones.
 - **"Practical" vs. "contemplative"** — This is a Western split. In many Indian traditions, practice IS contemplation. The distinction may feel artificial to Hindu/Vedantic practitioners.
@@ -487,14 +487,14 @@ Claude is never given Yogananda's text as context for generation. When Claude ra
 
 ### Cost Profile
 
-| Phase | Uses | Estimated Monthly Cost | Notes |
-|-------|------|----------------------|-------|
-| 1 | C1, C2, C3, E1, E2, E4, E5 | ~$10–20 | Query expansion + ranking per search; QA and eval are one-time |
-| 2 | E7 | ~$0.01 (one-time) | Alt text batch |
-| 4 | C4, E3, E8 | ~$5–15 (one-time per book) + monthly search | Classification batches at ingestion |
-| 5 | E6 | ~$5–10 (one-time per book pair) | Cross-book threading batch |
-| 7 | C6 | ~$1/month | Daily caption |
-| 9 | C5 | ~$1–5 (one-time per language) | UI translation drafts |
+| Milestone | Uses | Estimated Monthly Cost | Notes |
+|-----------|------|----------------------|-------|
+| 1a | C1, C2, C3, E1, E2, E4, E5 | ~$10–20 | Query expansion + ranking per search; QA and eval are one-time |
+| 2b | E7 | ~$0.01 (one-time) | Alt text batch |
+| 3b | C4, E3, E8 | ~$5–15 (one-time per book) + monthly search | Classification batches at ingestion |
+| 3c | E6 | ~$5–10 (one-time per book pair) | Cross-book threading batch |
+| Arc 4 | C6 | ~$1/month | Daily caption |
+| 5b | C5 | ~$1–5 (one-time per language) | UI translation drafts |
 
 Total ongoing cost remains modest (~$15–25/month) because most Claude uses are one-time batch jobs at ingestion, not per-request runtime calls. The librarian model is inherently cost-efficient: constrained output formats minimize tokens.
 
@@ -528,16 +528,16 @@ The portal works without Claude. Claude makes it *world-class*.
 
 ### Consequences
 
-- ADR-001 (Direct Quotes Only) and ADR-045 (Claude API for AI Features) remain the foundational references; this ADR consolidates and extends them
+- ADR-001 (Direct Quotes Only) and ADR-014 (AWS Bedrock Claude with Model Tiering) remain the foundational references; this ADR consolidates and extends them
 - The three-category model (Finding / Classifying / Drafting) provides a clear framework for evaluating future Claude use cases
-- E1 (intent classification) and E2 (terminology bridge) are added to Phase 0 deliverables — they directly improve search quality at launch
-- E3 (accessibility rating) and E8 (tone classification) are added to Phase 2 — they require multi-book content to be meaningful
-- E4 (QA assistant) and E5 (eval judge) are added to Phase 0 — they improve quality foundations
-- E6 (cross-book threading) is added to Phase 5 — it enhances the Related Teachings system
-- E7 (alt text) is added to Phase 1 — it's an accessibility deliverable
+- E1 (intent classification) and E2 (terminology bridge) are added to Arc 1 deliverables — they directly improve search quality at launch
+- E3 (accessibility rating) and E8 (tone classification) are added to Milestone 2b — they require multi-book content to be meaningful
+- E4 (QA assistant) and E5 (eval judge) are added to Arc 1 — they improve quality foundations
+- E6 (cross-book threading) is added to Milestone 3c — it enhances the Related Teachings system
+- E7 (alt text) is added to Milestone 2a — it's an accessibility deliverable
 - The spiritual terminology mapping (`/lib/data/spiritual-terms.json`) becomes a maintained artifact, reviewed by SRF-aware editors. ADR-051 defines the per-book evolution lifecycle.
-- Every new Claude use case proposed in future phases should be evaluated against this ADR's three-category model and hard prohibitions
-- **Extended ADRs:** ADR-001 (cross-reference to this policy), ADR-045 (cross-reference to expansion roadmap)
+- Every new Claude use case proposed in future milestones should be evaluated against this ADR's three-category model and hard prohibitions
+- **Extended ADRs:** ADR-001 (cross-reference to this policy), ADR-014 (cross-reference to expansion roadmap)
 
 ---
 
@@ -557,7 +557,7 @@ The portal's mission — making Yogananda's teachings "available freely througho
 - A Bengali-speaking YSS member who has never used a website in their own language
 - A visually impaired monk in Germany who navigates entirely by screen reader
 
-ADR-003 established accessibility as a Phase 1 foundation. ADR-075 established multilingual architecture. ADR-012 established the PWA for offline reading. This ADR addresses the gaps between those decisions — the practical realities of serving seekers who are not well-served by the default assumptions of Western web development.
+ADR-003 established accessibility as a Milestone 2a foundation. ADR-075 established multilingual architecture. ADR-012 established the PWA for offline reading. This ADR addresses the gaps between those decisions — the practical realities of serving seekers who are not well-served by the default assumptions of Western web development.
 
 ### Decision
 
@@ -579,7 +579,7 @@ Not all seekers have smartphones. KaiOS (JioPhone, Nokia feature phones) runs a 
 
 **Commitments:**
 - **Progressive enhancement is mandatory, not optional.** The reading experience (book text, chapter navigation, search form submission) must work with JavaScript disabled. Server-rendered HTML is the baseline. JavaScript enhances: "Show me another," infinite scroll, Quiet Corner timer, dwell mode.
-- **Phase 1 testing adds a KaiOS emulator** to the CI matrix. Critical flows (search, read chapter, navigate) must pass.
+- **Milestone 2a testing adds a KaiOS emulator** to the CI matrix. Critical flows (search, read chapter, navigate) must pass.
 - **Touch targets remain 44×44px minimum** (ADR-003), but form inputs and navigation links use **48px** minimum on pages likely accessed from feature phones (homepage, search results, book index).
 
 #### 3. Shared Devices
@@ -587,17 +587,17 @@ Not all seekers have smartphones. KaiOS (JioPhone, Nokia feature phones) runs a 
 In many families globally, one phone serves 3–5 people. The portal must not assume a device belongs to a single person.
 
 **Commitments:**
-- **No user accounts until Phase 13+** — the portal works fully without sign-in, which is already the design. This is correct for shared devices.
-- **Bookmarks (ADR-066) use `localStorage`** — they disappear if the browser data is cleared. This is acceptable for Phase 2. Phase 13+ (user accounts) can optionally sync bookmarks, but the local-first design is correct for shared devices where privacy between users matters.
+- **No user accounts until Milestone 7a+** — the portal works fully without sign-in, which is already the design. This is correct for shared devices.
+- **Bookmarks (ADR-066) use `localStorage`** — they disappear if the browser data is cleared. This is acceptable for Milestone 2b. Milestone 7a+ (user accounts) can optionally sync bookmarks, but the local-first design is correct for shared devices where privacy between users matters.
 - **No "Welcome back" or personalization.** The portal greets every visit the same way. No reading history displayed on the homepage. No "Continue where you left off" (which would expose one family member's reading to another).
 
 #### 4. Intermittent Connectivity as the Norm
 
-The PWA (ADR-012) is Phase 11. For Phases 0–10, seekers with unreliable connections have no offline support. This is a long gap.
+The PWA (ADR-012) is scheduled for Milestone 2b. For Arc 1, seekers with unreliable connections have no offline support beyond cached static assets.
 
 **Commitments:**
-- **Phase 1: Service Worker for static assets only.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker. Book content is not cached offline until Phase 11, but the portal loads instantly on repeat visits even with no connectivity change.
-- **Phase 2: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
+- **Milestone 2a: Service Worker for static assets only.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker. Full book content offline caching is a later enhancement, but the portal loads instantly on repeat visits even with no connectivity change.
+- **Milestone 2b: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
 - **Offline indicator.** When the Service Worker detects no connectivity, a subtle banner appears: *"You're reading offline. Search requires a connection."* Not an error state — a calm acknowledgment. Matches the portal's warm cream palette, not a red warning bar.
 
 #### 5. Community and Group Reading
@@ -605,7 +605,7 @@ The PWA (ADR-012) is Phase 11. For Phases 0–10, seekers with unreliable connec
 In India, Latin America, and many African communities, spiritual texts are read aloud in groups — satsang, study circles, family devotions. The portal's reader is designed for individual silent reading.
 
 **Commitments:**
-- **Presentation mode (Phase 7).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern.
+- **Presentation mode (Arc 4).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern.
 - **This is not a separate feature — it is a CSS mode.** The same reader component, the same content, the same accessibility. `data-mode="present"` on the reader container triggers the enlarged, chrome-free layout.
 
 #### 6. Cultural Consultation for Entry Points
@@ -613,8 +613,8 @@ In India, Latin America, and many African communities, spiritual texts are read 
 The "Seeking..." empathic entry points and theme doors are currently written from an English-language, Western-spiritual perspective. "What happens after death?" is a natural question in one culture but may be phrased as "Where does the soul go?" or "What is the cycle of birth?" in another.
 
 **Commitments:**
-- **Phase 10 (multilingual launch) requires cultural consultation, not just translation.** For each Wave 1 language, SRF engages a native-speaking devotee (not a professional translator) to review the entry points and theme door labels for cultural resonance. The consultant answers: "Would a seeker in [country] phrase this question this way? What would feel more natural?"
-- **The "Seeking..." prompts are editorial content, not UI chrome.** They live in Contentful (Phase 9+), not in `messages/{locale}.json`. Each locale has independently authored prompts, not translations of the English originals.
+- **Milestone 5b (multilingual launch) requires cultural consultation, not just translation.** For each language, SRF engages a native-speaking devotee (not a professional translator) to review the entry points and theme door labels for cultural resonance. The consultant answers: "Would a seeker in [country] phrase this question this way? What would feel more natural?"
+- **The "Seeking..." prompts are editorial content, not UI chrome.** They live in Contentful (Arc 4+), not in `messages/{locale}.json`. Each locale has independently authored prompts, not translations of the English originals.
 - **Query expansion (Claude API) handles the bridge.** Even if the entry point is culturally adapted, a seeker may still type their question in a culturally specific way. The terminology bridge (ADR-051) and Claude's query expansion handle the mapping from the seeker's phrasing to the passage corpus.
 
 #### 7. Right-to-Left as a First-Class Layout
@@ -622,7 +622,7 @@ The "Seeking..." empathic entry points and theme doors are currently written fro
 CSS logical properties (ADR-076) provide the technical foundation for RTL. But RTL is more than mirrored margins.
 
 **Commitments:**
-- **Phase 10 RTL languages (Arabic, Urdu — if added in Wave 3+) require a native RTL reader to review every page.** Not just CSS mirroring, but visual hierarchy, reading flow, and icon directionality (e.g., a "next chapter" arrow points left in RTL).
+- **Milestone 5b RTL languages (Arabic, Urdu — if added later) require a native RTL reader to review every page.** Not just CSS mirroring, but visual hierarchy, reading flow, and icon directionality (e.g., a "next chapter" arrow points left in RTL).
 - **The share menu, dwell icon, and reader navigation all use `inline-start`/`inline-end` positioning** — already specified in their respective ADRs. This commitment makes the RTL audit a verification exercise, not a redesign.
 - **Bidirectional text.** Yogananda quotes in Arabic translation may contain Sanskrit terms (samadhi, pranayama) in Latin script. The portal must handle `dir="auto"` on passage elements to allow mixed-direction text within a single paragraph.
 
@@ -645,11 +645,11 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 ### Consequences
 
 - Homepage payload budget tightened from 100KB to 50KB (HTML + critical CSS + inline JS)
-- Text-only mode added to site footer and reader settings (Phase 1)
-- Minimal Service Worker deployed in Phase 1 (static assets only), expanded in Phase 2 (last-read chapter)
-- KaiOS emulator added to CI in Phase 1
-- Presentation mode added to the reader in Phase 7
-- Cultural consultation budget required for Phase 10 multilingual launch
+- Text-only mode added to site footer and reader settings (Milestone 2a)
+- Minimal Service Worker deployed in Milestone 2a (static assets only), expanded in Milestone 2b (last-read chapter)
+- KaiOS emulator added to CI in Milestone 2a
+- Presentation mode added to the reader in Arc 4
+- Cultural consultation budget required for Milestone 5b multilingual launch
 - RTL design review by native reader required before any RTL language goes live
 - `font-display: swap` and unicode-range subsetting are non-negotiable for all font loading
 - **Extends ADR-003** (accessibility), **ADR-075** (multilingual), and **ADR-012** (PWA) with concrete global equity commitments
@@ -692,7 +692,7 @@ However, as the portal's feature surface has grown — editorial reading threads
 
 2. **Prohibit all non-Yogananda prose near sacred text.** This would eliminate the proximity problem entirely but would also eliminate editorial reading threads, glossary definitions, the `/guide` page, and crisis resources — features that serve seekers by providing context without altering content.
 
-3. **Create a runtime content-type enforcement layer.** A technical system that tags every rendered element as "sacred" or "editorial" and enforces separation rules via CSS/HTML validation. Architecturally sound but premature for Phase 0 — the standard should be a design principle first and a technical enforcement later if drift is observed.
+3. **Create a runtime content-type enforcement layer.** A technical system that tags every rendered element as "sacred" or "editorial" and enforces separation rules via CSS/HTML validation. Architecturally sound but premature for Arc 1 — the standard should be a design principle first and a technical enforcement later if drift is observed.
 
 ### Consequences
 
@@ -723,13 +723,13 @@ Use **Next.js on Vercel** with **Tailwind CSS** for the frontend.
 
 - SRF organizational standard
 - SSG for book reader pages (fast, SEO-friendly, cacheable)
-- API routes for search endpoints (serverless, no separate backend for Phase 0)
+- API routes for search endpoints (serverless, no separate backend for Arc 1)
 - ISR for content updates when Contentful is integrated
 - Vercel edge caching for global performance
 
 ### Consequences
 
-- Phase 0 can use Next.js API routes instead of AWS Lambda (simpler)
+- Arc 1 can use Next.js API routes instead of AWS Lambda (simpler)
 - Production may migrate search API routes to Lambda if needed for scale or separation
 
 ---
@@ -769,7 +769,7 @@ Use **Neon PostgreSQL with the pgvector extension** for both relational data and
 
 - Must enable the `vector` extension in Neon
 - Must choose an embedding model whose dimensions align with the vector column
-- Performance at very large scale (millions of chunks, many languages) may eventually require a dedicated vector service — but that is far beyond Phase 0 scope
+- Performance at very large scale (millions of chunks, many languages) may eventually require a dedicated vector service — but that is far beyond Arc 1 scope
 
 ---
 
@@ -793,7 +793,7 @@ Book text needs to live somewhere with editorial management: version control, re
 
 ### Decision
 
-Use **Contentful** as the editorial source of truth from Phase 0. Contentful is a hard requirement — the portal adopts it from the first phase, not as a later migration. Book text is imported into Contentful during ingestion and synced to Neon (via batch script in Phase 0a, webhook-driven from Phase 0b) for search indexing. The book reader serves content from Contentful; search queries Neon.
+Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a hard requirement — the portal adopts it from the first arc, not as a later migration. Book text is imported into Contentful during ingestion and synced to Neon (via batch script in Milestone 1a, webhook-driven from Milestone 1b) for search indexing. The book reader serves content from Contentful; search queries Neon.
 
 ### Rationale
 
@@ -802,19 +802,19 @@ Use **Contentful** as the editorial source of truth from Phase 0. Contentful is 
 - Content editors work in a familiar, managed environment
 - Multi-language support via Contentful locales
 - Separation of concerns: Contentful for authoring, Neon for searching
-- Adopting from Phase 0 avoids a costly Phase 9 migration of 15+ books and all editorial workflows
-- Free tier (10K records, 2 locales) is sufficient for single-book Phase 0; evaluate at Phase 3 (multi-book)
+- Adopting from Arc 1 avoids a costly later migration of 15+ books and all editorial workflows
+- Free tier (10K records, 2 locales) is sufficient for single-book Arc 1; evaluate at Milestone 3a (multi-book)
 
 ### Consequences
 
-- Phase 0a requires Contentful space setup and content model creation (Book → Chapter → Section → TextBlock)
+- Milestone 1a requires Contentful space setup and content model creation (Book → Chapter → Section → TextBlock)
 - Ingestion pipeline imports processed text into Contentful via Management API, then syncs to Neon for search
-- The Neon schema includes `contentful_id` columns for linkage — populated from Phase 0, not deferred
-- A Contentful → Neon sync service is needed: batch script in Phase 0a, webhook-driven from Phase 0b on Vercel
-- Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks); paid tier evaluation needed at Phase 3 (multi-book corpus)
+- The Neon schema includes `contentful_id` columns for linkage — populated from Arc 1, not deferred
+- A Contentful → Neon sync service is needed: batch script in Milestone 1a, webhook-driven from Milestone 1b on Vercel
+- Contentful free tier (10K records, 2 locales) sufficient for one book (~3K TextBlocks); paid tier evaluation needed at Milestone 3a (multi-book corpus)
 - When SRF provides non-PDF digital text prior to launch, it goes directly into Contentful — no pipeline change required
 
-*Revised: 2026-02-24, Contentful moved from Phase 9 to Phase 0 per stakeholder hard requirement.*
+*Revised: 2026-02-24, Contentful confirmed as Arc 1 requirement per stakeholder hard requirement.*
 
 ---
 
@@ -831,11 +831,11 @@ The SRF already has a native mobile app (iOS/Android) with an eReader. While a d
 
 Next.js encourages a pattern where business logic lives inside React Server Components. This is convenient for web development but creates a platform lock: Server Components are callable only by the Next.js rendering pipeline, not by a mobile app, a third-party integration, or a PWA Service Worker.
 
-If business logic migrates into Server Components during Phases 0–12, extracting it later into a proper API layer is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
+If business logic migrates into Server Components during Arcs 1–5, extracting it later into a proper API layer is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
 ### Decision
 
-Adopt **API-first architecture** with a **shared service layer** from Phase 0. Every user-facing feature must have both a callable service function and a REST API endpoint.
+Adopt **API-first architecture** with a **shared service layer** from Arc 1. Every user-facing feature must have both a callable service function and a REST API endpoint.
 
 #### 1. Shared Service Layer
 
@@ -858,7 +858,7 @@ This is a code organization rule, not a technology choice. The rule: **never put
 
 #### 2. API Versioning
 
-All API routes use a versioned prefix from Phase 0:
+All API routes use a versioned prefix from Arc 1:
 
 ```
 /api/v1/search
@@ -874,7 +874,7 @@ When the API evolves, `/api/v2/` coexists with `/api/v1/`. The web frontend alwa
 
 #### 3. Authentication: Public by Default
 
-**Phases 0–12: All API routes are public.** No authentication required. The portal's core mission is frictionless access to the teachings — adding "Sign in" contradicts this.
+**Arcs 1–6: All API routes are public.** No authentication required. The portal's core mission is frictionless access to the teachings — adding "Sign in" contradicts this.
 
 What auth would serve, and how it's handled without it:
 
@@ -886,7 +886,7 @@ What auth would serve, and how it's handled without it:
 | Admin dashboards | Retool has its own auth |
 | Content protection | Not needed — the mission is free access |
 
-**Phase 13+ (if needed):** When optional accounts are introduced for cross-device sync, evaluate the lightest mechanism that serves the need (magic links, passkeys, or Auth0 if SSO with other SRF properties is required). Public search and reading remain unauthenticated regardless. Auth is additive middleware on specific protected endpoints — never a gate on reading or search.
+**Milestone 7a+ (if needed):** When optional accounts are introduced for cross-device sync, evaluate the lightest mechanism that serves the need (magic links, passkeys, or Auth0 if SSO with other SRF properties is required). Public search and reading remain unauthenticated regardless. Auth is additive middleware on specific protected endpoints — never a gate on reading or search.
 
 #### 4. Cursor-Based Pagination
 
@@ -927,7 +927,7 @@ The URL structure is decided now. The association files are added when the app l
 
 ### Rationale
 
-- **Zero marginal cost.** Service layer extraction, API versioning, and cache headers are conventions, not infrastructure. They cost minutes to implement in Phase 0 and save weeks of refactoring later.
+- **Zero marginal cost.** Service layer extraction, API versioning, and cache headers are conventions, not infrastructure. They cost minutes to implement in Arc 1 and save weeks of refactoring later.
 - **Multiple consumers are likely.** Even without a native app, the API may be consumed by: a PWA Service Worker (offline reading), the SRF mobile app team, a future admin dashboard, or third-party integrations (with SRF authorization).
 - **SRF ecosystem alignment.** The existing SRF mobile app may want to incorporate portal search or daily passage features. A clean API makes this a simple integration rather than a rewrite.
 - **Developer discipline is cheaper than developer heroics.** Establishing the pattern on day one (when the codebase is small) prevents the gradual drift that makes refactoring painful.
@@ -942,12 +942,12 @@ The URL structure is decided now. The association files are added when the app l
 
 ### Consequences
 
-- Phase 0 API routes use `/api/v1/` prefix (update DESIGN.md)
+- Arc 1 API routes use `/api/v1/` prefix (update DESIGN.md)
 - All features implemented via `/lib/services/` functions first, then exposed via Server Components and API routes
-- API routes are public (no auth) through Phase 12; auth middleware added only if/when Phase 13 accounts are implemented
+- API routes are public (no auth) through Arc 6; auth middleware added only if/when Milestone 7a accounts are implemented
 - List endpoints return cursor-based pagination
 - Cache-Control headers on all API responses
-- PWA readiness added to roadmap (Phase 11)
+- PWA readiness added to roadmap (Milestone 2b)
 - Stakeholder question: does the portal get its own mobile app, or do features integrate into the existing SRF app?
 
 ---
@@ -967,7 +967,7 @@ For the teaching portal specifically, offline reading is a natural use case: a s
 
 ### Decision
 
-Add **PWA readiness** as a Phase 11 deliverable. This includes:
+Add **PWA readiness** as a distributed deliverable (offline reading, installability, Service Worker caching). This includes:
 
 | Feature | Implementation | Benefit |
 |---------|---------------|---------|
@@ -986,7 +986,7 @@ Add **PWA readiness** as a Phase 11 deliverable. This includes:
 
 ### Consequences
 
-- Phase 11 includes PWA deliverables (manifest, Service Worker, offline caching)
+- PWA deliverables (manifest, Service Worker, offline caching) are distributed across milestones as progressive enhancements
 - Offline mode only caches previously viewed content — it does not pre-download entire books (that's a future decision)
 - Push notifications deferred — Android supports Web Push, but iOS support is limited and the daily email already serves the notification use case
 - The existing SRF mobile app relationship must be clarified (stakeholder question) to avoid confusing seekers with two "apps"
@@ -1012,7 +1012,7 @@ The teachings portal uses **Neon PostgreSQL exclusively** as its database layer.
 ### Alternatives Considered
 
 1. **DynamoDB for search query logging** — At ~1,000 searches/day (~73 MB/year), PostgreSQL handles this trivially. DynamoDB's write throughput advantage is irrelevant at this scale.
-2. **DynamoDB for session storage** — The portal has no user sessions until Phase 13, and Auth0 handles session management. No application-level session store is needed.
+2. **DynamoDB for session storage** — The portal has no user sessions until Milestone 7a, and Auth0 handles session management. No application-level session store is needed.
 3. **DynamoDB for rate limiting counters** — Cloudflare WAF handles edge-layer rate limiting. Application-layer limits use in-memory counters in Vercel Functions (acceptable for serverless, no shared state needed).
 4. **DynamoDB for caching** — Cloudflare CDN and browser `Cache-Control` headers handle all caching needs. Adding a separate cache database adds complexity without measurable benefit.
 
@@ -1030,7 +1030,7 @@ The teachings portal uses **Neon PostgreSQL exclusively** as its database layer.
 - All data lives in Neon PostgreSQL: content, embeddings, search indexes, analytics, configuration
 - Single backup target, single migration tool, single connection strategy
 - Terraform infrastructure is simpler (no DynamoDB module, no IAM policies for cross-service access)
-- If SRF's DynamoDB usage evolves to include a pattern the portal genuinely needs (e.g., real-time collaborative features in future phases), this decision can be revisited via a new ADR
+- If SRF's DynamoDB usage evolves to include a pattern the portal genuinely needs (e.g., real-time collaborative features in future milestones), this decision can be revisited via a new ADR
 - Developers familiar with SRF's DynamoDB patterns should note: the portal's data model is relational by nature, and the single-database approach is an intentional architectural strength
 
 ---
@@ -1051,7 +1051,7 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 
 1. **Use AWS Bedrock** as the Claude API provider instead of the direct Anthropic API.
 2. **Use Claude Haiku** as the default model for all three search tasks (intent classification, query expansion, passage ranking).
-3. **Benchmark Haiku vs Sonnet** during Phase 0 using a test set of ~50 curated queries. If Haiku passage ranking quality falls below acceptable thresholds, promote passage ranking to Sonnet while keeping intent classification and query expansion on Haiku.
+3. **Benchmark Haiku vs Sonnet** during Arc 1 using a test set of ~50 curated queries. If Haiku passage ranking quality falls below acceptable thresholds, promote passage ranking to Sonnet while keeping intent classification and query expansion on Haiku.
 
 ### Model Tiering Strategy
 
@@ -1065,13 +1065,13 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 
 **Offline batch tasks (run once per content, quality over cost):**
 
-| Task | Model | Rationale | Phase |
-|------|-------|-----------|-------|
-| Theme taxonomy classification | Opus | Classifying chunks across multi-category spiritual taxonomy requires deep comprehension of Yogananda's teachings | 5 |
-| Ambiguous chunk classification | Opus | Edge cases near classification thresholds benefit from nuanced reasoning | 1+ (ingestion) |
-| Reference extraction (scriptures, persons, places) | Opus | Identifying cross-tradition references (Bible, Bhagavad Gita, scientific texts) across Yogananda's writing requires broad knowledge | 7 |
-| UI translation drafting | Opus | Devotional register in 8+ languages requires precise tone; human review follows (ADR-078) | 11 |
-| Cross-book relationship mapping | Opus | Identifying thematic connections across the full library requires deep reading comprehension | 6–7 |
+| Task | Model | Rationale | Milestone |
+|------|-------|-----------|-----------|
+| Theme taxonomy classification | Opus | Classifying chunks across multi-category spiritual taxonomy requires deep comprehension of Yogananda's teachings | 3c |
+| Ambiguous chunk classification | Opus | Edge cases near classification thresholds benefit from nuanced reasoning | 1a+ (ingestion) |
+| Reference extraction (scriptures, persons, places) | Opus | Identifying cross-tradition references (Bible, Bhagavad Gita, scientific texts) across Yogananda's writing requires broad knowledge | Arc 4 |
+| UI translation drafting | Opus | Devotional register in 8+ languages requires precise tone; human review follows (ADR-078) | 5b |
+| Cross-book relationship mapping | Opus | Identifying thematic connections across the full library requires deep reading comprehension | 3d–Arc 4 |
 
 Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaults to Opus). Cost is negligible: ~$2–5 per full book processed, run once per content change.
 
@@ -1108,7 +1108,7 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 - **Committed throughput pricing.** Bedrock offers provisioned throughput for predictable costs at scale — important for a free portal with no revenue to absorb cost spikes.
 - **Operational simplicity.** One cloud provider for compute (Vercel deploys to AWS), database (Neon), and AI (Bedrock). Terraform manages Bedrock model access alongside other AWS resources.
 - **Haiku-first is prudent.** The portal's Claude tasks are tightly constrained: classify intent (enum output), expand terms (JSON array output), rank passages (ordered ID list output). These are not open-ended generation tasks. Haiku handles structured, bounded tasks well.
-- **Benchmark before promoting.** Rather than assuming Sonnet is needed for ranking, measure first. The Phase 0 test set provides empirical data. If Haiku ranks comparably, the portal saves ~$1,200/month at 10K searches/day.
+- **Benchmark before promoting.** Rather than assuming Sonnet is needed for ranking, measure first. The Arc 1 test set provides empirical data. If Haiku ranks comparably, the portal saves ~$1,200/month at 10K searches/day.
 - **10-year horizon (ADR-004).** AWS Bedrock is a managed service with AWS's long-term commitment. The portal's `/lib/services/claude.ts` abstracts the provider — switching from Bedrock to direct API (or vice versa) requires changing the SDK client, not the business logic.
 - **Graceful degradation is provider-agnostic.** The four-level degradation cascade (DESIGN.md § Claude API Graceful Degradation) works identically regardless of whether Claude is accessed via Bedrock or direct API. Timeouts, errors, and budget caps trigger the same fallthrough.
 
@@ -1119,46 +1119,13 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 - Terraform includes a Bedrock model access module
 - Per-search model IDs configured via `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku)
 - Batch model ID configured via `CLAUDE_MODEL_BATCH` (default: Opus) — used by theme classification, reference extraction, translation drafting, and cross-book relationship mapping
-- Phase 0 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
+- Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
 
 ---
 
----
-
-## ADR-015: Phase 0 Uses Vercel, Not AWS Lambda/DynamoDB
-
-- **Status:** Accepted
-- **Date:** 2026-02-17
-
-### Context
-
-The SRF tech stack brief specifies AWS Lambda + API Gateway + DynamoDB for backend services. For Phase 0, focused on proving the AI search concept and delivering a working portal, this full stack introduces unnecessary complexity.
-
-### Decision
-
-Phase 0 uses **Next.js API routes** (running on Vercel) as the backend. No Lambda, no API Gateway, no DynamoDB. Neon PostgreSQL serves as the sole data store.
-
-### Rationale
-
-- Reduces Phase 0 to three services (Vercel, Neon, Claude API)
-- Next.js API routes are functionally equivalent to Lambda for our needs
-- Neon PostgreSQL handles everything DynamoDB would (and more, with pgvector)
-- Faster iteration during the design and prototyping phase
-- Production can migrate API routes to Lambda if separation of concerns is needed
-
-### Consequences
-
-- The Phase 0 architecture diverges from the full SRF standard stack
-- Migration path to Lambda is straightforward (extract API route handlers into Lambda functions)
-- Stakeholders should understand this is a deliberate simplification, not a rejection of the standard stack
-
----
-
----
-
-## ADR-016: Infrastructure as Code from Phase 1 (Terraform)
+## ADR-016: Infrastructure as Code (Terraform)
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
@@ -1178,16 +1145,16 @@ Additionally, AI-assisted development (Claude Code) makes Terraform authoring an
 
 ### Decision
 
-Use **Terraform** for all infrastructure provisioning from Phase 1. The portal repo includes a `/terraform` directory with modules for each service.
+Use **Terraform** for all infrastructure provisioning from Milestone 2a. The portal repo includes a `/terraform` directory with modules for each service.
 
 #### Source Control and CI/CD
 
-| Phase | SCM | CI/CD | Terraform State |
-|-------|-----|-------|-----------------|
-| **Phases 0–8** | GitHub | GitHub Actions | Terraform Cloud free tier or S3 backend |
-| **Phase 9+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
+| Arc/Milestone | SCM | CI/CD | Terraform State |
+|---------------|-----|-------|-----------------|
+| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud free tier or S3 backend |
+| **Arc 6+ (production)** | GitLab (SRF standard) | GitLab CI/CD | GitLab Terraform backend (SRF standard) |
 
-Phases 0–8 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness in Phase 9.
+Arcs 1–5 use GitHub for velocity and simplicity. Migration to GitLab aligns with the SRF IDP when the portal moves toward production readiness.
 
 #### Terraform Module Structure
 
@@ -1242,7 +1209,7 @@ The SRF standard defines four environments: dev, qa, stg, prod. Terraform worksp
  prod.tfvars
 ```
 
-For Phases 0–8, only `dev` is needed. Additional environments are added as the portal moves toward production.
+For Arcs 1–4, only `dev` is needed. Additional environments are added as the portal moves toward production.
 
 #### What Terraform Manages vs. What It Doesn't
 
@@ -1258,7 +1225,7 @@ For Phases 0–8, only `dev` is needed. Additional environments are added as the
 
 The boundary: Terraform creates and configures the *services*. Application code configures *how the app uses those services*. Database schema is managed by dbmate migrations, not Terraform — schema changes require migration semantics (up/down), not declarative state.
 
-#### CI/CD Pipeline (Phases 0–8 — GitHub Actions)
+#### CI/CD Pipeline (Arcs 1–4 — GitHub Actions)
 
 ```yaml
 # .github/workflows/terraform.yml
@@ -1279,7 +1246,7 @@ jobs:
  # Production: manual approval gate
 ```
 
-#### CI/CD Pipeline (Phase 9+ — GitLab CI)
+#### CI/CD Pipeline (Arc 4+ — GitLab CI)
 
 ```yaml
 # .gitlab-ci.yml (aligned with SRF IDP)
@@ -1311,28 +1278,28 @@ terraform:apply:
 - **Reproducible environments.** `terraform apply` creates a complete environment from scratch. Disaster recovery, staging environment creation, and onboarding new developers all become simple operations.
 - **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code. This prevents the "someone changed a setting in the dashboard and nobody knows" problem.
 - **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code. A change to an alert threshold or a DNS record is visible, reviewable, and auditable.
-- **GitHub → GitLab migration path.** Starting with GitHub Actions for Phases 0–8 velocity, then migrating to GitLab CI for SRF IDP alignment, is a clean path. The Terraform code itself is SCM-agnostic — only the CI pipeline config changes.
+- **GitHub → GitLab migration path.** Starting with GitHub Actions for Arcs 1–4 velocity, then migrating to GitLab CI for SRF IDP alignment, is a clean path. The Terraform code itself is SCM-agnostic — only the CI pipeline config changes.
 
 ### Alternatives Considered
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Terraform from Phase 1 (chosen)** | SRF-aligned; reproducible environments; AI-assisted authoring | Upfront setup time; state backend needed |
-| **Terraform deferred to Phase 9** | Simpler Phases 0–1; no state management overhead | Deviates from SRF standards; manual infrastructure creates undocumented state; harder to retrofit |
+| **Terraform from Milestone 2a (chosen)** | SRF-aligned; reproducible environments; AI-assisted authoring | Upfront setup time; state backend needed |
+| **Terraform deferred to Arc 4** | Simpler Arc 1 and Milestone 2a; no state management overhead | Deviates from SRF standards; manual infrastructure creates undocumented state; harder to retrofit |
 | **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; not integrated into SRF IDP; smaller provider ecosystem |
 | **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle; each service configured independently |
 | **AWS CDK** | Strong AWS integration | Portal is Vercel-based, not AWS-heavy; CDK is AWS-centric; not the SRF standard for non-Lambda infrastructure |
 
 ### Consequences
 
-- Phase 1 includes `/terraform` directory with modules for Neon, Vercel, and Sentry
-- Phases 0–8 use GitHub + GitHub Actions; Phase 9 migrates to GitLab + GitLab CI (SRF IDP)
-- Terraform state stored in Terraform Cloud free tier (Phases 0–7) or GitLab Terraform backend (Phase 8+)
+- Milestone 2a includes `/terraform` directory with modules for Neon, Vercel, and Sentry
+- Arcs 1–4 use GitHub + GitHub Actions; Arc 4 migrates to GitLab + GitLab CI (SRF IDP)
+- Terraform state stored in Terraform Cloud free tier (Arcs 1–3) or GitLab Terraform backend (Milestone 5a+)
 - All environment variables and service configuration defined in Terraform — no undocumented dashboard settings
 - `.env.example` still maintained for local development (developers run the app locally without Terraform)
-- Auth0, New Relic, and Cloudflare modules added as those services are introduced (Phases 5–6)
-- Four-environment convention (dev/qa/stg/prod) adopted per SRF standard, with only `dev` active in Phase 1
-- Stakeholder question: does SRF prefer the portal repo in GitLab from day one, or is GitHub acceptable for Phases 0–8 with a planned migration?
+- Auth0, New Relic, and Cloudflare modules added as those services are introduced (Milestones 5–6)
+- Four-environment convention (dev/qa/stg/prod) adopted per SRF standard, with only `dev` active in Milestone 2a
+- Stakeholder question: does SRF prefer the portal repo in GitLab from day one, or is GitHub acceptable for Arcs 1–4 with a planned migration?
 
 ---
 
@@ -1346,13 +1313,13 @@ terraform:apply:
 
 ### Context
 
-The former Lambda batch decision introduced AWS Lambda + Serverless Framework v4 for batch and background workloads starting Phase 1. The decision was sound on the runtime choice (Lambda) but introduced three problems:
+The former Lambda batch decision introduced AWS Lambda + Serverless Framework v4 for batch and background workloads starting Milestone 2a. The decision was sound on the runtime choice (Lambda) but introduced three problems:
 
-1. **Serverless Framework v4 licensing.** SF v4 moved to a paid license model in late 2024. The portal takes on a licensing dependency for a tool it barely needs (< 15 functions across all phases). The SRF Brief specifies SF v4 because most SRF microservices have dozens of Lambda functions — the portal does not.
+1. **Serverless Framework v4 licensing.** SF v4 moved to a paid license model in late 2024. The portal takes on a licensing dependency for a tool it barely needs (< 15 functions across all milestones). The SRF Brief specifies SF v4 because most SRF microservices have dozens of Lambda functions — the portal does not.
 
 2. **Dual IaC tooling.** The portal uses Terraform for all infrastructure (Neon, Vercel, Sentry, Cloudflare, S3). Adding SF v4 means two IaC tools, two deployment pipelines, two state management systems. This contradicts the 10-year simplicity principle (ADR-004).
 
-3. **Phase 5 timing.** The former Lambda batch decision placed Lambda infrastructure setup in Phase 1 — already a dense phase (multi-book ingestion, search expansion). Meanwhile ADR-019 (database backup) needs Lambda in Phase 0, creating a timing gap that ADR-019 acknowledged awkwardly: "Lambda function added in Phase 0 or Phase 1 when Lambda infrastructure is first deployed."
+3. **Timing.** The former Lambda batch decision placed Lambda infrastructure setup in Milestone 2a — already a dense milestone (multi-book ingestion, search expansion). Meanwhile ADR-019 (database backup) needs Lambda in Arc 1, creating a timing gap that ADR-019 acknowledged awkwardly: "Lambda function added in Arc 1 or Milestone 2a when Lambda infrastructure is first deployed."
 
 A comparative analysis of the SRF Tech Stack Brief against the portal's architectural decisions (ADR-013, ADR-004) confirmed that the portal's batch workloads are modest, rare, and well-served by Lambda — but that the deployment tool and introduction timing should match the portal's actual complexity profile, not the SRF microservices pattern.
 
@@ -1364,7 +1331,7 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 
 3. **Use EventBridge Scheduler (not EventBridge Rules) for cron tasks.** EventBridge Scheduler is the purpose-built service for scheduled invocations, with built-in retry with exponential backoff, dead-letter queues, and one-time scheduling. All nightly/daily cron tasks use Scheduler.
 
-4. **Provision Lambda infrastructure in Phase 0, not Phase 1.** Phase 0 ("Prove") is where Terraform modules are provisioned. The backup Lambda function (ADR-019) deploys immediately. Subsequent phases add functions to already-working infrastructure.
+4. **Provision Lambda infrastructure in Arc 1, not Milestone 2a.** Arc 1 ("Prove") is where Terraform modules are provisioned. The backup Lambda function (ADR-019) deploys immediately. Subsequent milestones add functions to already-working infrastructure.
 
 5. **Replace `/serverless/` directory with `/lambda/`.** The directory name reflects the runtime, not a vendor tool.
 
@@ -1373,17 +1340,17 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 ```
 /lambda/
  /handlers/
- backup.ts — pg_dump → S3 (Phase 3)
- ingest.ts — Book ingestion pipeline (Phase 3)
- relations.ts — Chunk relation computation (Phase 3)
- aggregate-themes.ts — Nightly search theme aggregation (Phase 6)
- send-email.ts — Daily passage email dispatch (Phase 8)
- generate-social.ts — Quote image generation (Phase 8)
- webhook-contentful.ts — Contentful sync (Phase 9)
- ingest-transcript.ts — YouTube transcript ingestion (Phase 12)
- compute-graph.ts — Knowledge graph positions (Phase 12)
- process-image.ts — Image tier generation (Phase 12)
- process-audio.ts — Audio transcription (Phase 12)
+ backup.ts — pg_dump → S3 (Milestone 3a)
+ ingest.ts — Book ingestion pipeline (Milestone 3a)
+ relations.ts — Chunk relation computation (Milestone 3a)
+ aggregate-themes.ts — Nightly search theme aggregation (Milestone 3d)
+ send-email.ts — Daily passage email dispatch (Milestone 5a)
+ generate-social.ts — Quote image generation (Milestone 5a)
+ webhook-contentful.ts — Contentful sync (Milestone 1b+)
+ ingest-transcript.ts — YouTube transcript ingestion (Arc 6)
+ compute-graph.ts — Knowledge graph positions (Arc 6)
+ process-image.ts — Image tier generation (Arc 6)
+ process-audio.ts — Audio transcription (Arc 6)
  /layers/
  shared/ — Shared deps (Neon client, Claude SDK)
 
@@ -1399,11 +1366,11 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 
 Each Lambda handler is a thin wrapper that imports from `/lib/services/` — the framework-agnostic service layer (ADR-011). The business logic is identical whether invoked by Lambda, CLI, or a test harness.
 
-### Phase-by-Phase Introduction
+### Milestone-by-Milestone Introduction
 
-| Phase | Functions Added | Trigger |
-|-------|----------------|---------|
-| **3** | `backup` | EventBridge Scheduler (nightly) |
+| Milestone | Functions Added | Trigger |
+|-----------|----------------|---------|
+| **3a** | `backup` | EventBridge Scheduler (nightly) |
 | **5** | `ingest`, `relations` | Manual invocation (CLI/admin portal → Lambda invoke) |
 | **7** | `aggregate-themes` | EventBridge Scheduler (nightly) |
 | **9** | `send-email`, `generate-social` | Scheduler (daily) / Manual |
@@ -1411,7 +1378,7 @@ Each Lambda handler is a thin wrapper that imports from `/lib/services/` — the
 | **13** | `ingest-transcript` | Manual + Scheduler (batch) |
 | **14** | `compute-graph`, `process-image`, `process-audio` | Scheduler (nightly) / Event-driven |
 
-Infrastructure is provisioned once in Phase 3. Each subsequent phase adds functions to already-provisioned infrastructure.
+Infrastructure is provisioned once in Milestone 3a. Each subsequent milestone adds functions to already-provisioned infrastructure.
 
 ### CLI Wrappers
 
@@ -1429,37 +1396,37 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 
 ### Rationale
 
-- **Lambda is SCM-agnostic.** It works identically under GitHub Actions (Phases 0–8) and GitLab CI (Phase 9+). Unlike CI-based cron jobs, Lambda infrastructure doesn't change when the portal migrates from GitHub to GitLab. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
-- **The portal already has an AWS footprint.** S3 (backups, Phase 3), Bedrock (Claude API, Phase 0), CloudFront (media streaming, Phase 12), and EventBridge are all AWS services the portal uses regardless. Lambda is the natural compute layer for an AWS-invested project.
-- **Terraform-native Lambda is sufficient at this scale.** The portal has < 15 Lambda functions across all phases. SF v4's ergonomics (local invocation, plugin ecosystem, per-function configuration) serve microservice architectures with dozens of functions. For < 15 functions, `aws_lambda_function` + `aws_lambda_layer_version` in Terraform are straightforward and eliminate a tool dependency.
+- **Lambda is SCM-agnostic.** It works identically under GitHub Actions (Arcs 1–4) and GitLab CI (Arc 4+). Unlike CI-based cron jobs, Lambda infrastructure doesn't change when the portal migrates from GitHub to GitLab. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
+- **The portal already has an AWS footprint.** S3 (backups, Milestone 3a), Bedrock (Claude API, Arc 1), CloudFront (media streaming, Arc 6), and EventBridge are all AWS services the portal uses regardless. Lambda is the natural compute layer for an AWS-invested project.
+- **Terraform-native Lambda is sufficient at this scale.** The portal has < 15 Lambda functions across all milestones. SF v4's ergonomics (local invocation, plugin ecosystem, per-function configuration) serve microservice architectures with dozens of functions. For < 15 functions, `aws_lambda_function` + `aws_lambda_layer_version` in Terraform are straightforward and eliminate a tool dependency.
 - **One IaC tool, one deployment pipeline.** `terraform apply` already deploys Neon, Vercel, Sentry, Cloudflare, and S3. Adding Lambda to the same pipeline means no new deployment workflow. CI/CD gains no new steps — Lambda deploys alongside everything else.
-- **Phase 0 resolves the ADR-019 timing gap.** The backup function deploys in Phase 0 where it belongs. No more "Phase 0 or Phase 1" ambiguity.
+- **Arc 1 resolves the ADR-019 timing gap.** The backup function deploys in Arc 1 where it belongs. No more "Milestone 1a or Milestone 2a" ambiguity.
 - **ADR-013 precedent.** The portal already diverges from SRF's DynamoDB pattern when the portal's needs don't match. The same principle applies: SRF ecosystem alignment is about patterns (Lambda for batch compute), not tools (SF v4 as the deployment mechanism).
 - **10-year horizon (ADR-004).** Terraform is Tier 1 (effectively permanent). Serverless Framework v4 is not in any durability tier — it's a deployment tool with licensing risk and competitive pressure from SST, AWS SAM, and native Terraform. Eliminating it removes a 10-year maintenance liability.
 
 ### Alternatives Considered
 
-1. **Keep the former Lambda batch decision unchanged (Lambda + SF v4 in Phase 1).** Rejected: introduces dual IaC tooling, SF v4 licensing dependency, and Phase 1 overload. The benefits of Lambda are preserved without the deployment tool overhead.
+1. **Keep the former Lambda batch decision unchanged (Lambda + SF v4 in Milestone 2a).** Rejected: introduces dual IaC tooling, SF v4 licensing dependency, and Milestone 2a overload. The benefits of Lambda are preserved without the deployment tool overhead.
 
-2. **Replace Lambda entirely with CI-scheduled scripts (GitHub Actions / GitLab CI).** Rejected: builds batch infrastructure on an SCM platform the portal is leaving at Phase 9. CI cron is ephemeral infrastructure — Lambda + EventBridge is durable infrastructure managed by Terraform.
+2. **Replace Lambda entirely with CI-scheduled scripts (GitHub Actions / GitLab CI).** Rejected: builds batch infrastructure on an SCM platform the portal is leaving at Arc 4. CI cron is ephemeral infrastructure — Lambda + EventBridge is durable infrastructure managed by Terraform.
 
 3. **AWS SAM instead of Terraform-native Lambda.** Rejected: SAM is another CLI tool alongside Terraform. For < 15 functions, native Terraform resources are simpler.
 
 4. **SST (open-source Serverless Framework alternative).** Considered but rejected: SST is well-designed but introduces another IaC paradigm. The portal should minimize tool surface area.
 
-5. **AWS Step Functions for ingestion orchestration.** Deferred, not rejected. Book ingestion is a multi-step workflow (extract → chunk → embed → insert → relate → verify), but it runs ~12 times total across the portal's lifetime. A sequential script with progress logging is sufficient. If Phase 12's audio/video pipeline needs multi-step orchestration with failure recovery, Step Functions earns its place via a new ADR.
+5. **AWS Step Functions for ingestion orchestration.** Deferred, not rejected. Book ingestion is a multi-step workflow (extract → chunk → embed → insert → relate → verify), but it runs ~12 times total across the portal's lifetime. A sequential script with progress logging is sufficient. If Arc 6's audio/video pipeline needs multi-step orchestration with failure recovery, Step Functions earns its place via a new ADR.
 
 ### Consequences
 
-- The former Lambda batch decision is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Phase 1) are replaced.
+- The former Lambda batch decision is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Milestone 2a) are replaced.
 - `/serverless/` directory becomes `/lambda/`. No `serverless.yml`. No SF v4 dependency.
 - Terraform gains two modules: `/terraform/modules/lambda/` and `/terraform/modules/eventbridge/`.
-- Phase 3 deliverable 3.2 gains Lambda infrastructure provisioning and the backup function.
-- Phase 3 deliverable 3.6 simplifies: deploy ingestion and relation functions into already-provisioned infrastructure. No infrastructure setup in Phase 3.
+- Milestone 3a deliverable 3.2 gains Lambda infrastructure provisioning and the backup function.
+- Milestone 3a deliverable 3.6 simplifies: deploy ingestion and relation functions into already-provisioned infrastructure. No infrastructure setup in Milestone 3a.
 - All downstream ADRs referencing Lambda batch infrastructure now reference ADR-017. The infrastructure is the same (Lambda + EventBridge); the deployment mechanism and timing differ.
 - Developers familiar with SF v4 should note: Lambda invocation, monitoring, and IAM are identical. Only the deployment tool changes (Terraform instead of `serverless deploy`).
-- **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Phase 3).
-- **Deferred:** Step Functions for complex orchestration (evaluate at Phase 12 if audio/video pipeline complexity warrants it).
+- **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Milestone 3a).
+- **Deferred:** Step Functions for complex orchestration (evaluate at Arc 6 if audio/video pipeline complexity warrants it).
 
 ---
 
@@ -1471,7 +1438,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 
 ### Context
 
-The portal will migrate from GitHub Actions (Phases 0–8) to GitLab CI/CD (Phase 9+) per SRF IDP standards. Both CI systems call the same operations: run tests, apply Terraform, run migrations, deploy. If pipeline logic is embedded in CI-specific YAML (GitHub Actions workflow syntax vs. GitLab CI YAML syntax), the Phase 9 migration requires rewriting every pipeline step.
+The portal will migrate from GitHub Actions (Arcs 1–4) to GitLab CI/CD (Arc 4+) per SRF IDP standards. Both CI systems call the same operations: run tests, apply Terraform, run migrations, deploy. If pipeline logic is embedded in CI-specific YAML (GitHub Actions workflow syntax vs. GitLab CI YAML syntax), the Arc 4 migration requires rewriting every pipeline step.
 
 ### Decision
 
@@ -1490,7 +1457,7 @@ Add a `scripts/` directory with CI-system-agnostic deployment scripts. Both GitH
 
 #### CI workflow pattern
 
-GitHub Actions (Phases 0–8):
+GitHub Actions (Arcs 1–4):
 ```yaml
 steps:
  - run: ./scripts/terraform-plan.sh dev
@@ -1498,7 +1465,7 @@ steps:
  - run: ./scripts/smoke-test.sh $DEPLOYMENT_URL
 ```
 
-GitLab CI (Phase 9+):
+GitLab CI (Arc 4+):
 ```yaml
 script:
  - ./scripts/terraform-plan.sh dev
@@ -1510,7 +1477,7 @@ The CI config becomes a thin orchestration layer. The scripts contain the actual
 
 #### Multi-environment promotion pipeline
 
-For Phase 9+ with four environments (dev/qa/stg/prod):
+For Arc 4+ with four environments (dev/qa/stg/prod):
 
 ```
 PR → dev (auto) → qa (manual gate) → stg (manual gate) → prod (manual gate)
@@ -1526,15 +1493,15 @@ Migration sequencing: Terraform apply runs *first* (in case it creates the datab
 
 ### Rationale
 
-- **Migration cost reduction.** The Phase 9 SCM migration becomes a CI config swap (rewrite `.github/workflows/*.yml` → `.gitlab-ci.yml`), not a logic rewrite. The scripts are identical.
+- **Migration cost reduction.** The Arc 4 SCM migration becomes a CI config swap (rewrite `.github/workflows/*.yml` → `.gitlab-ci.yml`), not a logic rewrite. The scripts are identical.
 - **Local reproducibility.** Developers can run `./scripts/db-migrate.sh` locally. CI parity with local execution prevents "works on my machine" issues.
 - **Testability.** Scripts can be tested independently of the CI system. ShellCheck lint in CI catches script errors.
 
 ### Consequences
 
-- `/scripts/` directory added to repo in Phase 0
+- `/scripts/` directory added to repo in Arc 1
 - GitHub Actions workflows call scripts instead of inline commands
-- Phase 9 GitLab migration rewrites CI config only, not deployment logic
+- Arc 4 GitLab migration rewrites CI config only, not deployment logic
 - All scripts accept environment name as parameter, defaulting to `dev`
 - **Extends ADR-016** (Terraform) with concrete deployment orchestration
 
@@ -1560,7 +1527,7 @@ The 10-year architecture horizon (ADR-004) demands that the data survive any sin
 
 ### Decision
 
-Add a **nightly `pg_dump` to S3** as a Phase 1 deliverable, alongside the Terraform work.
+Add a **nightly `pg_dump` to S3** as a Milestone 2a deliverable, alongside the Terraform work.
 
 #### Implementation
 
@@ -1568,7 +1535,7 @@ Add a **nightly `pg_dump` to S3** as a Phase 1 deliverable, alongside the Terraf
 - `pg_dump --format=custom` (most flexible restore format)
 - Uploaded to an encrypted S3 bucket (`aws:kms` server-side encryption)
 - **Retention:** 90 days of daily backups, plus the 1st of each month retained for 1 year
-- **Size estimate:** Phase 0 database (~2,000 chunks + embeddings) ≈ 50–100MB compressed. Full library (~50,000 chunks) ≈ 1–2GB compressed. S3 cost: < $1/month.
+- **Size estimate:** Arc 1 database (~2,000 chunks + embeddings) ≈ 50–100MB compressed. Full library (~50,000 chunks) ≈ 1–2GB compressed. S3 cost: < $1/month.
 
 #### Terraform module
 
@@ -1595,8 +1562,8 @@ Add a **nightly `pg_dump` to S3** as a Phase 1 deliverable, alongside the Terraf
 
 ### Consequences
 
-- `/terraform/modules/backup/` added in Phase 1
-- Lambda function for nightly pg_dump added in Phase 0 (or Phase 1 when Lambda infrastructure from ADR-017 is first deployed)
+- `/terraform/modules/backup/` added in Milestone 2a
+- Lambda function for nightly pg_dump added in Arc 1 (or Milestone 2a when Lambda infrastructure from ADR-017 is first deployed)
 - S3 bucket created and managed by Terraform
 - Restore procedure documented in operational playbook
 - Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
@@ -1649,7 +1616,7 @@ SRF AWS Organization
 ### GitLab CI/CD Strategy
 
 ```yaml
-# .gitlab-ci.yml (Phase 9+)
+# .gitlab-ci.yml (Arc 4+)
 stages:
  - validate
  - test
@@ -1694,16 +1661,16 @@ Contentful Organization
 - **SRF standard patterns.** Multi-account AWS, Terraform workspaces, and GitLab CI/CD are established at SRF. This architecture doesn't invent — it applies.
 - **Autonomous design authority.** The user confirmed autonomous decision-making for infrastructure. These decisions align with SRF's tech stack while optimizing for the portal's specific needs.
 - **Blast radius containment.** A broken dev deployment can never affect production. Account-level isolation is the strongest boundary AWS offers.
-- **Migration-ready from day one.** Because deployment scripts are CI-agnostic, the GitHub→GitLab migration at Phase 9 is a configuration change, not a re-architecture.
+- **Migration-ready from day one.** Because deployment scripts are CI-agnostic, the GitHub→GitLab migration at Arc 4 is a configuration change, not a re-architecture.
 
 ### Consequences
 
-- Terraform configurations parameterized by environment from Phase 0
+- Terraform configurations parameterized by environment from Arc 1
 - AWS account creation requested through SRF's cloud team (or single-account with IAM isolation if multi-account is delayed)
 - Contentful spaces created per environment (free tier supports one space; paid tier needed for multi-space)
-- GitLab CI/CD templates prepared during Phase 8, activated at Phase 9
+- GitLab CI/CD templates prepared during Milestone 5a, activated at Arc 4
 - Neon branching strategy documented in runbook
-- **Fallback:** If multi-account AWS is operationally heavy for early phases, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
+- **Fallback:** If multi-account AWS is operationally heavy for early arcs, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
 
 ---
 
@@ -1722,7 +1689,7 @@ The portal serves a global audience. Seekers in India, Latin America, Africa, an
 
 ### Decision
 
-Adopt a **single-region origin with global edge distribution** strategy for Phases 0–8, expanding to **read replicas and cross-region asset replication** at Phase 9+ when traffic patterns justify it. No active-active multi-region. The portal is a reading and search tool, not a financial transaction system — the availability requirements are high but not extreme.
+Adopt a **single-region origin with global edge distribution** strategy for Arcs 1–4, expanding to **read replicas and cross-region asset replication** at Milestone 5a+ when traffic patterns justify it. No active-active multi-region. The portal is a reading and search tool, not a financial transaction system — the availability requirements are high but not extreme.
 
 ### Architecture by Layer
 
@@ -1736,26 +1703,26 @@ Adopt a **single-region origin with global edge distribution** strategy for Phas
 
 Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a Vercel PoP in Mumbai, a PDF from a CloudFront PoP in Mumbai, and only the search query itself routes to the single-region origin.
 
-**Layer 2: Compute (single-region, Phases 0–8)**
+**Layer 2: Compute (single-region, Arcs 1–4)**
 
 | Service | Region | Failover |
 |---------|--------|----------|
 | Vercel Serverless Functions | `us-east-1` (or `ap-south-1` if Neon region is in Asia) | Vercel provides within-region redundancy. No cross-region failover. |
 | AWS Lambda | Same region as Neon primary | Within-region redundancy (Lambda runs across multiple AZs automatically). |
 
-**Layer 3: Database (single-region with HA, Phases 0–8)**
+**Layer 3: Database (single-region with HA, Arcs 1–4)**
 
 | Service | Strategy | Notes |
 |---------|----------|-------|
 | Neon PostgreSQL | Single-region primary with automatic AZ failover | Neon manages replication and failover within the region. If the primary compute goes down, Neon promotes a replica. |
-| Neon read replicas (Phase 9+) | Add read replicas in EU and Asia-Pacific | Search queries and reader pages route to the nearest read replica. Write operations (ingestion, editorial review) route to the primary. |
+| Neon read replicas (Milestone 5a+) | Add read replicas in EU and Asia-Pacific | Search queries and reader pages route to the nearest read replica. Write operations (ingestion, editorial review) route to the primary. |
 
-**Layer 4: Storage (single-region with CDN, expanding at Phase 9+)**
+**Layer 4: Storage (single-region with CDN, expanding at Milestone 5a+)**
 
 | Service | Strategy | Notes |
 |---------|----------|-------|
 | S3 (primary) | Single-region | Audio files, PDFs, backups. CloudFront sits in front for global delivery. |
-| S3 Cross-Region Replication (Phase 9+) | Replicate to a second region | Disaster recovery for assets. If primary region S3 is unavailable, CloudFront falls back to the replica bucket. |
+| S3 Cross-Region Replication (Milestone 5a+) | Replicate to a second region | Disaster recovery for assets. If primary region S3 is unavailable, CloudFront falls back to the replica bucket. |
 
 ### Failure Scenarios and Response
 
@@ -1763,7 +1730,7 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 |----------|--------|----------|
 | Vercel outage (regional) | Pages unavailable | Vercel's global load balancing routes to other regions. ISR-cached pages still served from edge. |
 | Neon outage (regional) | Search and dynamic content unavailable. Static pages still served. | Neon's automatic AZ failover. If full region down: portal degrades to static content only (ISR pages, cached PDFs). |
-| S3 outage (regional) | New PDF/audio requests fail. CloudFront serves cached copies. | CloudFront continues serving cached assets. At Phase 9+, cross-region replica takes over. |
+| S3 outage (regional) | New PDF/audio requests fail. CloudFront serves cached copies. | CloudFront continues serving cached assets. At Milestone 5a+, cross-region replica takes over. |
 | Lambda outage | Batch jobs fail (ingestion, backup, email) | Lambda retries automatically. Batch jobs are idempotent — safe to re-run. Email delayed, not lost. |
 | CloudFront outage | Asset delivery degraded | Extremely rare (global service). Fallback: direct S3 URLs (slower, no edge caching). |
 
@@ -1771,7 +1738,7 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 
 - **Cost-proportionate resilience.** Active-active multi-region would cost 3–5× more in infrastructure and add significant operational complexity. The portal's availability SLA does not justify this. "Search is down for 30 minutes while Neon fails over" is acceptable; "a seeker loses their reading progress" is not (but all reading state is client-side in `localStorage` anyway).
 - **Edge caching covers the latency gap.** The majority of portal requests — page loads, PDFs, audio streams, static assets — are served from the edge. Only search queries and dynamic API calls reach the origin. For search, 200ms of additional latency to a cross-region origin is acceptable.
-- **Neon read replicas are the right Phase 9+ investment.** When traffic justifies it, adding a read replica in `ap-south-1` (Mumbai) cuts search latency for the largest seeker population (India) in half. This is a Terraform change, not an architectural change.
+- **Neon read replicas are the right Milestone 5a+ investment.** When traffic justifies it, adding a read replica in `ap-south-1` (Mumbai) cuts search latency for the largest seeker population (India) in half. This is a Terraform change, not an architectural change.
 - **Backup is separate from failover.** ADR-019 (nightly pg_dump to S3) provides data recovery. This ADR addresses service availability. They complement each other.
 
 ### Consequences
@@ -1779,8 +1746,8 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 - Primary region selected based on Neon availability and SRF's AWS account structure (likely `us-east-1` or `us-west-2`)
 - Vercel function region co-located with Neon primary
 - Lambda functions deployed to the same region as Neon primary
-- CloudFront distribution configured for all static assets from Phase 0
-- Phase 9+: Terraform module for Neon read replicas, S3 CRR, and Vercel multi-region functions
+- CloudFront distribution configured for all static assets from Arc 1
+- Milestone 5a+: Terraform module for Neon read replicas, S3 CRR, and Vercel multi-region functions
 - Health check endpoint (`/api/v1/health`) reports database connectivity, enabling uptime monitoring
 - **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration.
 
@@ -1842,7 +1809,7 @@ The `h` parameter is used only for resolution fallback when the paragraph_index 
 
 ### Consequences
 
-- `content_hash` column added to `book_chunks` table in the initial migration (Phase 0)
+- `content_hash` column added to `book_chunks` table in the initial migration (Arc 1)
 - Share URLs include the `h` parameter (short hash suffix)
 - OG meta tags embed the content_hash for later verification
 - Re-ingestion scripts log when paragraph_index shifts occur, enabling link audit
@@ -1858,7 +1825,7 @@ The `h` parameter is used only for resolution fallback when the paragraph_index 
 
 ### Context
 
-The search API (`/api/v1/search`) calls the Claude API for query expansion and passage ranking. Each search costs approximately $0.01–0.02 in Claude API usage. The portal has no authentication until Phase 13+. All API routes are public.
+The search API (`/api/v1/search`) calls the Claude API for query expansion and passage ranking. Each search costs approximately $0.01–0.02 in Claude API usage. The portal has no authentication until Milestone 7a+. All API routes are public.
 
 A bot or bad actor could hammer the search endpoint and generate significant Claude API costs. At 100 requests/second, the portal would burn through $50–100/hour in Claude API charges. Even accidental abuse (a misbehaving scraper, a search indexer hitting the API) could spike costs.
 
@@ -1868,7 +1835,7 @@ The DESIGN.md security section mentions "Rate limiting on API routes" but doesn'
 
 Implement rate limiting at two layers:
 
-#### Layer 1: Cloudflare (edge — Phase 0)
+#### Layer 1: Cloudflare (edge — Arc 1)
 
 Cloudflare's free tier includes basic rate limiting via WAF rules. Configure:
 
@@ -1880,7 +1847,7 @@ Cloudflare's free tier includes basic rate limiting via WAF rules. Configure:
 
 These limits are generous for human seekers (who search a few times per session) but block automated abuse.
 
-#### Layer 2: Application (API route — Phase 0)
+#### Layer 2: Application (API route — Arc 1)
 
 A lightweight in-memory rate limiter (e.g., `rate-limiter-flexible` with Vercel's edge runtime, or a simple sliding window counter in a Vercel KV store) as a defense-in-depth measure:
 
@@ -1893,17 +1860,17 @@ Set a monthly spending cap via the Anthropic API dashboard. If the cap is reache
 
 ### Rationale
 
-- **Cost protection is a Phase 0 requirement**, not an afterthought. The Claude API is the only variable-cost component in the early phases. Unbounded cost exposure on a public, unauthenticated API is an unacceptable risk.
+- **Cost protection is an Arc 1 requirement**, not an afterthought. The Claude API is the only variable-cost component in the early arcs. Unbounded cost exposure on a public, unauthenticated API is an unacceptable risk.
 - **Graceful degradation over hard blocks.** A seeker who happens to search frequently (exploring themes, trying different queries) should never see an error page. They see slightly less refined results. The portal remains welcoming.
 - **Two-layer defense.** Cloudflare catches the obvious abuse (bots, scrapers). The application layer catches the edge cases (distributed abuse, legitimate but excessive use).
 
 ### Consequences
 
-- Cloudflare WAF rules configured in Phase 0 (added to Terraform Cloudflare module)
+- Cloudflare WAF rules configured in Arc 1 (added to Terraform Cloudflare module)
 - Application-level rate limiter in the search API route
 - Claude API monthly budget cap set via Anthropic dashboard
 - Search gracefully degrades to database-only when rate-limited or budget-exceeded
-- Monitoring: Sentry alert on rate limit triggers; New Relic dashboard for Claude API usage (Phase 6)
+- Monitoring: Sentry alert on rate limit triggers; New Relic dashboard for Claude API usage (Milestone 3d)
 - **Extends** the security section of DESIGN.md with concrete implementation
 
 ---
@@ -2076,10 +2043,10 @@ Pre-renderable PDFs are GET endpoints on their parent resources. But a seeker wh
 - `@react-pdf/renderer` added as a dependency (or in a shared package if Lambda and Vercel both generate PDFs)
 - CloudFront invalidation on content update (book re-ingestion, transcript edit)
 - File size stored in metadata and displayed on download buttons
-- Phase 7: Book and chapter PDFs (pre-rendered)
-- Phase 7: Talk outline PDFs (dynamic)
-- Phases 12–13: Audio and video transcript PDFs (pre-rendered)
-- Future: Passage collection and search result PDFs (dynamic, Phase 13+ or as demand warrants)
+- Arc 4: Book and chapter PDFs (pre-rendered)
+- Arc 4: Talk outline PDFs (dynamic)
+- Arc 6+: Audio and video transcript PDFs (pre-rendered)
+- Future: Passage collection and search result PDFs (dynamic, Milestone 7a+ or as demand warrants)
 
 ---
 
@@ -2310,20 +2277,20 @@ CREATE INDEX idx_messaging_metrics_daily ON messaging_metrics(created_at, channe
 
 ### Consequences
 
-- Phase 8: WhatsApp Business API integration (alongside daily email — shared infrastructure). Daily wisdom via WhatsApp. Search via WhatsApp.
-- Phase 8: RSS feeds (machine syndication, complementary channel)
-- Phase 14: SMS access gateway (requires cost evaluation per region, dedicated phone numbers)
-- Phase 14: Telegram bot (low cost, incremental after WhatsApp)
-- Future: USSD (requires telco partnership, evaluate in Phase 14)
-- Future: IVR/Voice (evaluate after audio library exists, Phase 12+)
+- Milestone 5a: WhatsApp Business API integration (alongside daily email — shared infrastructure). Daily wisdom via WhatsApp. Search via WhatsApp.
+- Milestone 5a: RSS feeds (machine syndication, complementary channel)
+- Milestone 7b: SMS access gateway (requires cost evaluation per region, dedicated phone numbers)
+- Milestone 7b: Telegram bot (low cost, incremental after WhatsApp)
+- Future: USSD (requires telco partnership, evaluate in Milestone 7b)
+- Future: IVR/Voice (evaluate after audio library exists, Arc 6+)
 - `messaging_subscriptions` and `messaging_metrics` tables added to schema
 - Lambda function for channel routing (`/lambda/functions/messaging/`)
 - WhatsApp Business account registration (requires Meta business verification)
 - SMS provider evaluation: Twilio (global), Africa's Talking (Africa-optimized), Gupshup (India-optimized)
 - Passage formatting service in `/lib/services/format.ts` — formats a passage for different channel constraints (160 chars, 1024 chars, Markdown, plain text)
 - **Extends** ADR-024 (native share) — SMS sharing from the portal now includes passage text, not just a URL
-- **Extends** Phase 14.5 (SMS access gateway) — now part of a broader multi-channel strategy, not a standalone experiment
-- **Replaces** the Phase 14.5 "exploration" framing with a committed delivery plan starting at Phase 8 (WhatsApp)
+- **Extends** Milestone 7b (SMS access gateway) — now part of a broader multi-channel strategy, not a standalone experiment
+- **Replaces** the Milestone 7b "exploration" framing with a committed delivery plan starting at Milestone 5a (WhatsApp)
 
 ---
 
@@ -2335,7 +2302,7 @@ CREATE INDEX idx_messaging_metrics_daily ON messaging_metrics(created_at, channe
 
 ### Context
 
-The portal serves content in multiple languages (Phase 10+). Two independent systems need language awareness: the frontend pages (rendered by Next.js for seekers) and the API routes (consumed by the web frontend, mobile apps, WhatsApp bots, and future integrations). The question is how language is expressed in URLs.
+The portal serves content in multiple languages (Milestone 5b+). Two independent systems need language awareness: the frontend pages (rendered by Next.js for seekers) and the API routes (consumed by the web frontend, mobile apps, WhatsApp bots, and future integrations). The question is how language is expressed in URLs.
 
 Three approaches were considered:
 
@@ -2383,7 +2350,7 @@ Adopt the **hybrid approach**: locale path prefix on frontend pages, query param
 
 ### Consequences
 
-- Frontend i18n uses `next-intl` with URL-based locale prefixes from Phase 1 (consistent with ADR-075)
+- Frontend i18n uses `next-intl` with URL-based locale prefixes from Milestone 2a (consistent with ADR-075)
 - All API endpoints accept an optional `language` query parameter (default: `en`)
 - The `language` parameter triggers locale-first search and English fallback at the service layer (ADR-075)
 - Mobile apps and other consumers pin to the API and pass language as a parameter
@@ -2394,41 +2361,14 @@ Adopt the **hybrid approach**: locale path prefix on frontend pages, query param
 
 ---
 
----
-
-## ADR-028: Remove book_store_links Table — Simplify Bookstore Links
-
-**Status:** Accepted | **Date:** 2026-02-19
-
-### Context
-
-The original schema included a `book_store_links` table for per-language bookstore URLs (SRF Bookstore for English, YSS Bookstore for Hindi/Bengali, regional Amazon or publisher sites for others), with a fallback to the `books.bookstore_url` column.
-
-### Decision
-
-Remove the `book_store_links` table entirely. The `books.bookstore_url` column is sufficient — it points to the SRF Bookstore for all books. The portal is not an e-commerce gateway; directing seekers to the SRF Bookstore is the appropriate action for all languages in all foreseeable phases.
-
-If per-language bookstore routing is genuinely needed in Phase 10 (YSS Bookstore for Hindi/Bengali editions), a simple lookup table or additional column can be added at that time — a trivial migration.
-
-### Consequences
-
-- One fewer table, one fewer foreign key relationship, one fewer fallback logic path
-- `books.bookstore_url` is the single source for "Find this book" links
-- Phase 10 deliverable 10.11 updated to reference `books.bookstore_url` instead of `book_store_links`
-- Zero impact on any Phase 0–9 deliverable
-
----
-
----
-
-## ADR-029: Autobiography of a Yogi as Phase 0 Focus
+## ADR-029: Autobiography of a Yogi as Focus Book
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
 
 ### Context
 
-The SRF corpus spans dozens of books and thousands of pages. Phase 0 needs a single book to prove the search pattern.
+The SRF corpus spans dozens of books and thousands of pages. Arc 1 needs a single book to prove the search pattern.
 
 | Book | Pages | Why Consider | Why Not |
 |------|-------|-------------|---------|
@@ -2451,7 +2391,7 @@ Start with **Autobiography of a Yogi**.
 ### Consequences
 
 - The chunking strategy optimized for narrative prose may need adjustment for verse-by-verse commentary books (Second Coming, Bhagavad Gita) later
-- Phase 0 demonstrates the concept on the most popular book, which is strategically useful for stakeholder presentations
+- Arc 1 demonstrates the concept on the most popular book, which is strategically useful for stakeholder presentations
 
 ---
 
@@ -2464,7 +2404,7 @@ Start with **Autobiography of a Yogi**.
 
 ### Context
 
-The Roadmap (Phase 3) originally listed post-Phase 0 books in an order roughly corresponding to scholarly depth and corpus size: The Second Coming of Christ, God Talks With Arjuna, Man's Eternal Quest, The Divine Romance, etc. However, the question of what makes the portal *essential* for seekers shifts the optimization target from scholarly completeness to life-impact — which books most directly address the reasons people seek spiritual guidance?
+The Roadmap (Milestone 3a) originally listed post-Arc 1 books in an order roughly corresponding to scholarly depth and corpus size: The Second Coming of Christ, God Talks With Arjuna, Man's Eternal Quest, The Divine Romance, etc. However, the question of what makes the portal *essential* for seekers shifts the optimization target from scholarly completeness to life-impact — which books most directly address the reasons people seek spiritual guidance?
 
 | Ordering Criterion | Optimizes For | Risk |
 |-------------------|---------------|------|
@@ -2479,7 +2419,7 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 
 | Priority | Book | Rationale |
 |----------|------|-----------|
-| 1 | *Autobiography of a Yogi* | Phase 0 focus (already decided, ADR-029) |
+| 1 | *Autobiography of a Yogi* | Arc 1 focus (already decided, ADR-029) |
 | 2 | *Where There Is Light* | Organized by life topic (hope, courage, healing, success). Directly powers thematic navigation. Maps to the "Doors of Entry" feature. |
 | 3 | *Sayings of Paramahansa Yogananda* | Standalone aphorisms — naturally pre-chunked. Powers the "Today's Wisdom" daily passage feature. Lowest ingestion complexity. |
 | 4 | *Scientific Healing Affirmations* | Directly addresses health, abundance, and peace. Powers "The Quiet Corner." Practical and actionable. |
@@ -2501,10 +2441,10 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 
 ### Consequences
 
-- Phase 3 scope changes: the multi-volume scriptural commentaries move from "first after Phase 0" to "after the collected talks"
-- The verse-aware chunking challenge (originally a Phase 3 concern) is deferred, allowing more time to design a robust solution
+- Milestone 3a scope changes: the multi-volume scriptural commentaries move from "first after Arc 1" to "after the collected talks"
+- The verse-aware chunking challenge (originally a Milestone 3a concern) is deferred, allowing more time to design a robust solution
 - The portal reaches "critical mass" of quotable, thematically diverse content sooner
-- *Where There Is Light* + *Sayings* + *Scientific Healing Affirmations* can potentially be ingested in the same sprint as Phase 3 begins, since they are short and structurally simple
+- *Where There Is Light* + *Sayings* + *Scientific Healing Affirmations* can potentially be ingested in the same sprint as Milestone 3a begins, since they are short and structurally simple
 
 ---
 
@@ -2656,16 +2596,16 @@ CREATE INDEX idx_chunk_topics_pending ON chunk_topics(tagged_by) WHERE tagged_by
 
 ### Multilingual Implications
 
-None. The existing `topic_translations` table handles localized names for any theme regardless of category. Theme descriptions used for auto-tagging are internal (not displayed). The multilingual embedding model produces reasonable candidates for non-English chunks even from English-language theme descriptions. Per-language theme descriptions can improve accuracy in Phase 10 but are not required.
+None. The existing `topic_translations` table handles localized names for any theme regardless of category. Theme descriptions used for auto-tagging are internal (not displayed). The multilingual embedding model produces reasonable candidates for non-English chunks even from English-language theme descriptions. Per-language theme descriptions can improve accuracy in Milestone 5b but are not required.
 
 ### Consequences
 
-- Phase 4 scope expanded: deliverable 4.1 (theme tagging pipeline) now includes the auto-tagging infrastructure, not just manual tagging
-- Situation themes are added incrementally during Phase 4+ as content is ingested and sufficient passages confirmed
+- Milestone 3b scope expanded: deliverable 4.1 (theme tagging pipeline) now includes the auto-tagging infrastructure, not just manual tagging
+- Situation themes are added incrementally during Milestone 3b+ as content is ingested and sufficient passages confirmed
 - The homepage stays calm — six quality doors, one quiet link to explore all themes
 - Editorial governance needed: who decides when a new theme has enough passages to go live?
 - The `description` field on `teaching_topics` now serves double duty: internal reference *and* auto-tagging input. Descriptions should be written as rich keyword-laden paragraphs, not terse labels.
-- The review queue (`tagged_by = 'auto'`) needs a workflow — Phase 0–8 uses a script or Retool dashboard; Phase 9+ uses Contentful
+- The review queue (`tagged_by = 'auto'`) needs a workflow — Arcs 1–4 use a script or Retool dashboard; Arc 4+ uses Contentful
 - **Extended by ADR-033:** Four additional exploration categories (person, principle, scripture, practice) added to the taxonomy, using the same infrastructure
 
 ---
@@ -2729,18 +2669,18 @@ The `/themes` page organizes all categories into distinct sections:
 
 Categories appear only when they contain at least one published topic. The homepage remains unchanged — six quality doors only.
 
-### Phase
+### Scheduling
 
-- `quality` and `situation` themes: Phase 4 (existing plan)
-- `practice` themes: Phase 4+ (practical themes like Meditation naturally emerge from the early content)
-- `person`, `principle`, `scripture` themes: Phase 5+ (requires multi-book content for meaningful coverage; benefits from the Reverse Bibliography extraction pipeline)
+- `quality` and `situation` themes: Milestone 3b (existing plan)
+- `practice` themes: Milestone 3b+ (practical themes like Meditation naturally emerge from the early content)
+- `person`, `principle`, `scripture` themes: Milestone 3c+ (requires multi-book content for meaningful coverage; benefits from the Reverse Bibliography extraction pipeline)
 
 ### Alternatives Considered
 
 | Approach | Why Rejected |
 |----------|-------------|
 | **Separate tables per category** | Unnecessary complexity; the same tagging infrastructure applies to all categories |
-| **Hierarchical taxonomy** (e.g., scripture → Gita → Chapter 2) | Over-engineering for Phase 5; a flat per-category list is sufficient. Sub-categories can be added later if content depth warrants |
+| **Hierarchical taxonomy** (e.g., scripture → Gita → Chapter 2) | Over-engineering for Milestone 3c; a flat per-category list is sufficient. Sub-categories can be added later if content depth warrants |
 | **Merge with Reverse Bibliography** | Different user intent: "teach me about X" vs "show me where X is cited." Both valuable, different navigation paths |
 
 ### Consequences
@@ -2805,7 +2745,7 @@ ALTER TABLE books ADD COLUMN edition_year INTEGER; -- year of this specific edit
 
 ### Consequences
 
-- `edition` and `edition_year` columns added to `books` table in Phase 0 migration
+- `edition` and `edition_year` columns added to `books` table in Arc 1 migration
 - `book_chunks_archive` table created (can be empty until an actual re-ingestion occurs)
 - Book landing pages display edition information
 - Re-ingestion workflow documented in the operational playbook
@@ -2907,12 +2847,12 @@ CREATE TABLE image_places (
 
 ### Consequences
 
-- `images` and `image_descriptions` tables added to Phase 0 schema (empty until content ingestion)
+- `images` and `image_descriptions` tables added to Arc 1 schema (empty until content ingestion)
 - Image ingestion pipeline, gallery, and player added when the image content type goes live
 - S3 storage for images uses the same bucket and CloudFront distribution as audio files (ADR-057)
 - Image search integration via unified content hub (ADR-060) when cross-media features arrive
 - Claude drafts alt text and rich descriptions at ingestion time; human review mandatory before publishing
-- Image descriptions are localized alongside other content in Phase 10 (Multi-Language) via `image_descriptions.language`
+- Image descriptions are localized alongside other content in Milestone 5b (Multi-Language) via `image_descriptions.language`
 - Sacred Places pages (ADR-069) gain a photographs section — images connected via `image_places`
 - **Extends** ADR-005 E7 (Claude-generated alt text) — from About page photos to the entire image archive
 - **Extends** ADR-057 (audio sacred artifacts) — same `is_yogananda_subject` pattern for visual sacred artifacts
@@ -2958,7 +2898,7 @@ CREATE TABLE people (
  death_year INTEGER, -- NULL for avatars (Krishna) or living figures
  biography_short TEXT NOT NULL, -- 2–3 sentences, editorial
  biography_long TEXT, -- full detail page content, editorial
- image_id UUID, -- FK to images table (Phase 12, ADR-035)
+ image_id UUID, -- FK to images table (Arc 6, ADR-035)
  topic_id UUID REFERENCES teaching_topics(id), -- links to theme tagging system
  language TEXT NOT NULL DEFAULT 'en',
  canonical_person_id UUID REFERENCES people(id), -- cross-language linking
@@ -3034,15 +2974,15 @@ The theme page (`/themes/krishna`) continues to serve the question "What did Yog
 
 ### Consequences
 
-- `people` table added to Neon schema (Phase 5 migration, when person-category themes activate)
+- `people` table added to Neon schema (Milestone 3c migration, when person-category themes activate)
 - `person_places` and `person_relations` junction tables added alongside
-- `/people` and `/people/[slug]` routes added to the frontend (Phase 5)
-- API endpoints `GET /api/v1/people` and `GET /api/v1/people/[slug]` added (Phase 5)
+- `/people` and `/people/[slug]` routes added to the frontend (Milestone 3c)
+- API endpoints `GET /api/v1/people` and `GET /api/v1/people/[slug]` added (Milestone 3c)
 - People Library entries require SRF editorial review and approval before publication (`is_published` gate)
 - Guru photographs on person pages follow ADR-042 sacred image guidelines
-- Cross-language person entries linked via `canonical_person_id` (Phase 10)
+- Cross-language person entries linked via `canonical_person_id` (Milestone 5b)
 - Theme pages for person-category topics gain a "Learn about [person] →" link to the People Library
-- Reader inline references to named figures can link to People Library entries (Phase 5+)
+- Reader inline references to named figures can link to People Library entries (Milestone 3c+)
 - **Extends ADR-031** (teaching topics), **ADR-069** (Sacred Places), **ADR-033** (exploration categories)
 
 ---
@@ -3184,7 +3124,7 @@ The `/people` index gains a "Lineage of SRF Presidents" section rendered as a ve
 └──────────────────────────────────────────────┘
 ```
 
-**Knowledge graph lineage filter (Phase 6):**
+**Knowledge graph lineage filter (Milestone 3d):**
 
 The `/explore` graph gains a "Lineage" filter mode (extends ADR-062 view modes). When active, it shows only person nodes connected by `guru_of`, `disciple_of`, `succeeded_by`, and `preceded_by` edges, rendered as a directed vertical layout rather than a force-directed graph. This provides an alternate visualization of both the spiritual lineage and the presidential succession without building a one-off component.
 
@@ -3211,10 +3151,10 @@ The `/explore` graph gains a "Lineage" filter mode (extends ADR-062 view modes).
 - Five new `relation_type` values: `succeeded_by`, `preceded_by`, `mentored_by`, `edited_works_of`, `collaborated_with`
 - New API endpoint: `GET /api/v1/people/lineage` (presidential succession)
 - Existing `GET /api/v1/people` gains `?person_type=` filter
-- `/people` index gains "Lineage of SRF Presidents" timeline section (Phase 5)
-- `/explore` gains "Lineage" graph filter mode (Phase 6, extends ADR-062)
-- Person cards render In Memoriam presentation for applicable figures (Phase 5)
-- Phase 5 seed data expanded: presidential succession entries with service dates alongside existing spiritual figure seeds
+- `/people` index gains "Lineage of SRF Presidents" timeline section (Milestone 3c)
+- `/explore` gains "Lineage" graph filter mode (Milestone 3d, extends ADR-062)
+- Person cards render In Memoriam presentation for applicable figures (Milestone 3c)
+- Milestone 3c seed data expanded: presidential succession entries with service dates alongside existing spiritual figure seeds
 - **Extends:** ADR-036, ADR-061, ADR-062
 - **New stakeholder questions:** SRF editorial policy on living monastic biographical content; monastic content scope (content *by* vs. *about* monastics); preferred depth of presidential succession editorial framing
 
@@ -3238,7 +3178,7 @@ Surface the spiritual terminology bridge as a user-facing glossary with two deli
 - Browsable, searchable, organized by category (Sanskrit terms, yogic concepts, spiritual states, scriptural references)
 - Each entry contains: term, brief definition (1-2 sentences, editorially written), Yogananda's own explanation (verbatim quote from the corpus where he defines the term, with full citation), and links to theme pages and reader passages where the term appears
 - Search within the glossary uses trigram matching (`pg_trgm`) for partial/fuzzy lookups
-- Multilingual: glossary entries carry a `language` column; Phase 10 adds per-locale glossaries built during the human review cycle (already planned in Deliverable 10.12)
+- Multilingual: glossary entries carry a `language` column; Milestone 5b adds per-locale glossaries built during the human review cycle
 
 **2. Inline term highlighting in the reader (opt-in):**
 - Toggle in reader settings: "Show glossary terms" (off by default)
@@ -3273,11 +3213,11 @@ CREATE TABLE chunk_glossary_terms (
 );
 ```
 
-### Phase
+### Scheduling
 
-- Data: Seed from `spiritual-terms.json` starting Phase 0. Enriched per-book via vocabulary extraction lifecycle (ADR-051).
-- Glossary page (`/glossary`): Phase 2 (when multi-book content provides sufficient explanation passages).
-- Inline reader highlighting: Phase 2 (reader settings already exist from Phase 1).
+- Data: Seed from `spiritual-terms.json` starting Arc 1. Enriched per-book via vocabulary extraction lifecycle (ADR-051).
+- Glossary page (`/glossary`): Milestone 2b (when multi-book content provides sufficient explanation passages).
+- Inline reader highlighting: Milestone 2b (reader settings already exist from Milestone 2a).
 
 ### Consequences
 
@@ -3326,9 +3266,9 @@ function chapterHash(chunks: string[]): string {
 }
 ```
 
-### Phase
+### Scheduling
 
-Phase 0 (computed during ingestion, stored in schema). The `/integrity` page is Phase 1.
+Arc 1 (computed during ingestion, stored in schema). The `/integrity` page is Milestone 2a.
 
 ### Consequences
 
@@ -3462,22 +3402,22 @@ The `hybrid_search` function extends to query `magazine_chunks` where `author_ty
 
 The public `/seeking` dashboard links to published magazine features: "Read the full analysis in Self-Realization Magazine →". The magazine publishes a curated narrative drawn from the portal's aggregated search data. Each amplifies the other.
 
-### Phase
+### Scheduling
 
-- Schema and ingestion pipeline: Phase 7 (alongside chapter/book PDF infrastructure)
-- Magazine browsing UI: Phase 7
-- Search integration (Yogananda's articles): Phase 7
-- Magazine ↔ "What Is Humanity Seeking?" symbiosis: Phase 7
+- Schema and ingestion pipeline: Arc 4 (alongside chapter/book PDF infrastructure)
+- Magazine browsing UI: Arc 4
+- Search integration (Yogananda's articles): Arc 4
+- Magazine ↔ "What Is Humanity Seeking?" symbiosis: Arc 4
 
 ### Consequences
 
 - Three new tables: `magazine_issues`, `magazine_articles`, `magazine_chunks`
-- `magazine_chunks` participates in `chunk_relations` (or `content_relations` post-Phase 12) graph
+- `magazine_chunks` participates in `chunk_relations` (or `content_relations` post-Arc 6) graph
 - `hybrid_search` extended to include magazine chunks
 - Navigation updated: "Magazine" added between "Videos" and "Quiet"
 - Magazine ingestion pipeline mirrors book ingestion (PDF → chunk → embed → QA)
 - Content availability: depends on SRF providing digital magazine archives
-- Access level support: some issues may be subscriber-only (`access_level = 'subscriber'`), gated via Auth0 in Phase 13+
+- Access level support: some issues may be subscriber-only (`access_level = 'subscriber'`), gated via Auth0 in Milestone 7a+
 - **Extends ADR-030** (content scope) to include magazine content
 - **Extends ADR-011** (API-first) with magazine endpoints
 
@@ -3485,7 +3425,7 @@ The public `/seeking` dashboard links to published magazine features: "Read the 
 
 ---
 
-## ADR-041: Phase 0 Bootstrap Ceremony
+## ADR-041: Arc 1 Bootstrap
 
 **Status:** Accepted
 
@@ -3497,7 +3437,7 @@ The portal's architecture is thoroughly documented across four design documents 
 
 ### Decision
 
-Document the Phase 0 bootstrap sequence as a reproducible, ordered ceremony in DESIGN.md § Phase 0 Bootstrap. The ceremony covers:
+Document the bootstrap sequence as a reproducible, ordered ceremony in DESIGN-arc1.md § Arc 1 Bootstrap. The ceremony covers:
 
 1. **Repository creation** — Next.js + TypeScript + Tailwind + pnpm
 2. **Neon project provisioning** — PostgreSQL with pgvector, dev branch for local work
@@ -3518,7 +3458,7 @@ The `.env.example` file documents all required environment variables with commen
 
 ### Consequences
 
-- DESIGN.md gains a "Phase 0 Bootstrap" section with the step-by-step ceremony and `.env.example` contents
+- DESIGN-arc1.md gains an "Arc 1 Bootstrap" section with the step-by-step ceremony and `.env.example` contents
 - First-time setup is documented and reproducible
 - Onboarding new developers or AI assistants requires reading CLAUDE.md (for context) and following the bootstrap ceremony (for setup)
 
@@ -3605,7 +3545,7 @@ Build a **structured spiritual ontology** — a concept graph of Yogananda's tea
 
 ```sql
 -- ============================================================
--- SPIRITUAL ONTOLOGY (concept graph — Phase 7+)
+-- SPIRITUAL ONTOLOGY (concept graph — Arc 4+)
 -- ============================================================
 CREATE TABLE ontology_concepts (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid,
@@ -3706,9 +3646,9 @@ Initial seed: the Living Glossary (ADR-038) terms, already defined. The ontology
 | **Future voice interfaces** | Explain concepts conversationally, not just surface passages. "Samadhi has two degrees: savikalpa and nirvikalpa. Would you like to hear what Yogananda wrote about either?" |
 | **Knowledge graph (ADR-061)** | The ontology provides a conceptual layer above the passage-level relationship graph. |
 
-### Phase
+### Scheduling
 
-Phase 7+ (alongside Knowledge Graph, ADR-061). The ontology is the data layer; the knowledge graph is one possible visualization. Initial seed (~50 core concepts, ~150 relations) can be curated during Phase 3–6 editorial work.
+Arc 4+ (alongside Knowledge Graph, ADR-061). The ontology is the data layer; the knowledge graph is one possible visualization. Initial seed (~50 core concepts, ~150 relations) can be curated during Milestone 3a through Arc 3 editorial work.
 
 ### Rationale
 
@@ -3770,46 +3710,6 @@ Use **hybrid search** with Reciprocal Rank Fusion (RRF) to merge vector similari
 - Each chunk needs both an embedding vector AND a tsvector index
 - The hybrid_search SQL function encapsulates the merging logic
 - Weights between FTS and vector can be tuned based on query characteristics
-
----
-
----
-
-## ADR-045: Claude API for AI Features
-
-- **Status:** Accepted (AI provider decision expanded by ADR-014: AWS Bedrock Claude with Model Tiering)
-- **Date:** 2026-02-17
-
-### Context
-
-The AI Librarian needs an LLM for query expansion and passage ranking. Options:
-
-| Option | Pros | Cons |
-|--------|------|------|
-| **Claude (Anthropic)** | Strong instruction-following; good at constrained output; we're already in this ecosystem | API cost |
-| **OpenAI GPT-4o** | Widely used; good performance | Different vendor from our dev tools |
-| **Open-source (Llama, Mistral)** | No API cost; full control | Hosting complexity; weaker instruction-following for constrained tasks |
-| **No LLM** | Zero cost; zero latency; zero risk | Loses query expansion and intelligent ranking |
-
-### Decision
-
-Use **Claude API (Anthropic)** for query expansion and passage ranking. Design the system so the LLM is optional — simple keyword queries bypass it entirely.
-
-### Rationale
-
-- Claude's instruction-following is strong for the constrained output formats we need (JSON arrays only, no prose)
-- We're already using Claude Code for development — ecosystem alignment
-- The Librarian model minimizes token usage (short system prompt, short output)
-- Making the LLM optional for simple queries keeps costs low and provides a reliable fallback
-
-### Consequences
-
-- Need an Anthropic API key in production (cost: estimated $15-25/month with expanded uses)
-- Must implement graceful degradation when the LLM is unavailable or rate-limited
-- Query expansion and passage ranking prompts need careful design and testing
-- **Extended by ADR-005:** Eight additional Claude use cases (E1–E8) approved within the librarian model, with full cost profile and graceful degradation paths
-
----
 
 ---
 
@@ -3884,7 +3784,7 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 ### Rationale
 
 - **Models will change.** OpenAI has already released three generations of embedding models (ada-002 → 3-small → 3-large). The pace will continue. Designing for model lock-in is designing for obsolescence.
-- **Corpus grows over time.** By Phase 10 (multi-language), the corpus may be 10x larger than Phase 0. Re-embedding at that scale is hours of API calls and significant cost. Incremental migration keeps the portal online throughout.
+- **Corpus grows over time.** By Milestone 5b (multi-language), the corpus may be 10x larger than Arc 1. Re-embedding at that scale is hours of API calls and significant cost. Incremental migration keeps the portal online throughout.
 - **Search quality is the core mission.** A better embedding model directly improves passage retrieval. The portal should be able to adopt improvements without architectural changes.
 - **Zero cost now.** Three columns and a convention. No additional infrastructure.
 
@@ -3892,7 +3792,7 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 
 **The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. OpenAI's text-embedding-3-small places semantically equivalent text in different languages close together in vector space. This means:
 
-- English embeddings generated in Phase 0 remain valid when Spanish, German, and Japanese chunks are added in Phase 10 — no re-embedding of the English corpus.
+- English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus.
 - The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — even when the user typed their query in Spanish.
 - Cross-language passage alignment (`canonical_chunk_id`) is validated by embedding proximity, not just paragraph index matching.
 - Any future embedding model migration must preserve this multilingual property.
@@ -3901,11 +3801,11 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 
 ### Consequences
 
-- `book_chunks` schema includes `embedding_model`, `embedding_dimension`, and `embedded_at` columns from Phase 0
+- `book_chunks` schema includes `embedding_model`, `embedding_dimension`, and `embedded_at` columns from Arc 1
 - The ingestion pipeline records which model it used per chunk
-- Search quality test suite (deliverable 0a.8) becomes the gate for model migration decisions
+- Search quality test suite (deliverable 1a.9) becomes the gate for model migration decisions
 - Model migration is a maintenance operation, not an architecture change
-- Budget for re-embedding costs when evaluating new models (Phase 10 multilingual benchmarking is a natural trigger)
+- Budget for re-embedding costs when evaluating new models (Milestone 5b multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
 
 ---
@@ -3933,43 +3833,43 @@ Three dimensions of embedding quality matter for this portal:
 
 ### Decision
 
-1. **Start with OpenAI text-embedding-3-small** as the Phase 0 embedding model. It provides adequate multilingual support, the architecture is well-understood, and the operational model is simple (symmetric embeddings — same encoding for queries and documents).
+1. **Start with OpenAI text-embedding-3-small** as the Arc 1 embedding model. It provides adequate multilingual support, the architecture is well-understood, and the operational model is simple (symmetric embeddings — same encoding for queries and documents).
 
-2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Phase 10). The Phase 0a English-only evaluation (Deliverable 0a.8) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
+2. **Document multilingual-optimized models as future benchmark candidates.** Models designed multilingual-first (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3) should be evaluated when multilingual content is available (Milestone 5b). The Milestone 1a English-only evaluation (Deliverable 1a.9) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists.
 
-3. **Establish domain-adapted embeddings as a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not a Phase 0 deliverable:
- - **Input:** The complete multilingual corpus (available after Phase 10 ingestion)
+3. **Establish domain-adapted embeddings as a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
+ - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
  - **Method:** Fine-tune a strong multilingual base model (e.g., multilingual-e5-large-instruct or BGE-M3) on the corpus with retrieval-specific training objectives
- - **Evaluation:** Per-language search quality test suites (Deliverable 10.10) provide the evaluation framework
+ - **Evaluation:** Per-language search quality test suites (Milestone 5b) provide the evaluation framework
  - **Outcome:** An embedding model that understands Yogananda's vocabulary, metaphorical patterns, and cross-tradition spiritual concepts at a depth no general model matches
 
 4. **The architecture already supports model evolution.** ADR-046's `embedding_model` column enables per-chunk model tracking. The migration procedure (Neon branch → re-embed → validate → promote) applies to both vendor model upgrades and domain-adapted models. No architectural changes are needed to pursue any of these paths.
 
 ### Alternatives Considered
 
-1. **Start with Cohere embed-v3** — Designed multilingual-first, supports query/document asymmetry (encodes queries and documents differently for better retrieval), scores higher on multilingual benchmarks (MIRACL, Mr.TyDi) for Indic languages. Rejected because: the query/document asymmetry adds operational complexity (wrong `input_type` degrades results silently), Cohere is a smaller company than OpenAI (10-year vendor risk), and the benchmark advantage is measured on Wikipedia-like content — not spiritual text. The gap may not transfer to this domain. Worth benchmarking in Phase 10 when multilingual content exists.
+1. **Start with Cohere embed-v3** — Designed multilingual-first, supports query/document asymmetry (encodes queries and documents differently for better retrieval), scores higher on multilingual benchmarks (MIRACL, Mr.TyDi) for Indic languages. Rejected because: the query/document asymmetry adds operational complexity (wrong `input_type` degrades results silently), Cohere is a smaller company than OpenAI (10-year vendor risk), and the benchmark advantage is measured on Wikipedia-like content — not spiritual text. The gap may not transfer to this domain. Worth benchmarking in Milestone 5b when multilingual content exists.
 
-2. **Self-hosted open-source model (BGE-M3, multilingual-e5-large)** — Eliminates API vendor dependency entirely. At this corpus scale (~150K chunks), could run on a single GPU or even CPU. Rejected for Phase 0 because: adds operational complexity (model hosting, versioning, GPU provisioning) during a phase focused on proving search works. Remains a strong candidate for the domain-adapted model research track, where self-hosting is likely necessary anyway.
+2. **Self-hosted open-source model (BGE-M3, multilingual-e5-large)** — Eliminates API vendor dependency entirely. At this corpus scale (~150K chunks), could run on a single GPU or even CPU. Rejected for Arc 1 because: adds operational complexity (model hosting, versioning, GPU provisioning) during an arc focused on proving search works. Remains a strong candidate for the domain-adapted model research track, where self-hosting is likely necessary anyway.
 
-3. **Benchmark multilingual models before Phase 0** — Use a small sample of Autobiography of a Yogi in multiple published translations to benchmark models now. Rejected as a hard requirement because: Phase 0's priority is proving the search pipeline end-to-end. However, this remains a valuable optional activity — if time permits, a lightweight benchmark using 5-10 chapters across 3-4 languages would provide early signal on multilingual quality.
+3. **Benchmark multilingual models before Arc 1** — Use a small sample of Autobiography of a Yogi in multiple published translations to benchmark models now. Rejected as a hard requirement because: Arc 1's priority is proving the search pipeline end-to-end. However, this remains a valuable optional activity — if time permits, a lightweight benchmark using 5-10 chapters across 3-4 languages would provide early signal on multilingual quality.
 
-4. **Per-language embedding models** — Use text-embedding-3-small for European languages and a stronger multilingual model for Indic/CJK. ADR-046's `embedding_model` column already supports this. Rejected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Phase 10 benchmarking reveals language-specific deficiencies.
+4. **Per-language embedding models** — Use text-embedding-3-small for European languages and a stronger multilingual model for Indic/CJK. ADR-046's `embedding_model` column already supports this. Rejected as a starting position because: operational complexity of maintaining multiple embedding pipelines is not justified without evidence of a quality gap. Remains viable if Milestone 5b benchmarking reveals language-specific deficiencies.
 
-5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Phase 0a evaluation (Deliverable 0a.8) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-046.
+5. **OpenAI text-embedding-3-large** — 3072 dimensions vs. 1536, at $0.13/1M tokens (still negligible at corpus scale). Rejected because: the additional dimensions help distinguish semantically close but meaningfully different texts, which is not the primary retrieval challenge for this corpus. More importantly, 3-large has the same incidental multilingual capability as 3-small — same training approach, same training data distribution, just a wider model. The gap for Hindi/Bengali/Japanese is identical. More dimensions do not fix a training data skew. The quality improvement path for this portal is domain adaptation, not dimensionality. If Milestone 1a evaluation (Deliverable 1a.9) reveals fine-grained retrieval confusion between closely related passages, 3-large is a trivial migration via ADR-046.
 
 ### Rationale
 
 - **Cost is not the differentiator.** At < $1 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Starting with text-embedding-3-small is justified by simplicity and adequate quality, not by savings.
 - **Domain adaptation is the highest-ceiling option.** General models compete on benchmarks across all domains. A model fine-tuned on Yogananda's corpus would compete on one domain — the only one that matters for this portal. This is the path to world-class retrieval quality.
-- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Phase 10) and a per-language evaluation framework to validate against (Deliverable 10.10). Starting this research before those exist would produce a model trained on English-only data — missing the point.
+- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on English-only data — missing the point.
 - **The architecture is already ready.** ADR-046's model versioning, the Neon branch migration workflow, and the per-language evaluation suites provide the complete infrastructure for model evolution. This ADR adds strategic direction, not architectural changes.
 
 ### Consequences
 
-- Phase 0 proceeds with text-embedding-3-small as planned
-- Deliverable 0a.8 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
-- Phase 10 Deliverable 10.3 includes formal benchmarking of multilingual-optimized models alongside the existing "may trigger first embedding model migration" language
-- Domain-adapted embeddings become a documented research track, scoped after Phase 10 corpus completion
+- Arc 1 proceeds with text-embedding-3-small as planned
+- Deliverable 1a.9 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
+- Milestone 5b includes formal benchmarking of multilingual-optimized models alongside the existing "may trigger first embedding model migration" language
+- Domain-adapted embeddings become a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
 - Future embedding model decisions should reference this ADR alongside ADR-046
 
@@ -3986,7 +3886,7 @@ Three dimensions of embedding quality matter for this portal:
 
 ### Context
 
-DESIGN.md specifies chunk relations, storage, embedding, and search in detail. ROADMAP mentions "chunk by paragraphs" (Phase 0) and "verse-aware chunking" (Phase 6). But no document formally defines the chunking algorithm — the single most important factor in search retrieval quality. A bad chunking strategy produces orphaned fragments (too small) or imprecise retrieval (too large). Yogananda's prose style varies dramatically: terse aphorisms in *Sayings*, flowing narrative in *Autobiography*, verse-by-verse commentary in *The Second Coming of Christ*, guided affirmations in *Scientific Healing Affirmations*.
+DESIGN.md specifies chunk relations, storage, embedding, and search in detail. ROADMAP mentions "chunk by paragraphs" (Arc 1) and "verse-aware chunking (Milestone 3d)". But no document formally defines the chunking algorithm — the single most important factor in search retrieval quality. A bad chunking strategy produces orphaned fragments (too small) or imprecise retrieval (too large). Yogananda's prose style varies dramatically: terse aphorisms in *Sayings*, flowing narrative in *Autobiography*, verse-by-verse commentary in *The Second Coming of Christ*, guided affirmations in *Scientific Healing Affirmations*.
 
 ### Decision
 
@@ -4005,7 +3905,7 @@ Document the chunking strategy as a formal specification. The strategy is docume
 
 Do not apply a single chunking algorithm across all types. Read representative samples from each type before implementing the chunking pipeline. Print 50 chunks and read them as a human researcher would. If they feel fragmentary or orphaned from their context, the algorithm is wrong regardless of benchmarks.
 
-**Default Chunking (Phases 0–5: narrative, collected talks, short works):**
+**Default Chunking (Arc 1 through Milestone 3c: narrative, collected talks, short works):**
 - **Unit:** Paragraph (defined by typographic paragraph breaks in the source text)
 - **Token range:** 100–500 tokens (target: 200–300)
 - **Minimum:** Paragraphs below 100 tokens are merged with the following paragraph to avoid orphaned fragments
@@ -4020,13 +3920,13 @@ Do not apply a single chunking algorithm across all types. Read representative s
 - **Aphorisms (*Sayings*, *Scientific Healing Affirmations*):** Each standalone saying or affirmation is one chunk, regardless of length. These books are already atomically organized.
 - **Chapter titles and section headers:** Not chunked separately. Prepended to the first paragraph of their section as metadata context.
 
-**Verse-Aware Chunking (Phase 6: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*):**
+**Verse-Aware Chunking (Milestone 3d: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*):**
 - **Unit:** Verse-commentary pair. Each scripture verse and its associated commentary form a single chunk, maintaining the interpretive relationship.
 - **Long commentaries:** If a verse's commentary exceeds 500 tokens, split at paragraph boundaries within the commentary. Each sub-chunk retains the verse text as a prefix (ensuring the verse context travels with every fragment of commentary).
 - **Cross-reference:** Each verse-commentary chunk stores the verse reference (e.g., "Bhagavad Gita IV:7") as structured metadata for the side-by-side commentary view .
 - **Devanāgarī script handling (ADR-080):** *God Talks With Arjuna* includes original Bhagavad Gita verses in Devanāgarī script alongside romanized transliteration and English commentary. Devanāgarī verse text is preserved in `chunk_content` for display but excluded from the embedding input via a script-detection preprocessing step (`/[\u0900-\u097F]/` Unicode block). The romanized transliteration is included in both chunk content and embedding input. Devanāgarī text is excluded from the token count that determines chunk splitting — only the English commentary and romanized transliteration count toward the 500-token maximum.
 
-**Per-language validation (Phase 10):**
+**Per-language validation (Milestone 5b):**
 - English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary.
 
 ### Rationale
@@ -4034,14 +3934,14 @@ Do not apply a single chunking algorithm across all types. Read representative s
 - **Paragraph as natural unit.** Yogananda's prose is well-structured with clear paragraph breaks that correspond to idea boundaries. Unlike web content or academic papers, his paragraphs rarely span multiple topics.
 - **No overlap avoids duplicate noise.** In information retrieval, overlap helps when chunk boundaries are arbitrary (e.g., fixed-window chunking). With paragraph-based chunking, boundaries are meaningful — overlap would surface the same passage twice in search results.
 - **Special handling preserves meaning.** A poem split mid-stanza, a list split mid-enumeration, or a verse separated from its commentary would produce chunks that misrepresent the teaching.
-- **Token range is empirical.** The 200–300 target is based on retrieval research showing this range balances specificity (finding the right passage) with context (the passage makes sense in isolation). Phase 0 validates this against the Autobiography.
+- **Token range is empirical.** The 200–300 target is based on retrieval research showing this range balances specificity (finding the right passage) with context (the passage makes sense in isolation). Arc 1 validates this against the Autobiography.
 
 ### Consequences
 
 - New "Chunking Strategy" section in DESIGN.md
-- Phase 0 ingestion script (0.8) implements default chunking per this specification
-- Phase 6 verse-aware chunking (6.2) implements the verse-commentary pair strategy
-- Phase 10 per-language chunk size validation (10.10) uses this specification as the baseline
+- Arc 1 ingestion script (0.8) implements default chunking per this specification
+- Milestone 3d verse-aware chunking (3d.2) implements the verse-commentary pair strategy
+- Milestone 5b per-language chunk size validation uses this specification as the baseline
 - Search quality evaluation (0.17) implicitly validates the chunking strategy — poor results trigger chunking reassessment
 
 ---
@@ -4055,7 +3955,7 @@ Do not apply a single chunking algorithm across all types. Read representative s
 
 ### Context
 
-The portal's search architecture (ADR-044, ADR-045, ADR-005) is comprehensive: hybrid search, query expansion, intent classification, spiritual terminology bridge, passage ranking. But one common search UX pattern is absent: autocomplete suggestions as the seeker types.
+The portal's search architecture (ADR-044, ADR-014, ADR-005) is comprehensive: hybrid search, query expansion, intent classification, spiritual terminology bridge, passage ranking. But one common search UX pattern is absent: autocomplete suggestions as the seeker types.
 
 Google-style autocomplete is powered by billions of user queries — the suggestion intelligence comes from aggregate behavior. This portal operates under fundamentally different constraints:
 
@@ -4088,13 +3988,13 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
  The three original suggestion types map into this hierarchy: **term completion** spans Tiers 2, 3, and 6; **query suggestion** spans Tiers 1 and 5; **bridge-powered suggestion** is integrated into Tiers 3 and 4 (Sanskrit terms with definitions, bridged concepts with Yogananda's vocabulary).
 
- Implementation: Phase 0 uses PostgreSQL `pg_trgm` for prefix and fuzzy matching. The architecture is designed for Redis (ElastiCache) as the target cache layer (ADR-120), with language-namespaced sorted sets for sub-millisecond prefix lookup. Latency target: < 50ms (pg_trgm), < 5ms (Redis).
+ Implementation: Arc 1 uses PostgreSQL `pg_trgm` for prefix and fuzzy matching. The architecture is designed for Redis (ElastiCache) as the target cache layer (ADR-120), with language-namespaced sorted sets for sub-millisecond prefix lookup. Latency target: < 50ms (pg_trgm), < 5ms (Redis).
 
 3. **New API endpoint: `GET /api/v1/search/suggest`.** Accepts `q` (partial query), `language`, and `limit` parameters. Returns typed suggestions with category metadata (term/query/bridge). No Claude API call — pure database/cache lookup for speed.
 
 4. **Zero-state experience is editorially curated.** When the search bar is focused but empty, display curated entry points (theme names, "Seeking..." prompts). This is an editorial statement — governance follows the same human-review principle as all user-facing content.
 
-5. **Phase progression:** Basic prefix matching in Phase 0 (single-book vocabulary). Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices in Phase 10. Optional personal "recent searches" (client-side only, no server storage) in Phase 13.
+5. **Milestone progression:** Basic prefix matching in Arc 1 (single-book vocabulary). Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices in Milestone 5b. Optional personal "recent searches" (client-side only, no server storage) in Milestone 7a.
 
 ### Alternatives Considered
 
@@ -4118,11 +4018,11 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 - New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
 - New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions & Autocomplete"
-- ROADMAP.md updated: Deliverable 0b.9 (basic prefix matching), 3.9 (multi-book + bridge + curated), 10.15 (per-language indices)
+- ROADMAP.md updated: Deliverable 1b.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
 - Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-051 lifecycle)
 - Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-003)
-- Per-language suggestion indices required for Phase 10 (extends multilingual architecture)
+- Per-language suggestion indices required for Milestone 5b (extends multilingual architecture)
 
 ---
 
@@ -4156,7 +4056,7 @@ This powers three features:
 2. **"Continue the Thread"** — at the end of every chapter, a section aggregates the most related cross-book passages for all paragraphs in that chapter.
 3. **Graph traversal** — clicking a related passage navigates to that passage in its reader context, and the side panel updates with *that* passage's relations. The reader follows threads of meaning across the entire library.
 
-**Relationship categorization** (Phase 4+, powered by ADR-117 graph intelligence and ADR-115 enrichment):
+**Relationship categorization** (Milestone 3b+, powered by ADR-117 graph intelligence and ADR-115 enrichment):
 
 Each relation is classified into one of five categories, computed at index time by Claude (ADR-115 enrichment pipeline) and refined by graph traversal path:
 
@@ -4168,7 +4068,7 @@ Each relation is classified into one of five categories, computed at index time 
 | **Parallel Tradition** | Cross-tradition equivalent (Hindu ↔ Christian ↔ other) | CROSS_TRADITION_EQUIVALENT graph edges |
 | **Technique for This State** | Practice instruction toward the described experiential depth | INSTRUCTS_TECHNIQUE + DESCRIBES_STATE graph edges |
 
-The side panel displays related passages grouped by category. The relationship type is information, not just retrieval — an educational and contemplative value beyond search. Phase 0–3 uses similarity-only categorization (from pre-computed relations). Phase 4+ adds graph-derived categorization.
+The side panel displays related passages grouped by category. The relationship type is information, not just retrieval — an educational and contemplative value beyond search. Arc 1 through Milestone 3a uses similarity-only categorization (from pre-computed relations). Milestone 4+ adds graph-derived categorization.
 
 **Incremental update strategy:**
 
@@ -4186,7 +4086,7 @@ In a multilingual corpus, a naive "top 30 global" approach underserves non-Engli
 - Total: up to 40 rows per chunk (at 400K chunks across all languages = 16M rows — trivial for PostgreSQL)
 - The `rank` column indicates rank within its group (1–30 for same-language, 1–10 for English supplemental)
 
-In Phase 0 (English only), this is equivalent to the original "top 30" — the English supplemental slots are simply empty.
+In Arc 1 (English only), this is equivalent to the original "top 30" — the English supplemental slots are simply empty.
 
 **Filtering:** Relations are filtered at query time via JOINs — by book, content type, language, or life theme. Top 30 same-language relations provide ample headroom for filtered queries within a language. English supplemental relations are included when the same-language results are insufficient, following the same pattern as the search English fallback (always marked with `[EN]`). When filtering yields < 3 results, fall back to a real-time vector similarity query with the filter as a WHERE clause.
 
@@ -4202,12 +4102,12 @@ In Phase 0 (English only), this is equivalent to the original "top 30" — the E
 ### Consequences
 
 - The ingestion pipeline gains a new Step 7: Compute Chunk Relations (after embedding, before final verification)
-- A `chunk_relations` table is added to migration 001 (empty until Phase 5 populates it with multi-book content)
+- A `chunk_relations` table is added to migration 001 (empty until Milestone 3c populates it with multi-book content)
 - A `chunk_references` table is added for human-curated editorial cross-references (supplements automatic similarity)
 - Two new API endpoints: `/api/v1/chunks/[id]/related` and `/api/v1/books/[slug]/chapters/[number]/thread`
 - Two new service functions: `relations.ts` and `thread.ts`
 - The Book Reader component gains a Related Teachings side panel (desktop) and bottom sheet (mobile)
-- A related content quality test suite (Phase 5+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends
+- A related content quality test suite (Milestone 3c+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends
 - The `books` table gains a `bookstore_url` column to power "Find this book" links (physical book bridge)
 
 ---
@@ -4298,10 +4198,10 @@ Collect anonymous, aggregated, passage-level resonance signals for editorial use
 - Accessible only in the editorial review portal (ADR-082) for curation intelligence: "Which passages are resonating?" informs Today's Wisdom selection, theme page curation, and the "What Is Humanity Seeking?" dashboard.
 - Rate-limited: one increment per signal type per client IP per hour (prevents gaming without requiring user accounts).
 
-### Phase
+### Scheduling
 
-- Instrumentation: Phase 1 (simple counter increments on existing API responses).
-- Editorial dashboard: Phase 4 (alongside the editorial review portal, Deliverable 4.5a).
+- Instrumentation: Milestone 2a (simple counter increments on existing API responses).
+- Editorial dashboard: Milestone 3b (alongside the editorial review portal, Deliverable 4.5a).
 
 ### Consequences
 
@@ -4359,8 +4259,8 @@ CREATE INDEX idx_search_aggregates_theme ON search_theme_aggregates(theme_slug, 
 
 #### Visibility
 
-- **Phase 6:** Search analytics dashboard in Retool (staff-only). Raw aggregate exploration.
-- **Phase 10:** Impact dashboard at `/admin/impact` (leadership-facing). Includes "What Is Humanity Seeking?" visualization: warm-toned world map, trending themes, and temporal patterns.
+- **Milestone 3d:** Search analytics dashboard in Retool (staff-only). Raw aggregate exploration.
+- **Milestone 5b:** Impact dashboard at `/admin/impact` (leadership-facing). Includes "What Is Humanity Seeking?" visualization: warm-toned world map, trending themes, and temporal patterns.
 - **Annual report:** Published by SRF or the philanthropist's foundation. Format TBD (PDF, web page, or both). Not automatically generated — human-curated from the aggregate data.
 
 #### DELTA compliance
@@ -4378,10 +4278,10 @@ CREATE INDEX idx_search_aggregates_theme ON search_theme_aggregates(theme_slug, 
 
 ### Consequences
 
-- `search_theme_aggregates` table added (Phase 6, alongside search analytics dashboard)
-- Nightly aggregation Lambda function (Phase 6, uses ADR-017 Lambda infrastructure)
+- `search_theme_aggregates` table added (Milestone 3d, alongside search analytics dashboard)
+- Nightly aggregation Lambda function (Milestone 3d, uses ADR-017 Lambda infrastructure)
 - Theme classification of search queries integrated into the search pipeline (lightweight Claude call or keyword matching against theme taxonomy)
-- Impact dashboard in Phase 10 gains "What Is Humanity Seeking?" section
+- Impact dashboard in Milestone 5b gains "What Is Humanity Seeking?" section
 - Annual report production becomes an SRF staff responsibility (the portal provides data, not the report itself)
 - Minimum aggregation threshold (10 queries) prevents inference about small populations
 - **Extends ADR-095** (DELTA-compliant analytics) and **ADR-032** (theme taxonomy)
@@ -4461,9 +4361,9 @@ CREATE INDEX chunks_bm25_ja ON book_chunks
 
 - `tsvector` columns and indexes are not needed; pg_search BM25 indexes replace them entirely
 - The `hybrid_search` SQL function uses `paradedb.score(id)` and `@@@` operator instead of `ts_rank` and `@@`
-- Phase 0 BM25 index uses ICU tokenizer (English); CJK-specific indexes added in Phase 10
+- Arc 1 BM25 index uses ICU tokenizer (English); CJK-specific indexes added in Milestone 5b
 - DESIGN.md DES-003 (Search Architecture) updated to reflect pg_search in the search flow
-- A `script` column on `book_chunks` routes queries to the appropriate partial index at Phase 10
+- A `script` column on `book_chunks` routes queries to the appropriate partial index at Milestone 5b
 
 ---
 
@@ -4555,7 +4455,7 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
 - New enrichment columns added to `book_chunks`: `experiential_depth`, `voice_register`, `emotional_quality`, `cross_references`, `domain` (see DESIGN.md DES-004)
 - The ingestion pipeline (DES-005) is updated to include the unified enrichment step
 - An `extracted_relationships` table logs all relationship triples for graph intelligence (ADR-117)
-- The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Phase 0a pre-implementation checklist)
+- The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Milestone 1a pre-implementation checklist)
 - ADR-005 E3, E4, E6, E8 are folded into this pipeline; E1, E2, E5, E7 remain as separate operations
 
 ---
@@ -4588,9 +4488,9 @@ CREATE TABLE entity_registry (
     language        CHAR(5),
     definition      TEXT,
     srf_definition  TEXT,           -- Yogananda's specific definition if distinct from general usage
-    centrality_score REAL,          -- PageRank from graph batch (Phase 4+, ADR-117)
-    community_id   TEXT,            -- community detection cluster (Phase 4+, ADR-117)
-    bridge_score   REAL,            -- betweenness centrality (Phase 4+, ADR-117)
+    centrality_score REAL,          -- PageRank from graph batch (Milestone 3b+, ADR-117)
+    community_id   TEXT,            -- community detection cluster (Milestone 3b+, ADR-117)
+    bridge_score   REAL,            -- betweenness centrality (Milestone 3b+, ADR-117)
     created_at      TIMESTAMPTZ DEFAULT now(),
     UNIQUE(canonical_name, entity_type)
 );
@@ -4629,7 +4529,7 @@ CREATE TABLE sanskrit_terms (
 
 ### Consequences
 
-- Entity registry populated before first book ingestion (Phase 0a pre-implementation checklist)
+- Entity registry populated before first book ingestion (Milestone 1a pre-implementation checklist)
 - All enrichment entity extraction (ADR-115) resolves against the registry
 - Suggestion dictionary (ADR-049, ADR-120) draws Tier 2 and Tier 4 entries from these tables
 - Knowledge graph relationships (ADR-117) reference entity registry entries via canonical ID
@@ -4669,14 +4569,14 @@ Implement graph intelligence **within the single-database architecture** (ADR-01
 - Relationships are first-class rows — queryable by standard SQL, indexable, joinable with content tables
 - Canonical entity IDs from `entity_registry` serve as the primary key for all graph nodes
 
-**Graph algorithms (nightly batch, Phase 4+):**
+**Graph algorithms (nightly batch, Milestone 3b+):**
 - Python batch job loads entities and relationships from Postgres into NetworkX/igraph (in-memory — the full graph fits easily at ~50K chunks, ~500 entities, ~500K edges)
 - **PageRank:** Which concepts are most referenced? Results written as `centrality_score` column on entity rows. Feeds suggestion weights and retrieval confidence.
 - **Community Detection:** Which concept clusters naturally co-occur? Results written as `community_id` column. Feeds "conceptual neighborhood" queries and theme browsing.
 - **Betweenness Centrality:** Which concepts bridge otherwise separate clusters? Results written as `bridge_score` column. High betweenness = cross-tradition bridge terms.
 - All algorithm results stored as columns in Postgres, refreshed nightly. No external system required.
 
-**Graph-augmented retrieval (PATH C, Phase 4+):**
+**Graph-augmented retrieval (PATH C, Milestone 3b+):**
 - Entity resolution against `entity_registry` identifies concepts in the query
 - SQL traversal across `extracted_relationships` and `concept_relations` tables finds chunks within 2–3 hops
 - pgvector similarity ranking applied to traversal results
@@ -4684,9 +4584,9 @@ Implement graph intelligence **within the single-database architecture** (ADR-01
 - Results merged into RRF alongside PATH A (vector) and PATH B (BM25)
 
 **Phasing:**
-- **Phase 0:** Graph ontology designed and documented in DES-054/055. Entity registry and extracted_relationships tables created.
-- **Phase 4:** Graph algorithm batch pipeline (Python + NetworkX). PATH C activated in search pipeline. Knowledge graph foundation: all node types and edge types populated.
-- **Phase 8:** Concept/word graph fully constructed: cross-tradition equivalences, progression chains, co-occurrence edges.
+- **Arc 1:** Graph ontology designed and documented in DES-054/055. Entity registry and extracted_relationships tables created.
+- **Milestone 3b:** Graph algorithm batch pipeline (Python + NetworkX). PATH C activated in search pipeline. Knowledge graph foundation: all node types and edge types populated.
+- **Milestone 5a:** Concept/word graph fully constructed: cross-tradition equivalences, progression chains, co-occurrence edges.
 
 ### Alternatives Considered
 
@@ -4697,7 +4597,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 2. **Two-system data synchronization is a permanent operational tax.** Every entity must be synced between Postgres and Neptune. Every migration, debugging session, and monitoring pipeline doubles in surface area. This tax compounds over the project's 10-year horizon.
 3. **The single-query unification advantage is narrow.** The combined traversal + vector query is elegant but adds only ~10-20ms latency when decomposed into multi-step SQL. In a search pipeline already at 200-400ms, this is negligible.
 4. **ADR-013's single-database rationale applies to Neptune as strongly as to DynamoDB.** The original arguments — one backup strategy, one connection string, one migration tool, one monitoring target — are just as valid for a graph database as for a key-value store.
-5. **The terminology bridge (ADR-051) and query expansion (Phase 0b) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
+5. **The terminology bridge (ADR-051) and query expansion (Milestone 1b) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
 
 **Apache AGE (PostgreSQL extension):** Adds openCypher support to PostgreSQL — attractive in principle, but not available on Neon (the project's database provider). Would require self-hosting Postgres, contradicting the managed-infrastructure strategy.
 
@@ -4706,7 +4606,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 - **The bounded corpus is the key insight.** A 50K–100K chunk corpus with ~500 canonical entities is a graph problem that fits in a Python dictionary, not one that requires a graph database. NetworkX handles it trivially.
 - **ADR-013 remains unqualified.** The single-database architecture is restored to its original strength: one system for all data, all queries, all operations.
 - **Pre-computation absorbs the runtime cost.** Graph algorithm results are pre-computed nightly and stored as Postgres columns. Read-time queries are simple SELECTs and JOINs — no graph engine involved.
-- **PATH C's value is empirically testable.** The Phase 0a golden query set includes graph-dependent test queries. If two-path search + terminology bridge handles them adequately, PATH C can be deferred or eliminated entirely without architectural regret.
+- **PATH C's value is empirically testable.** The Milestone 1a golden query set includes graph-dependent test queries. If two-path search + terminology bridge handles them adequately, PATH C can be deferred or eliminated entirely without architectural regret.
 - **Operational simplicity is a 10-year feature.** A system that a single developer can debug, maintain, and operate for a decade outperforms a technically superior but operationally complex alternative.
 
 ### Consequences
@@ -4716,9 +4616,9 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 - DES-005 (Content Ingestion Pipeline) stores extracted relationships in Postgres (no graph-load step to external system)
 - DES-054 (Knowledge Graph Ontology) and DES-055 (Concept/Word Graph) describe node/edge types stored in Postgres tables, computed by batch jobs
 - DES-003 (Search Architecture) PATH C uses multi-step SQL queries in `/lib/services/graph.ts`
-- Phase 4 in ROADMAP.md adds graph algorithm batch pipeline (Python + NetworkX), not Neptune provisioning
+- Milestone 3b in ROADMAP.md adds graph algorithm batch pipeline (Python + NetworkX), not Neptune provisioning
 - No Terraform configuration for graph infrastructure — batch job runs as Lambda or Vercel cron
-- Graph ontology designed from Phase 0 and documented in DES-054/055
+- Graph ontology designed from Arc 1 and documented in DES-054/055
 
 *Revised: 2026-02-23, Neptune Analytics removed. Single-database architecture restored. Graph intelligence implemented via Postgres tables + Python batch computation. Motivated by bounded corpus size (~50K chunks), operational simplicity over 10-year horizon, and single-database principle (ADR-013).*
 
@@ -4734,7 +4634,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 
 ### Context
 
-ADR-046 established embedding model versioning infrastructure. ADR-047 selected OpenAI `text-embedding-3-small` (1536 dimensions) as the Phase 0 embedding model, with planned benchmarking against multilingual-optimized alternatives at Phase 10.
+ADR-046 established embedding model versioning infrastructure. ADR-047 selected OpenAI `text-embedding-3-small` (1536 dimensions) as the Arc 1 embedding model, with planned benchmarking against multilingual-optimized alternatives at Milestone 5b.
 
 The RAG Architecture Proposal makes a compelling case for starting with a higher-quality embedding model:
 
@@ -4745,7 +4645,7 @@ The RAG Architecture Proposal makes a compelling case for starting with a higher
 
 ### Decision
 
-Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as the primary embedding model from Phase 0.
+Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as the primary embedding model from Arc 1.
 
 **Key changes from previous design:**
 - Vector dimension: 1536 → 1024 (all `VECTOR()` column definitions and HNSW index parameters updated)
@@ -4754,13 +4654,13 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 
 **ADR-046 infrastructure preserved:** The `embedding_model`, `embedding_dimension`, and `embedded_at` columns remain on `book_chunks`. The versioning and migration infrastructure is unchanged — it serves as insurance for future model changes.
 
-**Benchmarking deferred, not abandoned:** Phase 10 benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3, `voyage-multilingual-2` for CJK-heavy text) with the actual multilingual corpus. If a model demonstrably outperforms Voyage on specific languages, the ADR-046 migration path activates.
+**Benchmarking deferred, not abandoned:** Milestone 5b benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3, `voyage-multilingual-2` for CJK-heavy text) with the actual multilingual corpus. If a model demonstrably outperforms Voyage on specific languages, the ADR-046 migration path activates.
 
 ### Rationale
 
 - **Start with the best available model for this corpus type.** The portal's core offering is semantic search over literary/spiritual text. Starting with a model optimized for that domain means higher quality from launch.
 - **1024 dimensions is sufficient.** Voyage `voyage-3-large` at 1024d outperforms OpenAI at 1536d on literary retrieval benchmarks. Smaller vectors also reduce storage and improve HNSW search speed.
-- **The bounded corpus makes re-embedding cheap.** Even if Voyage proves suboptimal for specific languages at Phase 10, re-embedding ~50K chunks takes hours. The migration friction that justifies starting with the "good enough" model doesn't exist at this corpus scale.
+- **The bounded corpus makes re-embedding cheap.** Even if Voyage proves suboptimal for specific languages at Milestone 5b, re-embedding ~50K chunks takes hours. The migration friction that justifies starting with the "good enough" model doesn't exist at this corpus scale.
 - **Cost is negligible at corpus scale.** Embedding the full multilingual corpus costs under $10. The embedding model should be selected for quality, not cost (per ADR-047).
 
 ### Consequences
@@ -4770,7 +4670,7 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 - Voyage API key added to environment configuration
 - DESIGN.md tech stack table updated: Voyage `voyage-3-large` replaces OpenAI `text-embedding-3-small`
 - Graph-augmented retrieval (ADR-117, PATH C) uses pgvector similarity on chunks retrieved via graph traversal
-- Phase 10 benchmarking scope updated: Voyage as baseline rather than OpenAI
+- Milestone 5b benchmarking scope updated: Voyage as baseline rather than OpenAI
 
 ---
 
@@ -4783,41 +4683,41 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 
 ### Context
 
-The Phase 0 search pipeline (DES-003) uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion, with optional Claude Haiku passage ranking. This is a strong foundation but leaves three well-established retrieval enhancements on the table:
+The Arc 1 search pipeline (DES-003) uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion, with optional Claude Haiku passage ranking. This is a strong foundation but leaves three well-established retrieval enhancements on the table:
 
 1. **HyDE (Hypothetical Document Embedding).** Instead of embedding the user's query (which lives in "query space"), Claude generates a hypothetical passage that would answer the query, and *that passage* is embedded. The search then operates in "document space" — matching document-like text against documents. Research shows significant lift on literary, philosophical, and domain-specific corpora where query language diverges from document language.
 
-2. **Cross-encoder reranking.** The Phase 0 passage ranking uses Claude Haiku — effective but general-purpose. Cohere Rerank 3.5 is a purpose-built cross-encoder that sees query + passage together and produces a true relevance score. It is multilingual-native and requires no language routing.
+2. **Cross-encoder reranking.** The Arc 1 passage ranking uses Claude Haiku — effective but general-purpose. Cohere Rerank 3.5 is a purpose-built cross-encoder that sees query + passage together and produces a true relevance score. It is multilingual-native and requires no language routing.
 
-3. **Graph-augmented retrieval.** With the knowledge graph (ADR-117) active in Phase 4+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph. Implemented via multi-step SQL queries against Postgres graph tables (no external graph database).
+3. **Graph-augmented retrieval.** With the knowledge graph (ADR-117) active in Milestone 3b+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph. Implemented via multi-step SQL queries against Postgres graph tables (no external graph database).
 
 ### Decision
 
 Three enhancements to the search pipeline, phased for implementation:
 
-**Phase 2: HyDE**
+**Milestone 2b: HyDE**
 - For complex or experiential queries (not simple keyword lookups), Claude generates a hypothetical passage (~100–200 tokens) that would answer the query
 - The hypothesis is embedded with Voyage (`input_type = 'query'`) and used as an additional vector search input alongside the original query embedding
 - Both vectors contribute candidates to the RRF merge
 - Bypass for simple keyword queries (detected by intent classification, ADR-005 E1)
 
-**Phase 2: Cohere Rerank 3.5**
+**Milestone 2b: Cohere Rerank 3.5**
 - After RRF fusion produces ~50 candidates, Cohere Rerank 3.5 sees query + passage pairs
 - Cross-encoder scoring produces true relevance scores (not just ranking positions)
 - Top 10 returned with confidence scores
 - Replaces Claude Haiku passage ranking for precision; Haiku remains available as fallback
 - Multilingual-native — no language routing needed
 
-**Phase 4+: Three-Path Parallel Retrieval**
+**Milestone 3b+: Three-Path Parallel Retrieval**
 - **PATH A:** Dense vector (pgvector HNSW) — semantic similarity
 - **PATH B:** BM25 keyword (pg_search) — exact term and phrase matching
 - **PATH C:** Graph-augmented retrieval (Postgres, ADR-117) — entity-aware graph traversal via multi-step SQL queries against `extracted_relationships` and `concept_relations` tables, combined with pgvector similarity. Traverses concept neighborhoods, lineage relationships, cross-tradition bridges, experiential state graph.
 - All three paths contribute candidates to RRF fusion before reranking
 
 ```
-Phase 0–1:  PATH A + PATH B → RRF → Claude Haiku ranking
-Phase 2–3:  PATH A + PATH B + HyDE → RRF → Cohere Rerank
-Phase 4+:   PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
+Arc 1 – M2a:  PATH A + PATH B → RRF → Claude Haiku ranking
+M2b – M3a:    PATH A + PATH B + HyDE → RRF → Cohere Rerank
+M4+:          PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
 ```
 
 ### Rationale
@@ -4829,10 +4729,10 @@ Phase 4+:   PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
 
 ### Consequences
 
-- DES-003 (Search Architecture) updated with the full pipeline diagram showing all three phases
+- DES-003 (Search Architecture) updated with the full pipeline diagram showing all three stages
 - Cohere Rerank API key added to environment configuration
-- Search latency budget increases: Phase 0 target ~200ms; Phase 2 target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Phase 4 target ~400ms (graph-augmented retrieval adds ~50ms)
-- The golden retrieval set (Phase 0a) gains HyDE-specific and graph-augmented test queries in later phases
+- Search latency budget increases: Arc 1 target ~200ms; Milestone 2b target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Milestone 4 target ~400ms (graph-augmented retrieval adds ~50ms)
+- The golden retrieval set (Milestone 1a) gains HyDE-specific and graph-augmented test queries in later milestones
 - Cost per query increases: ~$0.001 for HyDE (Claude) + ~$0.0005 for Cohere Rerank = ~$0.0015/query total AI cost
 
 ---
@@ -4848,11 +4748,11 @@ Phase 4+:   PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
 
 ADR-049 establishes corpus-derived suggestions with three types (term completion, query suggestion, bridge-powered). The implementation notes mention PostgreSQL `pg_trgm` or pre-computed lists for < 50ms latency.
 
-For a world-class search experience, suggestion latency should be invisible — ideally < 20ms on every keystroke. pg_trgm can achieve < 50ms for trigram similarity queries, but prefix matching on sorted sets in Redis is consistently < 5ms regardless of dictionary size. The suggestion architecture should be designed for Redis from the start, with pg_trgm as the Phase 0 fallback.
+For a world-class search experience, suggestion latency should be invisible — ideally < 20ms on every keystroke. pg_trgm can achieve < 50ms for trigram similarity queries, but prefix matching on sorted sets in Redis is consistently < 5ms regardless of dictionary size. The suggestion architecture should be designed for Redis from the start, with pg_trgm as the Arc 1 fallback.
 
 ### Decision
 
-Design the suggestion architecture with Redis (ElastiCache) as the target cache layer. The implementation is phased: pg_trgm serves Phase 0; Redis is introduced when suggestion latency or volume warrants it.
+Design the suggestion architecture with Redis (ElastiCache) as the target cache layer. The implementation is phased: pg_trgm serves Arc 1; Redis is introduced when suggestion latency or volume warrants it.
 
 **Six-tier suggestion hierarchy** (priority order):
 
@@ -4872,7 +4772,7 @@ Design the suggestion architecture with Redis (ElastiCache) as the target cache 
 - Sanskrit variants loaded from `sanskrit_terms.common_variants` — all variant forms point to the canonical suggestion
 - Nightly refresh incorporates query log signal (Tier 5)
 
-**pg_trgm fallback (Phase 0 and always-on backup):**
+**pg_trgm fallback (Arc 1 and always-on backup):**
 When Redis prefix returns < 3 results (misspelling, mid-word prefix), fall back to:
 
 ```sql
@@ -4898,8 +4798,8 @@ LIMIT 10;
 - New `suggestion_dictionary` table in DES-004 (Data Model): `suggestion`, `display_text`, `suggestion_type`, `language`, `script`, `latin_form`, `corpus_frequency`, `weight`, `entity_id`, `book_id`
 - Weight computation: `(corpus_frequency * 0.3) + (query_frequency * 0.5)` — no `click_through` tracking (DELTA compliance)
 - ADR-049 updated with six-tier hierarchy
-- Phase 0: pg_trgm implementation
-- Phase 2+: Redis (ElastiCache) provisioned when suggestion volume warrants
+- Arc 1: pg_trgm implementation
+- Milestone 2b+: Redis (ElastiCache) provisioned when suggestion volume warrants
 - Terraform configuration (ADR-016) extended for ElastiCache
 - The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary
 
@@ -4954,7 +4854,7 @@ The portal offers two experience tiers:
 - No profile embedding or soft personalization (no algorithmic content recommendation based on reading patterns)
 - No "suggested for you" based on behavioral analysis
 - No reading history analytics visible to staff (aggregate, anonymized usage signals per ADR-052 apply equally to all users)
-- No authenticated-only content (until Phase 13+ Lessons integration per ADR-085)
+- No authenticated-only content (until Milestone 7a+ Lessons integration per ADR-085)
 
 ### Rationale
 
@@ -4971,6 +4871,6 @@ The portal offers two experience tiers:
 - Auth0 integration added to DESIGN.md security section (DES-024)
 - CONTEXT.md DELTA framework section updated with authenticated-tier documentation
 - ADR-066 (Lotus Bookmark) extended: local storage for anonymous users, server-synced for authenticated users
-- Phase 13+ Lessons integration (ADR-085) builds on this authentication layer
+- Milestone 7a+ Lessons integration (ADR-085) builds on this authentication layer
 
 ---

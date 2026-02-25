@@ -44,12 +44,12 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Database | Neon PostgreSQL + pgvector + pg_search/ParadeDB (hybrid vector + BM25 full-text search) |
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
-| Reranking | Cohere Rerank 3.5 (Phase 2+) (ADR-119) |
-| Graph | Postgres-native + Python/NetworkX batch pipeline (Phase 4+) (ADR-117) |
-| Cache | Redis/ElastiCache (suggestions, Phase 2+) (ADR-120) |
+| Reranking | Cohere Rerank 3.5 (Milestone 2b+) (ADR-119) |
+| Graph | Postgres-native + Python/NetworkX batch pipeline (Milestone 3b+) (ADR-117) |
+| Cache | Redis/ElastiCache (suggestions, Milestone 2b+) (ADR-120) |
 | Language detection | fastText (per-query, < 1ms) |
-| CMS | Contentful (Phase 9+) |
-| Auth | Auth0 (Phase 13+) |
+| CMS | Contentful (Arc 1+) |
+| Auth | Auth0 (Milestone 7a+) |
 | Edge/CDN | Cloudflare |
 | Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
 | IaC | Terraform |
@@ -59,37 +59,28 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 
 Business logic lives in `/lib/services/` (framework-agnostic TypeScript). A three-tier MCP server strategy (ADR-101) provides corpus access at development, editorial, and external distribution layers. The architecture is designed for a **10-year maintenance horizon**: data in PostgreSQL, migrations in raw SQL, dependencies treated as commitments.
 
-## Phasing
+## Roadmap
 
-The project is planned across 15 capability-themed phases (0a–14), each delivering a single coherent capability. Reorganized from the original 18-phase plan via ADR-103 — merging small phases, splitting oversized ones, and aligning engineering infrastructure with the phases that need it.
+The project is planned across 7 thematic arcs, each delivering a coherent narrative increment. Consolidated from 15 capability-themed phases for stakeholder clarity and spiritual narrative coherence.
 
-| Phase | Name | Focus |
-|-------|------|-------|
-| **0a** | Prove | Single-book search proof — repo setup, Neon provisioning, PDF ingestion, *Autobiography of a Yogi*, hybrid search API + UI, basic reader, search quality evaluation (ADR-113) |
-| **0b** | Foundation | Deploy + AI librarian layer — Vercel/Sentry config, query expansion, intent classification, passage ranking, homepage, observability, MCP server (ADR-113) |
-| **1** | Build | Complete portal + engineering — all pages, SRF visual identity, accessibility, i18n infrastructure, testing, Terraform, Storybook |
-| **2** | Read | Reader experience — dwell contemplation mode, keyboard nav, bookmarks, typography, offline caching |
-| **3** | Grow | Multi-book corpus — first-wave books, cross-book search, Today's Wisdom pool, batch Lambda |
-| **4** | Operate | Editorial operations — theme tagging, Doors of Entry, editorial review portal, glossary, practice bridge, operational playbook |
-| **5** | Connect | Related Teachings — cross-book connections, reader side panel, editorial threads |
-| **6** | Complete | Full library — remaining books, verse-aware chunking, observability, "What Is Humanity Seeking?" dashboard, knowledge graph |
-| **7** | Empower | Reader export & staff tools — PDF downloads, presentation mode, study guides, magazine integration, study circle sharing |
-| **8** | Distribute | Distribution & outreach — daily email, social media assets, Sacred Places, RSS, WhatsApp, calendar reading journeys |
-| **9** | Integrate | Contentful integration — CMS as editorial source of truth, GitLab migration |
-| **10** | Translate | Multi-language — official SRF/YSS translations in 8+ languages |
-| **11** | Polish | Accessibility audit & polish — formal WCAG audit, PWA, Calm Technology design system |
-| **12** | Multimedia | Cross-media — video catalog, transcription, audio library, photograph gallery, YSS branding |
-| **13** | Personalize | User accounts — optional sign-in for bookmarks sync, reading progress, personalized daily passage |
-| **14** | Community | Community & events — event calendar, center discovery, community curation, SMS/Telegram access |
+| Arc | Theme | Focus |
+|-----|-------|-------|
+| **1: Foundation** | Proving the Light | Ingest one book, prove semantic search works, deploy with AI librarian (Milestones 1a/1b) |
+| **2: Presence** | The Living Library | All pages, reading experience, accessibility, design system, PWA (Milestones 2a/2b) |
+| **3: Wisdom** | Expanding Understanding | Multi-book library, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
+| **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, GitLab |
+| **5: Reach** | Every Seeker, Everywhere | Email, social, messaging, regional distribution, 10 languages (Milestones 5a/5b) |
+| **6: Media** | All Paths to Truth | Video, audio, images, cross-media hub, Cosmic Chants |
+| **7: Community** | Shared Journey | Optional accounts, events, study circles, VLD curation (Milestones 7a/7b) |
 
 ## Current Status
 
-**Design complete. Ready to begin Phase 0a (Prove).**
+**Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.**
 
-This repository contains comprehensive design documentation across twelve files, produced using Claude Code. See CLAUDE.md for the full navigation guide.
+This repository contains comprehensive design documentation across thirteen files, produced using Claude Code. See CLAUDE.md for the full navigation guide.
 
 - [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project, with rationale
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
-- [DESIGN.md](DESIGN.md) — Technical architecture split across four files by phase (DESIGN.md + DESIGN-phase0.md, DESIGN-phase1-4.md, DESIGN-phase5-plus.md)
-- [DECISIONS.md](DECISIONS.md) — 123 Architecture Decision Records split across three files by concern (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md)
-- [ROADMAP.md](ROADMAP.md) — 15 phases (0a–14) with deliverables, success criteria, and phase gates
+- [DESIGN.md](DESIGN.md) — Technical architecture split across four files by arc (DESIGN.md + DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md)
+- [DECISIONS.md](DECISIONS.md) — 118 Architecture Decision Records split across three files by concern (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md)
+- [ROADMAP.md](ROADMAP.md) — 7 thematic arcs with milestones, deliverables, success criteria, and arc gates

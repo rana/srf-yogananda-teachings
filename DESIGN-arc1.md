@@ -1,8 +1,8 @@
-# SRF Online Teachings Portal — Phase 0 Design (Prove + Foundation)
+# SRF Online Teachings Portal — Arc 1 Design (Foundation)
 
-> **Scope.** This file contains the technical design sections relevant to **Phase 0** — proving the AI librarian concept and establishing the data foundation. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For later phases, see [DESIGN-phase1-4.md](DESIGN-phase1-4.md) and [DESIGN-phase5-plus.md](DESIGN-phase5-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b) — proving the AI librarian concept and establishing the data foundation. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Phase 0a.8 (search quality evaluation) and subsequent phase gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -18,7 +18,7 @@ The AI is a **librarian**, not an **oracle**. It finds Yogananda's words — it 
 
 ### Search Flow
 
-The search pipeline has evolved through three phase tiers. Phase 0–1 uses a two-path retrieval core (vector + BM25). Phase 2+ adds HyDE and Cohere Rerank. Phase 4+ adds a third retrieval path via Postgres-native graph traversal (ADR-117).
+The search pipeline has evolved through three arc tiers. Milestones 1a–2a use a two-path retrieval core (vector + BM25). Milestone 2b+ adds HyDE and Cohere Rerank. Milestone 3b+ adds a third retrieval path via Postgres-native graph traversal (ADR-117).
 
 ```
 1. USER QUERY
@@ -51,7 +51,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
     - Do not generate any teaching content
  │
  ▼
-5. HyDE — HYPOTHETICAL DOCUMENT EMBEDDING (Phase 2+, ADR-119)
+5. HyDE — HYPOTHETICAL DOCUMENT EMBEDDING (Milestone 2b+, ADR-119)
  Claude generates a hypothetical passage that would answer the query,
  written in Yogananda's register. This generated passage is an
  intermediate embedding artifact only — it is never stored, displayed,
@@ -64,7 +64,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  diverges from corpus vocabulary.
  │
  ▼
-6. MULTI-PATH PARALLEL RETRIEVAL (Neon PostgreSQL, Phase 4+ adds PATH C)
+6. MULTI-PATH PARALLEL RETRIEVAL (Neon PostgreSQL, Milestone 3b+ adds PATH C)
 
  PATH A — Dense Vector (pgvector, HNSW):
  - Embed the original query using Voyage voyage-3-large (ADR-118)
@@ -76,7 +76,7 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  - BM25 scoring produces better relevance ranking than tsvector ts_rank
  - Find top 20 chunks by keyword relevance
 
- PATH C — Graph-Augmented Retrieval (Postgres, Phase 4+, ADR-117):
+ PATH C — Graph-Augmented Retrieval (Postgres, Milestone 3b+, ADR-117):
  - Identify entities/concepts in query via entity registry (ADR-116)
  - SQL traversal across extracted_relationships and concept_relations
  - Return top 20 chunks reachable within 2–3 hops
@@ -84,17 +84,17 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  - Multi-step queries composed in /lib/services/graph.ts
 
  RECIPROCAL RANK FUSION (RRF):
- - Merge results from all active paths (A+B in Phase 0–3; A+B+C in Phase 4+)
- - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Phase 0a.8 golden set at k=40/60/80]*
+ - Merge results from all active paths (A+B in Milestones 1a–3a; A+B+C in Milestone 3b+)
+ - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Milestone 1a.8 golden set at k=40/60/80]*
  - Deduplicate, producing top 20 candidates
  │
  ▼
-7. RERANKING (Cohere Rerank 3.5, Phase 2+, ADR-119)
+7. RERANKING (Cohere Rerank 3.5, Milestone 2b+, ADR-119)
  Cross-encoder reranker sees query + passage together.
  Multilingual native. Replaces Claude Haiku passage ranking for precision.
  Selects and ranks top 5 from 20 candidates.
 
- Phase 0–1 fallback: Claude Haiku passage ranking (ADR-014).
+ Milestones 1a–2a fallback: Claude Haiku passage ranking (ADR-014).
  │
  ▼
 8. CONTEXT EXPANSION
@@ -119,16 +119,16 @@ The search pipeline has evolved through three phase tiers. Phase 0–1 uses a tw
  - The verbatim passage text (highlighted relevant portion)
  - Book title, chapter, page number
  - A deep link to the book reader positioned at that passage
- - Related teachings (Phase 3+, ADR-050) grouped by relationship type
+ - Related teachings (Milestone 3a+, ADR-050) grouped by relationship type
 ```
 
-**Phase progression of the search pipeline:**
+**Milestone progression of the search pipeline:**
 
-| Phase | Retrieval Paths | Reranker | Enhancements |
-|-------|----------------|----------|-------------|
-| 0–1 | Vector (pgvector) + BM25 (pg_search) | Claude Haiku passage ranking | Basic query expansion, terminology bridge |
-| 2–3 | Vector + BM25 | Cohere Rerank 3.5 | HyDE, improved query expansion |
-| 4+ | Vector + BM25 + Graph (Postgres) | Cohere Rerank 3.5 | Three-path RRF, entity-aware retrieval |
+| Milestone | Retrieval Paths | Reranker | Enhancements |
+|-----------|----------------|----------|-------------|
+| 1a–2a | Vector (pgvector) + BM25 (pg_search) | Claude Haiku passage ranking | Basic query expansion, terminology bridge |
+| 2b–3a | Vector + BM25 | Cohere Rerank 3.5 | HyDE, improved query expansion |
+| 3b+ | Vector + BM25 + Graph (Postgres) | Cohere Rerank 3.5 | Three-path RRF, entity-aware retrieval |
 
 ### Search Intent Classification (ADR-005 E1)
 
@@ -242,9 +242,9 @@ interface SpiritualTerm {
 }
 ```
 
-Phase 0 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-051) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
+Arc 1 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-051) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
 
-### Claude System Prompts (Draft — Refine During Phase 0)
+### Claude System Prompts (Draft — Refine During Arc 1)
 
 These are the initial system prompts for the three Claude API calls in the search pipeline. All prompts enforce the "librarian, not oracle" constraint: Claude processes queries and selects passages but never generates teaching content.
 
@@ -327,7 +327,7 @@ Candidate passages:
 {passages_json}
 ```
 
-*These prompts are starting points. Phase 0a empirical testing (deliverable 0a.8, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+*These prompts are starting points. Milestone 1a empirical testing (deliverable 1a.9, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
 
 ### Search Without AI (Fallback / Simple Queries)
 
@@ -349,7 +349,7 @@ When Claude (via AWS Bedrock, ADR-014) is unavailable (timeout, error, rate limi
 
 | Level | Trigger | What Works | What Doesn't | User Impact |
 |-------|---------|-----------|--------------|-------------|
-| **Full** | All services healthy | Query expansion + HyDE (Phase 2+) + multi-path retrieval + Cohere Rerank (Phase 2+) | — | Best results: conceptual queries understood, top 5 precisely ranked |
+| **Full** | All services healthy | Query expansion + HyDE (Milestone 2b+) + multi-path retrieval + Cohere Rerank (Milestone 2b+) | — | Best results: conceptual queries understood, top 5 precisely ranked |
 | **No rerank** | Cohere Rerank unavailable | Query expansion, HyDE, multi-path RRF | Cross-encoder reranking | Top 5 from RRF scores; slightly less precise ordering |
 | **No HyDE** | HyDE generation fails | Query expansion, multi-path RRF, Cohere Rerank | Hypothetical document embedding | Marginal loss on literary/metaphorical queries |
 | **No expansion** | Claude query expansion fails | Raw query → hybrid search (vector + BM25) | Conceptual query broadening | Keyword-dependent; "How do I find peace?" works less well than "peace" |
@@ -359,7 +359,7 @@ When Claude (via AWS Bedrock, ADR-014) is unavailable (timeout, error, rate limi
 
 ### ADR-046: Embedding Model Migration Procedure
 
-When the embedding model changes (e.g., from `voyage-3-large` to a successor, or to a per-language model for Phase 10), re-embedding the full corpus is required. The `embedding_model`, `embedding_dimension`, and `embedded_at` columns on `book_chunks` enable safe, auditable migration.
+When the embedding model changes (e.g., from `voyage-3-large` to a successor, or to a per-language model for Milestone 5b), re-embedding the full corpus is required. The `embedding_model`, `embedding_dimension`, and `embedded_at` columns on `book_chunks` enable safe, auditable migration.
 
 **Procedure:**
 
@@ -391,7 +391,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
  New embeddings produce different similarity scores.
 
 5. VALIDATE (on branch)
- Run the search quality evaluation test suite (deliverable 0a.8).
+ Run the search quality evaluation test suite (deliverable 1a.9).
  Compare results against production baseline.
  Threshold: new model must match or exceed current ≥ 80% pass rate.
 
@@ -406,9 +406,9 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
 
 **Cost estimate for full corpus re-embedding:** < $15 for Voyage voyage-3-large at 50K chunks (~25M tokens). The operational cost is primarily developer time for validation, not API spend. At significant volume, evaluate AWS Marketplace SageMaker model packages for Voyage to reduce per-call costs.
 
-**Multilingual embedding quality (ADR-047, ADR-118).** Voyage voyage-3-large is multilingual-first by design: 1024 dimensions, 26 languages, unified cross-lingual embedding space, 32K token input window. For European languages (es, de, fr, it, pt) and major Asian languages (ja, zh, ko, hi), this provides strong baseline retrieval. For CJK-heavy corpora, benchmark Voyage `voyage-multilingual-2` as an alternative — it may excel on languages with fundamentally different morphology. Phase 10 includes formal benchmarking with actual translated passages (Deliverable 10.3) across Voyage voyage-3-large, Cohere embed-v3, and BGE-M3.
+**Multilingual embedding quality (ADR-047, ADR-118).** Voyage voyage-3-large is multilingual-first by design: 1024 dimensions, 26 languages, unified cross-lingual embedding space, 32K token input window. For European languages (es, de, fr, it, pt) and major Asian languages (ja, zh, ko, hi), this provides strong baseline retrieval. For CJK-heavy corpora, benchmark Voyage `voyage-multilingual-2` as an alternative — it may excel on languages with fundamentally different morphology. Milestone 5b includes formal benchmarking with actual translated passages across Voyage voyage-3-large, Cohere embed-v3, and BGE-M3.
 
-**Domain-adapted embeddings (ADR-047, later-stage research).** The highest-ceiling path to world-class retrieval: fine-tune a multilingual base model on Yogananda's published corpus across languages. A domain-adapted model would understand spiritual vocabulary, metaphorical patterns, and cross-tradition concepts at a depth no general model matches. Prerequisites: multilingual corpus (Phase 10 ingestion) and per-language evaluation suites (Deliverable 10.10). The same migration procedure above applies — the architecture imposes no constraints on model provenance.
+**Domain-adapted embeddings (ADR-047, later-stage research).** The highest-ceiling path to world-class retrieval: fine-tune a multilingual base model on Yogananda's published corpus across languages. A domain-adapted model would understand spiritual vocabulary, metaphorical patterns, and cross-tradition concepts at a depth no general model matches. Prerequisites: multilingual corpus (Milestone 5b ingestion) and per-language evaluation suites (Milestone 5b). The same migration procedure above applies — the architecture imposes no constraints on model provenance.
 
 ### ADR-049: Search Suggestions & Autocomplete
 
@@ -459,7 +459,7 @@ BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
 
 **1. Term completion.** Prefix matching against a pre-computed suggestion index. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching, or pre-computed trie exported as static JSON and cached at edge (Vercel Edge Config or CDN). Latency target: < 50ms — no database round-trip on the hot path if edge-cached.
 
-**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 0a.8) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 1a.9) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
 
 **3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain.
 
@@ -505,7 +505,7 @@ When the search bar receives focus but the seeker has typed nothing, display cur
 
 - Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
 - One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
-- The search placeholder remains "What are you seeking?" (Deliverable 0a.6)
+- The search placeholder remains "What are you seeking?" (Deliverable 1a.7)
 
 Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078).
 
@@ -527,7 +527,7 @@ Book ingestion pipeline (new step after vocabulary extraction):
  Index grows with each book — never shrinks.
 ```
 
-#### Multilingual Suggestions (Phase 10)
+#### Multilingual Suggestions (Milestone 5b)
 
 Per-language suggestion indices are required. Each language gets:
 - Its own extracted corpus vocabulary (from language-specific chunks)
@@ -552,14 +552,14 @@ The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
 - Bridge hints announced as supplementary text
 - High contrast mode: suggestion categories distinguished by prefix text, not color alone
 
-#### Phase Progression
+#### Milestone Progression
 
-| Phase | Suggestion Capability | Source |
-|-------|----------------------|--------|
-| 0 | Basic prefix matching on single-book vocabulary + chapter titles | Corpus extraction from Autobiography, pre-computed |
-| 3 | Multi-book vocabulary + theme names + bridge-powered suggestions + curated queries | Expanded corpus + spiritual-terms.json + editorial |
-| 10 | Per-language suggestion indices + transliteration support | Language-specific indices |
-| 13 | Optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
+| Milestone | Suggestion Capability | Source |
+|-----------|----------------------|--------|
+| 1a | Basic prefix matching on single-book vocabulary + chapter titles | Corpus extraction from Autobiography, pre-computed |
+| 3a | Multi-book vocabulary + theme names + bridge-powered suggestions + curated queries | Expanded corpus + spiritual-terms.json + editorial |
+| 5b | Per-language suggestion indices + transliteration support | Language-specific indices |
+| 7a | Optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
 
 #### Interaction with Intent Classification
 
@@ -593,13 +593,13 @@ CREATE TABLE books (
  publication_year INTEGER,
  language TEXT NOT NULL DEFAULT 'en',
  isbn TEXT,
- source_url TEXT, -- PDF URL for Phase 0 ingestion
+ source_url TEXT, -- PDF URL for Arc 1 ingestion
  contentful_id TEXT, -- Contentful entry ID (production)
  cover_image_url TEXT,
  bookstore_url TEXT, -- SRF Bookstore URL for "Find this book" link.
  -- Points to SRF Bookstore for all books. If per-language bookstore
- -- routing is needed in Phase 10 (YSS for Hindi/Bengali), add a simple
- -- lookup then — zero schema changes required now. (ADR-028)
+ -- routing is needed at Milestone 5b (YSS for Hindi/Bengali), add a
+ -- simple lookup table — zero schema changes required now.
  edition TEXT, -- e.g., "13th Edition", "Revised 2024" (ADR-034)
  edition_year INTEGER, -- year of this specific edition (ADR-034)
  canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
@@ -636,14 +636,6 @@ CREATE TABLE book_chunks_archive (
  archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  original_created_at TIMESTAMPTZ NOT NULL
 );
-
--- ============================================================
--- BOOK STORE LINKS — REMOVED (ADR-028)
--- ============================================================
--- The book_store_links table was removed as over-designed for a portal
--- that is not an e-commerce gateway. The books.bookstore_url column
--- points to the SRF Bookstore. If per-language bookstore routing is
--- needed in Phase 10, a simple table or column can be added then.
 
 -- ============================================================
 -- CHAPTERS
@@ -691,7 +683,7 @@ CREATE TABLE book_chunks (
  prev_chunk_id UUID, -- previous chunk for context continuity
  next_chunk_id UUID, -- next chunk for "read more"
 
- -- Cross-language alignment (Phase 10)
+ -- Cross-language alignment (Milestone 5b)
  canonical_chunk_id UUID REFERENCES book_chunks(id), -- links translated chunk to its English original;
  -- NULL for originals. Enables "Read this in Spanish →".
 
@@ -712,8 +704,8 @@ CREATE TABLE book_chunks (
  accessibility_level SMALLINT, -- 1=universal, 2=accessible, 3=deep (ADR-005 E3)
  -- NULL until classified. Computed by Claude at ingestion, spot-checked by reviewer.
  -- Used for Today's Wisdom (prefer 1–2), theme pages (default 1–2, "Show deeper" shows all).
- centrality_score REAL,  -- PageRank from graph batch (Phase 4+, ADR-117)
- community_id TEXT,      -- community detection cluster (Phase 4+, ADR-117)
+ centrality_score REAL,  -- PageRank from graph batch (Milestone 3b+, ADR-117)
+ community_id TEXT,      -- community detection cluster (Milestone 3b+, ADR-117)
  metadata JSONB DEFAULT '{}',
  created_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -736,7 +728,7 @@ CREATE INDEX chunks_bm25_icu ON book_chunks
   }'
  );
 
--- Phase 10: Chinese (Jieba) and Japanese (Lindera) partial indexes
+-- Milestone 5b: Chinese (Jieba) and Japanese (Lindera) partial indexes
 -- CREATE INDEX chunks_bm25_zh ON book_chunks USING bm25 (id, content)
 --  WITH (key_field = 'id', text_fields = '{"content": {"tokenizer": {"type": "jieba"}}}')
 --  WHERE script = 'cjk' AND language LIKE 'zh%';
@@ -770,7 +762,7 @@ CREATE INDEX idx_chunks_language ON book_chunks(language);
 -- The BM25 index (chunks_bm25_icu above) handles tokenization, stemming,
 -- and relevance ranking internally. No tsvector column or trigger needed.
 -- ICU tokenizer handles diacritics (ā→a, ṇ→n, ś→s, etc.) and most
--- languages. CJK-specific indexes (Jieba, Lindera) added in Phase 10.
+-- languages. CJK-specific indexes (Jieba, Lindera) added in Milestone 5b.
 -- The unaccent extension is still loaded for pg_trgm fuzzy matching.
 ```
 
@@ -812,7 +804,7 @@ CREATE INDEX idx_teaching_topics_category ON teaching_topics(category);
 -- ============================================================
 -- Slugs stay in English for URL stability (/es/themes/peace, not /es/temas/paz).
 -- Display names and header quotes are localized per language.
--- Phase 1: table created (empty). Phase 10: populated via AI-assisted workflow (ADR-078).
+-- Milestone 2a: table created (empty). Milestone 5b: populated via AI-assisted workflow (ADR-078).
 
 CREATE TABLE topic_translations (
  theme_id UUID NOT NULL REFERENCES teaching_topics(id) ON DELETE CASCADE,
@@ -881,7 +873,7 @@ CREATE INDEX idx_affirmations_active ON affirmations(is_active) WHERE is_active 
 -- ============================================================
 -- INITIAL THEME DATA
 -- ============================================================
--- Phase 0: six spiritual quality themes (displayed as "Doors of Entry" on homepage)
+-- Arc 1: six spiritual quality themes (displayed as "Doors of Entry" on homepage)
 INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
  ('Peace', 'peace', 'quality', 1, 'Inner peace, calmness, stillness of mind, overcoming restlessness and anxiety, mental tranquility, equanimity in the face of difficulty'),
  ('Courage', 'courage', 'quality', 2, 'Overcoming fear, bravery, inner strength, perseverance through difficulty, spiritual fortitude, willpower'),
@@ -890,7 +882,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
  ('Purpose', 'purpose', 'quality', 5, 'Life purpose, meaning, dharma, vocation, finding direction, why am I here, fulfilling divine plan'),
  ('Love', 'love', 'quality', 6, 'Divine love, unconditional love, devotion, human love, expanding the heart, love for God, love for all beings');
 
--- Phase 3+: life situation themes (accessible from "Browse all themes" page, not on homepage grid)
+-- Milestone 3a+: life situation themes (accessible from "Browse all themes" page, not on homepage grid)
 -- These are added as content is ingested and sufficient passages are confirmed.
 -- Minimum threshold: ~20 reviewed passages before a situation theme page goes live.
 -- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
@@ -901,7 +893,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
 -- ('Loneliness', 'loneliness', 'situation', 5, 'Isolation, feeling alone, finding the inner companion, solitude vs loneliness, divine companionship, belonging'),
 -- ('Aging', 'aging', 'situation', 6, 'Growing older, the body and the soul, vitality, wisdom of age, preparing for the afterlife, eternal youth of the spirit');
 
--- Phase 5+: exploration themes — persons, principles, scriptures, practices (ADR-033)
+-- Milestone 3c+: exploration themes — persons, principles, scriptures, practices (ADR-033)
 -- Same tagging pipeline as quality/situation themes. No fixed minimum — editorial judgment decides when a topic has enough depth to publish.
 -- INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALUES
 --
@@ -1013,7 +1005,7 @@ CREATE TABLE chunk_relations (
  target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  similarity FLOAT NOT NULL,
  rank INTEGER NOT NULL, -- 1 = most similar, 2 = second, etc.
- relation_type TEXT, -- NULL (Phase 0–2), classified in Phase 5 (ADR-005 E6):
+ relation_type TEXT, -- NULL (Milestones 1a–2b), classified in Milestone 3c (ADR-005 E6):
  -- 'same_topic' — both passages address the same theme
  -- 'develops_further'— target develops the source idea at greater length
  -- 'personal_story' — target is a personal illustration of the source teaching
@@ -1041,7 +1033,7 @@ CREATE INDEX idx_chunk_relations_target ON chunk_relations(target_chunk_id);
 -- "As my guru Sri Yukteswar taught..." → link to that passage.
 -- Supplements the automatic embedding-based relations above.
 
--- chunk_references table added in Phase 5 (Related Teachings & Reader Intelligence)
+-- chunk_references table added in Milestone 3c (Related Teachings & Reader Intelligence)
 CREATE TABLE chunk_references (
  source_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  target_chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
@@ -1060,7 +1052,7 @@ CREATE INDEX idx_chunk_references_target ON chunk_references(target_chunk_id);
 -- ============================================================
 -- Combines dense vector similarity (pgvector) and BM25 keyword
 -- relevance (pg_search/ParadeDB) using Reciprocal Rank Fusion.
--- Phase 4+ adds PATH C (graph-augmented retrieval via Postgres) as a third source
+-- Milestone 3b+ adds PATH C (graph-augmented retrieval via Postgres) as a third source
 -- merged at the application layer before reranking (ADR-119).
 
 -- Example hybrid query (implemented in /lib/services/search.ts):
@@ -1114,9 +1106,9 @@ CREATE TABLE entity_registry (
  language        CHAR(5),
  definition      TEXT,
  srf_definition  TEXT,              -- Yogananda's specific definition if distinct
- centrality_score REAL,             -- PageRank from graph batch (Phase 4+, ADR-117)
- community_id   TEXT,               -- community detection cluster (Phase 4+, ADR-117)
- bridge_score   REAL,               -- betweenness centrality (Phase 4+, ADR-117)
+ centrality_score REAL,             -- PageRank from graph batch (Milestone 3b+, ADR-117)
+ community_id   TEXT,               -- community detection cluster (Milestone 3b+, ADR-117)
+ bridge_score   REAL,               -- betweenness centrality (Milestone 3b+, ADR-117)
  created_at      TIMESTAMPTZ DEFAULT now(),
  UNIQUE(canonical_name, entity_type)
 );
@@ -1176,7 +1168,7 @@ CREATE INDEX suggestion_weight_idx ON suggestion_dictionary(language, weight DES
 -- EXTRACTED RELATIONSHIPS (graph intelligence — ADR-115, ADR-117)
 -- ============================================================
 -- Every relationship triple extracted by the enrichment pipeline.
--- Queried directly by graph-augmented retrieval (PATH C, Phase 4+).
+-- Queried directly by graph-augmented retrieval (PATH C, Milestone 3b+).
 -- Graph algorithm batch job reads from this table nightly.
 CREATE TABLE extracted_relationships (
  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1204,9 +1196,9 @@ CREATE TABLE user_profiles (
 );
 ```
 
-### Contentful Content Model (Phase 0+)
+### Contentful Content Model (Arc 1+)
 
-Created in Phase 0a as part of Contentful space setup. The content model is the editorial source of truth from the first phase (ADR-010).
+Created in Milestone 1a as part of Contentful space setup. The content model is the editorial source of truth from the first milestone (ADR-010).
 
 ```
 Content Type: Book
@@ -1243,7 +1235,7 @@ Content Type: TextBlock
 └── metadata (JSON Object) — flexible field for verse refs, etc.
 ```
 
-**Phase 0a sync (batch script):**
+**Milestone 1a sync (batch script):**
 ```
 Contentful import complete (all TextBlocks published)
  │
@@ -1260,7 +1252,7 @@ Batch sync script (run locally or via CI)
  └── Log sync event
 ```
 
-**Phase 0b+ sync (webhook-driven):**
+**Milestone 1b+ sync (webhook-driven):**
 ```
 Contentful publish event
  │
@@ -1279,9 +1271,9 @@ Webhook → Vercel Function
 
 ## DES-005: Content Ingestion Pipeline
 
-### Phase 0 Pipeline (PDF → Contentful → Neon)
+### Arc 1 Pipeline (PDF → Contentful → Neon)
 
-Contentful is the editorial source of truth from Phase 0 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide non-PDF digital text that goes directly into Contentful.
+Contentful is the editorial source of truth from Arc 1 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide non-PDF digital text that goes directly into Contentful.
 
 ```
 Step 1: Download PDF
@@ -1349,7 +1341,7 @@ Step 5: Language Detection (per-chunk, fastText)
  └── Detect primary language of each chunk
  └── Detect script (Latin, Devanagari, CJK, etc.)
  └── Assign language_confidence score
- └── Phase 0: English-only, but column populated for future use
+ └── Arc 1: English-only, but column populated for future use
 
 Step 6: Entity Resolution (ADR-116)
  └── Resolve names, places, Sanskrit terms against entity_registry
@@ -1404,14 +1396,14 @@ Step 11: Update Suggestion Dictionary (ADR-049, ADR-120)
  └── Sanskrit terms get inline definitions from sanskrit_terms table
  └── Suggestion index grows with each book — never shrinks
 
-Step 12: Graph Metrics (Phase 4+, ADR-117 — nightly batch, not per-ingestion)
+Step 12: Graph Metrics (Milestone 3b+, ADR-117 — nightly batch, not per-ingestion)
  └── Nightly Python + NetworkX job loads full graph from Postgres
  └── Runs PageRank, community detection, betweenness centrality
  └── Writes results to centrality_score, community_id, bridge_score columns
  └── extracted_relationships (Step 7) feed graph structure automatically
 ```
 
-### Webhook Sync Pipeline (Contentful → Neon, Phase 0b+)
+### Webhook Sync Pipeline (Contentful → Neon, Milestone 1b+)
 
 ```
 Step 1: Content editors enter/import book text into Contentful
@@ -1439,7 +1431,7 @@ Step 5: Update suggestion dictionary
  └── Re-extract terms from updated chunk
  └── Merge into suggestion_dictionary
 
-Step 6: Graph updates (Phase 4+, ADR-117)
+Step 6: Graph updates (Milestone 3b+, ADR-117)
  └── extracted_relationships updated in Postgres (Step 3)
  └── Nightly batch job recomputes graph metrics automatically
 
@@ -1449,7 +1441,7 @@ Step 7: Search index, relations, suggestions, and graph
 
 ---
 
-## ADR-041: Phase 0 Bootstrap
+## ADR-041: Arc 1 Bootstrap
 
 The path from "no code" to "running search" — the ceremony that transforms design documents into a working system.
 
@@ -1483,7 +1475,7 @@ The path from "no code" to "running search" — the ceremony that transforms des
  └── Verify error capture with test exception
 
 6. First Content
- └── Run ingestion script (deliverable 0a.3)
+ └── Run ingestion script (deliverable 1a.4)
  └── Verify: pnpm run ingest -- --book autobiography
  └── Check: book_chunks populated, embeddings present
  └── Run: pnpm run relations -- --full
@@ -1519,7 +1511,7 @@ SENTRY_AUTH_TOKEN= # Source map uploads
 
 The chunking algorithm is the single most important factor in search retrieval quality. Yogananda's prose style varies dramatically across books, requiring a nuanced strategy.
 
-### Default Chunking (Phases 0–5: narrative, collected talks, short works)
+### Default Chunking (Milestones 1a–3c: narrative, collected talks, short works)
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
@@ -1541,7 +1533,7 @@ The chunking algorithm is the single most important factor in search retrieval q
 | **Aphorisms (*Sayings*, *Scientific Healing Affirmations*)** | One chunk per standalone saying/affirmation regardless of length | These books are already atomically organized |
 | **Chapter titles and section headers** | Not chunked separately — prepended to first paragraph as metadata context | Headers are context, not content |
 
-### Verse-Aware Chunking (Phase 6: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*)
+### Verse-Aware Chunking (Milestone 3d: *Second Coming of Christ*, *God Talks With Arjuna*, *Wine of the Mystic*)
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
@@ -1549,9 +1541,9 @@ The chunking algorithm is the single most important factor in search retrieval q
 | **Long commentaries** | Split at paragraph boundaries within commentary; each sub-chunk retains verse text as prefix | Verse context travels with every fragment |
 | **Cross-reference** | Verse reference stored as structured metadata (e.g., "Bhagavad Gita IV:7") | Enables side-by-side commentary view |
 
-### Per-Language Validation (Phase 10)
+### Per-Language Validation (Milestone 5b)
 
-English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts; Devanagari and Bengali have different word-boundary characteristics. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary. See ROADMAP deliverable 10.10 for the formal validation requirement.
+English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts; Devanagari and Bengali have different word-boundary characteristics. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary. See ROADMAP Milestone 5b for the formal validation requirement.
 
 ### Semantic Density Classification
 
@@ -1579,7 +1571,7 @@ Not all passages carry equal semantic weight per token. Some sentences condense 
 | Self-Revealing Navigation (DES-015) | The "most evocative passage" selected for the warm-background hint on first visit is the highest-density passage in the chapter's first screen |
 | Search result ranking | Density as a tiebreaker when relevance scores are close — prefer aphoristic passages that stand alone over narrative context |
 
-**Phase:** Populated during Phase 3 ingestion (when Claude batch processing is available). Retroactively applied to Phase 0 content.
+**Milestone:** Populated during Milestone 3a ingestion (when Claude batch processing is available). Retroactively applied to Arc 1 content.
 
 ### ADR-039 ext: Corpus Stylometric Fingerprint
 
@@ -1604,7 +1596,7 @@ Content Integrity Verification (ADR-039) uses per-chapter content hashes to veri
 
 **What this is not:** Not a plagiarism detector. Not a tool for verifying external claims about Yogananda's authorship. It is a statistical profile of the authenticated corpus — a reference point, not a judge.
 
-**Phase:** Phase 6+ (requires substantial corpus ingestion). Published on the `/integrity` page alongside content hashes.
+**Milestone:** Milestone 3d+ (requires substantial corpus ingestion). Published on the `/integrity` page alongside content hashes.
 
 ---
 
@@ -1617,8 +1609,8 @@ MCP (Model Context Protocol) serves three tiers of AI consumer, all wrapping the
 | MCP Server | Use Case | Availability |
 |------------|----------|-------------|
 | **Neon MCP** | Database schema management, SQL execution, migrations during development | Available now |
-| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Phase 0 |
-| **Contentful MCP** | Content model design, entry management during development | Phase 0b (evaluate) |
+| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Arc 1 |
+| **Contentful MCP** | Content model design, entry management during development | Milestone 1b (evaluate) |
 
 See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
 
@@ -1634,7 +1626,7 @@ Claude Code (dev) → MCP Tool → Service Layer → Neon
 
 The service layer doesn't care who's calling. The access protocol and metadata envelope differ by tier.
 
-#### Tier 1: Development (Phase 0)
+#### Tier 1: Development (Arc 1)
 
 Unrestricted access for Claude Code during portal development. Also used for iterating on guide pathway generation prompts (DES-035 § Worldview Guide Pathway Generation, DES-048 § Worldview Pathway Catalog) — developer tests "generate a guide pathway for Buddhist meditators" interactively, refining prompt templates before deploying to the admin portal batch workflow.
 
@@ -1647,41 +1639,41 @@ Unrestricted access for Claude Code during portal development. Also used for ite
 | `get_book_metadata(slug)` | `books.ts` | Book information |
 | `get_theme_metadata(slug)` | `themes.ts` | Theme information |
 
-#### Tier 2: Internal (Phase 4+)
+#### Tier 2: Internal (Milestone 3b+)
 
 Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that DES-035 AI workflows need for corpus-grounded proposals. Authentication via API key or IAM role (not Auth0).
 
-| Tool | Service Function | Purpose | Phase |
+| Tool | Service Function | Purpose | Milestone |
 |---|---|---|---|
-| `get_chunk_with_context(chunk_id, window)` | `chunks.ts` | Passage + N surrounding chunks (for QA, classification, review) | 4 |
-| `get_similar_passages(chunk_id, threshold, limit)` | `search.ts` | Embedding-based nearest neighbors (distinct from theme search) | 4 |
-| `get_glossary_terms_in_passage(chunk_id)` | `glossary.ts` | Glossary terms in a passage with definitions | 4 |
-| `get_content_coverage(theme_slug)` | `themes.ts` | Passage count, book distribution, tone distribution per theme | 4 |
-| `verify_citation(book_slug, chapter, page)` | `citations.ts` | Confirm a quote exists in the corpus | 4 |
-| `get_pending_reviews(queue_type, limit)` | `queue.ts` | Items awaiting human review in a specific queue | 4 |
-| `get_daily_passage(language, exclude_id)` | `daily.ts` | Random passage from curated pool | 4 |
-| `get_cross_book_connections(chunk_id)` | `relations.ts` | Related passages from other books | 5 |
-| `get_person_context(person_slug)` | `people.ts` | Biography, lineage position, key mentioning passages | 5 |
-| `get_graph_neighborhood(node_id, depth, types[])` | `graph.ts` | Subgraph around any node, filtered by node/edge type | 6 |
-| `get_search_trends(period, min_count)` | `analytics.ts` | Anonymized aggregated query themes (DELTA-compliant) | 6 |
-| `find_concept_path(source_slug, target_slug)` | `graph.ts` | Shortest ontological path between two concepts | 7 |
-| `get_passage_translations(canonical_chunk_id)` | `translations.ts` | All language variants of a passage | 10 |
+| `get_chunk_with_context(chunk_id, window)` | `chunks.ts` | Passage + N surrounding chunks (for QA, classification, review) | 3b |
+| `get_similar_passages(chunk_id, threshold, limit)` | `search.ts` | Embedding-based nearest neighbors (distinct from theme search) | 3b |
+| `get_glossary_terms_in_passage(chunk_id)` | `glossary.ts` | Glossary terms in a passage with definitions | 3b |
+| `get_content_coverage(theme_slug)` | `themes.ts` | Passage count, book distribution, tone distribution per theme | 3b |
+| `verify_citation(book_slug, chapter, page)` | `citations.ts` | Confirm a quote exists in the corpus | 3b |
+| `get_pending_reviews(queue_type, limit)` | `queue.ts` | Items awaiting human review in a specific queue | 3b |
+| `get_daily_passage(language, exclude_id)` | `daily.ts` | Random passage from curated pool | 3b |
+| `get_cross_book_connections(chunk_id)` | `relations.ts` | Related passages from other books | 3c |
+| `get_person_context(person_slug)` | `people.ts` | Biography, lineage position, key mentioning passages | 3c |
+| `get_graph_neighborhood(node_id, depth, types[])` | `graph.ts` | Subgraph around any node, filtered by node/edge type | 3d |
+| `get_search_trends(period, min_count)` | `analytics.ts` | Anonymized aggregated query themes (DELTA-compliant) | 3d |
+| `find_concept_path(source_slug, target_slug)` | `graph.ts` | Shortest ontological path between two concepts | Arc 4 |
+| `get_passage_translations(canonical_chunk_id)` | `translations.ts` | All language variants of a passage | 5b |
 
 **Internal MCP use cases by consumer:**
 
-| Consumer | Primary Tools | Phase |
+| Consumer | Primary Tools | Milestone |
 |---|---|---|
-| Theme tag proposal AI | `get_similar_passages`, `get_content_coverage`, `get_graph_neighborhood` | 4, 6 |
-| Guide pathway generation AI | `search_corpus`, `search_references`, `get_vocabulary_bridge`, `find_concept_path` | 4, 7 |
-| Ingestion QA AI | `get_chunk_with_context`, `verify_citation` | 4 |
-| Translation review AI | `get_passage_translations`, `get_glossary_terms_in_passage` | 10 |
-| Reading thread drafting AI | `get_cross_book_connections`, `get_graph_neighborhood`, `find_concept_path` | 5, 6, 7 |
-| Social media caption AI | `search_corpus`, `get_book_metadata`, `get_theme_metadata` | 8 |
-| Impact narrative AI | `get_search_trends`, `get_graph_neighborhood` | 6 |
+| Theme tag proposal AI | `get_similar_passages`, `get_content_coverage`, `get_graph_neighborhood` | 3b, 3d |
+| Guide pathway generation AI | `search_corpus`, `search_references`, `get_vocabulary_bridge`, `find_concept_path` | 3b, Arc 4 |
+| Ingestion QA AI | `get_chunk_with_context`, `verify_citation` | 3b |
+| Translation review AI | `get_passage_translations`, `get_glossary_terms_in_passage` | 5b |
+| Reading thread drafting AI | `get_cross_book_connections`, `get_graph_neighborhood`, `find_concept_path` | 3c, 3d, Arc 4 |
+| Social media caption AI | `search_corpus`, `get_book_metadata`, `get_theme_metadata` | 5a |
+| Impact narrative AI | `get_search_trends`, `get_graph_neighborhood` | 3d |
 | SRF mobile app | `search_corpus`, `get_daily_passage`, `get_graph_neighborhood`, `get_person_context` | TBD (stakeholder) |
 | Admin portal AI features | `get_pending_reviews`, `get_content_coverage`, `get_search_trends` | 4, 6 |
 
-#### Tier 3: External (Phase 8+)
+#### Tier 3: External (Milestone 5a+)
 
 Rate-limited access for third-party AI assistants (ChatGPT, Claude, Gemini, custom agents). Exposes a content-serving subset (no admin/editorial tools). Every response wrapped in fidelity metadata.
 
@@ -1795,10 +1787,10 @@ All infrastructure is defined as code per SRF engineering standards. See ADR-016
  /newrelic/ — Synthetics monitors, alert policies
 
  /environments/
- dev.tfvars — Phase 1 (only active environment)
- qa.tfvars — Phase 9+
- stg.tfvars — Phase 9+
- prod.tfvars — Phase 9+
+ dev.tfvars — Milestone 2a (only active environment)
+ qa.tfvars — Milestone 5a+
+ stg.tfvars — Milestone 5a+
+ prod.tfvars — Milestone 5a+
 ```
 
 ### Boundary: Terraform vs. Application Code
@@ -1809,17 +1801,17 @@ All infrastructure is defined as code per SRF engineering standards. See ADR-016
 | Environment variables, secrets | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
 | DNS records, domain bindings | Application routing (`next.config.js`) |
 | Alert rules, Synthetics monitors | Structured logging (`lib/logger.ts`) |
-| Auth provider (Phase 13+, if needed) | Auth SDK integration in Next.js |
+| Auth provider (Milestone 7a+, if needed) | Auth SDK integration in Next.js |
 | Repo settings, branch protection | CI/CD workflow files |
 
 ### Source Control and CI/CD
 
-| Phase | SCM | CI/CD | Terraform State |
-|-------|-----|-------|-----------------|
-| **Phases 0–8** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
-| **Phase 9+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+| Arc/Milestone | SCM | CI/CD | Terraform State |
+|---------------|-----|-------|-----------------|
+| **Arcs 1–5** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Arc 6+** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
-#### Phase 1 CI/CD Pipeline (GitHub Actions)
+#### Milestone 2a CI/CD Pipeline (GitHub Actions)
 
 ```
 On every PR:
@@ -1860,18 +1852,18 @@ OPENAI_API_KEY= # Set manually (secret)
 NEXT_PUBLIC_SENTRY_DSN= # Terraform output: module.sentry.dsn
 SENTRY_AUTH_TOKEN= # Set manually (secret)
 
-# Auth (Phase 13+, if needed — no auth variables required for Phases 0–12)
+# Auth (Milestone 7a+, if needed — no auth variables required for Arcs 1–6)
 
 # YouTube
 YOUTUBE_API_KEY= # Set manually (secret)
 
-# Email (Phase 8)
+# Email (Milestone 5a)
 RESEND_API_KEY= # Set manually (secret)
 
-# Amplitude (Phase 6)
+# Amplitude (Milestone 3d)
 NEXT_PUBLIC_AMPLITUDE_KEY= # Terraform output: module.amplitude.api_key
 
-# New Relic (Phase 6)
+# New Relic (Milestone 3d)
 NEW_RELIC_LICENSE_KEY= # Set manually (secret)
 ```
 
@@ -1893,40 +1885,40 @@ Terraform manages deployed environments. Local development uses direct Neon conn
 
 ## DES-054: Knowledge Graph Ontology
 
-The knowledge graph captures the relationships between teachings, teachers, concepts, and experiences that make Yogananda's corpus a web of interconnected wisdom rather than a flat document collection. The graph ontology is designed in Phase 0; graph intelligence becomes active in Phase 4 via Postgres tables + Python batch computation (ADR-117).
+The knowledge graph captures the relationships between teachings, teachers, concepts, and experiences that make Yogananda's corpus a web of interconnected wisdom rather than a flat document collection. The graph ontology is designed in Arc 1; graph intelligence becomes active in Milestone 3b via Postgres tables + Python batch computation (ADR-117).
 
 ### Node Types
 
-| Node Type | Description | Primary Key Source | Phase |
-|-----------|-------------|-------------------|-------|
-| **Teacher** | Yogananda, his line of gurus, other teachers he references | `entity_registry` (type = 'person') | 4 |
-| **DivineName** | God, Divine Mother, Christ, Krishna, Cosmic Consciousness | `entity_registry` (type = 'divine_name') | 4 |
-| **Work** | Published books, collections, individual poems/chants | `books` table | 4 |
-| **Technique** | Kriya Yoga (public description only), Hong-Sau, Energization | `entity_registry` (type = 'technique') | 4 |
-| **SanskritTerm** | Samadhi, maya, karma, dharma — with canonical forms | `sanskrit_terms` table | 4 |
-| **Concept** | Abstract teachings: divine love, self-realization, willpower | `entity_registry` (type = 'concept') | 4 |
-| **Scripture** | Bhagavad Gita, Bible, Rubaiyat — works Yogananda comments on | `entity_registry` (type = 'scripture') | 6 |
-| **ExperientialState** | States of consciousness (waking → nirvikalpa samadhi) | `entity_registry` (type = 'state') | 4 |
-| **Place** | Ranchi, Encinitas, Dakshineswar — biographical/spiritual places | `places` table | 4 |
-| **Chunk** | Individual text passages from the corpus | `book_chunks` table | 4 |
+| Node Type | Description | Primary Key Source | Milestone |
+|-----------|-------------|-------------------|-----------|
+| **Teacher** | Yogananda, his line of gurus, other teachers he references | `entity_registry` (type = 'person') | 3b |
+| **DivineName** | God, Divine Mother, Christ, Krishna, Cosmic Consciousness | `entity_registry` (type = 'divine_name') | 3b |
+| **Work** | Published books, collections, individual poems/chants | `books` table | 3b |
+| **Technique** | Kriya Yoga (public description only), Hong-Sau, Energization | `entity_registry` (type = 'technique') | 3b |
+| **SanskritTerm** | Samadhi, maya, karma, dharma — with canonical forms | `sanskrit_terms` table | 3b |
+| **Concept** | Abstract teachings: divine love, self-realization, willpower | `entity_registry` (type = 'concept') | 3b |
+| **Scripture** | Bhagavad Gita, Bible, Rubaiyat — works Yogananda comments on | `entity_registry` (type = 'scripture') | 3d |
+| **ExperientialState** | States of consciousness (waking → nirvikalpa samadhi) | `entity_registry` (type = 'state') | 3b |
+| **Place** | Ranchi, Encinitas, Dakshineswar — biographical/spiritual places | `places` table | 3b |
+| **Chunk** | Individual text passages from the corpus | `book_chunks` table | 3b |
 
 All node types correspond to rows in Postgres tables (`entity_registry`, `books`, `book_chunks`, `places`, `sanskrit_terms`). Graph algorithm results (centrality_score, community_id, bridge_score) are stored as columns on the source rows. Chunk embeddings (ADR-118) are used by pgvector for similarity ranking after graph traversal retrieves candidates.
 
 ### Edge Types
 
-| Edge Type | From → To | Description | Phase |
-|-----------|-----------|-------------|-------|
-| **LINEAGE** | Teacher → Teacher | Guru-disciple relationship | 4 |
-| **AUTHORED** | Teacher → Work | Authorship attribution | 4 |
-| **TEACHES** | Chunk → Concept | Passage teaches or discusses a concept | 4 |
-| **MENTIONS** | Chunk → SanskritTerm | Sanskrit term appears in passage | 4 |
-| **REFERENCES** | Chunk → Scripture | Passage quotes or comments on scripture | 6 |
-| **DESCRIBES_STATE** | Chunk → ExperientialState | Passage describes a state of consciousness | 4 |
-| **LOCATED_AT** | Teacher → Place | Biographical association | 4 |
-| **NEXT / PREV** | Chunk → Chunk | Sequential reading order within a book | 4 |
-| **RELATED_CONCEPT** | Concept → Concept | Conceptual relationship (broader/narrower) | 4 |
-| **CROSS_TRADITION** | Concept → Concept | Yogananda's explicit cross-tradition mapping | 6 |
-| **TECHNIQUE_FOR** | Technique → ExperientialState | Practice leads toward state | 4 |
+| Edge Type | From → To | Description | Milestone |
+|-----------|-----------|-------------|-----------|
+| **LINEAGE** | Teacher → Teacher | Guru-disciple relationship | 3b |
+| **AUTHORED** | Teacher → Work | Authorship attribution | 3b |
+| **TEACHES** | Chunk → Concept | Passage teaches or discusses a concept | 3b |
+| **MENTIONS** | Chunk → SanskritTerm | Sanskrit term appears in passage | 3b |
+| **REFERENCES** | Chunk → Scripture | Passage quotes or comments on scripture | 3d |
+| **DESCRIBES_STATE** | Chunk → ExperientialState | Passage describes a state of consciousness | 3b |
+| **LOCATED_AT** | Teacher → Place | Biographical association | 3b |
+| **NEXT / PREV** | Chunk → Chunk | Sequential reading order within a book | 3b |
+| **RELATED_CONCEPT** | Concept → Concept | Conceptual relationship (broader/narrower) | 3b |
+| **CROSS_TRADITION** | Concept → Concept | Yogananda's explicit cross-tradition mapping | 3d |
+| **TECHNIQUE_FOR** | Technique → ExperientialState | Practice leads toward state | 3b |
 
 ### Graph Algorithms (Nightly Batch)
 
@@ -1934,7 +1926,7 @@ Three algorithms run nightly on the full graph and feed suggestion weights and r
 
 1. **PageRank** — Identifies the most-connected, highest-authority passages and concepts. Feeds the "canonical teaching" signal in Related Teachings (ADR-050).
 2. **Community Detection** — Groups densely connected nodes into teaching clusters. Feeds thematic browsing and the Quiet Index (DES-029).
-3. **Betweenness Centrality** — Finds bridge passages that connect otherwise separate teaching domains. These are the passages that link, say, meditation technique to devotional practice. Surfaced in Reading Arc suggestions (Phase 8+).
+3. **Betweenness Centrality** — Finds bridge passages that connect otherwise separate teaching domains. These are the passages that link, say, meditation technique to devotional practice. Surfaced in Reading Arc suggestions (Milestone 5a+).
 
 ### Graph-Augmented Retrieval Query Pattern
 
