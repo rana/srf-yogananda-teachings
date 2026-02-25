@@ -593,7 +593,6 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 |-----|---------|----------------|----------------|
 | PRO-001 | SRF Corpus MCP — Three-Tier Architecture | ADR-101, DES-031 | Arc 3 boundary |
 | PRO-002 | SRF Lessons Integration | ADR-085, ADR-121 | Stakeholder request |
-| PRO-003 | Text-to-Speech (TTS) for passages | — | Arc 2 boundary |
 
 ### Deferred / Suspended
 
@@ -605,7 +604,8 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 
 | PRO | Feature | Type |
 |-----|---------|------|
-| PRO-004 | Audio-visual ambiance toggle (temple/nature sounds) | Deferred — originally unscheduled |
+| PRO-003 | Text-to-Speech (TTS) for passages | Feature |
+| PRO-004 | Audio-visual ambiance toggle (temple/nature sounds) | Enhancement |
 | *(Populated from `.elmer/proposals/` explorations after `/dedup-proposals`)* | | |
 
 ---

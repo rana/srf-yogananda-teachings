@@ -45,10 +45,10 @@
 | [DES-031: MCP Server Strategy](DESIGN-arc1.md#des-031-mcp-server-strategy) | 1+ | DESIGN-arc1.md |
 | [DES-032: Content Management Strategy](DESIGN-arc4-plus.md#des-032-content-management-strategy) | 4+ | DESIGN-arc4-plus.md |
 | [ADR-082: Staff Experience Architecture](DESIGN-arc2-3.md#adr-082-staff-experience-architecture) | 3b+ | DESIGN-arc2-3.md |
-| [DES-033: Unified Review Queue Abstraction](#des-033-unified-review-queue-abstraction) | — | DESIGN.md |
-| [DES-034: Content Lifecycle Management](#des-034-content-lifecycle-management) | — | DESIGN.md |
-| [DES-035: AI-Assisted Editorial Workflows](#des-035-ai-assisted-editorial-workflows) | — | DESIGN.md |
-| [DES-036: Migration, Evolution, and Longevity](#des-036-migration-evolution-and-longevity) | — | DESIGN.md |
+| [DES-033: Unified Review Queue Abstraction](#des-033-unified-review-queue-abstraction) | 3b+ | DESIGN.md |
+| [DES-034: Content Lifecycle Management](#des-034-content-lifecycle-management) | 3b+ | DESIGN.md |
+| [DES-035: AI-Assisted Editorial Workflows](#des-035-ai-assisted-editorial-workflows) | 3b+ | DESIGN.md |
+| [DES-036: Migration, Evolution, and Longevity](#des-036-migration-evolution-and-longevity) | 1+ | DESIGN.md |
 | [ADR-007: Editorial Proximity Standard](#adr-007-editorial-proximity-standard) | — | DESIGN.md |
 | [DES-037: Observability](#des-037-observability) | 1+ | DESIGN.md |
 | [DES-038: Testing Strategy](#des-038-testing-strategy) | 1+ | DESIGN.md |
@@ -68,7 +68,7 @@
 | [DES-050: Seeker & User Persona Index](#des-050-seeker--user-persona-index) | — | DESIGN.md |
 | [DES-051: Portal Updates Page — "The Library Notice Board"](DESIGN-arc2-3.md#des-051-portal-updates-page-the-library-notice-board) | 3b+ | DESIGN-arc2-3.md |
 | [DES-052: Outbound Webhook Event System](DESIGN-arc2-3.md#des-052-outbound-webhook-event-system) | 3b+ | DESIGN-arc2-3.md |
-| [DES-053: Unified Content Pipeline Pattern](#des-053-unified-content-pipeline-pattern) | — | DESIGN.md |
+| [DES-053: Unified Content Pipeline Pattern](#des-053-unified-content-pipeline-pattern) | 1+ | DESIGN.md |
 | [DES-054: Knowledge Graph Ontology](DESIGN-arc1.md#des-054-knowledge-graph-ontology) | 1 (design), 3b+ (batch) | DESIGN-arc1.md |
 | [DES-055: Concept/Word Graph](DESIGN-arc2-3.md#des-055-conceptword-graph) | 3b+ | DESIGN-arc2-3.md |
 | [DES-056: Feature Catalog (RAG Architecture Proposal)](DESIGN-arc2-3.md#des-056-feature-catalog-rag-architecture-proposal) | 2b–6+ | DESIGN-arc2-3.md |
