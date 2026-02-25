@@ -8,25 +8,34 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 
 "Available" means more than accessible — it means **findable at the moment of need.** A person unable to sleep at 2 AM because of anxiety doesn't know Yogananda wrote specifically about overcoming fear. Someone going through loss doesn't know there are passages on the eternal life of the soul. The portal bridges that gap: seekers describe what they're experiencing, and the portal finds Yogananda's own words that speak to it — verbatim, with full citations, never paraphrased or AI-generated.
 
-## What It Does
+## Arc 1: What We're Proving First
 
-- **Intelligent search across Yogananda's full library** — hybrid semantic + full-text search that understands conceptual queries ("How do I find inner peace?") and returns ranked verbatim passages with book, chapter, and page citations
+The first arc answers one question: **does semantic search work over Yogananda's text?**
+
+- **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries ("How do I find inner peace?") and returns ranked verbatim passages with book, chapter, and page citations
+- **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful
+- **Search quality evaluation** — 50-query golden set proving retrieval relevance before anything else is built
+
+One book (*Autobiography of a Yogi*). One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
+
+## The Full Vision
+
+Each arc builds on the last. The full portal includes:
+
 - **Life-theme navigation ("Doors of Entry")** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without formulating a query
 - **Today's Wisdom** — a different Yogananda passage on each visit, creating a living homepage
 - **The Quiet Corner** — a micro-sanctuary with a single affirmation and optional gentle timer, for the moment of immediate need
-- **Full book reader** — chapter-by-chapter reading with contemplative typography, Related Teachings cross-references across books, keyboard-first navigation, and contextual Quiet Corner for in-reader practice
-- **Living Glossary** — user-facing spiritual terminology with inline reader highlighting and Yogananda's own definitions as verbatim passages
+- **Full reading experience** — Related Teachings cross-references across books, keyboard-first navigation, contextual Quiet Corner, and contemplative design system
+- **Living Glossary** — spiritual terminology with inline reader highlighting and Yogananda's own definitions as verbatim passages
 - **Editorial Reading Threads** — curated cross-book pathways ("Teachings in Conversation") connecting related passages across Yogananda's works
-- **Sacred Places** — contemplative geography of SRF/YSS properties and biographical sites from Yogananda's life, cross-referenced with book passages
-- **Self-Realization Magazine** — magazine archives as a primary content type, with Yogananda's articles fully searchable alongside book passages
-- **"What Is Humanity Seeking?"** — a public-facing, contemplative dashboard visualizing anonymized global search themes ("Right now, the world is seeking peace...")
+- **Sacred Places** — contemplative geography of SRF/YSS properties and biographical sites, cross-referenced with book passages
+- **Self-Realization Magazine** — magazine archives fully searchable alongside book passages
+- **"What Is Humanity Seeking?"** — contemplative dashboard visualizing anonymized global search themes
 - **Study Workspace** — PDF export, presentation mode, and study guides for individual and group use
-- **Calendar reading journeys** — structured multi-day experiences ("40 Days with Yogananda") delivered via daily email
 - **Knowledge graph** — interactive visual map of the teaching corpus showing cross-book connections, themes, persons, and scriptures
-- **The Spiritual Guide** — life-situation and worldview-sensitive entry pathways for seekers who don't know where to begin
+- **Multi-language support** — 10 languages, architecture designed from day one to serve official SRF/YSS translations
+- **Cross-media search** — video talks, audio recordings, and photographs searchable alongside book text
 - **Community collections** — public curation by Voluntary League of Devotees (VLD) members, with editorial review
-- **Multi-language support** — architecture designed from day one to serve official SRF/YSS translations in all available languages
-- **Cross-media search** (later phases) — video talks, audio recordings, and photographs searchable alongside book text through a unified content hub
 
 ## Design Principles
 
@@ -73,14 +82,15 @@ The project is planned across 7 thematic arcs, each delivering a coherent narrat
 | **6: Media** | All Paths to Truth | Video, audio, images, cross-media hub, Cosmic Chants |
 | **7: Community** | Shared Journey | Optional accounts, events, study circles, VLD curation (Milestones 7a/7b) |
 
-## Current Status
+## How This Project Works
 
-**Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.**
+This portal is designed and implemented through AI-human collaboration using [Claude Code](https://claude.ai/code). The human principal directs strategy, stakeholder decisions, and editorial judgment; the AI serves as architect, implementer, and maintainer. The documentation volume is intentional — it serves as institutional memory across AI context windows. See [CONTEXT.md](CONTEXT.md) for the full methodology.
 
-This repository contains comprehensive design documentation across thirteen files, produced using Claude Code. See CLAUDE.md for the full navigation guide.
+## Documentation
 
-- [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project, with rationale
-- [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints, SRF ecosystem
-- [DESIGN.md](DESIGN.md) — Technical architecture split across four files by arc (DESIGN.md + DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md)
-- [DECISIONS.md](DECISIONS.md) — 118 Architecture Decision Records split across three files by concern (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md)
-- [ROADMAP.md](ROADMAP.md) — 7 thematic arcs with milestones, deliverables, success criteria, and arc gates
+- [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project
+- [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints
+- [DESIGN.md](DESIGN.md) — Technical architecture across four files by arc scope
+- [DECISIONS.md](DECISIONS.md) — 118 Architecture Decision Records across three files by concern
+- [PROPOSALS.md](PROPOSALS.md) — Proposal registry for features awaiting scheduling
+- [ROADMAP.md](ROADMAP.md) — 7 arcs with milestones, deliverables, and arc gates
