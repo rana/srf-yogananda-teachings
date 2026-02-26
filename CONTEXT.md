@@ -23,7 +23,6 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 ### Tier 1: Blocks Milestone 1a (resolve before coding begins)
 
 **Technical**
-- [x] ~~Which edition of Autobiography of a Yogi is the canonical page-number reference?~~ *(Resolved 2026-02-24: use edition indicated in PDF source from spiritmaji.com. Configure as parameter per ADR-123 for later adjustment.)* (ADR-034)
 - [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). (ADR-048)
 - [ ] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages spanning narrative, poetry, dialogue, and technical instruction. Validate consistency of experiential_depth, voice_register, and entity extraction.
 - [ ] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? Single authoritative edition per book, or acknowledge variants? Affects content integrity hashing (ADR-039), citation page numbers, and the meaning of "verbatim." (ADR-001, ADR-034, ADR-039, ADR-007)
@@ -42,7 +41,6 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Abuse and misuse patterns: extraction at scale, quote weaponization, SEO parasitism. Should the portal include rate limiting tiers, `rel=canonical` enforcement, MCP usage policy, or text watermarking? (ADR-001, ADR-011, ADR-101, ADR-063, ADR-081)
 
 **Stakeholder**
-- [x] ~~Copyright/licensing posture: read-online only, or also downloadable/printable? What attribution is required?~~ Resolved 2026-02-25: Full crawlability. Read online + PDF export (ADR-025) + fully crawlable by all search engines and AI systems (ADR-081 §3, §3a). Content gating architecturally prohibited (ADR-081 §3a — No Content Gating). Copyright retained via legal and metadata layers, not technology walls. Attribution required per `llms.txt` copyright section and `ai.txt` permissions file. Final licensing terms (Creative Commons variant vs. all-rights-reserved with permissions) deferred to PRO-012 legal review. (ADR-081, PRO-012)
 - [ ] Existing SRF editorial voice guide: does SRF already have brand voice guidelines? The portal should extend them. (ADR-074)
 - [ ] SRF editorial policy on contested transliterations: does SRF confirm house style (e.g., "Babaji" vs. "Bābājī") as canonical for all portal display text? (ADR-080, ADR-034)
 - [ ] Cross-property content correction coordination: shared content source of truth, or each property maintains its own? (ADR-034, ADR-039)
@@ -63,7 +61,6 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Content-addressable passage deep links: should resolution chain include a semantic/normalized hash tier between exact match and fuzzy search? (ADR-022, ADR-034)
 - [ ] IAST diacritics rendering verification: Merriweather and Lora at all font sizes, particularly 15px. Include in Milestone 2a design QA. (ADR-080, ADR-003)
 - [ ] Circadian content choreography: solar-position awareness vs. fixed clock hours? Browser timezone maps to coordinates for DELTA-compliant calculation. (DES-011, DES-028, ADR-095)
-- [x] ~~Mobile search suggestion UX: fewer suggestions, different trigger on mobile?~~ *(Resolved 2026-02-25: max 5 suggestions on viewports < 768px, 44×44px touch targets, zero-state chips use horizontal scroll. Same adaptive debounce. See ADR-120 and DESIGN-arc1.md § ADR-049 Seeker Experience Scene 7.)* (ADR-049, ADR-120)
 - [ ] AI citation monitoring: should the portal track whether AI systems (ChatGPT, Perplexity, Gemini, etc.) cite Yogananda correctly when quoting from portal content? Not surveillance — web mention monitoring to evaluate whether `llms.txt` and `ai.txt` citation guidance is effective. Could inform future citation guidance improvements. (ADR-081, Milestone 2b+)
 
 **Stakeholder**
@@ -74,7 +71,6 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Pastoral care resources: center contacts, counselors for locales where helplines are underserved? (ADR-071)
 - [ ] Crisis resource policy: display locale-appropriate helpline information alongside grief content? (ADR-071)
 - [ ] Philanthropist success metrics at 12 months. (Shapes analytics/reporting)
-- [x] ~~Editorial governance of curated query suggestions. Same review process as theme tagging?~~ *(Promoted to Tier 2 and resolved 2026-02-25: yes, same human-review gate as all user-facing content (ADR-078). Curated suggestions maintained in `/lib/data/curated-queries.json`, versioned in git, reviewed by SRF-aware editors. Zero-state chips and curated questions require editorial sign-off before Milestone 1b deployment. See DESIGN-arc1.md § ADR-049 Zero-State Experience.)* (ADR-049, ADR-078)
 - [ ] `/guide` alignment with SRF reading recommendations. (DES-048, DES-026)
 - [ ] Worldview pathways: include Muslim/Sufi, agnostic/skeptical entry points? (DES-048)
 - [ ] Worldview-sensitive `/guide` pathways: Christian contemplative, Buddhist, science-of-consciousness starting points? (DES-048, ADR-033, DES-027)
@@ -98,13 +94,10 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 **Stakeholder**
 - [ ] Portal-app relationship: complementary or overlapping reader? Will portal search power the app?
-- [x] ~~Hindi/Bengali co-launch timing: Milestone 5b or split?~~ Resolved 2026-02-24: Wave structure removed. All 9 non-English core languages are Milestone 5b peers with no ordering. (ADR-077 revised)
 - [ ] YSS co-equal or advisory authority over Hindi/Bengali/Thai design decisions. (ADR-077, ADR-079)
 - [ ] Translated editions: do they preserve paragraph structure? (Critical for cross-language alignment)
 - [ ] *Cosmic Chants* canonical volume or family of editions? (ADR-059)
 - [ ] Monastic content scope: content *by* vs. *about* monastics. (ADR-036, ADR-037, ADR-001, PRO-014)
-- [x] ~~Multi-author sacred text scope: should all SRF/YSS-published books (Sri Yukteswar's *The Holy Science*, Daya Mata's *Only Love*, etc.) receive the same sacred text treatment as Yogananda's works? If so, what is the theological hierarchy among authors — flat, guru-lineage-only, or tiered (sacred/authorized/commentary)?~~ Resolved 2026-02-25: Three-tier hierarchy confirmed — (1) guru lineage (sacred), (2) SRF presidents (authorized), (3) monastics (commentary). All tiers receive verbatim fidelity and machine translation prohibition. Daily pool and social media restricted to tier 1. Full author name on all citations. (PRO-014 validated)
-- [x] ~~Philanthropic endowment scope: does the philanthropist's intent ("make Paramahansa Yogananda's books available") encompass all SRF-published authors, or specifically Yogananda?~~ Resolved 2026-02-25: Yes — endowment covers all SRF-published authors. (PRO-014 validated)
 - [ ] Living monastic editorial sensitivity: biographical detail level for current monastics. (ADR-037)
 - [ ] Presidential succession editorial framing: factual data only, or editorial narrative? (ADR-037)
 - [ ] Portal coordinator role ownership: monastic, AE team, or dedicated position? Critical by Milestone 3b. (ADR-082)
@@ -121,25 +114,21 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 
 ### Resolved Questions
 
-1. **Contentful timing:** Arc 1, not Arc 6. Contentful is the editorial source of truth from the first arc — a stakeholder hard requirement. Content model (Book → Chapter → Section → TextBlock) created in Milestone 1a. Webhook sync activated in Milestone 1b. Avoids costly migration of 15+ books and editorial workflows from Neon-only to Contentful at Arc 6. *(Resolved 2026-02-24, ADR-010 revised.)*
-2. **PDF source:** spiritmaji.com accepted for Arc 1 proof-of-concept. Non-PDF digital text will be provided by SRF before launch and imported directly into Contentful. *(Resolved 2026-02-24.)*
-3. **Autobiography edition:** Use edition indicated in PDF source. Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition. Not a Milestone 1a blocker. *(Resolved 2026-02-24.)*
-4. **SRF Corpus MCP scheduling:** All three tiers (Development, Internal, External) moved to Unscheduled Features. Architecture preserved in DESIGN-arc1.md § DES-031. Third-party MCP servers (Neon, Sentry, Contentful) remain on schedule. *(Resolved 2026-02-24, ADR-101 revised.)*
-5. **Embedding model for Arc 1:** Voyage voyage-3-large (1024 dimensions, 26 languages, asymmetric encoding). Selected for multilingual-first design, superior performance on literary/spiritual text, and unified cross-lingual embedding space. ADR-046 provides the migration procedure; ADR-047 establishes the multilingual quality evaluation strategy. Milestone 5b benchmarks Voyage against alternatives (Cohere embed-v3, BGE-M3). *(Resolved by ADR-118.)*
-6. **AI provider:** Claude via AWS Bedrock with model tiering — Haiku for real-time search (query expansion, intent classification, HyDE generation), Opus for offline batch tasks (theme tagging, vocabulary extraction, unified enrichment). Cohere Rerank 3.5 for passage reranking (Milestone 2b+, replacing Claude Haiku ranking). *(Resolved by ADR-014, ADR-119.)*
-7. **Single database vs. multi-database:** Single-database architecture: Neon PostgreSQL for all content, relational data, embeddings, search, and graph intelligence. Neptune Analytics was evaluated and rejected — the bounded corpus (~50K chunks, ~500 entities) is too small to justify a second database. Graph intelligence implemented via Postgres tables + Python batch computation. *(Resolved by ADR-013, ADR-117.)*
-8. **Full-text search engine:** pg_search/ParadeDB BM25 replaces PostgreSQL tsvector. BM25 scoring, language-specific tokenizers (ICU for most languages, Jieba for Chinese, Lindera for Japanese). Enables hybrid search via Reciprocal Rank Fusion with pgvector. *(Resolved by ADR-114.)*
-9. **Graph intelligence layer:** Postgres-native, introduced in Milestone 3b. Knowledge graph ontology designed from Arc 1 (DES-054). Graph algorithms (PageRank, community detection, betweenness centrality) run as Python + NetworkX nightly batch jobs, results stored in Postgres columns. Neptune Analytics was evaluated and rejected (see ADR-117). *(Resolved by ADR-117.)*
-10. **Language URL convention:** Hybrid approach — locale path prefix on frontend pages (`/hi/books/...`), `language` query parameter on API routes (`/api/v1/search?language=hi`). *(Resolved by ADR-027.)*
-11. **Digital text availability:** SRF/YSS has digital text of official translated editions. Per-language OCR is not required. *(Resolved: confirmed by stakeholder.)*
-12. **Editorial workflow ownership:** Non-issue — resolved through organizational discussion. *(Resolved: confirmed by stakeholder.)*
-13. **SCM:** GitHub is the primary SCM for all arcs. GitLab migration architecturally supported (via ADR-018 CI-agnostic scripts) but not planned. If SRF requires GitLab for production handoff, the migration path is clean. *(Resolved 2026-02-25: GitHub-first confirmed. ADR-016 revised.)*
-14. **Portal domain for Hindi/Bengali:** Non-issue — same domain with locale prefix. *(Resolved: confirmed by stakeholder.)*
-15. **AI training crawlers and the portal as canonical Yogananda source:** Yes — the permissive `robots.txt` extends to AI training crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot). The portal should be the canonical source of Yogananda's teachings in future LLM training corpora. When AI systems quote Yogananda, those quotes should originate from the portal's carefully curated, correctly cited text — not from random internet sources with errors and misattributions. The `llms.txt` file provides explicit citation guidance requesting verbatim quotation with attribution. The `llms-full.txt` file provides the corpus metadata inventory for efficient ingestion. Content negotiation (`Accept: application/json`) serves structured data with fidelity metadata to machine consumers. The portal serves LLM crawlers to the fullest extent — same content, no restrictions, machine-optimal format available. *(Resolved by ADR-081 amendments: §2b llms-full.txt, §11 content negotiation, §12 Google Discover/AI Overviews; permissive robots.txt already in ADR-081 §3.)*
-16. **Neptune Analytics vs. Postgres-only graph:** Postgres-native graph intelligence selected. Neptune Analytics evaluated and rejected — corpus too small (~50K chunks, ~500 entities) to justify a second database. *(Resolved by ADR-117.)*
-17. **Copyright/licensing posture:** Full crawlability with copyright retention. Content served as semantic HTML, fully crawlable by all search engines and AI systems. PDF export available (ADR-025). Content gating (DRM, FlipBook, canvas-rendered text) architecturally prohibited (ADR-081 §3a) — violates Global Equity, accessibility, and the mission. Copyright asserted through legal and metadata layers: `/legal` page, `X-Copyright` response headers, `llms.txt` copyright section, `ai.txt` permissions file, JSON-LD `copyrightHolder`, `copyright.json` endpoint. The library model: freely accessible for reading, reference, and citation while remaining under copyright. SRF retains all rights; openness is a theological stance ("available freely throughout the world"), not a legal relinquishment. Final licensing terms (e.g., Creative Commons attribution-noncommercial vs. all-rights-reserved with enumerated permissions) require SRF legal counsel review (PRO-012, Milestone 1b prerequisite). *(Resolved 2026-02-25, ADR-081 §3a added, PRO-012 validated.)*
-18. **Multi-author sacred text scope:** All SRF/YSS-published books receive sacred text treatment with a three-tier theological hierarchy: (1) `sacred` — guru lineage (Paramahansa Yogananda, Swami Sri Yukteswar): full search, daily passage pool, social media quotable; (2) `authorized` — SRF presidents/direct disciples (Sri Daya Mata, Sri Mrinalini Mata, Rajarsi Janakananda): searchable by default, themeable, not in daily pool or social media pool; (3) `commentary` — monastic speakers (Brother Anandamoy, etc.): searchable opt-in. All tiers receive verbatim fidelity and machine translation prohibition. Search results tier-weighted (tier 1 ranks above tier 2 at equivalent relevance). Full author name ("Paramahansa Yogananda", never shortened) displayed on ALL passages across ALL tiers. *(Resolved 2026-02-25, PRO-014 validated.)*
-19. **Philanthropic endowment scope:** The philanthropist's intent ("make Paramahansa Yogananda's books available freely throughout the world") covers all SRF-published authors, not only Yogananda. The multi-author expansion is within the endowment's terms. *(Resolved 2026-02-25, PRO-014 validated.)*
+| Date | Resolution | Ref |
+|------|-----------|-----|
+| 2026-02-24 | Contentful from Arc 1, not Arc 6 — avoids costly migration of 15+ books at Arc 6 | ADR-010 |
+| 2026-02-24 | PDF source: spiritmaji.com for Arc 1 PoC; SRF digital text before launch imported to Contentful | — |
+| 2026-02-24 | SRF Corpus MCP: all three tiers unscheduled, architecture preserved in DES-031 | PRO-001 |
+| 2026-02-24 | Hindi/Bengali: all 9 non-English core languages are Milestone 5b peers, no wave ordering | ADR-077 |
+| 2026-02-25 | SCM: GitHub confirmed; GitLab migration path clean via CI-agnostic scripts if needed | ADR-016 |
+| 2026-02-25 | Full crawlability with copyright retention — no content gating, library model | ADR-081, PRO-012 |
+| 2026-02-25 | Portal as canonical Yogananda source for LLM training corpora — permissive crawling, `llms.txt` citation guidance | ADR-081 |
+| 2026-02-25 | Mobile suggestions: max 5 on <768px, 44×44px targets, horizontal scroll chips | ADR-120 |
+| 2026-02-25 | Curated suggestion editorial governance: same human-review gate as theme tagging | ADR-049 |
+| 2026-02-25 | Multi-author three-tier hierarchy: sacred (guru lineage) / authorized (SRF presidents) / commentary (monastics) | PRO-014 |
+| 2026-02-25 | Endowment scope covers all SRF-published authors | PRO-014 |
+
+*Tech-selection decisions (embedding model, AI provider, single-database, full-text search, graph layer, language URLs) are fully captured in their governing ADRs (ADR-118, ADR-014, ADR-119, ADR-013, ADR-117, ADR-114, ADR-027) and no longer repeated here.*
 
 ---
 

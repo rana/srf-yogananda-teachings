@@ -131,7 +131,7 @@ Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc file
 |----------------------|--------------------------|
 | Principle added or revised | Update PRINCIPLES.md (expanded rationale) and CLAUDE.md § Principles (compressed form) |
 | New decision made | Add ADR to the appropriate DECISIONS body file (core/experience/operations) and update the DECISIONS.md index |
-| Open question resolved | Move from "Open Questions" to "Resolved Questions" in CONTEXT.md |
+| Open question resolved | Add one-line entry to CONTEXT.md § Resolved Questions table (date, resolution, governing ref). If the resolution is fully captured in an ADR/PRO, the table entry is sufficient — no paragraph needed. Remove inline `[x]` item from Open Questions. |
 | Open question added | Add to CONTEXT.md § Open Questions (appropriate tier). Cross-reference from relevant DESIGN.md section if applicable. |
 | Arc/milestone deliverable changed | Update ROADMAP.md deliverable table/bullets and success criteria |
 | Arc/milestone status changes | Update "Current State" section in CONTEXT.md |
