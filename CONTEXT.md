@@ -177,6 +177,14 @@ Global Equity means one product that is complete at every level: fast and dignif
 
 When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global Equity does not constrain ambition. It demands that ambition serve everyone. (ADR-006)
 
+### The Institutional Intelligence Principle
+
+The portal's service layer (`/lib/services/`) and corpus access infrastructure (DES-031, PRO-001) are designed as portal components, but their value extends beyond web serving. SRF's internal stakeholders — monastics preparing services, correspondence staff responding to seekers, magazine editors, center leaders worldwide — all share the same fundamental need the portal addresses for external seekers: **findability of the Master's words at the moment of need.**
+
+The same AI librarian that helps a seeker in rural Bihar find Yogananda's words about fear can help a monastic in a remote ashram prepare a service on courage, help a correspondent find relevant passages for a grieving devotee, and help a center leader in Tokyo select readings aligned with the SRF calendar. The corpus intelligence that the portal builds is an institutional asset — it equalizes access to the Master's teachings across SRF's global operation, not only for seekers but for those who serve them.
+
+This is a second-order consequence of the philanthropist's investment: the portal doesn't only make the teachings available to the world — it makes the teachings more accessible to the organization that stewards them. See PRO-013 for the internal agent archetypes this principle implies.
+
 ### In Scope
 
 - **Free access** to Yogananda's published books and SRF/YSS publications

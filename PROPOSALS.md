@@ -179,16 +179,44 @@
 
 **Governing principle:** Every agent is a librarian — finds, verifies, contextualizes, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Research agents require no review queue — the user exercises full judgment.
 
+**One Librarian, many modes.** The 9 archetypes above are not 9 separate systems — they are *modes* of a single Corpus Librarian (ADR-089) with role-scoped access. The underlying capability is identical: search the corpus, verify citations, surface cross-references, respect the technique boundary. What varies is the access role (which MCP tools are available), the delivery channel (admin portal, email, Slack, API), and the interaction pattern (user-directed research, push-based proposals, autonomous monitoring). Architecturally, this is one service layer with role-based API scoping — not nine deployments.
+
 **Architectural implication:** Tier 2 MCP (DES-031) needs role-scoped access rather than monolithic internal access. Four trust profiles: Research (full corpus read, no write), Editorial (corpus + analytics, proposes to review queues), Operational (corpus + integrity, alert/quarantine capability), Intelligence (corpus + aggregated analytics, proposes structural changes). Not a new tier — internal role differentiation within Tier 2.
 
 **New capabilities implied:**
 - `detect_crisis_indicators(text)` as reusable internal MCP tool (currently search-path only, ADR-122)
 - `publication_history` resource tracking which passages have been used in which channels (prevents repetition across email, social, magazine)
-- Defensive quarantine capability for Content Integrity Watchdog (hide suspect passage from search pending human review) — architectural question: should automated systems have write access for safety?
+- `center_leader` Auth0 role (extending VLD role system, ADR-087) for authenticated institutional access by center/group leaders worldwide. Not "internal" in the headquarters sense — distributed institutional access with restricted tool set (no editorial tools, no analytics).
+
+**Technique boundary (Principle 3, ADR-104).** Every agent respects the technique boundary. The Correspondence Agent never suggests passages that teach Kriya Yoga, Hong-Sau, AUM meditation, or Energization Exercises — only passages that *describe* the practice path publicly. The same intent classification (ADR-005 E1) that governs search governs all agent outputs. When a correspondent's letter asks about technique, the agent surfaces the Practice Bridge response (ADR-104), not a collection of passages.
+
+**Watchdog quarantine model.** Content hash mismatches (ADR-039) are Principle 1 violations — the portal may be serving words that aren't Yogananda's. The Watchdog's response model:
+
+| Severity | Trigger | Watchdog Action | Human Action |
+|---|---|---|---|
+| **Critical** | Content hash mismatch, text altered | Soft quarantine: set `quarantine_flag = true` on affected chunks (search query filters on this flag, suppressing from results). Alert via Sentry + editorial notification. Passage remains accessible via direct URL but invisible in search and exploration. | Restore original text and clear flag, or confirm the edit was intentional and recompute hash. |
+| **High** | Stylometric anomaly, embedding drift > threshold | Alert only. Flag for review queue. | Investigate — may indicate ingestion error or model degradation. |
+| **Medium** | Missing citation, incomplete metadata | Alert only. Add to QA queue. | Fix citation in Contentful, re-sync. |
+| **Low** | Classification staleness, coverage gap | Observation (DES-035 passive intelligence). | Acknowledge or dismiss. |
+
+Soft quarantine is a safety mechanism, not editorial judgment — the Watchdog never decides whether content is *good*, only whether it matches its verified source. The `quarantine_flag` column on `book_chunks` is a boolean default `false`, indexed, checked in every search and exploration query's WHERE clause. Quarantine events are logged to `content_quarantine_log` (chunk_id, reason, quarantined_at, resolved_at, resolved_by).
+
+**Agent composition.** Agents communicate through the existing webhook event system (DES-052, ADR-106). Agent events extend the portal event taxonomy:
+
+| Event | Agent | Consumers |
+|---|---|---|
+| `agent.integrity_alert` | Watchdog | All agents (pause proposals for affected passages), editorial staff |
+| `agent.trend_shift` | Trend Intelligence | Social Calendar (timely passage selection), editorial staff |
+| `agent.passage_used` | Social Calendar, Magazine, Daily Email | Publication History resource (deduplication) |
+| `agent.graph_proposal` | Graph Curator | Watchdog (verify proposed edges don't reference quarantined content) |
+
+The Watchdog is a cross-cutting monitor: when it fires `agent.integrity_alert`, all other agents must check whether their pending proposals reference affected passages. This is defensive — prevents a corrupted passage from propagating through editorial channels before human review.
 
 **Relationship to PRO-011:** PRO-011 (Proactive Editorial AI Agent) describes one pattern — push-based editorial proposals. PRO-013 subsumes PRO-011 as the "Editorial" trust profile and adds Research, Operational, and Intelligence profiles.
 
-**Agent persona:** Compassion and humility combined with effectiveness. The portal's contemplative register (ADR-074) extends to internal agent interactions — warm, honest, not mechanical. Not gamified enthusiasm. "Here are today's suggestions for your review." The Librarian brand (ADR-089) applies to all AI in SRF's ecosystem.
+**Agent persona:** Compassion and humility combined with effectiveness. The portal's contemplative register (ADR-074) extends to internal agent interactions — warm, honest, not mechanical. Not gamified enthusiasm. "Here are today's suggestions for your review." The Librarian brand (ADR-089) applies to all AI in SRF's ecosystem. For monastic users — the Librarian's primary internal audience — the agent should never feel like a productivity tool. It should feel like a quiet assistant in a temple library. Effectiveness should not outpace contemplation: fewer deeply relevant passages with invitation to go deeper, rather than comprehensive dumps. The default `limit` for internal research mode should be low (5), expandable on request — matching the Calm Technology principle (ADR-065) that technology requires the smallest possible amount of attention.
+
+**Cross-property potential.** The MCP Corpus server (DES-031) is designed for the teachings portal, but SRF's other digital properties — yogananda.org, the Online Meditation Center, the SRF app, the convocation site — also reference Yogananda's teachings. If the Tier 2 MCP server ships as a standalone service (wrapping `/lib/services/`), it could power corpus-grounded features across all SRF web properties: accurate quote-finding for yogananda.org articles, passage suggestions for Online Meditation Center guided readings, and verified citations for any SRF publication. The service layer's framework-agnostic design (Principle 10) supports this — no Next.js dependency in the business logic.
 
 **Re-evaluate At:** Arc 3 boundary (when Tier 2 MCP scheduling is re-evaluated per PRO-001)
 **Decision Required From:** Architecture + SRF stakeholder input on organizational needs

@@ -5,6 +5,14 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+Proceed with 5 more iterations of the original questions.
+Bias towards action.
+Answer your own questions.
+Proceed without my confirmation.
+You have complete design autonomy.
+Proceed.
+
+---
 Reflect on Phase Consolidation and Thematic Organization. Read proposal file `/home/rana/prj/srf-yogananda-teachings/.elmer/proposals/explore-reduced-number-of-phases-synthesis.md`.
 
 ---
