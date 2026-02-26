@@ -690,7 +690,7 @@ See ADR-107 for the full endpoint coverage table, schema requirements (`updated_
 | Concern | Approach |
 |---------|----------|
 | AI prompt injection | System prompts are server-side only. User input is treated as untrusted data, never concatenated into system prompts without sanitization. |
-| Content scraping | Cloudflare bot protection. Rate limiting on API routes. Content served as rendered HTML (not bulk-downloadable JSON). |
+| Content scraping | Cloudflare bot protection. Rate limiting on API routes (ADR-023). Content fully crawlable — no DRM or content gating (ADR-081 §3a). Protection is rate limiting + copyright communication, not technology walls. |
 | AI misuse | The AI cannot generate teaching content. If prompted to "ignore instructions," the constrained output format (passage IDs only) limits attack surface. |
 | User privacy | No user accounts required. Search queries logged without any user identification. |
 | Source attribution | Every displayed passage MUST include book, chapter, and page citation. No orphaned quotes. |
@@ -703,6 +703,30 @@ See ADR-107 for the full endpoint coverage table, schema requirements (`updated_
 | **Inner (application)** | Custom middleware | 30 search req/min anonymous, 120 search req/min known crawlers (ADR-081) | Graceful degradation: search proceeds without Claude API calls (database-only hybrid search). Still returns results. |
 
 The outer layer stops abuse before it reaches the application — the 15 search/min Cloudflare limit is stricter than the inner layer because it's a hard block (429), while the inner layer's 30/min threshold triggers graceful degradation (results still returned, just without AI enhancement). A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
+
+### Copyright Response Headers
+
+All content API responses and HTML page responses include copyright metadata in HTTP headers. These headers travel with content even when accessed programmatically, ensuring copyright notice is present regardless of how the content is consumed.
+
+**Headers on all responses:**
+
+```
+X-Copyright: © Self-Realization Fellowship
+X-Rights: All rights reserved
+X-Attribution-Required: true
+X-License-URL: https://teachings.yogananda.org/legal
+```
+
+**Additional headers on content API responses (`/api/v1/books/`, `/api/v1/search/`, `/api/v1/passages/`):**
+
+```
+X-Citation-Format: "[Quote]" — Paramahansa Yogananda, [Book], [Citation] via teachings.yogananda.org
+X-AI-Permissions: https://teachings.yogananda.org/ai.txt
+```
+
+**Implementation:** Next.js middleware in `/lib/middleware/copyright-headers.ts`. Applied to all routes except `/api/v1/health` and static assets. Milestone 1b (ships with the copyright communication layer, PRO-012).
+
+**Rationale:** The portal's No Content Gating policy (ADR-081 §3a) means copyright is asserted through metadata and legal layers, not technology walls. HTTP headers are the lowest-friction mechanism for machine consumers to discover copyright status — they don't need to parse HTML or visit a separate page. Combined with `llms.txt` copyright section, `ai.txt` permissions file, JSON-LD `copyrightHolder`, and the `/legal` page, this creates a comprehensive, multi-layered copyright communication strategy.
 
 ### ADR-099: Sub-Processor Inventory
 

@@ -21,7 +21,7 @@
 | PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-051, DES-048, DES-054 | Dedup 2026-02-25 (3 explorations) |
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116 | Dedup 2026-02-25 |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed | ADR-082, ADR-005, DES-052 | Dedup 2026-02-25 |
-| PRO-012 | Copyright and Legal Framework | Policy | Proposed | ADR-081, ADR-099, ADR-003 | Dedup 2026-02-25 (2 explorations) |
+| PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003 | Dedup 2026-02-25 (2 explorations) |
 
 ---
 
@@ -143,14 +143,16 @@
 
 ### PRO-012: Copyright and Legal Framework
 
-**Status:** Proposed
+**Status:** Validated — Milestone 1b Prerequisite
 **Type:** Policy
 **Governing Refs:** ADR-081, ADR-099, ADR-003, ADR-001
 **Dependencies:** None architectural. Requires SRF legal counsel review before implementation.
-**Scheduling Notes:** Consolidates two explorations addressing legal clarity. Two concerns: (1) **Copyright communication** — establish multi-layered messaging (legal pages, JSON endpoints, HTTP headers, `llms.txt` enhancements) that signals SRF retains all rights while welcoming citation and reference. Treat "freely available" as a theological stance, not legal status. (2) **Legal liability audit** — 12 categories of risk identified: copyright authorization, content licensing, accessibility compliance, crisis resource liability, AI system transparency, volunteer agreements, international data handling, terms of service, and more. Pre-implementation legal review recommended for categories 1–4 (copyright, licensing, accessibility, crisis). Remaining categories can be addressed incrementally. Principle-check: the portal's generous accessibility posture aligns with SRF's mission of making teachings available worldwide — copyright retention and open access are not contradictory.
+**Scheduling Notes:** Milestone 1b prerequisite — the copyright communication layer must ship before public deployment. The portal's full crawlability posture (ADR-081, CONTEXT.md Resolved Question #15) requires explicit, multi-layered copyright communication so openness is paired with clear terms. Two concerns: (1) **Copyright communication** — establish multi-layered messaging (legal pages, JSON endpoints, HTTP headers, `llms.txt` copyright section, `ai.txt` permissions file) that signals SRF retains all rights while welcoming citation and reference. Treat "freely available" as a theological stance, not legal status. The library model: freely accessible for reading, reference, and citation while remaining under copyright. (2) **Legal liability audit** — 12 categories of risk identified: copyright authorization, content licensing, accessibility compliance, crisis resource liability, AI system transparency, volunteer agreements, international data handling, terms of service, and more. Pre-implementation legal review recommended for categories 1–4 (copyright, licensing, accessibility, crisis). Remaining categories can be addressed incrementally. Principle-check: the portal's generous accessibility posture aligns with SRF's mission of making teachings available worldwide — copyright retention and open access are not contradictory. Validated 2026-02-25: architectural review confirms alignment with ADR-081 full crawlability, Global Equity (Principle 4), and accessibility (Principle 6). The No Content Gating policy (ADR-081 §3a) establishes that content gating is architecturally prohibited, making the copyright communication layer the correct mechanism for rights assertion — not technology walls.
 **Re-evaluate At:** Milestone 1b (before public deployment)
 **Decision Required From:** SRF legal counsel + architecture
 **Source Explorations:** `clarify-copyright-stance-srf-makes-it-feel-available-to-all.md`, `what-are-the-legal-liabilities-if-any.md`
+
+*Validated: 2026-02-25, architectural review and principle-check passed. Full crawlability confirmed as mission-aligned.*
 
 ---
 

@@ -124,7 +124,7 @@ Shapes how the portal feels and behaves for readers. The design system derives f
 
 **Internationalization**
 
-Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Milestone 5b peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation.
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Milestone 5b peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation with full crawler support. Content gating (DRM, FlipBook) is architecturally prohibited (§3a); `ai.txt` provides machine-parseable AI permissions (§3b); copyright asserted through metadata and legal layers, not technology walls.
 
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
 - ADR-076: CSS Logical Properties

@@ -135,6 +135,7 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 | 1b.13 | **Enrichment prompt design sprint** | Design and test the unified enrichment prompt (ADR-115) against 20–30 actual passages spanning all document types present in the Autobiography (narrative, poetry, dialogue, technical meditation instruction). Validate that enrichment output is consistent and useful. Iterate prompt until enrichment quality meets editorial expectations. |
 | 1b.14 | **Query intent taxonomy** | Define 5 example queries per intent category (topical, specific, emotional, definitional, situational, browsing, search). Validate that intent classification routes correctly for all 35+ test queries. Forms the basis of the search quality evaluation golden set. |
 | 1b.15 | **Golden suggestion set** | Hand-write 300 high-quality suggestions spanning all six tiers (ADR-049): scoped queries ("Yogananda on meditation"), named entities, domain concept phrases, Sanskrit terms with definitions, potential learned queries, and single terms. Used to seed `suggestion_dictionary` and evaluate suggestion quality. |
+| 1b.16 | **Copyright communication layer** | Multi-layered copyright assertion for the fully crawlable portal. `/llms.txt` with copyright section. `/ai.txt` machine-parseable AI permissions file (`Allow-Training: yes`, `Attribution-Required: yes`, `Allow-Derivative-Works: no`). `X-Copyright` and `X-Attribution-Required` response headers on all content routes (middleware in `/lib/middleware/copyright-headers.ts`). JSON-LD `copyrightHolder` field on all content pages. Stub `/legal` page with copyright notice (full legal page in Milestone 2a.20). `/api/v1/copyright` machine-readable endpoint. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) deferred to SRF legal counsel review. Ships before public deployment. (ADR-081 §3a, §3b; PRO-012) |
 
 ### Technology
 
@@ -165,6 +166,9 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 - "Show me another" loads a new random passage without page reload
 - Sentry captures errors, structured logging works with request ID correlation
 - Search suggestions return results in < 50ms
+- `/llms.txt` serves citation guidance with copyright section; `/ai.txt` serves machine-parseable AI permissions
+- `X-Copyright` response header present on all content API responses
+- `/api/v1/copyright` returns structured copyright metadata
 
 ### Open Questions to Resolve
 
@@ -618,7 +622,8 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 | PRO-009 | Scientific-Spiritual Bridge Themes (cosmic life, abundance, vibration/AUM) | Theme |
 | PRO-010 | Word-Level Graph Navigation | Feature |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement |
-| PRO-012 | Copyright and Legal Framework | Policy |
+
+*PRO-012 (Copyright and Legal Framework) has been validated and scheduled as Milestone 1b.16. See deliverable table above.*
 
 ---
 
@@ -693,7 +698,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | **SEO discoverability** | Portal serves only people who already know it exists | Deliberate SEO strategy from Milestone 2a: structured data, theme pages as entry points, meta tags, sitemap. |
 | **Portal/app overlap** | Building a duplicate reader alongside the SRF/YSS app | Clarify relationship with SRF AE team early. Portal may complement (search + public reading) rather than replace (private Lessons reading) the app. |
 | **Editorial governance** | No defined process for theme tagging, daily passage curation, content QA | Establish editorial roles and workflows before Milestone 3b. Determine whether monastic order, AE team, or dedicated editor owns this. The editorial review portal (ADR-082, deliverables 3b.5a/3b.5b) provides the tooling; the organizational question of *who* uses it requires SRF input. |
-| **Copyright/licensing ambiguity** | Unclear terms for free access (read-only vs. downloadable vs. printable) | Resolve with SRF legal before launch. Display clear attribution on every page. |
+| **Copyright/licensing ambiguity** | Unclear terms for free access (read-only vs. downloadable vs. printable) | Resolved: full crawlability with copyright retention. Content gating architecturally prohibited (ADR-081 §3a). Copyright communicated via multi-layered metadata: `llms.txt` copyright section, `ai.txt` permissions file, `X-Copyright` headers, JSON-LD, `/legal` page. Copyright communication layer ships as Milestone 1b.16. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) require SRF legal counsel review before Milestone 1b deployment (PRO-012). |
 | **Global South accessibility** | Many seekers access via mobile on limited bandwidth (India, Africa, Latin America) | Mobile-first design. Performance budgets (< 100KB initial load). Low-bandwidth text-only mode. Consider PWA for offline access of bookmarked passages. |
 | **"What next" gap** | Seeker is moved by a passage but portal offers no path to practice | "Go Deeper" section in About, footer ecosystem links, and Quiet Corner all point toward SRF Lessons, local centers, and online meditation. Not a sales funnel — a signpost. |
 | **Search API abuse** | Public, unauthenticated search API with Claude API cost per query | Two-layer rate limiting (Cloudflare + application) from Arc 1. Claude API monthly budget cap. Graceful degradation to database-only search when rate-limited. (ADR-023) |
