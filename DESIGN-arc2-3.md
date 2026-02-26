@@ -2764,7 +2764,7 @@ This aligns with "Signpost, not destination" — the portal meets seekers where 
 
 ---
 
-## ADR-082: Staff Experience Architecture
+## ADR-082: Staff Experience Architecture — Five-Layer Editorial System
 
 The portal's "human review as mandatory gate" principle creates significant staff-facing workflow requirements. Theme tags, tone classifications, accessibility ratings, calendar associations, translation drafts, social media assets, and ingestion QA flags all require human approval. The staff experience is a primary product concern — the speed and quality of editorial review directly determines how quickly new content reaches seekers.
 

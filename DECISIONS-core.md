@@ -14,7 +14,7 @@
 The Intelligent Query Tool could operate in two modes:
 
 1. **Synthesis mode:** AI reads retrieved passages and generates a natural-language answer in its own words, citing sources.
-2. **Librarian mode:** AI finds and ranks the most relevant passages but the user reads only Yogananda's verbatim text.
+2. **Librarian mode:** AI finds and ranks the most relevant passages but the user reads only verbatim text from SRF-published authors.
 
 ### Decision
 
@@ -24,14 +24,14 @@ The Intelligent Query Tool could operate in two modes:
 - Identifying highlight boundaries within long passages
 
 The AI **never**:
-- Generates text that could be mistaken for Yogananda's words
+- Generates text that could be mistaken for any SRF-published author's words
 - Paraphrases, summarizes, or synthesizes across passages
 - Interprets meditation techniques or spiritual practices
 - Answers questions not addressable from the corpus
 
 ### Rationale
 
-- **Sacred text fidelity:** Yogananda's words are considered transmitted teachings from a realized master. Even subtle paraphrasing can distort meaning. "God-consciousness" and "cosmic consciousness" are not interchangeable in this tradition.
+- **Sacred text fidelity:** The words of Yogananda and all SRF-published authors are considered transmitted teachings from realized masters and their direct successors (PRO-014). Even subtle paraphrasing can distort meaning. "God-consciousness" and "cosmic consciousness" are not interchangeable in this tradition.
 - **Hallucination risk:** LLMs generate plausible but incorrect statements. In a spiritual context, a hallucinated teaching could be spiritually harmful.
 - **Trust:** Users can verify every result against the source text. There is nothing to hallucinate because the AI generates no content.
 - **Theological alignment:** The DELTA framework principle of Agency — the AI facilitates access to the teachings, it does not become a teacher.
@@ -44,6 +44,9 @@ The AI **never**:
 - **The "no results" case must be handled gracefully.** When the corpus doesn't address a query, the system must say so honestly rather than stretching to find something.
 - **The AI's output format is constrained.** Query expansion returns a JSON array of terms. Passage ranking returns a JSON array of IDs. No prose output.
 - **Consolidated in ADR-005:** The full Claude AI Usage Policy — permitted roles, prohibited uses, output format constraints, and expansion roadmap — is maintained in ADR-005.
+- **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three content tiers: sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), commentary (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
+
+*Revised: 2026-02-25, PRO-014 multi-author expansion merged.*
 
 ---
 
@@ -289,7 +292,7 @@ This ADR consolidates the Claude AI policy into a single reference and establish
 
 ### The Librarian Model
 
-Claude's role in the portal follows one principle: **Claude helps seekers find Yogananda's words. Claude never speaks for Yogananda.**
+Claude's role in the portal follows one principle: **Claude helps seekers find the verbatim published words of Yogananda and all SRF-published authors. Claude never speaks for any of them.** (PRO-014: scope extends to all content tiers.)
 
 Every permitted use falls into one of three categories:
 
@@ -305,9 +308,9 @@ These prohibitions are absolute and permanent. No milestone, feature, or stakeho
 
 Claude **never**:
 
-1. **Generates text that could be mistaken for Yogananda's words.** Not even summaries, not even "in the style of." The portal displays only verbatim published text.
-2. **Paraphrases, summarizes, or synthesizes across passages.** A seeker reads Yogananda's actual sentences, not Claude's interpretation of them.
-3. **Translates Yogananda's published text.** Only official SRF/YSS human translations are served. Machine translation of sacred text is never acceptable — "inviolable constraint, not a cost optimization" (ADR-078).
+1. **Generates text that could be mistaken for any SRF-published author's words.** Not even summaries, not even "in the style of." The portal displays only verbatim published text across all content tiers (PRO-014).
+2. **Paraphrases, summarizes, or synthesizes across passages.** A seeker reads the author's actual sentences, not Claude's interpretation of them.
+3. **Translates any SRF-published author's text.** Only official SRF/YSS human translations are served. Machine translation of sacred text is never acceptable for any content tier — "inviolable constraint, not a cost optimization" (ADR-078, PRO-014).
 4. **Interprets meditation techniques or spiritual practices.** Kriya Yoga technique instructions and SRF Lesson content are permanently out of scope. Claude must not explain, summarize, or advise on spiritual techniques. Note: Yogananda's *published descriptions* of Kriya Yoga (e.g., Autobiography Ch. 26) are part of the corpus and surfaced normally as search results and theme page content — these are public descriptions, not technique instruction. Claude may find and rank these passages but must not interpret them as practice guidance. (ADR-104)
 5. **Acts as a conversational agent or chatbot.** No dialogue, no follow-up questions, no "let me help you explore that further." The seeker interacts with the search bar, not with Claude.
 6. **Answers questions directly.** Claude finds passages that answer questions. It does not formulate answers itself.
@@ -667,7 +670,7 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 
 ### Context
 
-ADR-001 established the foundational constraint: the portal displays only Yogananda's verbatim words and never generates, paraphrases, or synthesizes content. This constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
+ADR-001 established the foundational constraint: the portal displays only the verbatim published words of SRF-published authors and never generates, paraphrases, or synthesizes content. This applies to all three content tiers (PRO-014: sacred, authorized, commentary). The constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
 
 However, as the portal's feature surface has grown — editorial reading threads (DES-026), theme classification (ADR-032), daily passage selection, calendar-aware surfacing (DES-028), search suggestions with vocabulary bridging (ADR-049), community collections (ADR-086), the `/guide` page (DES-047), and chant metadata (ADR-059) — two gaps have emerged:
 
@@ -685,7 +688,9 @@ However, as the portal's feature surface has grown — editorial reading threads
  - **Transparent framing.** The selection mechanism (a theme label, a date, a search query, a curator name) is visible to the seeker, not hidden behind an opaque algorithm.
  - **Context always available.** Every curated passage links to its full chapter context via "Read in context."
 
-3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how all non-Yogananda prose behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for sacred text, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements, accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
+3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how portal-authored prose (not from any SRF-published author) behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for SRF-published author text across all content tiers, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements including full author name (PRO-014), accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
+
+*Revised: 2026-02-25, PRO-014 — "non-Yogananda prose" boundary redefined. Texts by other SRF-published authors (Sri Yukteswar, Daya Mata, etc.) are sacred text, not editorial prose. The editorial proximity standard governs portal-authored content only.*
 
 ### Alternatives Considered
 
@@ -2555,6 +2560,12 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 | 9 | *Journey to Self-Realization* | Third volume of collected talks. |
 | 10 | *Wine of the Mystic* | Rubaiyat commentary — beautiful but niche audience. |
 | 11–12 | *Second Coming of Christ / God Talks With Arjuna* | Massive multi-volume scriptural commentaries. Highest value for advanced students. Require verse-aware chunking (complex). Lower urgency for making the portal essential to newcomers. |
+| 13 | *The Holy Science* (Swami Sri Yukteswar) | Sacred tier (PRO-014). Dense, aphoristic philosophical text. Requires author-specific chunking parameters (shorter target range). Directly relevant to PRO-009 scientific-spiritual bridge themes. |
+| 14 | *Only Love* / *Finding the Joy Within You* / *Enter the Quiet Heart* (Sri Daya Mata) | Authorized tier (PRO-014). Conversational style closer to Yogananda's collected talks. Three short volumes. |
+| 15 | *The Guru and the Disciple* (Sri Mrinalini Mata) | Authorized tier (PRO-014). Editorial/biographical work about Yogananda's posthumous publications. |
+| 16 | *Rajarsi Janakananda: A Great Western Yogi* | Authorized tier (PRO-014). Biographical, SRF-published. |
+
+*Revised: 2026-02-25, PRO-014 — added non-Yogananda SRF-published books at positions 13–16. Catalog requires SRF confirmation.*
 
 ### Rationale
 
@@ -3363,7 +3374,7 @@ CREATE TABLE chunk_glossary_terms (
 
 ### Context
 
-The portal's core promise is sacred text fidelity: every displayed passage is verbatim from Yogananda's published works. But there is no mechanism to *verify* this — to prove that the portal's text hasn't drifted from SRF's source publications. Content-addressable deep links (ADR-022) use content hashes for URL stability, but they don't solve provenance.
+The portal's core promise is sacred text fidelity: every displayed passage is verbatim from SRF-published works across all content tiers (PRO-014). But there is no mechanism to *verify* this — to prove that the portal's text hasn't drifted from SRF's source publications. Content-addressable deep links (ADR-022) use content hashes for URL stability, but they don't solve provenance.
 
 ### Decision
 
@@ -4053,6 +4064,9 @@ Do not apply a single chunking algorithm across all types. Read representative s
 - **Cross-reference:** Each verse-commentary chunk stores the verse reference (e.g., "Bhagavad Gita IV:7") as structured metadata for the side-by-side commentary view .
 - **Devanāgarī script handling (ADR-080):** *God Talks With Arjuna* includes original Bhagavad Gita verses in Devanāgarī script alongside romanized transliteration and English commentary. Devanāgarī verse text is preserved in `chunk_content` for display but excluded from the embedding input via a script-detection preprocessing step (`/[\u0900-\u097F]/` Unicode block). The romanized transliteration is included in both chunk content and embedding input. Devanāgarī text is excluded from the token count that determines chunk splitting — only the English commentary and romanized transliteration count toward the 500-token maximum.
 
+**Per-author calibration (PRO-014, Milestone 3a+):**
+- Sri Yukteswar's prose in *The Holy Science* is radically different from Yogananda's narrative style — dense, aphoristic, philosophical, with Sanskrit-heavy sentences. The 100–500 token chunk range may need author-specific calibration (likely lower target: 150–250 tokens). Daya Mata's talks are conversational and closer to Yogananda's collected-talks style. Author-specific chunking parameters are named constants per ADR-123.
+
 **Per-language validation (Milestone 5b):**
 - English-calibrated chunk sizes (200–300 tokens) may produce different semantic density across scripts. CJK tokenization differs significantly from Latin scripts. Validate retrieval quality per language before committing to chunk sizes. Adjust token ranges per language if necessary.
 
@@ -4284,6 +4298,19 @@ The vocabulary extraction step scans for three categories of terms:
 
 3. **Cross-tradition and Indic variant terms** (ADR-080): Identifies Pali, Bengali, and Hindi terms Yogananda uses or that seekers from other traditions might search. The bridge accepts these as keys mapping to Yogananda's vocabulary (e.g., Pali "nibbāna" → "final liberation"; Vedantic "viveka" → "discrimination, spiritual discernment"). Also captures alternate romanizations of the same term across editions.
 
+### Per-Author Vocabulary (PRO-014)
+
+When non-Yogananda SRF-published authors enter the corpus (Milestone 3a+), the terminology bridge needs per-author vocabulary tables, not just per-book evolution. Sri Yukteswar's vocabulary differs from Yogananda's:
+
+| Concept | Yogananda's Term | Sri Yukteswar's Term |
+|---|---|---|
+| Cosmic cycles | "yugas" (narrative context) | "yugas" (astronomical calculation, specific durations) |
+| Divine creation | "cosmic vibration," "Aum" | "the Word," "Pranava" |
+| Liberation | "Self-realization," "God-union" | "kaivalya," "mukti" |
+| Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
+
+A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors address the same concept in different registers.
+
 ### Consequences
 
 - The terminology bridge becomes a living glossary that deepens with each book, not a one-time artifact
@@ -4291,6 +4318,9 @@ The vocabulary extraction step scans for three categories of terms:
 - No schema migration needed — the bridge is a file-based artifact in git, read by the ingestion pipeline and query expansion prompt
 - **Extends ADR-005 E2** with the evolution lifecycle
 - **Extended by ADR-080** with Sanskrit inline definition extraction and cross-tradition term categories
+- **Extended by PRO-014** with per-author vocabulary tables
+
+*Revised: 2026-02-25, PRO-014 — added per-author vocabulary section for multi-author corpus.*
 
 ---
 

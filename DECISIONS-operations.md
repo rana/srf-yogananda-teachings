@@ -703,10 +703,12 @@ When a seeker uses ChatGPT, Perplexity, or Google's AI Overview to ask about Yog
 Adopt **"The Librarian"** as the external brand identity for the portal's AI search capability.
 
 **Implementation:**
-- The About page (Milestone 2a) explains: "This is not an AI that speaks for Yogananda. It is a librarian that finds his words for you. Every passage you see is exactly as he wrote it."
-- The `llms.txt` file (Milestone 2a) includes: "This portal uses AI as a librarian, not a content generator. All results are verbatim passages from Yogananda's published works."
+- The About page (Milestone 2a) explains: "This is not an AI that speaks for the masters. It is a librarian that finds their words for you. Every passage you see is exactly as it was published."
+- The `llms.txt` file (Milestone 2a) includes: "This portal uses AI as a librarian, not a content generator. All results are verbatim passages from SRF-published works."
 - Stakeholder communications use "The Librarian" language when describing the AI search.
-- The search results page may include a subtle footer: "Every passage shown is Yogananda's own words."
+- The search results page may include a subtle footer: "Every passage shown is exactly as published by SRF."
+
+*Revised: 2026-02-25, PRO-014 — expanded brand language from Yogananda-only to multi-author corpus while maintaining Yogananda-first emphasis.*
 
 ### Rationale
 
@@ -785,9 +787,9 @@ Daily devotional emails are one of the most successful formats in spiritual publ
 
 ### Decision
 
-Implement a **daily email** delivering a single verbatim Yogananda passage with full citation.
+Implement a **daily email** delivering a single verbatim passage from the sacred content tier (Yogananda, Sri Yukteswar) with full author attribution and citation (PRO-014).
 
-**Milestone 5a (non-personalized):** Same passage pool as Today's Wisdom. One email per day. Subscriber provides email address and language. No account required.
+**Milestone 5a (non-personalized):** Same passage pool as Today's Wisdom — sacred tier only (PRO-014: authorized and commentary tiers are not in the daily pool). One email per day. Subscriber provides email address and language. No account required.
 
 **Milestone 7a (personalized):** Subscribers can optionally select theme preferences ("I'd like more passages about Peace and Healing"). Passages are filtered by theme from the `chunk_topics` join. This is an *explicit user choice*, never behavioral inference.
 
@@ -848,7 +850,7 @@ Yogananda's teachings are extraordinarily shareable — short, vivid, universal.
 
 **User sharing (Milestone 2a):** Already covered by ADR-068. Clean links with OG cards. Downloadable quote images. No social media buttons. No tracking scripts.
 
-**SRF organizational sharing (Milestone 5a+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the daily_passages pool). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
+**SRF organizational sharing (Milestone 5a+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the sacred-tier daily_passages pool — Yogananda and Sri Yukteswar only per PRO-014). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
 
 ### Platform-Specific Considerations
 
@@ -2624,15 +2626,20 @@ Search results are ranked by a composite score combining multiple signals. The h
 | **Accessibility level** | `accessibility_level` column (ADR-005 E3) | Tie-breaker | When two passages are equally relevant, the more accessible passage ranks higher |
 | **Tone appropriateness** | `tone` column (ADR-005 E4) | Tie-breaker | When the query implies emotional need (grief, fear), consoling passages rank higher |
 
+| **Content tier** | `books.content_tier` column (PRO-014) | Tie-breaker | Sacred tier ranks above authorized at equivalent relevance; authorized above commentary. Reflects theological hierarchy, not editorial judgment. |
+
 **Not used as ranking signals:** Passage length, book popularity, recency, seeker behavior, click-through rates. The portal never uses engagement metrics to shape results (ADR-095, ADR-002).
 
 #### 2. Display format per result
 
 Each search result displays:
 - **Passage text** — the verbatim chunk content. No AI-generated summary, no truncation below 200 characters.
-- **Citation** — book title, chapter title, page number. Always present. Never omitted for brevity.
+- **Author name** — full author name on ALL passages across ALL content tiers (PRO-014). Always "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata", etc. — never shortened. Displayed in search results, passage display, daily wisdom, social media cards, and all other citation contexts.
+- **Citation** — author name, book title, chapter title, page number. Always present. Never omitted for brevity.
 - **"Read in context" link** — deep link to the reader at the passage's location. This link is the critical bridge between the librarian's finding and the seeker's reading (ADR-001).
 - **Relevance score** — not displayed to seekers. Used internally for debugging and search quality evaluation.
+
+*Revised: 2026-02-25, PRO-014 — added author name to citation display. Full author name on all passages, all tiers.*
 
 **Not displayed:** Themes, accessibility level, tone classification. These are infrastructure signals, not seeker-facing metadata.
 

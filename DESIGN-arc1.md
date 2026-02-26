@@ -714,7 +714,7 @@ CREATE TABLE books (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  title TEXT NOT NULL,
  subtitle TEXT,
- author TEXT NOT NULL DEFAULT 'Paramahansa Yogananda',
+ author TEXT NOT NULL, -- No default; author must be explicit for multi-author corpus (PRO-014)
  publication_year INTEGER,
  language TEXT NOT NULL DEFAULT 'en',
  isbn TEXT,

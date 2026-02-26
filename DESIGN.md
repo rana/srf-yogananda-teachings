@@ -44,12 +44,12 @@
 | [ADR-084: DELTA-Compliant Seeker Feedback Mechanism](#adr-084-delta-compliant-seeker-feedback-mechanism) | 3b+ | DESIGN.md |
 | [DES-031: MCP Server Strategy](DESIGN-arc1.md#des-031-mcp-server-strategy) | 1+ | DESIGN-arc1.md |
 | [DES-032: Content Management Strategy](DESIGN-arc4-plus.md#des-032-content-management-strategy) | 4+ | DESIGN-arc4-plus.md |
-| [ADR-082: Staff Experience Architecture](DESIGN-arc2-3.md#adr-082-staff-experience-architecture) | 3b+ | DESIGN-arc2-3.md |
+| [ADR-082: Staff Experience Architecture — Five-Layer Editorial System](DESIGN-arc2-3.md#adr-082-staff-experience-architecture--five-layer-editorial-system) | 3b+ | DESIGN-arc2-3.md |
 | [DES-033: Unified Review Queue Abstraction](#des-033-unified-review-queue-abstraction) | 3b+ | DESIGN.md |
 | [DES-034: Content Lifecycle Management](#des-034-content-lifecycle-management) | 3b+ | DESIGN.md |
 | [DES-035: AI-Assisted Editorial Workflows](#des-035-ai-assisted-editorial-workflows) | 3b+ | DESIGN.md |
 | [DES-036: Migration, Evolution, and Longevity](#des-036-migration-evolution-and-longevity) | 1+ | DESIGN.md |
-| [ADR-007: Editorial Proximity Standard](#adr-007-editorial-proximity-standard) | — | DESIGN.md |
+| [ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard](#adr-007-curation-as-interpretation--the-fidelity-boundary-and-editorial-proximity-standard) | — | DESIGN.md |
 | [DES-037: Observability](#des-037-observability) | 1+ | DESIGN.md |
 | [DES-038: Testing Strategy](#des-038-testing-strategy) | 1+ | DESIGN.md |
 | [DES-039: Infrastructure and Deployment](DESIGN-arc1.md#des-039-infrastructure-and-deployment) | 1 | DESIGN-arc1.md |
@@ -326,6 +326,8 @@ Query params:
  q (required) — user's search query
  language (optional) — default 'en'
  book_id (optional) — restrict to a specific book
+ content_tier (optional) — 'sacred', 'authorized', or omit for default behavior.
+   Default: sacred + authorized. Add include_commentary=true for commentary tier. (PRO-014)
  limit (optional) — default 5, max 20
  mode (optional) — 'hybrid' (default), 'fts', 'vector'
 
@@ -336,11 +338,13 @@ Response (intentionally unpaginated — see § API Conventions):
  {
  "chunk_id": "uuid",
  "content": "The soul is ever free; it is deathless...",
+ "author": "Paramahansa Yogananda",
  "book_title": "Autobiography of a Yogi",
  "chapter_title": "The Law of Miracles",
  "chapter_number": 26,
  "page_number": 312,
  "section_heading": null,
+ "content_tier": "sacred",
  "score": 0.87,
  "reader_url": "/books/autobiography-of-a-yogi/26#chunk-uuid"
  },
@@ -360,19 +364,22 @@ Response:
 {
  "chunk_id": "uuid",
  "content": "Have courage. Whatever you are going through will pass...",
+ "author": "Paramahansa Yogananda",
  "book_title": "Where There Is Light",
  "chapter_title": "Courage",
  "page_number": 42,
+ "content_tier": "sacred",
  "reader_url": "/books/where-there-is-light/3#chunk-uuid"
 }
 
 Implementation:
- SELECT bc.id, bc.content, b.title, ch.title, bc.page_number
+ SELECT bc.id, bc.content, b.author, b.title, ch.title, bc.page_number, b.content_tier
  FROM daily_passages dp
  JOIN book_chunks bc ON bc.id = dp.chunk_id
  JOIN books b ON b.id = bc.book_id
  LEFT JOIN chapters ch ON ch.id = bc.chapter_id
  WHERE dp.is_active = true
+ AND b.content_tier = 'sacred' -- PRO-014: only sacred tier in daily pool
  AND bc.language = :language -- filter to user's locale
  ORDER BY random
  LIMIT 1;
@@ -1588,7 +1595,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 
 ---
 
-## ADR-007: Editorial Proximity Standard
+## ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
 
 > **Arc:** — (cross-cutting, applies to all arcs that place non-Yogananda prose near sacred text)
 

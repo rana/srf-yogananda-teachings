@@ -23,7 +23,7 @@
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003, ADR-001 | Dedup 2026-02-25 (2 explorations) |
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048 | Exploration 2026-02-25 |
-| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Validated | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111 | Exploration 2026-02-25 |
+| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRINCIPLES.md §1–2, CONTEXT.md § Mission | Exploration 2026-02-25 |
 
 ---
 
@@ -162,183 +162,32 @@
 **Type:** Feature
 **Governing Refs:** ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048
 **Dependencies:** Tier 2 MCP server (PRO-001) operational. `/lib/services/` layer complete for target content types. Editorial review infrastructure (Milestone 3b) for agent-proposed content.
-**Scheduling Notes:** The MCP Corpus server (PRO-001, ADR-101, DES-031) is designed as portal infrastructure, but SRF's internal stakeholders extend beyond the portal team. The same corpus access layer can serve autonomous AI agents working on behalf of monastics, correspondence staff, magazine editors, center leaders, and operational systems. Nine agent archetypes identified alongside the public-facing thematic exploration (now DES-048 § Thematic Corpus Exploration):
+**Scheduling Notes:** The MCP Corpus server can serve autonomous AI agents working on behalf of SRF's internal stakeholders: monastics, correspondence staff, magazine editors, center leaders, and operational systems. Nine agent archetypes identified: Devotee Correspondence, Magazine Editorial, Content Integrity Watchdog, Translation QA, Center Leader Support, Seeker Trend Intelligence, Social Media Calendar, Knowledge Graph Curator, and Corpus Onboarding.
 
-**Agent archetypes by trust profile:**
+**Core idea.** One Librarian, many modes. The 9 archetypes are *modes* of a single Corpus Librarian (ADR-089) with role-scoped access — not 9 separate systems. Architecturally: one service layer with role-based API scoping. Four trust profiles: Research (read-only), Editorial (proposes to review queues), Operational (integrity monitoring, alert/quarantine), Intelligence (aggregated analytics, proposes structural changes).
 
-| # | Agent | Stakeholder | Trust Profile | Key MCP Tools |
-|---|---|---|---|---|
-| 1 | **Devotee Correspondence** | Monastics, correspondence staff | Research (read-only, user-directed) | `search_corpus`, `get_glossary_terms_in_passage`, `verify_citation`, crisis detection |
-| 2 | **Magazine Editorial** | Self-Realization Magazine staff | Research + editorial | `search_corpus`, `verify_citation`, `get_content_coverage`, `get_similar_passages`, publication history |
-| 3 | **Content Integrity Watchdog** | Operates autonomously, alerts editors | Operational (alert-driven, defensive) | `verify_citation` (bulk), `get_chunk_with_context`, content hash verification |
-| 4 | **Translation QA** | Translation reviewers | Operational (supports reviewer) | `get_passage_translations`, `get_glossary_terms_in_passage`, `verify_citation` |
-| 5 | **Center Leader Support** | SRF center/group leaders worldwide | Research (read-only, restricted tool set) | `search_corpus`, `search_by_theme`, `get_daily_passage`, calendar-aware surfacing |
-| 6 | **Seeker Trend Intelligence** | SRF leadership, communications | Intelligence (aggregated, DELTA-compliant) | `get_search_trends`, `get_content_coverage`, `search_corpus` |
-| 7 | **Social Media Calendar** | Social media staff | Editorial (ADR-100 trust graduation) | `search_corpus`, `search_by_theme`, `get_daily_passage`, `get_content_coverage` |
-| 8 | **Knowledge Graph Curator** | Operates autonomously, reviewed by theological reviewers | Intelligence (proposes graph edges) | `get_graph_neighborhood`, `find_concept_path`, `get_similar_passages` |
-| 9 | **Corpus Onboarding** | New SRF staff, new monastics, VLD volunteers | Research (read-only, guided) | `search_corpus`, `search_by_theme`, `get_person_context`, `find_concept_path` |
+**Governing principle.** Every agent is a librarian — finds, verifies, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Every agent respects the technique boundary (Principle 3, ADR-104).
 
-**Governing principle:** Every agent is a librarian — finds, verifies, contextualizes, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Research agents require no review queue — the user exercises full judgment.
+**Subsumes PRO-011** (Proactive Editorial AI Agent) as the "Editorial" trust profile.
 
-**One Librarian, many modes.** The 9 archetypes above are not 9 separate systems — they are *modes* of a single Corpus Librarian (ADR-089) with role-scoped access. The underlying capability is identical: search the corpus, verify citations, surface cross-references, respect the technique boundary. What varies is the access role (which MCP tools are available), the delivery channel (admin portal, email, Slack, API), and the interaction pattern (user-directed research, push-based proposals, autonomous monitoring). Architecturally, this is one service layer with role-based API scoping — not nine deployments.
-
-**Architectural implication:** Tier 2 MCP (DES-031) needs role-scoped access rather than monolithic internal access. Four trust profiles: Research (full corpus read, no write), Editorial (corpus + analytics, proposes to review queues), Operational (corpus + integrity, alert/quarantine capability), Intelligence (corpus + aggregated analytics, proposes structural changes). Not a new tier — internal role differentiation within Tier 2.
-
-**New capabilities implied:**
-- `detect_crisis_indicators(text)` as reusable internal MCP tool (currently search-path only, ADR-122)
-- `publication_history` resource tracking which passages have been used in which channels (prevents repetition across email, social, magazine)
-- `center_leader` Auth0 role (extending VLD role system, ADR-087) for authenticated institutional access by center/group leaders worldwide. Not "internal" in the headquarters sense — distributed institutional access with restricted tool set (no editorial tools, no analytics).
-
-**Technique boundary (Principle 3, ADR-104).** Every agent respects the technique boundary. The Correspondence Agent never suggests passages that teach Kriya Yoga, Hong-Sau, AUM meditation, or Energization Exercises — only passages that *describe* the practice path publicly. The same intent classification (ADR-005 E1) that governs search governs all agent outputs. When a correspondent's letter asks about technique, the agent surfaces the Practice Bridge response (ADR-104), not a collection of passages.
-
-**Watchdog quarantine model.** Content hash mismatches (ADR-039) are Principle 1 violations — the portal may be serving words that aren't Yogananda's. The Watchdog's response model:
-
-| Severity | Trigger | Watchdog Action | Human Action |
-|---|---|---|---|
-| **Critical** | Content hash mismatch, text altered | Soft quarantine: set `quarantine_flag = true` on affected chunks (search query filters on this flag, suppressing from results). Alert via Sentry + editorial notification. Passage remains accessible via direct URL but invisible in search and exploration. | Restore original text and clear flag, or confirm the edit was intentional and recompute hash. |
-| **High** | Stylometric anomaly, embedding drift > threshold | Alert only. Flag for review queue. | Investigate — may indicate ingestion error or model degradation. |
-| **Medium** | Missing citation, incomplete metadata | Alert only. Add to QA queue. | Fix citation in Contentful, re-sync. |
-| **Low** | Classification staleness, coverage gap | Observation (DES-035 passive intelligence). | Acknowledge or dismiss. |
-
-Soft quarantine is a safety mechanism, not editorial judgment — the Watchdog never decides whether content is *good*, only whether it matches its verified source. The `quarantine_flag` column on `book_chunks` is a boolean default `false`, indexed, checked in every search and exploration query's WHERE clause. Quarantine events are logged to `content_quarantine_log` (chunk_id, reason, quarantined_at, resolved_at, resolved_by).
-
-**Agent composition.** Agents communicate through the existing webhook event system (DES-052, ADR-106). Agent events extend the portal event taxonomy:
-
-| Event | Agent | Consumers |
-|---|---|---|
-| `agent.integrity_alert` | Watchdog | All agents (pause proposals for affected passages), editorial staff |
-| `agent.trend_shift` | Trend Intelligence | Social Calendar (timely passage selection), editorial staff |
-| `agent.passage_used` | Social Calendar, Magazine, Daily Email | Publication History resource (deduplication) |
-| `agent.graph_proposal` | Graph Curator | Watchdog (verify proposed edges don't reference quarantined content) |
-
-The Watchdog is a cross-cutting monitor: when it fires `agent.integrity_alert`, all other agents must check whether their pending proposals reference affected passages. This is defensive — prevents a corrupted passage from propagating through editorial channels before human review.
-
-**Relationship to PRO-011:** PRO-011 (Proactive Editorial AI Agent) describes one pattern — push-based editorial proposals. PRO-013 subsumes PRO-011 as the "Editorial" trust profile and adds Research, Operational, and Intelligence profiles.
-
-**Agent persona:** Compassion and humility combined with effectiveness. The portal's contemplative register (ADR-074) extends to internal agent interactions — warm, honest, not mechanical. Not gamified enthusiasm. "Here are today's suggestions for your review." The Librarian brand (ADR-089) applies to all AI in SRF's ecosystem. For monastic users — the Librarian's primary internal audience — the agent should never feel like a productivity tool. It should feel like a quiet assistant in a temple library. Effectiveness should not outpace contemplation: fewer deeply relevant passages with invitation to go deeper, rather than comprehensive dumps. The default `limit` for internal research mode should be low (5), expandable on request — matching the Calm Technology principle (ADR-065) that technology requires the smallest possible amount of attention.
-
-**Cross-property potential.** The MCP Corpus server (DES-031) is designed for the teachings portal, but SRF's other digital properties — yogananda.org, the Online Meditation Center, the SRF app, the convocation site — also reference Yogananda's teachings. If the Tier 2 MCP server ships as a standalone service (wrapping `/lib/services/`), it could power corpus-grounded features across all SRF web properties: accurate quote-finding for yogananda.org articles, passage suggestions for Online Meditation Center guided readings, and verified citations for any SRF publication. The service layer's framework-agnostic design (Principle 10) supports this — no Next.js dependency in the business logic.
+*Implementation detail (quarantine model, event taxonomy, agent persona, cross-property potential, MCP tool mappings) preserved in `.elmer/proposals/archived/` and would move to DESIGN files on adoption.*
 
 **Re-evaluate At:** Arc 3 boundary (when Tier 2 MCP scheduling is re-evaluated per PRO-001)
 **Decision Required From:** Architecture + SRF stakeholder input on organizational needs
 
 ### PRO-014: Multi-Author Sacred Text Expansion
 
-**Status:** Validated — Stakeholder Decisions Confirmed
+**Status:** Adopted — Document cascade merged 2026-02-25.
 **Type:** Policy
 **Governing Refs:** ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111
-**Dependencies:** None architectural — the schema already carries `books.author`. Document cascade (Tiers 1–4 below) is unblocked by confirmed stakeholder decisions.
-**Scheduling Notes:** Scope expansion from "Yogananda's published books" to "all SRF/YSS-published books" with multi-author sacred text treatment. Both blocking stakeholder decisions resolved 2026-02-25: (1) theological hierarchy confirmed as three-tier (guru lineage / SRF presidents / monastics), (2) philanthropic endowment scope confirmed as covering all SRF-published authors. Document cascade ready to execute via `/proposal-merge PRO-014`.
 
-**The question.** The current architecture treats the corpus as single-author: Principle 1 says "Yogananda's verbatim words," ADR-001 says "the AI finds and ranks Yogananda's verbatim words," and the mission statement targets "Paramahansa Yogananda's published teachings." SRF publishes books by multiple authors in the guru lineage and organizational succession. Should all SRF-published books receive the sacred text treatment — verbatim fidelity, no AI synthesis, no machine translation, full search/theme/daily-pool participation?
+**Summary.** Expanded corpus scope from "Yogananda's published books" to "all SRF/YSS-published books" with a three-tier content hierarchy: sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), commentary (monastic speakers). All tiers receive verbatim fidelity, no AI synthesis, no machine translation. Tiers govern search inclusion, daily passage pool, and social media pool. Both blocking stakeholder decisions resolved 2026-02-25: theological hierarchy confirmed, endowment scope confirmed.
 
-**Known SRF/YSS-published book catalog (non-Yogananda authors):**
+**Document cascade applied to:** PRINCIPLES.md §1–2, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DESIGN-arc1.md books schema (`content_tier` column, `author` DEFAULT removed).
 
-| Author | Relationship | Published Books (SRF/YSS) |
-|---|---|---|
-| **Swami Sri Yukteswar** | Yogananda's guru | *The Holy Science* |
-| **Sri Daya Mata** | Direct disciple, 3rd SRF President (1955–2010) | *Only Love*, *Finding the Joy Within You*, *Enter the Quiet Heart* |
-| **Sri Mrinalini Mata** | Direct disciple, 4th SRF President (2011–2017) | *The Guru and the Disciple* (editor of Yogananda's posthumous works) |
-| **Rajarsi Janakananda** | Direct disciple, 2nd SRF President (1952–1955) | *Rajarsi Janakananda: A Great Western Yogi* (biographical, SRF-published) |
-| **Brother Anandamoy** | Monastic, convocation speaker | Talks published in Self-Realization Magazine and recorded media |
+**Remaining for Milestone 3a:** Non-Yogananda book catalog requires SRF confirmation. Author-specific chunking parameters (ADR-048) need empirical calibration when *The Holy Science* enters the pipeline.
 
-*This catalog requires SRF confirmation. Additional titles may exist. Lahiri Mahasaya and Babaji have no SRF-published standalone volumes — their words appear only as quoted by Yogananda.*
-
-**Confirmed theological hierarchy (content tiers):**
-
-Three-tier hierarchy confirmed by stakeholder 2026-02-25. ADR-040 (Magazine) `author_type` pattern is the architectural precedent.
-
-| Tier | Label | Authors | Theological Basis | Portal Treatment |
-|---|---|---|---|---|
-| **1** | `sacred` | Paramahansa Yogananda, Swami Sri Yukteswar | Realized masters in the Kriya Yoga lineage with SRF-published standalone volumes | Full: verbatim only, no AI synthesis, no machine translation, searchable, themeable, daily passage pool, social media quotable |
-| **2** | `authorized` | Sri Daya Mata, Sri Mrinalini Mata, Rajarsi Janakananda | Direct disciples / SRF Presidents with published works | Full verbatim fidelity. No AI synthesis, no machine translation. Searchable (included by default). Themeable. **Not** in daily passage pool. **Not** in social media quote pool. |
-| **3** | `commentary` | Monastic speakers (Brother Anandamoy, etc.) | SRF-authorized teachers whose content appears in magazine or recorded media | Verbatim fidelity. No AI synthesis, no machine translation. Searchable (opt-in via `include_commentary` parameter, mirroring ADR-040 magazine pattern). Browsable. Not in daily passage pool. Not in social media quote pool. |
-
-**Confirmed feature behavior per tier:**
-
-| Feature | Tier 1 (sacred) | Tier 2 (authorized) | Tier 3 (commentary) |
-|---|---|---|---|
-| Search inclusion | Yes (default) | Yes (default) | Opt-in (`include_commentary`) |
-| Search ranking | Tier-weighted: ranks above tier 2 at equivalent relevance | Tier-weighted: ranks below tier 1 at equivalent relevance | Tier-weighted: ranks below tier 2 at equivalent relevance |
-| Daily passage pool (Today's Wisdom) | Yes | No | No |
-| Social media quote pool | Yes | No | No |
-| Machine translation prohibition | Yes — human translations only (ADR-078) | Yes — human translations only | Yes — human translations only |
-| AI synthesis prohibition | Yes — verbatim only (ADR-001) | Yes — verbatim only | Yes — verbatim only |
-| Citation display | Full author name: "Paramahansa Yogananda" | Full author name: "Sri Daya Mata", etc. | Full author name |
-| Theme tagging | Yes | Yes | Yes (when searchable) |
-
-**Citation display policy (confirmed 2026-02-25):** Full author name on ALL passages across ALL tiers, including Yogananda's. Never shortened — always "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata", "Sri Mrinalini Mata", "Rajarsi Janakananda". This applies to search results, passage display, daily wisdom, social media cards, and all other citation contexts. Revises ADR-111 scope.
-
-**Endowment scope (resolved 2026-02-25):** Confirmed — the philanthropist's intent covers all SRF-published authors, not only Yogananda. The multi-author expansion is within the endowment's terms.
-
-**Theological hierarchy (resolved 2026-02-25):** Three-tier structure confirmed. Guru lineage (tier 1), SRF presidents (tier 2), monastics (tier 3). Not flat, not guru-lineage-only.
-
-**Architecture readiness.** The schema is more ready than the governance language:
-- `books.author` column already exists (DESIGN-arc1.md) with `DEFAULT 'Paramahansa Yogananda'`
-- `books.content_tier` column added as forward-compatible preparation (PRO-014)
-- Contentful `Book` content type already has an `author` field
-- ADR-040 (Magazine) already implements the multi-tier pattern with `author_type` and differentiated search/theme/daily-pool participation
-- The enrichment pipeline (ADR-115) is author-agnostic
-- The entity registry (ADR-116) already tracks guru lineage persons
-
-**Document cascade (contingent on stakeholder decisions):**
-
-*Tier 1 — Identity-level (Principles, Mission):*
-- PRINCIPLES.md §1 (Direct Quotes Only): expand "Yogananda's verbatim words" to scope all sacred-text-tier authors
-- PRINCIPLES.md §2 (Sacred Text Fidelity): expand "Yogananda's teachings" to "SRF-published teachings"
-- CONTEXT.md § Mission: expand "Paramahansa Yogananda's published teachings" to include scope
-- CONTEXT.md § In Scope: clarify "SRF/YSS publications" with explicit author list
-- CLAUDE.md §1–2: mirror PRINCIPLES.md revisions
-
-*Tier 2 — Decision-level (ADRs):*
-- ADR-001: expand "Yogananda's verbatim words" references (~8 occurrences)
-- ADR-005: expand librarian model scope; add author-aware ranking signals
-- ADR-007: redefine "non-Yogananda prose" boundary — other sacred-text-tier authors are no longer "non-Yogananda" editorial content
-- ADR-030: add non-Yogananda books to ingestion priority list (estimated positions 13–16)
-- ADR-039: extend content integrity verification to all sacred-text-tier authors
-- ADR-048: add author-specific chunking notes (Sri Yukteswar's dense philosophical style differs from Yogananda's narrative voice)
-- ADR-051: extend terminology bridge with author-specific vocabulary (Sri Yukteswar uses different Sanskrit terms)
-- ADR-078: extend "never translate" constraint to all sacred-text-tier authors
-- ADR-089: expand "The Librarian" brand language beyond "finds Yogananda's words"
-- ADR-091: define daily pool eligibility per content tier
-- ADR-092: expand social media quote pool to sacred-text-tier authors
-- ADR-111: add author name to citation format for non-Yogananda passages
-
-*Tier 3 — Design/Schema:*
-- DESIGN-arc1.md `books` table: add `content_tier` column; remove `DEFAULT 'Paramahansa Yogananda'` from `author`
-- DESIGN-arc1.md Contentful content model: add `contentTier` field to Book type
-- DESIGN-arc1.md search API: add `author` and `content_tier` filter parameters
-- DESIGN-arc1.md terminology bridge: author-specific vocabulary mappings
-- DESIGN-arc1.md enrichment pipeline: `voice_register` fingerprint per author
-
-*Tier 4 — UX/Presentation:*
-- DESIGN-arc2-3.md search results: author attribution on each result
-- DESIGN-arc2-3.md library page: organize by author or indicate author on book cards
-- DESIGN-arc2-3.md about page: expand beyond Yogananda to cover lineage and SRF presidents
-- DESIGN-arc2-3.md Today's Wisdom: author attribution when not Yogananda
-
-**Affected proposals:**
-- PRO-003 (TTS): human-narration constraint extends to all sacred-text-tier authors
-- PRO-009 (Scientific themes): Sri Yukteswar's *Holy Science* is directly relevant
-- PRO-013 (Internal agents): agent librarian scope expands to multi-author corpus
-
-**Chunking implications.** Sri Yukteswar's prose in *The Holy Science* is radically different from Yogananda's narrative style — dense, aphoristic, philosophical, with Sanskrit-heavy sentences averaging half the length of Yogananda's paragraphs. The 100–500 token chunk range (ADR-048) may need author-specific calibration. Daya Mata's talks are conversational and closer to Yogananda's collected-talks style. Author-specific chunking parameters would be named constants per ADR-123.
-
-**Terminology bridge implications.** Sri Yukteswar's vocabulary differs from Yogananda's. Examples:
-
-| Concept | Yogananda's Term | Sri Yukteswar's Term |
-|---|---|---|
-| Cosmic cycles | "yugas" (narrative context) | "yugas" (astronomical calculation, specific durations) |
-| Divine creation | "cosmic vibration," "Aum" | "the Word," "Pranava" |
-| Liberation | "Self-realization," "God-union" | "kaivalya," "mukti" |
-| Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
-
-The terminology bridge (ADR-051) would need per-author vocabulary tables, not just per-book evolution. A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors are addressing the same concept in different registers.
-
-**Re-evaluate At:** Before Milestone 3a (multi-book ingestion) — this is when non-Yogananda books would enter the pipeline. Document cascade (Tiers 1–4) can proceed before then.
-**Decision Required From:** ~~SRF stakeholder (theological hierarchy)~~ Resolved 2026-02-25. ~~Philanthropist (endowment scope)~~ Resolved 2026-02-25. Remaining: architecture (schema and pipeline readiness for `/proposal-merge`).
-
-*Validated: 2026-02-25, stakeholder decisions confirmed. Three-tier hierarchy, endowment scope, citation display, per-tier feature behavior all resolved.*
+*Adopted: 2026-02-25. Validated: 2026-02-25. Full exploration detail preserved in `.elmer/proposals/archived/`.*
 
 ---
 
