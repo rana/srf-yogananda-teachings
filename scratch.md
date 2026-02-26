@@ -5,6 +5,12 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+/compose garden greenfield, gaps, coherence, crystallize
+
+/compose garden greenfield, gaps, coherence, docs-quality, crystallize
+
+
+---
 What questions would I benefit from asking to clean up the project?
 
 ---

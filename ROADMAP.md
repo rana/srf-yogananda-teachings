@@ -623,8 +623,11 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 | PRO-009 | Scientific-Spiritual Bridge Themes (cosmic life, abundance, vibration/AUM) | Theme |
 | PRO-010 | Word-Level Graph Navigation | Feature |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement |
+| PRO-013 | Internal Autonomous Agent Archetypes | Feature |
+| PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement |
 
 *PRO-012 (Copyright and Legal Framework) has been validated and scheduled as Milestone 1b.16. See deliverable table above.*
+*PRO-014 (Multi-Author Sacred Text Expansion) has been adopted. Document cascade merged 2026-02-25.*
 
 ---
 
@@ -680,7 +683,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | Milestone 1a (Prove) | ~$20-30 | Neon Scale tier (~$20/mo baseline), local dev only, one-time embedding cost (~$0.30). |
 | Milestones 1b–2b (Deploy through Refine) | ~$80-100 | Neon Scale (~$20), Vercel Pro (~$20), Sentry Team (~$26), Claude API (~$15-25). S3 backup < $1/mo. |
 | Arc 3 (Wisdom) | ~$10-20 | More embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
-| Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SES ~$0.10/1000), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. Multi-environment promotion (staging + prod), regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
+| Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SendGrid ~$20/mo Essentials tier; pending PRO-015 SES evaluation), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. Multi-environment promotion (staging + prod), regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
 | Milestone 5b+ (Languages) | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
 | Arc 6 (Media) | +$30-80 | Audio hosting on S3 + CloudFront streaming. Whisper transcription one-time cost (~$0.006/min). Audio file storage scales with archive size. |
 | Milestone 7b (Together) | +$600-1,250 | SMS gateway costs vary by region (India: ~$0.002/msg, US: ~$0.04/msg). Telegram bot: free. USSD/IVR: requires telco negotiation. Community collections gallery and VLD dashboard: negligible incremental cost (existing infrastructure). |
