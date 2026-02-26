@@ -23,6 +23,7 @@
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed | ADR-082, ADR-005, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003 | Dedup 2026-02-25 (2 explorations) |
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, DES-031, DES-048 | Exploration 2026-02-25 |
+| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Validated | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-078, ADR-089 | Exploration 2026-02-25 |
 
 ---
 
@@ -220,6 +221,124 @@ The Watchdog is a cross-cutting monitor: when it fires `agent.integrity_alert`, 
 
 **Re-evaluate At:** Arc 3 boundary (when Tier 2 MCP scheduling is re-evaluated per PRO-001)
 **Decision Required From:** Architecture + SRF stakeholder input on organizational needs
+
+### PRO-014: Multi-Author Sacred Text Expansion
+
+**Status:** Validated — Stakeholder Decisions Confirmed
+**Type:** Policy
+**Governing Refs:** ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111
+**Dependencies:** None architectural — the schema already carries `books.author`. Document cascade (Tiers 1–4 below) is unblocked by confirmed stakeholder decisions.
+**Scheduling Notes:** Scope expansion from "Yogananda's published books" to "all SRF/YSS-published books" with multi-author sacred text treatment. Both blocking stakeholder decisions resolved 2026-02-25: (1) theological hierarchy confirmed as three-tier (guru lineage / SRF presidents / monastics), (2) philanthropic endowment scope confirmed as covering all SRF-published authors. Document cascade ready to execute via `/proposal-merge PRO-014`.
+
+**The question.** The current architecture treats the corpus as single-author: Principle 1 says "Yogananda's verbatim words," ADR-001 says "the AI finds and ranks Yogananda's verbatim words," and the mission statement targets "Paramahansa Yogananda's published teachings." SRF publishes books by multiple authors in the guru lineage and organizational succession. Should all SRF-published books receive the sacred text treatment — verbatim fidelity, no AI synthesis, no machine translation, full search/theme/daily-pool participation?
+
+**Known SRF/YSS-published book catalog (non-Yogananda authors):**
+
+| Author | Relationship | Published Books (SRF/YSS) |
+|---|---|---|
+| **Swami Sri Yukteswar** | Yogananda's guru | *The Holy Science* |
+| **Sri Daya Mata** | Direct disciple, 3rd SRF President (1955–2010) | *Only Love*, *Finding the Joy Within You*, *Enter the Quiet Heart* |
+| **Sri Mrinalini Mata** | Direct disciple, 4th SRF President (2011–2017) | *The Guru and the Disciple* (editor of Yogananda's posthumous works) |
+| **Rajarsi Janakananda** | Direct disciple, 2nd SRF President (1952–1955) | *Rajarsi Janakananda: A Great Western Yogi* (biographical, SRF-published) |
+| **Brother Anandamoy** | Monastic, convocation speaker | Talks published in Self-Realization Magazine and recorded media |
+
+*This catalog requires SRF confirmation. Additional titles may exist. Lahiri Mahasaya and Babaji have no SRF-published standalone volumes — their words appear only as quoted by Yogananda.*
+
+**Confirmed theological hierarchy (content tiers):**
+
+Three-tier hierarchy confirmed by stakeholder 2026-02-25. ADR-040 (Magazine) `author_type` pattern is the architectural precedent.
+
+| Tier | Label | Authors | Theological Basis | Portal Treatment |
+|---|---|---|---|---|
+| **1** | `sacred` | Paramahansa Yogananda, Swami Sri Yukteswar | Realized masters in the Kriya Yoga lineage with SRF-published standalone volumes | Full: verbatim only, no AI synthesis, no machine translation, searchable, themeable, daily passage pool, social media quotable |
+| **2** | `authorized` | Sri Daya Mata, Sri Mrinalini Mata, Rajarsi Janakananda | Direct disciples / SRF Presidents with published works | Full verbatim fidelity. No AI synthesis, no machine translation. Searchable (included by default). Themeable. **Not** in daily passage pool. **Not** in social media quote pool. |
+| **3** | `commentary` | Monastic speakers (Brother Anandamoy, etc.) | SRF-authorized teachers whose content appears in magazine or recorded media | Verbatim fidelity. No AI synthesis, no machine translation. Searchable (opt-in via `include_commentary` parameter, mirroring ADR-040 magazine pattern). Browsable. Not in daily passage pool. Not in social media quote pool. |
+
+**Confirmed feature behavior per tier:**
+
+| Feature | Tier 1 (sacred) | Tier 2 (authorized) | Tier 3 (commentary) |
+|---|---|---|---|
+| Search inclusion | Yes (default) | Yes (default) | Opt-in (`include_commentary`) |
+| Search ranking | Tier-weighted: ranks above tier 2 at equivalent relevance | Tier-weighted: ranks below tier 1 at equivalent relevance | Tier-weighted: ranks below tier 2 at equivalent relevance |
+| Daily passage pool (Today's Wisdom) | Yes | No | No |
+| Social media quote pool | Yes | No | No |
+| Machine translation prohibition | Yes — human translations only (ADR-078) | Yes — human translations only | Yes — human translations only |
+| AI synthesis prohibition | Yes — verbatim only (ADR-001) | Yes — verbatim only | Yes — verbatim only |
+| Citation display | Full author name: "Paramahansa Yogananda" | Full author name: "Sri Daya Mata", etc. | Full author name |
+| Theme tagging | Yes | Yes | Yes (when searchable) |
+
+**Citation display policy (confirmed 2026-02-25):** Full author name on ALL passages across ALL tiers, including Yogananda's. Never shortened — always "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata", "Sri Mrinalini Mata", "Rajarsi Janakananda". This applies to search results, passage display, daily wisdom, social media cards, and all other citation contexts. Revises ADR-111 scope.
+
+**Endowment scope (resolved 2026-02-25):** Confirmed — the philanthropist's intent covers all SRF-published authors, not only Yogananda. The multi-author expansion is within the endowment's terms.
+
+**Theological hierarchy (resolved 2026-02-25):** Three-tier structure confirmed. Guru lineage (tier 1), SRF presidents (tier 2), monastics (tier 3). Not flat, not guru-lineage-only.
+
+**Architecture readiness.** The schema is more ready than the governance language:
+- `books.author` column already exists (DESIGN-arc1.md) with `DEFAULT 'Paramahansa Yogananda'`
+- `books.content_tier` column added as forward-compatible preparation (PRO-014)
+- Contentful `Book` content type already has an `author` field
+- ADR-040 (Magazine) already implements the multi-tier pattern with `author_type` and differentiated search/theme/daily-pool participation
+- The enrichment pipeline (ADR-115) is author-agnostic
+- The entity registry (ADR-116) already tracks guru lineage persons
+
+**Document cascade (contingent on stakeholder decisions):**
+
+*Tier 1 — Identity-level (Principles, Mission):*
+- PRINCIPLES.md §1 (Direct Quotes Only): expand "Yogananda's verbatim words" to scope all sacred-text-tier authors
+- PRINCIPLES.md §2 (Sacred Text Fidelity): expand "Yogananda's teachings" to "SRF-published teachings"
+- CONTEXT.md § Mission: expand "Paramahansa Yogananda's published teachings" to include scope
+- CONTEXT.md § In Scope: clarify "SRF/YSS publications" with explicit author list
+- CLAUDE.md §1–2: mirror PRINCIPLES.md revisions
+
+*Tier 2 — Decision-level (ADRs):*
+- ADR-001: expand "Yogananda's verbatim words" references (~8 occurrences)
+- ADR-005: expand librarian model scope; add author-aware ranking signals
+- ADR-007: redefine "non-Yogananda prose" boundary — other sacred-text-tier authors are no longer "non-Yogananda" editorial content
+- ADR-030: add non-Yogananda books to ingestion priority list (estimated positions 13–16)
+- ADR-039: extend content integrity verification to all sacred-text-tier authors
+- ADR-048: add author-specific chunking notes (Sri Yukteswar's dense philosophical style differs from Yogananda's narrative voice)
+- ADR-051: extend terminology bridge with author-specific vocabulary (Sri Yukteswar uses different Sanskrit terms)
+- ADR-078: extend "never translate" constraint to all sacred-text-tier authors
+- ADR-089: expand "The Librarian" brand language beyond "finds Yogananda's words"
+- ADR-091: define daily pool eligibility per content tier
+- ADR-092: expand social media quote pool to sacred-text-tier authors
+- ADR-111: add author name to citation format for non-Yogananda passages
+
+*Tier 3 — Design/Schema:*
+- DESIGN-arc1.md `books` table: add `content_tier` column; remove `DEFAULT 'Paramahansa Yogananda'` from `author`
+- DESIGN-arc1.md Contentful content model: add `contentTier` field to Book type
+- DESIGN-arc1.md search API: add `author` and `content_tier` filter parameters
+- DESIGN-arc1.md terminology bridge: author-specific vocabulary mappings
+- DESIGN-arc1.md enrichment pipeline: `voice_register` fingerprint per author
+
+*Tier 4 — UX/Presentation:*
+- DESIGN-arc2-3.md search results: author attribution on each result
+- DESIGN-arc2-3.md library page: organize by author or indicate author on book cards
+- DESIGN-arc2-3.md about page: expand beyond Yogananda to cover lineage and SRF presidents
+- DESIGN-arc2-3.md Today's Wisdom: author attribution when not Yogananda
+
+**Affected proposals:**
+- PRO-003 (TTS): human-narration constraint extends to all sacred-text-tier authors
+- PRO-009 (Scientific themes): Sri Yukteswar's *Holy Science* is directly relevant
+- PRO-013 (Internal agents): agent librarian scope expands to multi-author corpus
+
+**Chunking implications.** Sri Yukteswar's prose in *The Holy Science* is radically different from Yogananda's narrative style — dense, aphoristic, philosophical, with Sanskrit-heavy sentences averaging half the length of Yogananda's paragraphs. The 100–500 token chunk range (ADR-048) may need author-specific calibration. Daya Mata's talks are conversational and closer to Yogananda's collected-talks style. Author-specific chunking parameters would be named constants per ADR-123.
+
+**Terminology bridge implications.** Sri Yukteswar's vocabulary differs from Yogananda's. Examples:
+
+| Concept | Yogananda's Term | Sri Yukteswar's Term |
+|---|---|---|
+| Cosmic cycles | "yugas" (narrative context) | "yugas" (astronomical calculation, specific durations) |
+| Divine creation | "cosmic vibration," "Aum" | "the Word," "Pranava" |
+| Liberation | "Self-realization," "God-union" | "kaivalya," "mukti" |
+| Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
+
+The terminology bridge (ADR-051) would need per-author vocabulary tables, not just per-book evolution. A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors are addressing the same concept in different registers.
+
+**Re-evaluate At:** Before Milestone 3a (multi-book ingestion) — this is when non-Yogananda books would enter the pipeline. Document cascade (Tiers 1–4) can proceed before then.
+**Decision Required From:** ~~SRF stakeholder (theological hierarchy)~~ Resolved 2026-02-25. ~~Philanthropist (endowment scope)~~ Resolved 2026-02-25. Remaining: architecture (schema and pipeline readiness for `/proposal-merge`).
+
+*Validated: 2026-02-25, stakeholder decisions confirmed. Three-tier hierarchy, endowment scope, citation display, per-tier feature behavior all resolved.*
 
 ---
 

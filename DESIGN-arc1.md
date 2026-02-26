@@ -736,6 +736,14 @@ CREATE TABLE books (
  -- chant/poetry = whole-unit pages with chant-to-chant nav.
  -- Chant format enables inline media panel for
  -- performance_of relations (deterministic audio/video links).
+ content_tier TEXT NOT NULL DEFAULT 'sacred' -- PRO-014: Multi-author sacred text expansion.
+ CHECK (content_tier IN ('sacred', 'authorized', 'commentary')),
+ -- 'sacred': Realized masters (Yogananda, Sri Yukteswar). Full search/theme/daily pool/social media.
+ -- 'authorized': Direct disciples / SRF Presidents (Daya Mata, Mrinalini Mata, Rajarsi).
+ --   Searchable by default, themeable. Not in daily pool or social media pool.
+ -- 'commentary': Monastic speakers. Searchable opt-in (include_commentary param). Not in daily/social pool.
+ -- Mirrors ADR-040 magazine author_type pattern. All tiers: verbatim fidelity + no machine translation.
+ -- Tier assignments confirmed by stakeholder 2026-02-25 — see PRO-014.
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  updated_at TIMESTAMPTZ NOT NULL DEFAULT now
 );
@@ -1331,6 +1339,7 @@ Content Type: Book
 ├── title (Short Text, required, localized)
 ├── subtitle (Short Text, localized)
 ├── author (Short Text, default: "Paramahansa Yogananda")
+├── contentTier (Short Text, default: "sacred", validation: sacred|authorized|commentary) — PRO-014
 ├── publicationYear (Integer)
 ├── isbn (Short Text)
 ├── coverImage (Media, localized)
