@@ -1,0 +1,31 @@
+{
+  "name": "book-ingest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "npx tsx src/capture.ts",
+    "extract": "npx tsx src/extract.ts",
+    "assemble": "npx tsx src/assemble.ts",
+    "validate": "npx tsx src/validate.ts",
+    "qa-report": "npx tsx src/qa-report.ts",
+    "ingest": "npx tsx src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.26.4",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "playwright": "^1.50.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

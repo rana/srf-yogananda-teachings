@@ -1,0 +1,421 @@
+#!/usr/bin/env npx tsx
+/**
+ * Book Page Extraction Script
+ *
+ * Sends captured page images to Claude Vision for structured text extraction.
+ * Produces per-page JSON files with text, formatting, and metadata.
+ *
+ * Usage:
+ *   npx tsx src/extract.ts --book autobiography-of-a-yogi [--resume-from 100] [--concurrency 5]
+ */
+
+import Anthropic from '@anthropic-ai/sdk';
+import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
+import fs from 'fs/promises';
+import path from 'path';
+import { getBookPaths, getPipelineConfig } from './config.js';
+import { PageExtraction, CaptureMeta } from './types.js';
+import {
+  ensureDir, readJson, writeJson, padPage, log, sleep, fileExists
+} from './utils.js';
+
+/** Create an Anthropic client — prefers Bedrock if AWS credentials are available */
+function createClient(): Anthropic | AnthropicBedrock {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === 'true' || process.env.AWS_BEARER_TOKEN_BEDROCK) {
+    log.info('Using AWS Bedrock for Claude API access');
+    return new AnthropicBedrock({
+      awsRegion: process.env.AWS_REGION || 'us-west-2',
+    });
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    log.info('Using direct Anthropic API');
+    return new Anthropic();
+  }
+  // Try Bedrock as fallback (will use default AWS credential chain)
+  log.info('No ANTHROPIC_API_KEY found, falling back to AWS Bedrock');
+  return new AnthropicBedrock({
+    awsRegion: process.env.AWS_REGION || 'us-west-2',
+  });
+}
+
+/** Convert a model name to Bedrock model ID if using Bedrock */
+function resolveModelId(model: string, client: Anthropic | AnthropicBedrock): string {
+  if (client instanceof AnthropicBedrock) {
+    // Map short model names to Bedrock model IDs
+    const bedrockModels: Record<string, string> = {
+      'claude-sonnet-4-20250514': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+      'claude-haiku-4-5-20251001': 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+      'claude-opus-4-5-20250101': 'us.anthropic.claude-opus-4-5-20250101-v1:0',
+    };
+    const resolved = bedrockModels[model] || model;
+    if (resolved !== model) {
+      log.info(`Resolved model ${model} → ${resolved}`);
+    }
+    return resolved;
+  }
+  return model;
+}
+
+/** The system prompt for OCR extraction */
+const SYSTEM_PROMPT = `You are extracting text from a high-resolution page image of a published book (Autobiography of a Yogi by Paramahansa Yogananda, published by Self-Realization Fellowship).
+
+Your job is to produce a perfectly faithful transcription with structural markup as a JSON object.
+
+CRITICAL RULES:
+1. Transcribe EXACTLY what you see. Do not correct, improve, or modernize any text.
+2. Preserve ALL formatting: italics, bold, small caps.
+3. Preserve ALL diacritical marks exactly (ā, ī, ū, ṛ, ṣ, ṇ, ṭ, ḍ, ś, ñ, etc.).
+4. Preserve line breaks in poetry/verse. Prose paragraphs are single text blocks.
+5. Identify the page type accurately.
+6. Detect chapter boundaries (chapter label + title = isChapterStart: true).
+7. Distinguish body text from running headers, page numbers, footnotes, and captions.
+8. For photographs: describe the image, capture any caption text.
+9. If text is cut off at page top, set continuedFromPreviousPage: true on the first content block.
+10. If text is cut off at page bottom, set continuesOnNextPage: true on the last content block.
+11. Rate your confidence 1-5 for this page (5 = perfect, 1 = major uncertainty).
+12. Footnote superscripts in the text should be captured as-is in the text (e.g., "guru¹").
+
+FORMATTING:
+Mark formatting spans with character offsets in the text string:
+- "italic" for italic text
+- "bold" for bold text
+- "bold-italic" for both
+- "small-caps" for small capitals (common in "CHAPTER N" labels)
+- "superscript" for footnote markers
+
+PAGE TYPES:
+- "title-page": Book title, author, publisher, possibly with decorative elements or logos
+- "copyright": Copyright notice, edition info, ISBN
+- "dedication": Dedication text
+- "toc": Table of contents listing
+- "illustrations-list": List of illustrations/photographs
+- "foreword" / "preface" / "introduction": Front matter sections
+- "chapter-start": New chapter begins (has chapter number and/or title)
+- "body": Regular text pages within a chapter
+- "photograph": Page dominated by a photograph with optional caption
+- "illustration": Drawings, diagrams, decorative full-page art
+- "glossary": Glossary entries
+- "index": Index entries
+- "blank": Empty or nearly empty page (just decorative elements)
+- "back-matter": Back matter content (resources, about author, etc.)
+- "other": Anything that doesn't fit above
+
+CONTENT BLOCK TYPES:
+- "heading": Chapter title (large text)
+- "chapter-label": "CHAPTER 1" or similar label above the heading
+- "subheading": Section heading within a chapter
+- "paragraph": Regular prose paragraph
+- "epigraph": Opening quote/verse at chapter start (often italic, indented)
+- "verse": Poetry or verse (preserve line breaks with \\n)
+- "footnote": Footnote text at bottom of page
+- "footnote-ref": Just the footnote number/marker
+- "caption": Photo or illustration caption
+- "running-header": Header text at top of page (chapter title, author name)
+- "page-number": Printed page number on the page
+- "decorative": Ornamental dividers, SRF logos, decorative elements
+- "publisher-info": Publisher name, address, website
+
+OUTPUT: Return a single JSON object matching this schema. Do NOT wrap in markdown code fences. Pure JSON only.
+
+{
+  "pageNumber": <number>,
+  "pageType": "<PageType>",
+  "chapterNumber": <number|null>,
+  "chapterTitle": "<string|null>",
+  "content": [
+    {
+      "type": "<ContentBlockType>",
+      "text": "<exact transcription>",
+      "formatting": [
+        { "start": <number>, "end": <number>, "style": "<style>" }
+      ],
+      "continuedFromPreviousPage": <boolean>,
+      "continuesOnNextPage": <boolean>
+    }
+  ],
+  "images": [
+    {
+      "description": "<what the image shows>",
+      "caption": "<caption text if any>",
+      "position": "<top-center|full-page|etc>",
+      "isPhotograph": <boolean>,
+      "isIllustration": <boolean>,
+      "isDecorative": <boolean>,
+      "isLogo": <boolean>
+    }
+  ],
+  "metadata": {
+    "hasFootnotes": <boolean>,
+    "hasSanskrit": <boolean>,
+    "sanskritTerms": ["<term1>", "<term2>"],
+    "hasPoetry": <boolean>,
+    "hasItalics": <boolean>,
+    "isChapterStart": <boolean>,
+    "isChapterEnd": <boolean>,
+    "runningHeader": "<string|null>",
+    "continuedFromPrevious": <boolean>,
+    "continuesOnNext": <boolean>
+  },
+  "validation": {
+    "confidence": <1-5>,
+    "pageNumberAgreement": <boolean>,
+    "flags": ["<flag1>", "<flag2>"],
+    "needsHumanReview": <boolean>
+  }
+}`;
+
+/** Parse CLI arguments */
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let bookSlug = 'autobiography-of-a-yogi';
+  let resumeFrom: number | undefined;
+  let concurrency = 5;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--book' && args[i + 1]) {
+      bookSlug = args[i + 1];
+      i++;
+    } else if (args[i] === '--resume-from' && args[i + 1]) {
+      resumeFrom = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--concurrency' && args[i + 1]) {
+      concurrency = parseInt(args[i + 1], 10);
+      i++;
+    }
+  }
+
+  return { bookSlug, resumeFrom, concurrency };
+}
+
+/** Extract text from a single page image */
+async function extractPage(
+  client: Anthropic | AnthropicBedrock,
+  imagePath: string,
+  pageNumber: number,
+  model: string
+): Promise<PageExtraction> {
+  const imageData = await fs.readFile(imagePath);
+  const base64 = imageData.toString('base64');
+  const mediaType = 'image/png';
+
+  const userPrompt = `Extract all text and metadata from this book page image.
+Physical page number (from reader footer): ${pageNumber}
+
+Respond with a JSON object matching the PageExtraction schema described in the system prompt.`;
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 4096,
+    system: SYSTEM_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mediaType,
+              data: base64
+            }
+          },
+          {
+            type: 'text',
+            text: userPrompt
+          }
+        ]
+      }
+    ]
+  });
+
+  // Parse the response
+  const textContent = response.content.find(c => c.type === 'text');
+  if (!textContent || textContent.type !== 'text') {
+    throw new Error(`No text response for page ${pageNumber}`);
+  }
+
+  let jsonText = textContent.text.trim();
+
+  // Strip markdown code fences if present
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  }
+
+  // Try parsing, with fallback JSON repair for common LLM issues
+  let extraction: PageExtraction;
+  try {
+    extraction = JSON.parse(jsonText) as PageExtraction;
+  } catch (firstErr) {
+    // Attempt repair: fix unescaped quotes inside JSON string values
+    try {
+      const repaired = repairJsonText(jsonText);
+      extraction = JSON.parse(repaired) as PageExtraction;
+      log.warn(`Page ${pageNumber}: JSON required repair (unescaped quotes)`);
+    } catch {
+      throw new Error(`Failed to parse JSON for page ${pageNumber}: ${firstErr}\nResponse: ${jsonText.substring(0, 500)}`);
+    }
+  }
+
+  // Ensure page number matches
+  extraction.pageNumber = pageNumber;
+  return extraction;
+}
+
+/** Repair common JSON issues from LLM output (unescaped quotes in string values) */
+function repairJsonText(text: string): string {
+  // Replace curly/smart quotes with escaped regular quotes where they appear inside strings
+  // This handles the common case where Claude outputs "text": "...sovereign "dear"..."
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escaped) {
+      result += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      result += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      if (!inString) {
+        inString = true;
+        result += ch;
+      } else {
+        // Check if this quote ends the string or is an unescaped interior quote
+        // Look ahead: if next non-whitespace is : , } ] or end, this is a real close
+        const rest = text.slice(i + 1).trimStart();
+        if (rest.length === 0 || /^[,:}\]\n\r]/.test(rest)) {
+          inString = false;
+          result += ch;
+        } else {
+          // Interior unescaped quote — escape it
+          result += '\\"';
+        }
+      }
+    } else {
+      // Replace smart/curly quotes inside strings with escaped regular quotes
+      if (inString && (ch === '\u201C' || ch === '\u201D')) {
+        result += '\\"';
+      } else {
+        result += ch;
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Process pages with concurrency control */
+async function processWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  processor: (item: T) => Promise<void>
+): Promise<void> {
+  const queue = [...items];
+  const active: Promise<void>[] = [];
+
+  while (queue.length > 0 || active.length > 0) {
+    while (active.length < concurrency && queue.length > 0) {
+      const item = queue.shift()!;
+      const promise = processor(item).then(() => {
+        active.splice(active.indexOf(promise), 1);
+      });
+      active.push(promise);
+    }
+
+    if (active.length > 0) {
+      await Promise.race(active);
+    }
+  }
+}
+
+/** Main extraction loop */
+async function runExtraction(bookSlug: string, resumeFrom?: number, concurrency = 5): Promise<void> {
+  const config = getPipelineConfig(bookSlug);
+  const paths = getBookPaths(bookSlug);
+
+  // Ensure directories exist
+  await ensureDir(paths.extracted);
+
+  // Read capture metadata
+  const captureMeta = await readJson<CaptureMeta>(paths.captureMeta);
+  const totalPages = captureMeta.book.totalPages;
+
+  log.info(`Starting extraction for "${captureMeta.book.title}" (${totalPages} pages)`);
+  log.info(`Model: ${config.extraction.model}, Concurrency: ${concurrency}`);
+
+  // Initialize Anthropic client (Bedrock or direct API)
+  const client = createClient();
+  const modelId = resolveModelId(config.extraction.model, client);
+
+  // Find pages to extract
+  const pagesToExtract: number[] = [];
+  for (let p = resumeFrom ?? 1; p <= totalPages; p++) {
+    const imagePath = path.join(paths.pages, `page-${padPage(p)}.png`);
+    const extractedPath = path.join(paths.extracted, `page-${padPage(p)}.json`);
+
+    // Skip if already extracted
+    if (await fileExists(extractedPath)) {
+      continue;
+    }
+
+    // Skip if no image
+    if (!await fileExists(imagePath)) {
+      log.warn(`No image for page ${p}, skipping`);
+      continue;
+    }
+
+    pagesToExtract.push(p);
+  }
+
+  log.info(`${pagesToExtract.length} pages to extract (${totalPages - pagesToExtract.length} already done)`);
+
+  let extracted = 0;
+  let errors = 0;
+
+  await processWithConcurrency(pagesToExtract, concurrency, async (pageNum) => {
+    const imagePath = path.join(paths.pages, `page-${padPage(pageNum)}.png`);
+    const extractedPath = path.join(paths.extracted, `page-${padPage(pageNum)}.json`);
+
+    try {
+      const extraction = await extractPage(client, imagePath, pageNum, modelId);
+      await writeJson(extractedPath, extraction);
+      extracted++;
+      log.progress(extracted, pagesToExtract.length,
+        `Extracted page ${pageNum} (${extraction.pageType}, confidence: ${extraction.validation.confidence})`);
+    } catch (err) {
+      errors++;
+      log.error(`Failed to extract page ${pageNum}: ${err}`);
+
+      // Save error marker
+      await writeJson(extractedPath + '.error', {
+        pageNumber: pageNum,
+        error: String(err),
+        timestamp: new Date().toISOString()
+      });
+
+      // Rate limiting: if we get errors, slow down
+      if (String(err).includes('rate') || String(err).includes('429')) {
+        log.warn('Rate limited, waiting 30 seconds...');
+        await sleep(30000);
+      }
+    }
+  });
+
+  log.info(`Extraction complete! ${extracted} pages extracted, ${errors} errors.`);
+}
+
+// Run if called directly
+const { bookSlug, resumeFrom, concurrency } = parseArgs();
+runExtraction(bookSlug, resumeFrom, concurrency).catch(err => {
+  log.error('Extraction failed:', err);
+  process.exit(1);
+});
