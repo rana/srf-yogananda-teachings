@@ -8,6 +8,9 @@ When an arc enters active planning, move its questions back to CONTEXT.md § Ope
 
 ## Milestone 3b+ (Editorial)
 
+### Technical
+- [ ] Audience suitability as enrichment dimension: should the enrichment pipeline (ADR-115) compute per-passage suitability markers (e.g., youth-appropriate, grief-context, general) to enable contextual filtering in thematic exploration (DES-048) and guide pathways? Informed by seeker feedback patterns (ADR-084) over time. Not a Milestone 3b requirement — evaluate after thematic exploration is operational and contextual feedback provides signal. (ADR-115, DES-048, ADR-084, ADR-100)
+
 ### Stakeholder
 - [ ] Extreme-context access and institutional intermediaries: lighter-weight surfaces for hospitals, prisons, hospices, refugee camps? Institutional intermediary persona (chaplain, volunteer, hospice worker) accessing on behalf of seekers who cannot browse freely. If SRF affirms institutional access as in-scope, needs design attention by Milestone 3b. (ADR-006, ADR-071, DES-011, ADR-067)
 

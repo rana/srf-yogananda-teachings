@@ -22,6 +22,7 @@
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116 | Dedup 2026-02-25 |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed | ADR-082, ADR-005, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003 | Dedup 2026-02-25 (2 explorations) |
+| PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, DES-031, DES-048 | Exploration 2026-02-25 |
 
 ---
 
@@ -153,6 +154,44 @@
 **Source Explorations:** `clarify-copyright-stance-srf-makes-it-feel-available-to-all.md`, `what-are-the-legal-liabilities-if-any.md`
 
 *Validated: 2026-02-25, architectural review and principle-check passed. Full crawlability confirmed as mission-aligned.*
+
+### PRO-013: Internal Autonomous Agent Archetypes
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048
+**Dependencies:** Tier 2 MCP server (PRO-001) operational. `/lib/services/` layer complete for target content types. Editorial review infrastructure (Milestone 3b) for agent-proposed content.
+**Scheduling Notes:** The MCP Corpus server (PRO-001, ADR-101, DES-031) is designed as portal infrastructure, but SRF's internal stakeholders extend beyond the portal team. The same corpus access layer can serve autonomous AI agents working on behalf of monastics, correspondence staff, magazine editors, center leaders, and operational systems. Nine agent archetypes identified alongside the public-facing thematic exploration (now DES-048 § Thematic Corpus Exploration):
+
+**Agent archetypes by trust profile:**
+
+| # | Agent | Stakeholder | Trust Profile | Key MCP Tools |
+|---|---|---|---|---|
+| 1 | **Devotee Correspondence** | Monastics, correspondence staff | Research (read-only, user-directed) | `search_corpus`, `get_glossary_terms_in_passage`, `verify_citation`, crisis detection |
+| 2 | **Magazine Editorial** | Self-Realization Magazine staff | Research + editorial | `search_corpus`, `verify_citation`, `get_content_coverage`, `get_similar_passages`, publication history |
+| 3 | **Content Integrity Watchdog** | Operates autonomously, alerts editors | Operational (alert-driven, defensive) | `verify_citation` (bulk), `get_chunk_with_context`, content hash verification |
+| 4 | **Translation QA** | Translation reviewers | Operational (supports reviewer) | `get_passage_translations`, `get_glossary_terms_in_passage`, `verify_citation` |
+| 5 | **Center Leader Support** | SRF center/group leaders worldwide | Research (read-only, restricted tool set) | `search_corpus`, `search_by_theme`, `get_daily_passage`, calendar-aware surfacing |
+| 6 | **Seeker Trend Intelligence** | SRF leadership, communications | Intelligence (aggregated, DELTA-compliant) | `get_search_trends`, `get_content_coverage`, `search_corpus` |
+| 7 | **Social Media Calendar** | Social media staff | Editorial (ADR-100 trust graduation) | `search_corpus`, `search_by_theme`, `get_daily_passage`, `get_content_coverage` |
+| 8 | **Knowledge Graph Curator** | Operates autonomously, reviewed by theological reviewers | Intelligence (proposes graph edges) | `get_graph_neighborhood`, `find_concept_path`, `get_similar_passages` |
+| 9 | **Corpus Onboarding** | New SRF staff, new monastics, VLD volunteers | Research (read-only, guided) | `search_corpus`, `search_by_theme`, `get_person_context`, `find_concept_path` |
+
+**Governing principle:** Every agent is a librarian — finds, verifies, contextualizes, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Research agents require no review queue — the user exercises full judgment.
+
+**Architectural implication:** Tier 2 MCP (DES-031) needs role-scoped access rather than monolithic internal access. Four trust profiles: Research (full corpus read, no write), Editorial (corpus + analytics, proposes to review queues), Operational (corpus + integrity, alert/quarantine capability), Intelligence (corpus + aggregated analytics, proposes structural changes). Not a new tier — internal role differentiation within Tier 2.
+
+**New capabilities implied:**
+- `detect_crisis_indicators(text)` as reusable internal MCP tool (currently search-path only, ADR-122)
+- `publication_history` resource tracking which passages have been used in which channels (prevents repetition across email, social, magazine)
+- Defensive quarantine capability for Content Integrity Watchdog (hide suspect passage from search pending human review) — architectural question: should automated systems have write access for safety?
+
+**Relationship to PRO-011:** PRO-011 (Proactive Editorial AI Agent) describes one pattern — push-based editorial proposals. PRO-013 subsumes PRO-011 as the "Editorial" trust profile and adds Research, Operational, and Intelligence profiles.
+
+**Agent persona:** Compassion and humility combined with effectiveness. The portal's contemplative register (ADR-074) extends to internal agent interactions — warm, honest, not mechanical. Not gamified enthusiasm. "Here are today's suggestions for your review." The Librarian brand (ADR-089) applies to all AI in SRF's ecosystem.
+
+**Re-evaluate At:** Arc 3 boundary (when Tier 2 MCP scheduling is re-evaluated per PRO-001)
+**Decision Required From:** Architecture + SRF stakeholder input on organizational needs
 
 ---
 

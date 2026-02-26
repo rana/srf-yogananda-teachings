@@ -3566,6 +3566,155 @@ This pathway is distinct from the others because it bridges *from the portal to 
 
 **Milestone:** 3b (with the rest of `/guide`). Requires the Kriya Yoga theme page (Milestone 3c+) for the theme link; until then, the link points to Autobiography Ch. 26 only.
 
+#### Thematic Corpus Exploration — "Explore a Theme in Depth"
+
+The curated pathways above answer "where should I go?" for common starting points. Thematic Corpus Exploration answers a different question: **"show me everything this library holds on a topic I choose."** This is the interactive, query-driven dimension of `/guide` — the reference librarian who spreads every relevant book across the reading table, organized by the library's own catalog.
+
+**Seeker experience:** A seeker enters a question ("What does Yogananda teach about forgiveness?") or selects from editorially suggested starting points. The system returns an organized landscape — not a ranked list of passages, but a structured view of the library's holdings on that topic:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│   THE LIBRARY'S HOLDINGS ON: FORGIVENESS                     │
+│                                                              │
+│   Here is what the library holds on this theme.              │
+│   These groupings reflect the library's indexing.            │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   FORGIVENESS AS DIVINE QUALITY                              │
+│                                                              │
+│   💬 "If you forgive those that wrong you, the              │
+│      electricity of forgiveness... will burn out their       │
+│      wrong."                                                 │
+│      — Where There Is Light, p. 83                           │
+│      [Read in context →]                                     │
+│                                                              │
+│   + 4 more passages in this grouping                         │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   FORGIVING OTHERS                                           │
+│                                                              │
+│   💬 "There is no sense in your suffering because            │
+│      somebody else has done wrong."                          │
+│      — Man's Eternal Quest, Ch. 14, p. 187                   │
+│      [Read in context →]                                     │
+│                                                              │
+│   + 3 more passages in this grouping                         │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   ACROSS THE LIBRARY                                         │
+│                                                              │
+│   Found in 4 books: Man's Eternal Quest (7 passages),        │
+│   Where There Is Light (5), Journey to Self-Realization (3), │
+│   Autobiography of a Yogi (2)                                │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   TERMS YOU MAY ENCOUNTER                                    │
+│                                                              │
+│   karma — The law of cause and effect → glossary             │
+│   maya — Cosmic delusion → glossary                          │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   RELATED THEMES                                             │
+│                                                              │
+│   Compassion · Unconditional Love · Letting Go               │
+│                                                              │
+│   ───────────────────────────────────────────────────────    │
+│                                                              │
+│   Was this helpful? [Yes] [I expected something different]   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**How it works (pre-computed organization — no real-time AI interpretation):**
+
+1. Seeker enters a question or selects a theme
+2. Hybrid search (existing infrastructure, DES-003) retrieves relevant passages
+3. Results are grouped by their **pre-computed sub-theme tags** (ADR-115 unified enrichment, reviewed per ADR-100)
+4. Within groups, passages are ordered by search relevance score, annotated with pre-computed tone and experiential depth
+5. Cross-book connections shown via pre-computed chunk relations (ADR-050)
+6. Glossary terms surfaced from pre-computed entity references (ADR-116)
+7. Related themes suggested from the theme taxonomy, connected to the found passages (ADR-032)
+
+All organization uses index-time enrichment data computed under the editorial review pipeline (ADR-100). The query-time system **selects and arranges** — it does not classify, cluster, or interpret. Sub-theme grouping headings ("Forgiveness as Divine Quality") are drawn from the pre-computed topic taxonomy, not generated at query time. If the enrichment pipeline hasn't produced sub-theme distinctions for a topic, passages appear in a single ungrouped list — honest about the library's current indexing depth rather than fabricating structure.
+
+**Relationship to search.** Search (DES-003, `/api/v1/search`) answers "find me a passage." Thematic exploration answers "show me the landscape." Search returns a ranked list — best first, intentionally unpaginated (ADR-111). Thematic exploration returns a structured overview — organized by sub-theme, annotated with context, designed for study rather than lookup. The seeker arrives at thematic exploration from the `/guide` page, from a theme page's "Explore in depth" link, or from a search result's "See more on this topic" affordance.
+
+**Relationship to theme pages.** Theme pages (`/themes/{slug}`) show all passages tagged with a single curated theme. Thematic exploration is broader — a seeker's question may span multiple themes, and the exploration surfaces that cross-theme structure. "Forgiveness" might pull passages tagged under Compassion, Karma, and Divine Love as well as Forgiveness itself. The theme page is a known destination; the exploration is a discovery tool.
+
+**No account required.** Consistent with the portal's anonymous experience through Arc 6 (ADR-002, ADR-121). Individual passages found during exploration can be saved via Lotus Bookmarks (ADR-066). The exploration itself is stateless — the seeker can re-enter the same question anytime.
+
+**Contextual feedback.** When a passage feels inappropriate for a given exploration context, seekers can flag via the DELTA-compliant feedback mechanism (ADR-084). Feedback is categorized (see DES-035 § Feedback Categorization) and routed to editorial staff. Over time, patterns in contextual feedback may inform a new enrichment dimension — audience suitability — but this is a future consideration (see CONTEXT.md § Open Questions), not a Milestone 3b requirement.
+
+**Global Equity (ADR-006).** The exploration view is HTML-first — sub-theme groupings are semantic `<section>` elements with heading hierarchy, not JavaScript-dependent interactive widgets. The full exploration renders without JavaScript. Progressive enhancement adds expand/collapse for passage groups, smooth scroll to sections, and keyboard-driven group navigation (DES-013). Performance budget: exploration response renders within the existing FCP < 1.5s target; passage groups beyond the first two are lazy-loaded to keep initial payload under the 50KB homepage budget for the exploration entry point.
+
+**Screen reader experience (ADR-073).** Each sub-theme group is an ARIA landmark region with a descriptive label. The "Across the Library" section provides an audio-friendly summary of corpus distribution — the screen reader user hears the library's breadth before diving into individual passages. "Terms You May Encounter" links each term to the glossary with `aria-describedby` for inline definitions.
+
+**Multilingual (ADR-075).** Exploration works in any language the corpus supports. If the seeker's locale has fewer passages on a topic, the exploration is honest about coverage: "The library holds 3 passages on this theme in Hindi. The English collection holds 17." The seeker can toggle to English or explore what's available — never a degraded or empty experience.
+
+**Suggested starting points.** The `/guide` page offers 10–15 editorially curated exploration starting points below the curated pathways — high-interest topics that demonstrate the exploration capability: "Meditation," "The Nature of God," "Overcoming Fear," "Death and the Afterlife," "Finding Your Purpose." These are not pathways (no editorial framing text) — they are direct links into thematic exploration. Curated by editorial staff, refreshed quarterly.
+
+**API endpoint:**
+
+```
+GET /api/v1/guide/explore
+
+Query params:
+  q (required) — seeker's question or theme
+  language (optional) — default 'en'
+  limit_per_group (optional) — default 3, max 10
+
+Response:
+{
+  "query": "What does Yogananda teach about forgiveness?",
+  "groups": [
+    {
+      "sub_theme": "Forgiveness as Divine Quality",
+      "sub_theme_slug": "forgiveness-divine-quality",
+      "passages": [
+        {
+          "chunk_id": "uuid",
+          "content": "If you forgive those that wrong you...",
+          "book_title": "Where There Is Light",
+          "chapter_title": "Forgiveness",
+          "page_number": 83,
+          "tone": "consoling",
+          "experiential_depth": 2,
+          "reader_url": "/books/where-there-is-light/5#chunk-uuid"
+        }
+      ],
+      "total_in_group": 5
+    }
+  ],
+  "distribution": {
+    "books": [
+      { "title": "Man's Eternal Quest", "count": 7 },
+      { "title": "Where There Is Light", "count": 5 }
+    ],
+    "total_passages": 17
+  },
+  "glossary_terms": [
+    { "term": "karma", "slug": "karma", "brief": "The law of cause and effect" }
+  ],
+  "related_themes": [
+    { "name": "Compassion", "slug": "compassion" },
+    { "name": "Unconditional Love", "slug": "unconditional-love" }
+  ],
+  "meta": { "language": "en" }
+}
+```
+
+**Service layer:** `/lib/services/guide-exploration.ts` — orchestrates hybrid search, enrichment data assembly, sub-theme grouping from pre-computed tags, glossary term extraction, related theme identification, response formatting. Uses existing services: `search.ts`, `themes.ts`, `glossary.ts`, `relations.ts`. No AI calls at query time.
+
+**MCP access (DES-031 Tier 2).** The same service functions power the MCP `search_corpus` and `get_content_coverage` tools. Internal consumers (editorial staff, development) access the exploration capability through MCP; public seekers access it through the API endpoint. Same data, same organization, same pre-computed enrichment.
+
+**Milestone:** 3b (requires enrichment pipeline operational, theme taxonomy populated, chunk relations computed). The exploration degrades gracefully before full enrichment: with only search and basic theme tags (Milestone 1b), the exploration returns a flat list grouped by book — still useful, just less structured. Full sub-theme grouping arrives when the enrichment pipeline (ADR-115) is operational.
+
 ---
 
 ## DES-049: Responsive Design Strategy
