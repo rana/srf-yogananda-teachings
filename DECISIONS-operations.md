@@ -114,12 +114,13 @@ Only the sections relevant to the staff member's role appear. A translation revi
 | **Tone/accessibility spot-check** | Milestone 3b | Random sample of classified passages. "Does this feel `contemplative`? Is this `universal`-level accessibility?" Confirm or reclassify. |
 | **Content preview** | Milestone 3b | "Preview as seeker" — see exactly what a theme page, daily passage, or editorial thread will look like before publication. |
 
-#### Layer 4: Retool — Technical Operations
+#### Layer 4: Technical Operations Dashboard
 
 **Who:** AE developers
 **What:** Data-heavy dashboards, pipeline monitoring, bulk operations.
+**Tooling decision:** PRO-016 evaluates Retool vs. portal `/admin` routes at Milestone 3d. Retool is one option; lightweight charting (Recharts) within the portal admin is another.
 
-Retool is scoped to the technical team, not content editors:
+Scoped to the technical team, not content editors:
 
 - **Search analytics:** Anonymized query trends, top searches by period, "no results" queries, zero-result rate
 - **Pipeline health:** Embedding job status, webhook sync logs, error rates
@@ -127,7 +128,7 @@ Retool is scoped to the technical team, not content editors:
 - **Bulk operations:** One-off data migrations, mass re-tagging, embedding model migration status
 - **System metrics:** API response times, database query performance, error aggregations
 
-This is appropriate for Retool's strengths. The AE developer is comfortable here.
+Whether this is Retool or a custom dashboard is deferred (PRO-016).
 
 #### Layer 5: Impact View — Leadership Dashboard
 
@@ -136,7 +137,7 @@ This is appropriate for Retool's strengths. The AE developer is comfortable here
 
 A single route in the admin portal (`/admin/impact`) or a standalone page. Auth0-protected with a read-only `leadership` role. Designed for beauty and clarity, not data density:
 
-- **Map visualization:** Countries reached (anonymized Vercel/Cloudflare geo data). Not a data grid — a warm-toned world map with gentle highlights.
+- **Map visualization:** Countries reached (anonymized Vercel geo data). Not a data grid — a warm-toned world map with gentle highlights.
 - **Content growth:** Books published, passages available, languages served. Over time, a simple growth chart.
 - **"What is humanity seeking?"** Top search themes (anonymized, aggregated). Not individual queries — themes. "This month, seekers worldwide most frequently sought teachings about *Peace*, *Fear*, and *Purpose*."
 - **Global equity indicators:** Traffic from Global South regions, text-only mode usage, KaiOS/feature phone access rates. "The teachings reached seekers in 23 countries across Sub-Saharan Africa."
@@ -865,7 +866,7 @@ Yogananda's teachings are extraordinarily shareable — short, vivid, universal.
 | **WhatsApp** | OG cards render in previews. Likely the highest-impact sharing channel globally (India, Latin America, Africa, Southeast Asia). |
 | **LinkedIn** | Inspirational quotes perform well. OG cards render cleanly. |
 
-### What the Portal Generates (Admin/Retool Dashboard)
+### What the Portal Generates (Staff Dashboard)
 
 A daily admin view showing:
 - Today's passage (from the daily_passages pool)
@@ -885,7 +886,7 @@ This is a **content production tool**, not an auto-poster. The human decides whe
 ### Consequences
 
 - Milestone 2a: User sharing works via OG cards and quote images (already in ADR-068)
-- Milestone 5a+: Admin dashboard (Retool) adds a "Social Assets" view showing daily quote images and suggested captions
+- Milestone 5a+: Admin dashboard adds a "Social Assets" view showing daily quote images and suggested captions
 - Multi-aspect-ratio image generation needed (`@vercel/og` with configurable dimensions)
 - SRF's social media team needs access to the admin dashboard
 - No automated posting. Ever. The portal generates; humans distribute.
@@ -1184,7 +1185,7 @@ Amplitude's defaults assume user-level behavioral tracking. The portal must expl
 | `center_locator_clicked` | `{}` | Did digital lead to physical? |
 | `search_performed` | `{ language, result_count, zero_results }` | Search usage, zero-result rate (not query content — that's in server logs) |
 
-Country code derived from Vercel/Cloudflare edge headers, not IP geolocation lookup. Anonymized at the edge. `requested_language` derived from `Accept-Language` header — measures the gap between what seekers want and what the portal serves. `zero_results` boolean flags searches returning no passages — the zero-result rate is the most actionable operational metric for search quality.
+Country code derived from Vercel edge headers, not IP geolocation lookup. Anonymized at the edge. `requested_language` derived from `Accept-Language` header — measures the gap between what seekers want and what the portal serves. `zero_results` boolean flags searches returning no passages — the zero-result rate is the most actionable operational metric for search quality.
 
 ### Rationale
 
@@ -1362,7 +1363,7 @@ Three tiers of MCP server adoption, phased with the project:
 |------------|-----------|---------|------------|
 | **GitHub** | Arc 1+ | Issue context, PR details, review comments | Modest benefit over `gh` CLI. Try it; drop if redundant. |
 | **Vercel** | Arc 1+ | Deployment status, build logs, preview URLs | Useful for debugging deployment failures. The `vercel` CLI covers most of this. |
-| **Cloudflare** | Arc 1+ | WAF analytics, rate limit monitoring, traffic patterns | Terraform handles declarative config; MCP useful only for real-time monitoring queries. |
+| ~~**Cloudflare**~~ | — | Removed from portal stack (PRO-017). If SRF routes domain through Cloudflare, evaluate Cloudflare MCP at that point. | — |
 
 **Not recommended (skip):**
 
@@ -1523,7 +1524,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 
 **7. `search_queries` table.** The table stores query text without user identifiers. Under GDPR recital 26, data that cannot identify a natural person is not personal data. The portal cannot match a data subject access request to their queries because no user identifiers are stored. This is documented in the privacy policy. The minimum aggregation threshold of 10 (ADR-053) prevents re-identification in the reporting layer.
 
-**8. Rate limiting and IP processing.** Cloudflare processes IP addresses for WAF/rate-limiting purposes. The portal itself does not store IP addresses. This is disclosed in the privacy policy: "Our CDN provider processes IP addresses for security purposes. We do not store IP addresses."
+**8. Rate limiting and IP processing.** Vercel processes IP addresses for Firewall/rate-limiting purposes at the edge. The portal itself does not store IP addresses. This is disclosed in the privacy policy: "Our hosting provider processes IP addresses for security purposes. We do not store IP addresses."
 
 **9. YouTube privacy-enhanced embeds.** The facade pattern (thumbnail → click to load from `youtube-nocookie.com`) ensures no Google connection occurs until the user actively clicks play. This is compliant with strict German GDPR interpretation and documented.
 
@@ -1547,7 +1548,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 |---------|-----------|-------------|--------|-------------|
 | **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica distributed | Yes |
 | **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | Yes |
-| **Cloudflare** | Processor | Request metadata, IP for WAF (transient) | Global | Yes |
+| **Vercel** (Firewall) | Processor | Request metadata, IP for rate limiting (transient) | Global (Vercel edge) | Yes |
 | **Amplitude** | Processor | Anonymized events with country_code | US | Yes |
 | **Sentry** | Processor | Error stack traces, request context | US | Yes |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | Yes (Milestone 3d+) |
@@ -1710,7 +1711,7 @@ But MCP consumers extend well beyond the development AI. Three additional tiers 
 
 1. **Internal editorial AI agents.** DES-035 catalogs 25+ AI-assisted workflows, all requiring corpus access. Theme tag proposal needs similar-passage retrieval. Guide pathway generation needs ontology traversal, reverse bibliography queries, and vocabulary bridge lookups. Translation review needs cross-language passage alignment. These workflows currently access the corpus through ad-hoc service layer calls — MCP would provide a canonical, auditable, consistent interface.
 
-2. **Internal cross-property consumers.** The SRF mobile app (CONTEXT.md § Stakeholder question), Retool dashboards, the Impact Dashboard, and other SRF web properties are potential consumers. The API-first architecture (ADR-011) already serves HTTP clients; MCP serves AI-native clients using the same service layer.
+2. **Internal cross-property consumers.** The SRF mobile app (CONTEXT.md § Stakeholder question), staff dashboards (PRO-016), the Impact Dashboard, and other SRF web properties are potential consumers. The API-first architecture (ADR-011) already serves HTTP clients; MCP serves AI-native clients using the same service layer.
 
 3. **External AI assistants.** By 2027, seekers will ask ChatGPT, Claude, Gemini, and custom agents about Yogananda's teachings. Without structured access, these AIs fabricate from training data (violating ADR-001) or scrape and paraphrase the portal (violating fidelity). With production MCP, the AI receives verbatim, attributed quotes with portal URLs — the Findability Principle (CONTEXT.md § Mission) realized through the channel where seekers already are.
 
@@ -1737,7 +1738,7 @@ Unrestricted access for Claude Code during portal development. Existing tools fr
 
 #### Tier 2: Internal (Milestone 3c+)
 
-Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that internal AI workflows need:
+Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, staff dashboard per PRO-016). Adds tools that internal AI workflows need:
 
 | Tool | Service Function | Purpose | Milestone |
 |---|---|---|---|
@@ -1800,7 +1801,7 @@ Rate-limited, potentially registered access for third-party AI assistants. Expos
 
 The `fidelity` object is a moral signal, not a technical enforcement — analogous to Creative Commons metadata. Well-behaved AI consumers respect it; the portal cannot prevent violation. The `context_url` field ensures the seeker always has one click to reach the full, unmediated portal experience.
 
-**Rate limiting:** External MCP uses the same Cloudflare + application-level tiering as the HTTP API (ADR-023). Registered consumers (those who agree to the fidelity contract) receive higher limits. Unregistered consumers receive the same limits as anonymous web crawlers (ADR-081).
+**Rate limiting:** External MCP uses the same Vercel Firewall + application-level tiering as the HTTP API (ADR-023). Registered consumers (those who agree to the fidelity contract) receive higher limits. Unregistered consumers receive the same limits as anonymous web crawlers (ADR-081).
 
 **Access governance:** Three options, to be decided as a stakeholder question:
 1. **Open** — any MCP client can connect (simplest, maximum reach)
@@ -2102,7 +2103,7 @@ CREATE INDEX idx_deliveries_subscriber ON webhook_deliveries(subscriber_id, crea
 - New content → MS Dynamics CRM update (donor/stakeholder communications)
 - Social asset approved → Buffer/Hootsuite scheduling queue
 - Portal update → internal Slack/Teams notification for AE team
-- Content correction → trigger CDN cache purge via Cloudflare API
+- Content correction → trigger CDN cache purge via Vercel API
 - Search index rebuilt → trigger integration test suite
 
 **Editorial / Staff**
@@ -2878,7 +2879,7 @@ Examples:
 - Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
 - Email purge delay: 90 days (DES-030) — adjust based on legal review
 - Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
-- ISR revalidation intervals (DES-006) — adjust based on Vercel/Cloudflare metrics
+- ISR revalidation intervals (DES-006) — adjust based on Vercel Analytics metrics
 - Circadian color band boundaries (DES-011) — adjust after Milestone 2b user feedback
 - Quiet Index texture count: 5 (DES-029) — adjust after Milestone 3b usage data
 

@@ -691,7 +691,11 @@ SUGGESTION_WEIGHT_EDITORIAL = 0.2 — editorial boost (0.0–1.0, set by editors
 
 At launch, `query_frequency` is zero — the effective ranking is `corpus * 0.6 + editorial * 0.4` (renormalized). As query log data accumulates (Tier 5, ADR-053), the full formula activates. Coefficients are application-level constants, not database-generated columns, so they can be tuned without migration.
 
-*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX.*
+#### Content Tier and Suggestions
+
+Suggestions are **tier-agnostic by design** — all content tiers (guru, president, monastic) contribute equally to the suggestion vocabulary. The suggestion system operates *before* query submission and does not filter by content tier. When `content_tier` influences results, it acts as a **sort parameter** on the search API (DES-019), not a filter on suggestions. A seeker typing "meditation" sees the same suggestions regardless of which tiers they'll search. This matches the portal's design: suggestions narrow the query; the search API's `content_tier` parameter controls which tiers appear in results.
+
+*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX. 2026-02-26, content_tier note clarifying tier-agnostic suggestions.*
 
 ---
 
@@ -745,29 +749,7 @@ CREATE TABLE books (
  -- Tiers describe author role, not value. All tiers: verbatim fidelity + no machine translation.
  -- Tier assignments confirmed by stakeholder 2026-02-25 — see PRO-014.
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
- updated_at TIMESTAMPTZ NOT NULL DEFAULT now
-);
-
--- ============================================================
--- BOOK CHUNKS ARCHIVE (edition transitions — ADR-034)
--- ============================================================
--- When SRF publishes a revised edition, old edition data is archived here
--- (not deleted) to preserve historical citations and audit trail.
-CREATE TABLE book_chunks_archive (
- id UUID PRIMARY KEY,
- book_id UUID NOT NULL REFERENCES books(id),
- chapter_id UUID REFERENCES chapters(id),
- content TEXT NOT NULL,
- page_number INTEGER,
- section_heading TEXT,
- paragraph_index INTEGER,
- embedding VECTOR(1024), -- matches current model dimension (ADR-118)
- embedding_model TEXT NOT NULL,
- content_hash TEXT,
- language TEXT NOT NULL DEFAULT 'en',
- edition TEXT, -- edition this chunk belonged to
- archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
- original_created_at TIMESTAMPTZ NOT NULL
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================================
@@ -780,7 +762,9 @@ CREATE TABLE chapters (
  title TEXT,
  contentful_id TEXT, -- Contentful entry ID (production)
  sort_order INTEGER NOT NULL,
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ content_hash TEXT, -- SHA-256 of chapter content, computed at ingestion (ADR-039)
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_chapters_book ON chapters(book_id, sort_order);
@@ -840,7 +824,11 @@ CREATE TABLE book_chunks (
  centrality_score REAL,  -- PageRank from graph batch (Milestone 3b+, ADR-117)
  community_id TEXT,      -- community detection cluster (Milestone 3b+, ADR-117)
  metadata JSONB DEFAULT '{}',
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ content_hash TEXT GENERATED ALWAYS AS (encode(sha256(content::bytea), 'hex')) STORED,
+ -- Auto-computed from content for stable deep links (ADR-022).
+ -- Shared URLs embed the first 6 chars as verification hash.
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Vector similarity search (HNSW for fast approximate nearest neighbor)
@@ -888,6 +876,37 @@ CREATE INDEX idx_chunks_contentful ON book_chunks(contentful_id) WHERE contentfu
 -- stays within the user's locale unless cross-language is requested)
 CREATE INDEX idx_chunks_language ON book_chunks(language);
 
+-- Timestamp-filtered pagination (ADR-107)
+CREATE INDEX idx_chunks_updated ON book_chunks(updated_at, id);
+CREATE INDEX idx_chapters_updated ON chapters(updated_at, id);
+
+-- Content hash index for stable deep link resolution (ADR-022)
+CREATE INDEX idx_chunks_content_hash ON book_chunks(content_hash);
+
+-- ============================================================
+-- BOOK CHUNKS ARCHIVE (edition transitions — ADR-034)
+-- ============================================================
+-- When SRF publishes a revised edition, old edition data is archived here
+-- (not deleted) to preserve historical citations and audit trail.
+CREATE TABLE book_chunks_archive (
+ id UUID PRIMARY KEY,
+ book_id UUID NOT NULL REFERENCES books(id),
+ chapter_id UUID REFERENCES chapters(id),
+ content TEXT NOT NULL,
+ page_number INTEGER,
+ section_heading TEXT,
+ paragraph_index INTEGER,
+ embedding VECTOR(1024), -- matches current model dimension (ADR-118)
+ embedding_model TEXT NOT NULL,
+ content_hash TEXT,
+ content_tier TEXT, -- preserved from books.content_tier at archive time (PRO-014)
+ language TEXT NOT NULL DEFAULT 'en',
+ edition TEXT, -- edition this chunk belonged to
+ archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ original_created_at TIMESTAMPTZ NOT NULL,
+ original_updated_at TIMESTAMPTZ -- preserved from book_chunks.updated_at
+);
+
 -- ============================================================
 -- FULL-TEXT SEARCH NOTE (ADR-114)
 -- ============================================================
@@ -927,7 +946,8 @@ CREATE TABLE teaching_topics (
  header_quote TEXT, -- a Yogananda quote encapsulating this theme (displayed on theme page)
  header_citation TEXT, -- citation for the header quote
  sort_order INTEGER NOT NULL DEFAULT 0, -- display order within category
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_teaching_topics_category ON teaching_topics(category);
@@ -981,7 +1001,8 @@ CREATE TABLE daily_passages (
  -- Classified by Claude at curation time, spot-checked by reviewer.
  -- Selection algorithm ensures tonal variety across the week.
  is_active BOOLEAN NOT NULL DEFAULT true,
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_daily_passages_active ON daily_passages(is_active) WHERE is_active = true;
@@ -998,7 +1019,8 @@ CREATE TABLE affirmations (
  chunk_id UUID REFERENCES book_chunks(id) ON DELETE SET NULL, -- link to full chunk if applicable
  language TEXT NOT NULL DEFAULT 'en', -- required for Quiet Corner language filtering
  is_active BOOLEAN NOT NULL DEFAULT true,
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_affirmations_active ON affirmations(is_active) WHERE is_active = true;
@@ -1107,7 +1129,7 @@ CREATE TABLE search_queries (
  search_mode TEXT, -- 'hybrid', 'fts_only', 'vector_only'
  language TEXT DEFAULT 'en',
  duration_ms INTEGER, -- search latency
- created_at TIMESTAMPTZ NOT NULL DEFAULT now
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- No user identification stored. Queries are anonymized.
@@ -1117,6 +1139,42 @@ CREATE INDEX idx_queries_time ON search_queries(created_at DESC);
 -- No retention policy needed. At ~1,000 searches/day, the raw table
 -- grows ~73 MB/year — trivially manageable for Neon over a 10-year horizon.
 -- If retention ever becomes necessary, a simple aggregation can be added then.
+
+-- ============================================================
+-- SEARCH THEME AGGREGATES (anonymized trend data — ADR-053)
+-- ============================================================
+-- Nightly aggregation of search_queries into theme-level trends.
+-- Powers the "What Is Humanity Seeking?" dashboard (Milestone 3d).
+-- Created in initial schema; populated by Lambda aggregation job.
+CREATE TABLE search_theme_aggregates (
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
+ theme TEXT NOT NULL, -- classified theme (Peace, Healing, etc.)
+ country TEXT, -- country-level geo (from Vercel headers)
+ period_start DATE NOT NULL, -- aggregation period start
+ period_end DATE NOT NULL, -- aggregation period end
+ query_count INTEGER NOT NULL DEFAULT 0,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_search_themes_period ON search_theme_aggregates(period_start, theme);
+
+-- ============================================================
+-- CHAPTER STUDY NOTES (reader annotations — Arc 4)
+-- ============================================================
+-- Per-chapter study guide content: key themes, notable passages,
+-- cross-book connections. Created in initial schema; populated
+-- incrementally as study guide features are built (Arc 4).
+CREATE TABLE chapter_study_notes (
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
+ chapter_id UUID NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+ note_type TEXT NOT NULL DEFAULT 'key_theme', -- 'key_theme', 'notable_passage', 'cross_reference'
+ content TEXT NOT NULL,
+ sort_order INTEGER NOT NULL DEFAULT 0,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_study_notes_chapter ON chapter_study_notes(chapter_id, note_type);
 
 -- ============================================================
 -- CHUNK RELATIONS (pre-computed semantic similarity between passages)
@@ -1329,6 +1387,8 @@ CREATE TABLE user_profiles (
  created_at          TIMESTAMPTZ DEFAULT now()
 );
 ```
+
+*Schema revised: 2026-02-26, deep review — fixed DEFAULT now() syntax across 7 tables, added missing columns (chapters.content_hash per ADR-039, updated_at per ADR-107 on chapters/book_chunks/teaching_topics/daily_passages/affirmations), resolved content_hash definition conflict (GENERATED ALWAYS AS per ADR-022), reordered tables (archive after chapters/book_chunks), added book_chunks_archive.content_tier per PRO-014, added search_theme_aggregates and chapter_study_notes table definitions per Deliverable 1a.2, added composite (updated_at, id) indexes per ADR-107.*
 
 ### Contentful Content Model (Arc 1+)
 
@@ -1790,7 +1850,7 @@ Unrestricted access for Claude Code during portal development. Also used for ite
 
 #### Tier 2: Internal (Milestone 3b+)
 
-Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, Retool). Adds tools that DES-035 AI workflows need for corpus-grounded proposals. Authentication via API key or IAM role (not Auth0).
+Authenticated service-to-service access for editorial AI agents, batch pipelines, admin portal AI features, and cross-property consumers (SRF app, staff dashboard per PRO-016). Adds tools that DES-035 AI workflows need for corpus-grounded proposals. Authentication via API key or IAM role (not Auth0).
 
 | Tool | Service Function | Purpose | Milestone |
 |---|---|---|---|
@@ -1861,7 +1921,7 @@ Rate-limited access for third-party AI assistants (ChatGPT, Claude, Gemini, cust
 
 The `fidelity` object is a moral signal, not a technical enforcement — analogous to Creative Commons metadata. The `context_url` ensures seekers always have one click to the full, unmediated portal.
 
-**Rate limiting:** Same Cloudflare + application-level tiering as HTTP API (ADR-023). Registered consumers (fidelity contract acknowledged) receive higher limits. Unregistered consumers receive anonymous web crawler limits (ADR-081).
+**Rate limiting:** Same Vercel Firewall + application-level tiering as HTTP API (ADR-023). Registered consumers (fidelity contract acknowledged) receive higher limits. Unregistered consumers receive anonymous web crawler limits (ADR-081).
 
 **Access governance:** Stakeholder decision (CONTEXT.md). Recommendation: registered access — clients receive an API key upon acknowledging the fidelity contract, balancing reach with accountability.
 
@@ -1925,10 +1985,10 @@ All infrastructure is defined as code per SRF engineering standards from Milesto
 The portal starts greenfield — no existing infrastructure to import. Terraform creates all resources from scratch on first `terraform apply`. Any Neon projects or Vercel projects created during design exploration (e.g., via MCP) should be deleted before bootstrap to avoid naming conflicts.
 
 **One-time manual bootstrap** (before first `terraform apply`):
-1. Create Terraform Cloud organization + workspace (see ADR-016 § Terraform State)
+1. Create S3 bucket + DynamoDB table for Terraform state (see ADR-016 § Terraform State)
 2. Create AWS IAM OIDC Identity Provider + IAM Role (see ADR-016 § OIDC Federation)
 3. Populate GitHub secrets (see CONTEXT.md § Bootstrap Credentials Checklist)
-4. Run `terraform init` to connect workspace to TFC backend
+4. Run `terraform init` to connect to S3 backend
 
 After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`.
 
@@ -1936,7 +1996,7 @@ After bootstrap, all infrastructure changes flow through PRs → `terraform plan
 
 ```
 /terraform/
- main.tf — Provider configuration, TFC backend
+ main.tf — Provider configuration, S3 backend
  variables.tf — Input variables (project name, environment)
  outputs.tf — Connection strings, URLs, DSNs
  versions.tf — required_providers with version constraints
@@ -1945,8 +2005,7 @@ After bootstrap, all infrastructure changes flow through PRs → `terraform plan
  /neon/ — Neon project, database, roles, pgvector, pg_search
  /vercel/ — Vercel project, env vars
  /sentry/ — Sentry project, DSN, alert rules
- /aws/ — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm
- /cloudflare/ — DNS records, WAF rules (deferred until custom domain)
+ /aws/ — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm, state backend
  /newrelic/ — Synthetics monitors, alert policies (Milestone 3d)
 
  /environments/
@@ -1966,7 +2025,6 @@ Modules are activated via feature-flag variables in `dev.tfvars`. This avoids co
 | `enable_aws_core` | `true` | `true` | `true` | `true` |
 | `enable_vercel` | `false` | `true` | `true` | `true` |
 | `enable_lambda` | `false` | `false` | `true` | `true` |
-| `enable_cloudflare` | `false` | `false` | `false` | when domain assigned |
 | `enable_newrelic` | `false` | `false` | `false` | 3d |
 
 Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
@@ -1986,7 +2044,7 @@ Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`.
 
 | Phase | SCM | CI/CD | Terraform State |
 |-------|-----|-------|-----------------|
-| **Primary (all arcs)** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Primary (all arcs)** | GitHub | GitHub Actions | S3 + DynamoDB |
 | **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
 #### CI/CD Pipeline (GitHub Actions)
@@ -2026,7 +2084,7 @@ Milestone 1a creates `ci.yml`, `terraform.yml`, and `dependabot.yml`. The Neon b
 
 **`ci.yml`** runs on all PRs and pushes to main. No AWS credentials needed — pure app testing.
 
-**`terraform.yml`** runs only when `/terraform/**` changes. Uses OIDC federation (`AWS_ROLE_ARN`) for AWS auth. Provider tokens (`NEON_API_KEY`, `VERCEL_TOKEN`, `SENTRY_AUTH_TOKEN`) as GitHub secrets. Posts `terraform plan` output as PR comment. On merge to main, `terraform apply` runs via TFC CLI-driven workflow (TFC auto-apply enabled for dev workspace — no manual confirmation needed).
+**`terraform.yml`** runs only when `/terraform/**` changes. Uses OIDC federation (`AWS_ROLE_ARN`) for AWS auth. Provider tokens (`NEON_API_KEY`, `VERCEL_TOKEN`, `SENTRY_AUTH_TOKEN`) as GitHub secrets. Posts `terraform plan` output as PR comment. On merge to main, `terraform apply` runs automatically for the dev environment.
 
 **`neon-branch.yml`** runs on PR lifecycle events. Uses `NEON_API_KEY` secret. Creates a Neon branch on PR open, deletes on PR close.
 
@@ -2077,7 +2135,7 @@ NEON_PROJECT_ID=                 # [terraform] Neon API calls
 # ── AWS (Bedrock inference from Vercel) ─────────────────────────
 AWS_REGION=us-west-2             # [terraform] Bedrock, Lambda, S3
 AWS_ACCESS_KEY_ID=               # [terraform] IAM user: portal-app-bedrock (Bedrock inference only)
-AWS_SECRET_ACCESS_KEY=           # [terraform] Paired with above — keys in TFC-encrypted state
+AWS_SECRET_ACCESS_KEY=           # [terraform] Paired with above — keys in encrypted S3 state
 
 # ── AI ──────────────────────────────────────────────────────────
 VOYAGE_API_KEY=                  # [secret] Voyage voyage-3-large embeddings (ADR-118)
@@ -2100,7 +2158,7 @@ SENTRY_AUTH_TOKEN=               # [secret] Source map uploads
 
 **Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secret]` = set manually everywhere, never in Terraform state.
 
-**Credential distribution pattern.** Terraform's AWS module creates the `portal-app-bedrock` IAM user and generates access keys (`aws_iam_access_key`). Terraform's Vercel module reads those outputs and sets them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` creates the IAM user AND distributes its credentials to Vercel — the human never sees or handles the raw secret key. The secret key exists in TFC-encrypted state (acceptable; TFC state is access-controlled). For secrets that Terraform doesn't create (Voyage API key, Contentful tokens), Terraform provisions empty Vercel env var placeholders, and the human populates them in the Vercel dashboard.
+**Credential distribution pattern.** Terraform's AWS module creates the `portal-app-bedrock` IAM user and generates access keys (`aws_iam_access_key`). Terraform's Vercel module reads those outputs and sets them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` creates the IAM user AND distributes its credentials to Vercel — the human never sees or handles the raw secret key. The secret key exists in encrypted S3 state (acceptable; bucket is access-controlled with versioning and server-side encryption). For secrets that Terraform doesn't create (Voyage API key, Contentful tokens), Terraform provisions empty Vercel env var placeholders, and the human populates them in the Vercel dashboard.
 
 **AWS authentication by context:**
 
@@ -2180,7 +2238,7 @@ Never in `.env.local` or `.env.example`. Used only by GitHub Actions and Terrafo
 
 | Secret | Used by | Purpose |
 |---|---|---|
-| `TF_API_TOKEN` | Terraform | Terraform Cloud authentication |
+| `TF_STATE_BUCKET` | Terraform | S3 state backend bucket name (not a secret, but CI needs it) |
 | `AWS_ROLE_ARN` | GitHub Actions OIDC | Assume IAM role for AWS operations |
 | `NEON_API_KEY` | Terraform, branch cleanup script | Neon provider + branch management |
 | `VERCEL_TOKEN` | Terraform | Vercel provider |

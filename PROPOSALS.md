@@ -20,11 +20,13 @@
 | PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Proposed | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-051, ADR-033, DES-048, DES-054, ADR-115 | Dedup 2026-02-25 (3 explorations) |
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116, ADR-049, ADR-050 | Dedup 2026-02-25 |
-| PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
+| PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed (subsumed by PRO-013 if adopted) | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003, ADR-001 | Dedup 2026-02-25 (2 explorations) |
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048 | Exploration 2026-02-25 |
 | PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRINCIPLES.md §1–2, CONTEXT.md § Mission | Exploration 2026-02-25 |
 | PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement | Proposed | ADR-091, ADR-099, ADR-016 | Stack divergence analysis 2026-02-26 |
+| PRO-016 | Retool vs. Portal Admin for Staff Dashboards | Enhancement | Proposed | ADR-082, ADR-053, ADR-095 | Deep review 2026-02-26 |
+| PRO-017 | Cloudflare Re-evaluation for SRF Domain Routing | Enhancement | Proposed | ADR-023, ADR-016 | Vendor drift analysis 2026-02-26 |
 
 ---
 
@@ -233,6 +235,72 @@ However, the cost savings are modest ($15–20/month), and the deliverability bo
 
 **Re-evaluate At:** Milestone 5a scoping (daily email implementation)
 **Decision Required From:** Architecture + SRF AE team input (do they prefer portal on their SendGrid account or a separate email system?)
+
+### PRO-016: Retool vs. Portal Admin for Staff Dashboards
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-082, ADR-053, ADR-095
+**Dependencies:** Milestone 3b (editorial portal `/admin`), Milestone 3d (analytics dashboard)
+**Scheduling Notes:** Evaluate at Milestone 3d scoping. The question is whether the analytics/reporting dashboard (Milestone 3d.4 "What Is Humanity Seeking?" admin view, standing operational metrics from DES-037) should use Retool or be built into the portal's own `/admin` route group.
+
+#### Context
+
+Two staff-facing interfaces appear in the architecture:
+
+1. **Portal `/admin`** (Milestone 3b.5a/b) — Auth0-protected Next.js route group for editorial workflows: theme tag review, daily passage curation, calendar management, queue health, ingestion QA. Built with the portal's calm design system.
+
+2. **Retool** — Referenced in the production architecture diagram (DESIGN.md), Milestone 3d.4, and DES-037 standing operational metrics. Implied use: analytics dashboards, search trend visualization, operational metrics.
+
+The relationship between these is undefined. Do they coexist (editorial in `/admin`, analytics in Retool)? Does one subsume the other?
+
+#### For Retool (separate analytics tool)
+
+1. **Build vs. buy.** Analytics dashboards (charts, time series, geographic heatmaps) are what Retool excels at. Building equivalent visualizations in Next.js is feasible but slower.
+2. **Iteration speed.** Staff can modify Retool dashboards without code deploys. Useful for evolving the "What Is Humanity Seeking?" views.
+3. **SRF familiarity.** If SRF already uses Retool across other properties, operational handoff is easier.
+
+#### Against Retool (build into portal admin)
+
+1. **One fewer vendor.** Retool is a Tier 2 dependency. The 10-year horizon (ADR-004) favors fewer external dependencies.
+2. **Design coherence.** Staff tools built in the portal's own design system maintain the calm technology aesthetic end-to-end.
+3. **No additional authentication surface.** Everything in Auth0, one admin route group.
+4. **Cost.** Retool has per-user pricing that may not be justified for 3–5 staff users.
+
+#### Recommendation
+
+Defer the decision. Build Milestone 3b editorial portal in `/admin`. At Milestone 3d scoping, evaluate whether the analytics visualization needs justify Retool or whether lightweight charting (e.g., Recharts) within `/admin` suffices. Remove Retool from the production architecture diagram until a decision is made — its presence implies an adopted choice that hasn't occurred.
+
+**Re-evaluate At:** Milestone 3d scoping
+**Decision Required From:** Architecture + SRF AE team (is Retool already in their stack?)
+
+### PRO-017: Cloudflare Re-evaluation for SRF Domain Routing
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-023, ADR-016
+**Dependencies:** Domain assignment for the portal. SRF decision on DNS routing.
+**Scheduling Notes:** The portal's production architecture previously included Cloudflare (CDN, WAF, rate limiting) as a portal-managed infrastructure dependency. Analysis (2026-02-26) determined that Vercel Pro provides equivalent capabilities natively — Firewall Rules, DDoS protection, bot detection, CDN — making Cloudflare a redundant layer that adds double-CDN complexity without unique value.
+
+**Current posture:** Cloudflare removed from portal infrastructure. Rate limiting (ADR-023) redesigned to use Vercel Firewall at the edge layer. All documents updated.
+
+**Re-evaluate if:** SRF routes the portal's domain through Cloudflare as part of their organization-wide DNS/CDN strategy (SRF uses Cloudflare across other properties). In that case, the portal is fully compatible — Cloudflare would sit in front of Vercel transparently. The question then becomes whether to leverage Cloudflare's WAF rules *in addition to* Vercel Firewall, or let Vercel handle security alone. If Cloudflare is added, create a Terraform `/modules/cloudflare/` module for DNS records and WAF rules.
+
+**What Vercel covers without Cloudflare:**
+- Firewall Rules (IP-based rate limiting, path-based rules)
+- DDoS mitigation (automatic, all plans)
+- Bot protection (Pro tier)
+- Global CDN with edge caching
+- Edge Middleware for custom security logic
+
+**What Cloudflare would add (if present):**
+- Broader IP reputation database
+- More granular WAF rule language (Cloudflare Rules)
+- Workers for edge compute (redundant with Vercel Edge Functions)
+- Cloudflare Analytics (redundant with Vercel Analytics)
+
+**Re-evaluate At:** When portal domain is assigned, or if SRF indicates Cloudflare is required for organizational DNS routing
+**Decision Required From:** Architecture + SRF AE team (does SRF route all properties through Cloudflare?)
 
 ---
 

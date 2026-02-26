@@ -252,7 +252,7 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 | **Content Authoring** | Contentful | Content editors | Creating/editing book text, editorial threads, theme descriptions, calendar events |
 | **Contextual Bridges** | Contentful Custom Apps | Content editors (in Contentful) | Sidebar panels showing review status, related data, previews |
 | **Editorial Review** | Admin Portal (`/admin`) | Monastic editors, theological reviewers, social media staff, translation reviewers | All review/approval/curation workflows where AI has proposed and humans must decide |
-| **Technical Operations** | Retool | AE developers | Search analytics, pipeline monitoring, bulk data operations |
+| **Technical Operations** | Staff dashboard (PRO-016) | AE developers | Search analytics, pipeline monitoring, bulk data operations |
 | **Impact Reporting** | Impact Dashboard (`/admin/impact`) | Leadership, philanthropist's foundation | Global reach, content growth, search themes — narrative quality, read-only |
 
 ### Content Flow by Type
@@ -266,8 +266,8 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 | **Social media assets** | — | — | Admin portal asset review | Visual review + caption editing + per-platform download |
 | **Translation review** | — | — | Admin portal side-by-side review (Milestone 5b) | Non-technical reviewers (possibly volunteers) need a focused UI, not Git |
 | **Sacred Places** | — | Static MDX or hardcoded | Contentful entries → sync → Neon | Editorial content with images |
-| **Search analytics** | — | Retool dashboard | Retool dashboard | Data-heavy, technical audience |
-| **Pipeline monitoring** | — | Retool dashboard | Retool dashboard | Technical operations |
+| **Search analytics** | — | Staff dashboard (PRO-016) | Staff dashboard (PRO-016) | Data-heavy, technical audience |
+| **Pipeline monitoring** | — | Staff dashboard (PRO-016) | Staff dashboard (PRO-016) | Technical operations |
 | **Impact reporting** | — | — | Admin portal `/admin/impact` (Milestone 5b+) | Beautiful, narrative, read-only — for leadership |
 
 ### Contentful → Neon Sync

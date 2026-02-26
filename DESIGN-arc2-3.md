@@ -1960,14 +1960,14 @@ export { sql };
 
 | Trigger | Mechanism | Scope |
 |---------|-----------|-------|
-| Content correction (Milestone 1b+) | Contentful webhook → sync service → Cloudflare Purge API | Purge by `Cache-Tag` (e.g., `book:autobiography`, `chapter:autobiography-1`) |
+| Content correction (Milestone 1b+) | Contentful webhook → sync service → Vercel revalidation API | Revalidate by path or tag (e.g., `book:autobiography`, `chapter:autobiography-1`) |
 | Daily passage rotation | TTL-based (`max-age=3600`) | No explicit invalidation — 1-hour cache is acceptable for daily content |
-| Theme tag changes | Manual Cloudflare purge via API or dashboard | Theme pages and related API responses |
-| New book ingestion | Automated purge of `/books` catalog and search index | Book catalog, search results |
+| Theme tag changes | On-demand revalidation via Vercel API | Theme pages and related API responses |
+| New book ingestion | Automated revalidation of `/books` catalog and search index | Book catalog, search results |
 | Static assets (JS/CSS) | Content-hashed filenames (`main.abc123.js`) | Infinite cache, new deploy = new hash |
-| Emergency content fix | Cloudflare "Purge Everything" via API | Last resort — clears entire CDN cache |
+| Emergency content fix | Vercel `revalidatePath('/', 'layout')` or redeploy | Last resort — clears all cached pages |
 
-**Implementation:** Each API response includes a `Cache-Tag` header with resource identifiers. The webhook sync service (Milestone 1b+) calls the Cloudflare Purge API with matching tags after each Contentful publish event. For Milestone 1a (batch sync, no webhooks), cache invalidation is manual — acceptable given the low frequency of content changes during initial ingestion.
+**Implementation:** Next.js ISR with on-demand revalidation (`revalidatePath` / `revalidateTag`). The webhook sync service (Milestone 1b+) calls the Vercel revalidation endpoint with matching tags after each Contentful publish event. For Milestone 1a (batch sync, no webhooks), cache invalidation is handled by redeployment — acceptable given the low frequency of content changes during initial ingestion.
 
 ### Deep Link Readiness
 
@@ -2787,7 +2787,7 @@ The portal is maintained by a broader organizational ecosystem than just "staff.
 | **Theological reviewer** | Periodic, high-stakes | Low to moderate | Admin portal (review queue only) | "Preview as seeker" with full chapter context; ability to defer decisions without blocking the queue; persistent theological notes across sessions |
 | **AE social media staff** | Daily, 20–30 min | Moderate | Admin portal (asset inbox) | Weekly lookahead with batch-approve; platform-specific captions; assets ready to post, not raw material to assemble |
 | **Translation reviewer** | Batch sessions, 40–100 strings | Moderate (may be volunteer) | Admin portal (translation review) | Screenshot context for each string; tone guidance; ability to suggest alternatives without outright rejecting |
-| **AE developer** | As needed | High | Retool + Neon console | Clear runbooks; Sentry/New Relic dashboards separated from other SRF properties; infrastructure-as-code matching SRF Terraform patterns |
+| **AE developer** | As needed | High | Staff dashboard (PRO-016) + Neon console | Clear runbooks; Sentry/New Relic dashboards separated from other SRF properties; infrastructure-as-code matching SRF Terraform patterns |
 | **Leadership (monastic)** | Monthly or quarterly | Low | Impact dashboard (read-only) | Ability to express editorial priorities ("emphasize courage this quarter") without entering the admin system; pre-formatted reports for the philanthropist's foundation |
 
 #### Operational Personas (Not Yet Staffed)

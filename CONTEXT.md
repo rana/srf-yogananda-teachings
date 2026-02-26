@@ -4,7 +4,7 @@
 
 **Arc:** Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.
 
-**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 15 proposals registered in PROPOSALS.md (PRO-001 through PRO-015; 1 adopted, 3 validated, 11 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
+**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 17 proposals registered in PROPOSALS.md (PRO-001 through PRO-017; 1 adopted, 3 validated, 13 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
 
 **What's next:** Milestone 1a — Prove. No remaining Tier 1 blockers (reclassified 2026-02-25). Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), book text extraction (ebook or PDF) into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
@@ -41,13 +41,15 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] fastText vs. alternative language detection for short queries containing Sanskrit terms. Evaluate during Arc 1 search quality testing.
 - [ ] Devanāgarī font timing: The English-language *God Talks with Arjuna* contains Devanāgarī; when this book enters the corpus (Milestone 3a+), the font must already be in the stack. ADR-080 adds Noto Sans Devanagari from Arc 1. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
 - [ ] Abuse and misuse patterns: extraction at scale, quote weaponization, SEO parasitism. Should the portal include rate limiting tiers, `rel=canonical` enforcement, MCP usage policy, or text watermarking? (ADR-001, ADR-011, ADR-101, ADR-063, ADR-081)
+- [x] Cloudflare adoption and scope. *Resolved 2026-02-26: Vercel-native (Firewall Rules, DDoS protection, bot detection, CDN). Cloudflare removed from portal infrastructure — double-CDN adds complexity without unique value for this portal. PRO-017 created for re-evaluation if SRF routes the domain through Cloudflare. All documents updated.* (PRO-017)
+- [ ] VLD editorial authentication: Milestone 3b+ VLD curation (ADR-082) references Auth0 roles, but Auth0 arrives at Milestone 7a+. What authentication mechanism serves the editorial portal before Auth0? Options: API keys, HTTP Basic, or lightweight auth (e.g., Neon Auth per PRO-005). Needs resolution before Milestone 3b scoping.
 
 **Stakeholder**
 - [ ] Existing SRF editorial voice guide: does SRF already have brand voice guidelines? The portal should extend them. (ADR-074)
 - [ ] SRF editorial policy on contested transliterations: does SRF confirm house style (e.g., "Babaji" vs. "Bābājī") as canonical for all portal display text? (ADR-080, ADR-034)
 - [ ] Cross-property content correction coordination: shared content source of truth, or each property maintains its own? (ADR-034, ADR-039)
 - [ ] Data controller identity for GDPR: SRF, the foundation, or both? Determines DPA responsibility. (ADR-099)
-- [ ] Existing Data Processing Agreements with shared vendors (Auth0, Neon, Vercel, Cloudflare, Sentry, Amplitude). (ADR-099)
+- [ ] Existing Data Processing Agreements with shared vendors (Auth0, Neon, Vercel, Sentry, Amplitude). (ADR-099)
 - [ ] Self-hosting Google Fonts: does the convocation site already self-host? (ADR-099)
 - [ ] What Sentry and New Relic configurations does SRF use across existing properties? (Operational alignment)
 - [ ] Young seekers and editorial voice: should the portal explicitly welcome young seekers, or is agelessness the mode of inclusion? (DES-048, ADR-095)
@@ -131,6 +133,9 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-25 | Endowment scope covers all SRF-published authors | PRO-014 |
 | 2026-02-25 | PRO-014 document cascade merged — multi-author scope adopted across Principles, ADRs, DESIGN, schema | PRO-014 (Adopted) |
 | 2026-02-25 | PostgreSQL 18 selected for Neon project — upstream stable since Sept 2025, UUIDv7 schema convention adopted | ADR-124 |
+| 2026-02-26 | Cloudflare removed from portal stack — Vercel-native (Firewall, DDoS, CDN) suffices; compatible if SRF routes domain through Cloudflare | PRO-017 |
+| 2026-02-26 | Terraform Cloud replaced by S3 + DynamoDB state backend — fewer vendors, 10-year horizon (ADR-004) | ADR-016 |
+| 2026-02-26 | Retool deferred to PRO-016 evaluation at Milestone 3d — removed from production architecture diagram | PRO-016 |
 
 *Tech-selection decisions (embedding model, AI provider, single-database, full-text search, graph layer, language URLs) are fully captured in their governing ADRs (ADR-118, ADR-014, ADR-119, ADR-013, ADR-117, ADR-114, ADR-027) and no longer repeated here.*
 
@@ -219,7 +224,7 @@ Standard engagement metrics (time on site, session depth, retention) optimize fo
 
 | Metric | What It Tells Us | How Measured |
 |--------|-----------------|-------------|
-| Countries reached | Global availability of the teachings | Anonymized geo from Vercel/Cloudflare analytics |
+| Countries reached | Global availability of the teachings | Anonymized geo from Vercel Analytics |
 | Languages served | Accessibility breadth | Content availability per locale |
 | Anonymized search trends | "What is humanity seeking?" | Aggregated query themes from `search_queries` table (no user identification) |
 | Books/passages served | Are the teachings being read? | Anonymized page view counts |
@@ -468,7 +473,7 @@ Documented in the SRF AE Tech Stack Brief. Key components relevant to this porta
 
 The teaching portal should use these technologies wherever possible, introducing new tools only when the established stack cannot meet a requirement (e.g., pgvector for vector search, Claude via AWS Bedrock for AI features — ADR-014).
 
-*Note: This table describes SRF's established organizational standard. The portal diverges where requirements demand it: GitHub instead of GitLab (Resolved Question #5, ADR-016); single-database PostgreSQL instead of PostgreSQL + DynamoDB (ADR-013); pg_search instead of Elasticsearch; Sentry as primary monitoring (ADR-095). See DESIGN.md § DES-002 for the portal's actual architecture.*
+*Note: This table describes SRF's established organizational standard. The portal diverges where requirements demand it: GitHub instead of GitLab (Resolved Question #5, ADR-016); S3+DynamoDB state backend instead of Terraform Cloud (ADR-016); single-database PostgreSQL instead of PostgreSQL + DynamoDB (ADR-013); pg_search instead of Elasticsearch; Sentry as primary monitoring (ADR-095); Vercel-native security instead of Cloudflare (PRO-017). See DESIGN.md § DES-002 for the portal's full divergence table.*
 
 ---
 

@@ -6,7 +6,8 @@ One-time credential provisioning required before the first `terraform apply`. Th
 
 | Credential | Where to create | What it enables | Store as |
 |---|---|---|---|
-| **Terraform Cloud org + workspace** | app.terraform.io → New Organization | State backend (local execution mode), locking, versioning | TFC API token → GitHub secret `TF_API_TOKEN` |
+| **S3 bucket for Terraform state** | AWS Console → S3 → Create Bucket (`srf-portal-terraform-state`, versioning + AES-256 encryption) | State backend with versioning and encryption | Bucket name → `terraform { backend "s3" {} }` |
+| **DynamoDB table for state locking** | AWS Console → DynamoDB → Create Table (`srf-portal-terraform-locks`, partition key `LockID` String, on-demand) | Prevents concurrent `terraform apply` | Table name → `backend "s3" { dynamodb_table }` |
 | **AWS Account** (region: `us-west-2`) | aws.amazon.com | S3 backups, Lambda, Bedrock, EventBridge | — |
 | **AWS IAM OIDC Identity Provider** | AWS IAM Console → Identity Providers | GitHub Actions → AWS auth (no stored keys) | — |
 | **AWS IAM Role (portal-ci)** | AWS IAM Console → Roles | Scoped CI permissions (Terraform, S3, Lambda) | ARN → GitHub secret `AWS_ROLE_ARN` |
@@ -37,11 +38,11 @@ One-time credential provisioning required before the first `terraform apply`. Th
 | New Relic License Key | Milestone 3d (observability) | New Relic dashboard |
 | Amplitude API Key | Milestone 3d (analytics) | Amplitude dashboard |
 | SendGrid API Key | Milestone 5a (email) | SendGrid dashboard — SRF standard (ADR-091; see PRO-015 for SES alternative) |
-| Cloudflare API Token | When custom domain assigned | Cloudflare dashboard |
+| ~~Cloudflare API Token~~ | Removed from portal stack (PRO-017) | If SRF routes domain through Cloudflare, add at that point |
 | Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard |
 
 ## Auth Mechanism Summary
 
-**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*`) — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation.
+**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*`) — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation. Terraform state backend (S3 + DynamoDB) is accessed via the same OIDC federation role — no additional credentials needed.
 
 See DES-039 § Environment Configuration for the complete `.env.example`, named constants, CI secrets table, and Claude Code developer tooling setup.

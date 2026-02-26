@@ -59,7 +59,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Language detection | fastText (per-query, < 1ms) |
 | CMS | Contentful (Arc 1+) |
 | Auth | Auth0 (Milestone 7a+) |
-| Edge/CDN | Cloudflare |
+| Edge/CDN | Vercel (native CDN, Firewall, DDoS) |
 | Video | YouTube RSS + Data API v3, Vimeo (platform-agnostic) |
 | IaC | Terraform |
 | Migrations | dbmate (raw SQL) |

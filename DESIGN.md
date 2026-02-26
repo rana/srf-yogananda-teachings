@@ -224,32 +224,49 @@ Contentful webhook sync (event-driven, Milestone 1b+):
 │ │ • Claude API — query expansion + HyDE          │ │
 │ │ • Cohere Rerank 3.5 — passage reranking (M2b+) │ │
 │ │ • Graph batch pipeline — Python + NetworkX (3b+)│ │
-│ │ • Retool — admin panel (content review, analytics) │ │
-│ │ • Cloudflare — CDN, edge caching, security │ │
+│ │ • Staff dashboard — admin panel (PRO-016)     │ │
 │ └──────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Key principle (Arc 1+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Arc 1 (ADR-010). The production diagram above adds services that arrive in later arcs (Cohere Rerank, graph pipeline, Retool, Cloudflare CDN) but the Contentful → Neon → Next.js architecture is established from Milestone 1a.
+**Key principle (Arc 1+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Arc 1 (ADR-010). The production diagram above adds services that arrive in later arcs (Cohere Rerank, graph pipeline, staff dashboard) but the Contentful → Neon → Next.js architecture is established from Milestone 1a.
 
 ### Portal Stack vs. SRF IDP Stack
 
 The portal shares SRF's core infrastructure (AWS, Vercel, Contentful, Neon, Auth0, Amplitude, Sentry) but diverges where the portal's unique requirements — vector search, AI-human editorial collaboration, DELTA-compliant analytics, sacred text fidelity, and a 10-year architecture horizon — make a different choice clearly better. This follows SRF Tech Stack Brief § Guiding Principle #3: *"When a specialized tech vendor does something significantly better than [the standard], utilize that over the less-impressive equivalent."*
 
+**Divergences from SRF standard:**
+
 | SRF IDP Standard | Portal Choice | Governing ADR | Rationale |
 |---|---|---|---|
 | DynamoDB (single-table) | Neon PostgreSQL + pgvector | ADR-013 | Vector similarity search, BM25 full-text, knowledge graph queries — none feasible in DynamoDB |
 | GitLab SCM + CI/CD | GitHub + GitHub Actions | ADR-016 | Claude Code integration; GitHub Copilot workspace; open-source community norms |
-| Serverless Framework v4 | Terraform | ADR-016 | Portal's IaC spans Neon, Vercel, AWS (S3, Bedrock, Lambda) — Terraform unifies all |
-| New Relic (observability) | Sentry (Arc 1 errors) + New Relic (Arc 3d+ APM) | ADR-041 | Error-first approach for pre-launch; New Relic joins at production scale |
+| Serverless Framework v4 | Terraform-native Lambda | ADR-017 | Portal's IaC spans Neon, Vercel, AWS (S3, Bedrock, Lambda) — Terraform unifies all; SF v4 adds licensing cost for < 15 functions |
+| Terraform Cloud (state) | S3 + DynamoDB | ADR-016 | Zero vendor dependency over 10-year horizon (ADR-004); plan review via PR comments, not external UI |
+| Cloudflare (CDN/WAF) | Vercel-native (Firewall, DDoS, CDN) | PRO-017 | Portal runs on Vercel — double-CDN adds complexity without unique value. Compatible if SRF routes domain through Cloudflare. |
+| Retool (admin panel) | Deferred — evaluate at Milestone 3d | PRO-016 | Portal admin needs are modest; Next.js `/admin` route may suffice. Retool remains an option. |
+| New Relic (observability) | Sentry (Arc 1–3c) → New Relic (3d+ APM) | ADR-041 | Sentry covers error tracking through pre-launch and early production. New Relic joins at production scale for APM, Synthetics monitors, distributed tracing, and geographic CWV — capabilities that matter at scale but not during development. |
 | Vimeo (private video) | YouTube embed | ADR-054 | SRF's public teachings are on YouTube; portal links to existing assets, not re-hosted copies |
 | SendGrid (transactional email) | SendGrid (aligned) | ADR-091 | Aligned with SRF standard. Open/click tracking disabled for DELTA. PRO-015 evaluates SES alternative for Milestone 5a. |
 | Cypress (E2E testing) | Playwright | ADR-094 | Multi-browser support (Chrome, Firefox, WebKit), native accessibility snapshot API, better CI reliability |
 | Stripo (email templates) | Server-rendered HTML | ADR-091 | One passage, one link — no template designer needed |
 
+**Portal additions not in SRF standard:**
+
+| Technology | Purpose | Governing ADR | Why Not Standard |
+|---|---|---|---|
+| Voyage voyage-3-large (embeddings) | Semantic search vector generation | ADR-118 | No SRF equivalent — SRF has no vector search |
+| Cohere Rerank 3.5 (Milestone 2b+) | Passage re-ranking for search quality | ADR-119 | No SRF equivalent |
+| Claude Haiku via AWS Bedrock | AI librarian (query expansion, classification) | ADR-014 | Novel capability; routed through Bedrock for SRF's existing AWS relationship |
+| pg_search / ParadeDB | BM25 full-text search in PostgreSQL | ADR-044 | SRF uses Elasticsearch; portal consolidates into single database |
+| fastText | Language detection for multilingual queries | ADR-077 | No SRF equivalent |
+| NetworkX (Python, Milestone 3b+) | Knowledge graph batch pipeline | ADR-117 | No SRF equivalent |
+| dbmate | SQL migration management | ADR-016 | SRF uses ORM migrations; portal uses raw SQL for 10-year durability |
+| Lighthouse CI | Performance budget enforcement in CI | ADR-094 | Free, open-source, CI-agnostic — complements Vercel Analytics with pre-deployment checks |
+
 **The pattern:** Align with SRF where the use case matches. Diverge where the portal's constraints (vector search, DELTA, sacred text fidelity, AI collaboration) demand it. Document every divergence with an ADR so it reads as principled engineering, not drift, when SRF's AE team encounters the portal.
 
-*Section added: 2026-02-26, to document the principled divergence pattern between the portal stack and SRF's IDP stack.*
+*Section revised: 2026-02-26, bidirectional divergence table (portal additions and SRF divergences). Terraform Cloud → S3+DDB. Cloudflare removed (PRO-017). Retool deferred (PRO-016). New Relic rationale sharpened.*
 
 ---
 
@@ -263,7 +280,7 @@ The API surface exists to make the teachings findable by machines — mobile app
 
 ### API Conventions
 
-**Field naming: `snake_case`.** All JSON response fields use `snake_case`, matching PostgreSQL column naming and providing consistency across the API surface. Examples: `chunk_id`, `book_title`, `page_number`, `reader_url`, `has_more`, `results_count`. TypeScript interfaces in `/lib/services/` use `camelCase` internally; the API route layer transforms at the boundary.
+**Field naming: `snake_case`.** All JSON response fields use `snake_case`, matching PostgreSQL column naming and providing consistency across the API surface. Examples: `chunk_id`, `book_title`, `page_number`, `reader_url`, `has_more`, `total_count`. TypeScript interfaces in `/lib/services/` use `camelCase` internally; the API route layer transforms at the boundary.
 
 **Resource identifiers.** Resources use the identifier type natural to their domain:
 - **Books** use slugs (human-readable, SEO-friendly): `/api/v1/books/autobiography-of-a-yogi`
@@ -370,7 +387,7 @@ Response (intentionally unpaginated — see § API Conventions):
  },
  ...
  ],
- "meta": { "results_count": 5 }
+ "meta": { "total_count": 5 }
 }
 ```
 
@@ -401,7 +418,7 @@ Implementation:
  WHERE dp.is_active = true
  AND b.content_tier = 'guru' -- PRO-014: only guru tier in daily pool
  AND bc.language = :language -- filter to user's locale
- ORDER BY random
+ ORDER BY random()
  LIMIT 1;
 
  English fallback: if no results for user's language, re-query with
@@ -510,7 +527,7 @@ Implementation:
  WHERE is_active = true
  AND language = :language
  AND (:exclude IS NULL OR id != :exclude)
- ORDER BY random
+ ORDER BY random()
  LIMIT 1;
 
  Fallback: if no affirmations in user's language, return English.
@@ -717,7 +734,7 @@ See ADR-107 for the full endpoint coverage table, schema requirements (`updated_
 | Concern | Approach |
 |---------|----------|
 | AI prompt injection | System prompts are server-side only. User input is treated as untrusted data, never concatenated into system prompts without sanitization. |
-| Content scraping | Cloudflare bot protection. Rate limiting on API routes (ADR-023). Content fully crawlable — no DRM or content gating (ADR-081 §3a). Protection is rate limiting + copyright communication, not technology walls. |
+| Content scraping | Vercel bot protection + Firewall Rules. Rate limiting on API routes (ADR-023). Content fully crawlable — no DRM or content gating (ADR-081 §3a). Protection is rate limiting + copyright communication, not technology walls. |
 | AI misuse | The AI cannot generate teaching content. If prompted to "ignore instructions," the constrained output format (passage IDs only) limits attack surface. |
 | User privacy | No user accounts required. Search queries logged without any user identification. |
 | Source attribution | Every displayed passage MUST include book, chapter, and page citation. No orphaned quotes. |
@@ -726,10 +743,10 @@ See ADR-107 for the full endpoint coverage table, schema requirements (`updated_
 
 | Layer | Tool | Limit | Behavior on Exceed |
 |-------|------|-------|-------------------|
-| **Outer (edge)** | Cloudflare WAF | 60 general requests/min per IP; 15 search requests/min per IP | HTTP 429 with `Retry-After` header. Request never reaches application. |
+| **Outer (edge)** | Vercel Firewall | 60 general requests/min per IP; 15 search requests/min per IP | HTTP 429 with `Retry-After` header. Request never reaches application. |
 | **Inner (application)** | Custom middleware | 30 search req/min anonymous, 120 search req/min known crawlers (ADR-081) | Graceful degradation: search proceeds without Claude API calls (database-only hybrid search). Still returns results. |
 
-The outer layer stops abuse before it reaches the application — the 15 search/min Cloudflare limit is stricter than the inner layer because it's a hard block (429), while the inner layer's 30/min threshold triggers graceful degradation (results still returned, just without AI enhancement). A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
+The outer layer stops abuse before it reaches the application — the 15 search/min Vercel Firewall limit is stricter than the inner layer because it's a hard block (429), while the inner layer's 30/min threshold triggers graceful degradation (results still returned, just without AI enhancement). A seeker who exceeds the application-layer limit still gets search results — just without AI-enhanced query expansion and passage ranking.
 
 ### Copyright Response Headers
 
@@ -763,7 +780,7 @@ All services that process data on the portal's behalf, with their roles, data to
 |---------|-----------|-------------|--------|-----------|
 | **Neon** | Processor | All server-side data (books, themes, search queries, subscribers) | US (default); EU read replica Arc 4+ | 1a+ |
 | **Vercel** | Processor | Request logs (transient), edge headers, static assets | Global edges, US origin | 1a+ |
-| **Cloudflare** | Processor | Request metadata, IP for WAF (transient, not stored by portal) | Global | 1a+ |
+| **Vercel Firewall** | Processor | Request metadata, IP for rate limiting (transient, not stored by portal) | Global (Vercel edge) | 1a+ |
 | **Amplitude** | Processor | Anonymized events with country_code (no user ID) | US | 3d+ |
 | **Sentry** | Processor | Error stack traces, request context | US | 1a+ |
 | **New Relic** | Processor | Performance metrics, log aggregation | US | 3d+ |
@@ -1747,19 +1764,19 @@ No user identification. No IP addresses. No session IDs.
 
 **`requested_language` rationale:** The `page_viewed` event carries `language` (the locale actually served) and `requested_language` (the seeker's `Accept-Language` header preference). The delta between requested and served is a direct measure of unmet language demand — e.g., how many seekers per week arrive wanting Hindi but receive English. This signal is impossible to backfill and directly informs Milestone 5b language prioritization. When `requested_language === language`, the property adds no information and can be elided in analysis.
 
-**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Milestone 3d Retool dashboard (deliverable 3d.4) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
+**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Milestone 3d staff dashboard (deliverable 3d.4, PRO-016) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
 
 ### Standing Operational Metrics
 
-Beyond the Amplitude event allowlist and APM tooling, the following derived metrics should be computed and surfaced in the Milestone 3d Retool dashboard for ongoing operational awareness:
+Beyond the Amplitude event allowlist and APM tooling, the following derived metrics should be computed and surfaced in the Milestone 3d staff dashboard (PRO-016) for ongoing operational awareness:
 
 | Metric | Source | Refresh | Dashboard |
 |--------|--------|---------|-----------|
-| Zero-result rate (% of searches returning 0 passages) | `search_performed` events | Daily | Retool (staff) |
-| Most common zero-result queries (top 20) | `search_queries` table | Daily | Retool (staff) |
-| Search degradation mode distribution | Structured logs (`searchMode` field) | Daily | Retool (staff) |
-| AI cost (Claude Haiku calls × per-call cost) | AWS Bedrock billing / CloudWatch | Daily | Retool (staff) |
-| Unmet language demand (requested ≠ served) | `page_viewed` events | Weekly | Retool (staff) + Impact Dashboard (Milestone 5b) |
+| Zero-result rate (% of searches returning 0 passages) | `search_performed` events | Daily | Staff dashboard (PRO-016) |
+| Most common zero-result queries (top 20) | `search_queries` table | Daily | Staff dashboard (PRO-016) |
+| Search degradation mode distribution | Structured logs (`searchMode` field) | Daily | Staff dashboard (PRO-016) |
+| AI cost (Claude Haiku calls × per-call cost) | AWS Bedrock billing / CloudWatch | Daily | Staff dashboard (PRO-016) |
+| Unmet language demand (requested ≠ served) | `page_viewed` events | Weekly | Staff dashboard (PRO-016) + Impact Dashboard (Milestone 5b) |
 | Content availability matrix (books × languages) | `books` + `book_chunks` tables | On content change | Impact Dashboard |
 | Editorial queue depth by type | `review_queue` tables | Real-time | Admin portal pipeline dashboard |
 | Geographic Core Web Vitals (per target region) | New Relic Synthetics | Continuous | New Relic |

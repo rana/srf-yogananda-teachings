@@ -2471,7 +2471,7 @@ Disallow: /admin/
 Disallow: /api/v1/exports/
 
 # AI crawlers — welcome, with rate consideration
-# (Rate limits enforced at Cloudflare layer)
+# (Rate limits enforced at Vercel Firewall layer)
 User-agent: GPTBot
 Allow: /
 

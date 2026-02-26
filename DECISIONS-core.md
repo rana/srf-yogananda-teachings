@@ -967,7 +967,7 @@ What auth would serve, and how it's handled without it:
 
 | Need | Solution Without Auth |
 |------|----------------------|
-| Rate limiting | Vercel/Cloudflare edge rate limiting |
+| Rate limiting | Vercel Firewall edge rate limiting |
 | Bookmarks, reading position | `localStorage` (ADR-066) — private, no server |
 | Email subscription | Token-based confirm/unsubscribe (no user accounts) |
 | Admin dashboards | Retool has its own auth |
@@ -1100,8 +1100,8 @@ The teachings portal uses **Neon PostgreSQL exclusively** as its database layer.
 
 1. **DynamoDB for search query logging** — At ~1,000 searches/day (~73 MB/year), PostgreSQL handles this trivially. DynamoDB's write throughput advantage is irrelevant at this scale.
 2. **DynamoDB for session storage** — The portal has no user sessions until Milestone 7a, and Auth0 handles session management. No application-level session store is needed.
-3. **DynamoDB for rate limiting counters** — Cloudflare WAF handles edge-layer rate limiting. Application-layer limits use in-memory counters in Vercel Functions (acceptable for serverless, no shared state needed).
-4. **DynamoDB for caching** — Cloudflare CDN and browser `Cache-Control` headers handle all caching needs. Adding a separate cache database adds complexity without measurable benefit.
+3. **DynamoDB for rate limiting counters** — Vercel Firewall handles edge-layer rate limiting. Application-layer limits use in-memory counters in Vercel Functions (acceptable for serverless, no shared state needed).
+4. **DynamoDB for caching** — Vercel CDN and browser `Cache-Control` headers handle all caching needs. Adding a separate cache database adds complexity without measurable benefit.
 
 ### Rationale
 
@@ -1223,7 +1223,7 @@ The SRF Tech Stack Brief mandates Infrastructure as Code as a core engineering p
 > *"All infrastructure should be defined as Infrastructure-as-Code and deployable via a GitLab CI/CD pipeline"*
 > — SRF Infrastructure Philosophy, Principle #4
 
-The brief names **Terraform** as the IaC tool for "everything else" (i.e., everything not covered by Serverless Framework for AWS Lambda). The portal's infrastructure (Neon, Vercel, Sentry, later Auth0, New Relic, Cloudflare) falls squarely in Terraform's "everything else" category.
+The brief names **Terraform** as the IaC tool for "everything else" (i.e., everything not covered by Serverless Framework for AWS Lambda). The portal's infrastructure (Neon, Vercel, Sentry, later Auth0, New Relic) falls squarely in Terraform's "everything else" category.
 
 AI-assisted development (Claude Code) makes Terraform authoring and maintenance practical even for small teams. Terraform's declarative HCL syntax is well within Claude Code's capabilities, reducing the traditional overhead of writing and evolving `.tf` files.
 
@@ -1235,23 +1235,27 @@ Use **Terraform** for all infrastructure provisioning from Milestone 1a. The por
 
 | Phase | SCM | CI/CD | Terraform State |
 |-------|-----|-------|-----------------|
-| **Primary (all arcs)** | GitHub | GitHub Actions | Terraform Cloud (free tier) |
+| **Primary (all arcs)** | GitHub | GitHub Actions | S3 + DynamoDB |
 | **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
 
 GitHub is the primary SCM for development velocity and simplicity. GitLab migration is not planned but architecturally supported — CI-agnostic deployment scripts (ADR-018) ensure migration requires only CI config rewrite, not logic rewrite. If SRF requires GitLab for production handoff, the migration path is clean. The Terraform code itself is SCM-agnostic.
 
-#### Terraform State: Terraform Cloud
+#### Terraform State: S3 + DynamoDB
 
-Terraform Cloud free tier (500 managed resources) serves as the state backend for all arcs. Rationale:
+An S3 bucket stores state files; a DynamoDB table provides state locking. Both are provisioned during one-time bootstrap (manually or via a minimal script) before the first `terraform apply`. Rationale:
 
-- **Plan review UI.** The human principal reviews AI-authored Terraform plans in Terraform Cloud's web interface — readable diffs, not raw CI logs. This is essential for the AI-as-implementer model.
-- **Built-in state locking.** No DynamoDB table needed.
-- **Free tier sufficient.** The portal has < 50 managed resources through Arc 3, well within the 500-resource limit.
-- **No bootstrap complexity.** S3 + DynamoDB requires manual bucket/table creation before Terraform can run. TFC requires only organization + workspace creation.
+- **Zero vendor dependency.** No external SaaS account for state management. S3 and DynamoDB are already in the AWS footprint (ADR-016 uses AWS for Lambda, S3 backups, Bedrock). One fewer vendor to manage over a 10-year horizon (ADR-004).
+- **Built-in state locking.** DynamoDB conditional writes prevent concurrent `terraform apply` operations.
+- **Negligible cost.** State files are small (< 100 KB). S3 storage + DynamoDB on-demand: effectively $0/month.
+- **Plan review in PR context.** `terraform plan` output is posted as a PR comment by `terraform.yml`. The human principal reviews AI-authored plans in the same PR where code changes are reviewed — the natural review venue for the AI-as-implementer model.
+- **GitLab-portable.** If SRF requires GitLab migration, the S3 backend works unchanged. (GitLab also supports its own Terraform backend, but S3 is CI-agnostic.)
 
-**Execution mode: local (CLI-driven).** Terraform runs in the GitHub Actions runner; TFC stores state remotely. This means provider credentials live in GitHub Secrets (not TFC workspace variables) and OIDC federation works naturally (the GitHub OIDC token is available in the runner). In local mode, TFC does **not** provide its plan review UI — instead, `terraform plan` output is posted as a PR comment by `terraform.yml`. TFC's value in local mode: state storage, locking, versioning, web-based state inspection, and zero-bootstrap state backend. If the human principal later wants TFC's plan review UI, switching to remote execution requires: (1) move provider credentials to TFC workspace variables, (2) configure TFC OIDC trust for AWS (replacing GH Actions OIDC), (3) change workspace execution mode. This is a configuration change, not an architecture change.
+Bootstrap (one-time, before first `terraform apply`):
+1. Create an S3 bucket (`srf-portal-terraform-state`) with versioning enabled and server-side encryption (AES-256)
+2. Create a DynamoDB table (`srf-portal-terraform-locks`) with partition key `LockID` (String), on-demand billing
+3. Configure `backend "s3"` in `/terraform/main.tf`
 
-Bootstrap: create a TFC organization and workspace manually (one-time, execution mode "local"), then Terraform manages everything else. See CONTEXT.md § Bootstrap Credentials Checklist.
+After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`. See CONTEXT.md § Bootstrap Credentials Checklist.
 
 #### GitHub Actions Authentication: OIDC Federation
 
@@ -1292,7 +1296,7 @@ The `~>` (pessimistic) operator allows patch updates but locks major/minor versi
 
 ```
 /terraform/
- main.tf — Provider configuration, TFC backend
+ main.tf — Provider configuration, S3 backend
  variables.tf — Input variables (project name, environment, etc.)
  outputs.tf — Connection strings, URLs, DSNs
  versions.tf — required_providers with version constraints
@@ -1314,11 +1318,10 @@ The `~>` (pessimistic) operator allows patch updates but locks major/minor versi
  outputs.tf — DSN
 
  /aws/
- main.tf — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm
+ main.tf — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm, state backend resources
  variables.tf
  outputs.tf
 
- /cloudflare/ — Added when custom domain assigned (deferred)
  /newrelic/ — Added at Milestone 3d
  /auth0/ — Added at Milestone 7a+ (if needed)
 
@@ -1343,7 +1346,7 @@ For Arcs 1–3, only `dev` is active. Additional environments are added as the p
 | Sentry project, alert rules | `sentry.client.config.ts` (SDK config) |
 | AWS IAM roles, S3 buckets, Budgets | Lambda handler code (`/lambda/`) |
 | — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
-| Cloudflare DNS, WAF rules (when active) | Application routing (`next.config.js`) |
+| — | Application routing (`next.config.js`) |
 
 The boundary: Terraform creates and configures the *services*. Application code configures *how the app uses those services*. Database schema is managed by dbmate migrations, not Terraform — schema changes require migration semantics (up/down), not declarative state.
 
@@ -1381,7 +1384,7 @@ jobs:
 - **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code.
 - **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code.
 - **OIDC eliminates credential management.** No AWS access keys to rotate, no long-lived secrets to leak. GitHub Actions authenticates via ephemeral tokens scoped to the repo.
-- **Terraform Cloud enables human oversight.** In local execution mode, `terraform plan` output is posted as PR comments — readable diffs in the PR context where the human reviews. TFC provides state inspection via its web UI. If remote execution is enabled later, TFC's full plan review UI becomes available.
+- **Plan review in PRs.** `terraform plan` output is posted as PR comments — readable diffs in the PR context where the human reviews. No external UI needed.
 
 ### Alternatives Considered
 
@@ -1389,7 +1392,7 @@ jobs:
 |--------|------|------|
 | **Terraform from Milestone 1a (chosen)** | SRF-aligned; reproducible from day one; aligns with ADR-017 Lambda timing | Upfront setup time; state backend needed |
 | **Terraform deferred to Milestone 2a** | Slightly simpler Arc 1 start | Manual infrastructure creates undocumented state; ADR-017 needs Lambda in Arc 1; import-or-recreate friction |
-| **S3 + DynamoDB state backend** | Zero vendor cost; no TFC dependency | Manual bootstrap (bucket + table); no plan review UI; DynamoDB state locking overhead |
+| **Terraform Cloud (free tier)** | Zero bootstrap; built-in plan review UI; state locking without DynamoDB | External vendor dependency (HashiCorp/IBM); additional credential (TF_API_TOKEN); 500-resource limit; plan review UI not available in local execution mode |
 | **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; smaller provider ecosystem |
 | **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle |
 
@@ -1397,18 +1400,18 @@ jobs:
 
 - Milestone 1a includes `/terraform` directory with modules for Neon, Vercel, Sentry, and AWS
 - GitHub is the primary SCM with GitHub Actions CI/CD. GitLab migration architecturally supported but not planned.
-- Terraform state stored in Terraform Cloud (free tier)
+- Terraform state stored in S3 with DynamoDB locking (zero vendor dependency)
 - GitHub Actions authenticates to AWS via OIDC federation — no long-lived AWS credentials
 - Non-AWS provider tokens (Neon, Vercel, Sentry) stored as GitHub secrets with quarterly rotation
 - All environment variables and service configuration defined in Terraform. Explicit exceptions: GitHub branch protection (manual), Neon/Vercel spend alerts (manual dashboard settings — see CONTEXT.md § Bootstrap Credentials Checklist)
 - `.env.example` still maintained for local development
-- Cloudflare, New Relic, and Auth0 modules added as those services are introduced
+- New Relic and Auth0 modules added as those services are introduced
 - Three-environment convention (dev/staging/prod), with only `dev` active in Arcs 1–3
 - Provider versions pinned with pessimistic constraints; upgrades are explicit PRs
 - `.terraform.lock.hcl` committed to version control (reproducible provider installations, like `pnpm-lock.yaml`)
-- TFC auto-apply enabled for `dev` workspace (plan runs on PR, apply runs automatically on merge to main). Staging and production workspaces (Arc 4+) require manual confirmation before apply.
+- `terraform apply` runs automatically on merge to main (dev environment). Staging and production environments (Arc 4+) require manual confirmation before apply.
 
-*Revised: 2026-02-25, GitHub-first SCM (GitLab migration deferred, not planned), Terraform Cloud as state backend, OIDC federation for AWS auth, Milestone 1a timing (aligned with ADR-017), three-environment model, provider version pinning. Updated: Lambda timing clarified (module code from 1a, infra provisioned 3a). GitHub settings removed from Terraform boundary (manual). Lock file committed. TFC auto-apply for dev.*
+*Revised: 2026-02-26, S3 + DynamoDB state backend replaces Terraform Cloud (fewer vendors, ADR-004 10-year horizon). Cloudflare module removed (PRO-017). Previous revision: 2026-02-25, GitHub-first SCM, OIDC federation, Milestone 1a timing, three-environment model, provider version pinning, Lambda timing, lock file committed.*
 
 ---
 
@@ -1426,7 +1429,7 @@ The former Lambda batch decision introduced AWS Lambda + Serverless Framework v4
 
 1. **Serverless Framework v4 licensing.** SF v4 moved to a paid license model in late 2024. The portal takes on a licensing dependency for a tool it barely needs (< 15 functions across all milestones). The SRF Brief specifies SF v4 because most SRF microservices have dozens of Lambda functions — the portal does not.
 
-2. **Dual IaC tooling.** The portal uses Terraform for all infrastructure (Neon, Vercel, Sentry, Cloudflare, S3). Adding SF v4 means two IaC tools, two deployment pipelines, two state management systems. This contradicts the 10-year simplicity principle (ADR-004).
+2. **Dual IaC tooling.** The portal uses Terraform for all infrastructure (Neon, Vercel, Sentry, S3). Adding SF v4 means two IaC tools, two deployment pipelines, two state management systems. This contradicts the 10-year simplicity principle (ADR-004).
 
 3. **Timing.** The former Lambda batch decision placed Lambda infrastructure setup in Milestone 2a — already a dense milestone (multi-book ingestion, search expansion). Meanwhile ADR-019 (database backup) needs Lambda in Arc 1, creating a timing gap that ADR-019 acknowledged awkwardly: "Lambda function added in Arc 1 or Milestone 2a when Lambda infrastructure is first deployed."
 
@@ -1508,7 +1511,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 - **Lambda is SCM-agnostic.** It works identically under GitHub Actions or any future CI system. Unlike CI-based cron jobs, Lambda infrastructure doesn't change if the portal ever migrates SCM platforms. EventBridge schedules, IAM roles, and S3 buckets are untouched by an SCM migration.
 - **The portal already has an AWS footprint.** S3 (backups, Milestone 3a), Bedrock (Claude API, Arc 1), CloudFront (media streaming, Arc 6), and EventBridge are all AWS services the portal uses regardless. Lambda is the natural compute layer for an AWS-invested project.
 - **Terraform-native Lambda is sufficient at this scale.** The portal has < 15 Lambda functions across all milestones. SF v4's ergonomics (local invocation, plugin ecosystem, per-function configuration) serve microservice architectures with dozens of functions. For < 15 functions, `aws_lambda_function` + `aws_lambda_layer_version` in Terraform are straightforward and eliminate a tool dependency.
-- **One IaC tool, one deployment pipeline.** `terraform apply` already deploys Neon, Vercel, Sentry, Cloudflare, and S3. Adding Lambda to the same pipeline means no new deployment workflow. CI/CD gains no new steps — Lambda deploys alongside everything else.
+- **One IaC tool, one deployment pipeline.** `terraform apply` already deploys Neon, Vercel, Sentry, and S3. Adding Lambda to the same pipeline means no new deployment workflow. CI/CD gains no new steps — Lambda deploys alongside everything else.
 - **Arc 1 resolves the ADR-019 timing gap.** The backup function deploys in Arc 1 where it belongs. No more "Milestone 1a or Milestone 2a" ambiguity.
 - **ADR-013 precedent.** The portal already diverges from SRF's DynamoDB pattern when the portal's needs don't match. The same principle applies: SRF ecosystem alignment is about patterns (Lambda for batch compute), not tools (SF v4 as the deployment mechanism).
 - **10-year horizon (ADR-004).** Terraform is Tier 1 (effectively permanent). Serverless Framework v4 is not in any durability tier — it's a deployment tool with licensing risk and competitive pressure from SST, AWS SAM, and native Terraform. Eliminating it removes a 10-year maintenance liability.
@@ -1828,7 +1831,7 @@ Adopt a **single-region origin with global edge distribution** strategy for Arcs
 | Service | Distribution | Notes |
 |---------|-------------|-------|
 | Vercel Edge Network | 70+ PoPs worldwide | Static pages (ISR) cached at edge. HTML reaches seekers from the nearest PoP. |
-| Cloudflare WAF | Global edge | DDoS protection and rate limiting before requests reach Vercel. |
+| Vercel Firewall | Global edge | DDoS protection and rate limiting at Vercel's edge network. |
 | CloudFront | Global edge | Audio files, PDFs, and static assets cached at edge. Origin is S3 in the primary region. |
 
 Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a Vercel PoP in Mumbai, a PDF from a CloudFront PoP in Mumbai, and only the search query itself routes to the single-region origin.
@@ -1965,9 +1968,9 @@ The DESIGN.md security section mentions "Rate limiting on API routes" but doesn'
 
 Implement rate limiting at two layers:
 
-#### Layer 1: Cloudflare (edge — Arc 1)
+#### Layer 1: Vercel Firewall (edge — Arc 1)
 
-Cloudflare includes rate limiting via WAF rules. Configure:
+Vercel Pro includes Firewall Rules, DDoS protection, and bot detection. Configure rate limiting via Vercel Firewall Rules or Edge Middleware:
 
 | Rule | Limit | Scope |
 |------|-------|-------|
@@ -1975,7 +1978,7 @@ Cloudflare includes rate limiting via WAF rules. Configure:
 | Search rate limit | 15 requests/minute per IP | `/api/v1/search` specifically |
 | Burst protection | 5 requests/second per IP | All routes |
 
-These limits are generous for human seekers (who search a few times per session) but block automated abuse.
+These limits are generous for human seekers (who search a few times per session) but block automated abuse. Vercel's built-in DDoS mitigation and bot protection provide the network-layer defense. No separate CDN/WAF vendor required (PRO-017).
 
 #### Layer 2: Application (API route — Arc 1)
 
@@ -1992,11 +1995,11 @@ Set a monthly spending cap via the Anthropic API dashboard. If the cap is reache
 
 - **Cost protection is an Arc 1 requirement**, not an afterthought. The Claude API is the only variable-cost component in the early arcs. Unbounded cost exposure on a public, unauthenticated API is an unacceptable risk.
 - **Graceful degradation over hard blocks.** A seeker who happens to search frequently (exploring themes, trying different queries) should never see an error page. They see slightly less refined results. The portal remains welcoming.
-- **Two-layer defense.** Cloudflare catches the obvious abuse (bots, scrapers). The application layer catches the edge cases (distributed abuse, legitimate but excessive use).
+- **Two-layer defense.** Vercel Firewall catches the obvious abuse (bots, scrapers) at the edge. The application layer catches the edge cases (distributed abuse, legitimate but excessive use).
 
 ### Consequences
 
-- Cloudflare WAF rules configured in Arc 1 (added to Terraform Cloudflare module)
+- Vercel Firewall Rules configured in Arc 1 (Vercel Pro tier, no separate infrastructure module needed)
 - Application-level rate limiter in the search API route
 - Claude API monthly budget cap set via Anthropic dashboard
 - Search gracefully degrades to database-only when rate-limited or budget-exceeded
@@ -2474,7 +2477,7 @@ Adopt the **hybrid approach**: locale path prefix on frontend pages, query param
 - **Language is a property of content, not a namespace for operations.** "Search" is the same operation regardless of language. The `?language=` parameter modifies what content is returned, not what operation is performed. This is the fundamental insight.
 - **API consumers vary.** The web frontend handles locale via URL prefix (standard i18n SEO). A mobile app manages locale in its own state. A WhatsApp bot receives locale from the user's profile. A third-party scholar tool may request multiple languages in sequence. The API should serve all with a single, clean contract.
 - **Not every endpoint is language-scoped.** `/api/v1/health`, `/api/v1/passages/[chunk-id]` (the passage already *is* in a language), `/api/v1/books` (returns all books with their `language` field) — forcing a locale prefix on these creates semantic confusion.
-- **CDN caching works with query parameters.** Vercel and Cloudflare cache based on full URL including query string. `?language=hi` produces a distinct cache entry.
+- **CDN caching works with query parameters.** Vercel caches based on full URL including query string. `?language=hi` produces a distinct cache entry.
 - **Versioning and locale are orthogonal.** `/api/v1/` is the version namespace. Locale is content filtering. Mixing them (`/api/v1/hi/`) conflates two independent axes of variation.
 - **10-year horizon.** New languages are added by supporting a new `language` parameter value — no new route structure, no new endpoints. The API contract is stable across all future languages.
 
@@ -4390,7 +4393,7 @@ Produce a yearly **"What Is Humanity Seeking?"** report from aggregated, anonymi
 
 #### Data pipeline
 
-1. **Aggregation (automated, nightly):** Group search queries by theme (using the existing theme taxonomy from ADR-032), by geography (country-level from Cloudflare analytics — no finer granularity), and by time period (weekly, monthly, yearly). Store aggregates in a `search_theme_aggregates` table.
+1. **Aggregation (automated, nightly):** Group search queries by theme (using the existing theme taxonomy from ADR-032), by geography (country-level from Vercel Analytics or request headers — no finer granularity), and by time period (weekly, monthly, yearly). Store aggregates in a `search_theme_aggregates` table.
 2. **Trend detection (automated):** Identify rising/falling themes, seasonal patterns, and correlations with world events. Claude can assist with narrative-quality trend descriptions — but all descriptions are reviewed by a human before publication.
 3. **Report generation (annual, human-curated):** SRF staff or the philanthropist's foundation curates the data into a narrative report. The portal provides the raw aggregates and trend data; the human provides the interpretation.
 
