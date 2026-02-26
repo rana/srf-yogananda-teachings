@@ -12,7 +12,7 @@
 |-----|-------|------|--------|----------------|--------|
 | PRO-001 | SRF Corpus MCP — Three-Tier Architecture | Feature | Validated | ADR-101, DES-031, ADR-097 | ADR-101 (descheduled 2026-02-24) |
 | PRO-002 | SRF Lessons Integration | Feature | Validated | ADR-085, ADR-121 | Stakeholder vision |
-| PRO-003 | Text-to-Speech for Passages | Feature | Proposed | ADR-003, ADR-073 | Accessibility vision |
+| PRO-003 | Text-to-Speech for Passages | Feature | Proposed | ADR-003, ADR-073, ADR-015 | Accessibility vision |
 | PRO-004 | Audio-Visual Ambiance Toggle | Enhancement | Proposed | ADR-065 | Unscheduled feature |
 | PRO-005 | Neon Auth as Auth0 Alternative | Enhancement | Proposed | ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
@@ -51,11 +51,11 @@
 
 **Status:** Proposed
 **Type:** Feature
-**Governing Refs:** ADR-003, ADR-073
-**Dependencies:** Passage display infrastructure (Milestone 2a). Screen reader emotional quality standards (ADR-073) inform voice selection criteria.
-**Scheduling Notes:** Listed in ROADMAP.md § Unscheduled Features. TTS for displayed passages would extend accessibility beyond screen readers to seekers who prefer audio consumption. Voice selection must respect the devotional register — synthetic voices that trivialize sacred text are worse than no TTS. Evaluate browser-native speech synthesis vs. cloud TTS services; consider DELTA compliance for any cloud option. A related exploration proposes human-narrated audio by monastics as first-class content (paragraph-level playback, gender-choice narration per language), reaching an estimated 771 million illiterate adults (UNESCO 2022). The monastic narration path and synthetic TTS path serve different populations and timelines — monastic recordings require content production; TTS is infrastructure-only. Both should be evaluated.
+**Governing Refs:** ADR-003, ADR-073, ADR-015
+**Dependencies:** Passage display infrastructure (Milestone 2a). Screen reader emotional quality standards (ADR-073) inform voice selection criteria. ADR-015 (Verbatim Media Fidelity) constrains implementation options.
+**Scheduling Notes:** Listed in ROADMAP.md § Unscheduled Features. Per ADR-015 (Verbatim Media Fidelity), portal-initiated TTS of Yogananda's words must use human-recorded narration (monastic or SRF-approved reader). Synthetic text-to-speech is not permitted for sacred text — synthetic voice imposes machine prosody on a realized master's teachings. User-controlled assistive technology (browser screen readers, OS-level TTS) is always permitted and unaffected by this policy. The primary investment path is human-narrated audio by monastics as first-class content (paragraph-level playback, gender-choice narration per language), reaching an estimated 771 million illiterate adults (UNESCO 2022). Synthetic TTS may serve non-sacred portal content only (navigation, UI feedback). The monastic narration path requires content production investment; evaluate feasibility and SRF willingness at Arc 2 boundary.
 **Re-evaluate At:** Arc 2 boundary
-**Decision Required From:** Architecture + accessibility review
+**Decision Required From:** Architecture + accessibility review + SRF editorial (narration approval)
 **Related Explorations:** `book-read-to-me-mode-toggle-displayed-next-to-book-text.md` (archived)
 
 ### PRO-004: Audio-Visual Ambiance Toggle

@@ -8,9 +8,9 @@ CLAUDE.md carries the compressed, code-affecting form of each principle. This do
 
 ## 1. Direct Quotes Only
 
-**The AI is a librarian, not an oracle.** It finds and ranks Yogananda's verbatim words — it never generates, paraphrases, or synthesizes content. (ADR-001, ADR-005)
+**The AI is a librarian, not an oracle.** It finds and ranks Yogananda's verbatim words — it never generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. (ADR-001, ADR-005, ADR-015)
 
-Yogananda's words are considered transmitted teachings from a realized master. Even subtle paraphrasing can distort meaning — "God-consciousness" and "cosmic consciousness" are not interchangeable in this tradition. The librarian model eliminates hallucination risk entirely: there is nothing to hallucinate because the AI generates no content.
+Yogananda's words are considered transmitted teachings from a realized master. Even subtle paraphrasing can distort meaning — "God-consciousness" and "cosmic consciousness" are not interchangeable in this tradition. The librarian model eliminates hallucination risk entirely: there is nothing to hallucinate because the AI generates no content. This extends to all modalities: AI voice synthesis of sacred text imposes synthetic prosody on the Master's teachings; AI-generated images of the gurus fabricate objects of devotion; AI-generated video of the gurus is impermissible regardless of intent. ADR-015 establishes the three-tier media integrity policy.
 
 Every Claude interaction returns structured data (JSON arrays of IDs, terms, scores, labels), never prose. Claude reads passages to understand them for ranking and classification, but its output is always a label, a score, or an ID — never modified text. The three permitted categories are Finding (locating passages), Classifying (labeling passages), and Drafting (non-sacred text like UI strings, always with human review). ADR-005 is the single authoritative reference for what Claude may and may not do.
 
@@ -20,9 +20,9 @@ The consequence that matters most: chunking quality is paramount. Each chunk mus
 
 ## 2. Sacred Text Fidelity
 
-**Every displayed passage must include book, chapter, and page citation.** No orphaned quotes. AI translation of Yogananda's words is never acceptable — only official SRF/YSS translations. (ADR-075, ADR-078)
+**Every displayed passage must include book, chapter, and page citation.** No orphaned quotes. AI transformation of Yogananda's teachings across any medium — text translation, voice synthesis, image generation, video fabrication — is never acceptable. Only official SRF/YSS translations for text; only human recordings for audio narration of sacred text; only authentic photographs and video for guru imagery. (ADR-075, ADR-078, ADR-015)
 
-When an official translation doesn't exist for a language, the book is simply unavailable in that language — the portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition.
+When an official translation doesn't exist for a language, the book is simply unavailable in that language — the portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition. The same reasoning extends to voice and image: a synthetic voice reading Yogananda's words imposes machine prosody on sacred transmission; an AI-generated guru portrait fabricates an object of devotion. The portal preserves what exists with the highest fidelity — it does not fill gaps with synthetic substitutes.
 
 Content integrity verification (ADR-039) ensures that published text has not been modified, truncated, or corrupted. Every passage carries provenance: which book, which edition, which chapter, which page. The "Read in context" deep link is architecturally critical — every search result must link to the full chapter, positioned at the passage, so seekers can always verify the surrounding context.
 

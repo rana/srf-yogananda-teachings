@@ -6,13 +6,13 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 015, 028, 045, 102–103 exist from restructuring; 125–126 appeared in early explorations but were never adopted. New ADRs append after 124. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., a new Foundational ADR could claim 015).*
+*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring; 125–126 appeared in early explorations but were never adopted. New ADRs append after 124. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
 
 ### Index by Concern
 
 **Foundational Constraints**
 
-Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
 
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
@@ -21,6 +21,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 - ADR-005: Claude AI Usage Policy — Permitted Roles, Prohibited Uses, and Expansion Roadmap
 - ADR-006: Global Equity — Serving Earth's Underserved Seekers
 - ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
+- ADR-015: Verbatim Media Fidelity — Cross-Modal Content Integrity
 - ADR-121: DELTA-Relaxed Authenticated Experience
 
 **Architecture & Platform**
@@ -192,7 +193,7 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 
 | File | Groups | ADRs | Arc Relevance |
 |------|--------|------|---------------|
-| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–014, 016–027, 029–044, 046–053, 114–121 | Arc 1+ (implementation-critical) |
+| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–027, 029–044, 046–053, 114–121 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
 | [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123–124 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

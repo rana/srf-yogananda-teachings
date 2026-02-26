@@ -393,6 +393,7 @@ Three sourcing strategies exist: royalty-free sound libraries (Freesound, Pixaba
 - Human review remains the mandatory gate between AI-generated candidates and production assets
 - No new infrastructure, no runtime dependencies, no model hosting — generation is a development-time activity
 - **Extends DES-014** (Quiet Corner) and **DES-009** (Dwell) with a sourcing strategy; does not alter their specifications
+- **Boundary:** This ADR governs UI and ambient audio only. AI audio generation for sacred text narration, guru voice synthesis, chant performance, or any audio representing Yogananda or the lineage gurus is prohibited by ADR-015 (Verbatim Media Fidelity). The line between this ADR and ADR-015: if the audio *is* or *reads* sacred content, ADR-015 governs; if the audio *accompanies* the portal experience as a UI element, this ADR governs.
 
 ---
 
