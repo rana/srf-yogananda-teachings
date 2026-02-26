@@ -175,7 +175,7 @@ Specifies how the portal is built, tested, and monitored. Engineering standards 
 
 Controls how the project governs its own decisions, documents, and evolution. The thirteen-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with arc-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Thirteen-Document System with Arc-Gated Loading
+- ADR-098: Documentation Architecture — Thirteen-Document System with Arc/Milestone-Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination

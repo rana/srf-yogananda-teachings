@@ -4061,7 +4061,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 ### Consequences
 
 - New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
-- New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions & Autocomplete"
+- New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions — Corpus-Derived, Not Behavior-Derived"
 - ROADMAP.md updated: Deliverable 1b.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
 - Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-051 lifecycle)

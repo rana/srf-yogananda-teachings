@@ -410,7 +410,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
 
 **Domain-adapted embeddings (ADR-047, later-stage research).** The highest-ceiling path to world-class retrieval: fine-tune a multilingual base model on Yogananda's published corpus across languages. A domain-adapted model would understand spiritual vocabulary, metaphorical patterns, and cross-tradition concepts at a depth no general model matches. Prerequisites: multilingual corpus (Milestone 5b ingestion) and per-language evaluation suites (Milestone 5b). The same migration procedure above applies — the architecture imposes no constraints on model provenance.
 
-### ADR-049: Search Suggestions & Autocomplete
+### ADR-049: Search Suggestions — Corpus-Derived, Not Behavior-Derived
 
 The search architecture above handles what happens *after* a query is submitted. This section covers what happens *as the seeker types* — autocomplete suggestions that reduce friction, show what the corpus contains, and extend the librarian metaphor.
 
@@ -1504,7 +1504,7 @@ SENTRY_AUTH_TOKEN=               # From Sentry → Settings → Auth Tokens
 
 ---
 
-## ADR-048: Chunking Strategy
+## ADR-048: Chunking Strategy Specification
 
 The chunking algorithm is the single most important factor in search retrieval quality. Yogananda's prose style varies dramatically across books, requiring a nuanced strategy.
 

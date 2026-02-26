@@ -1696,7 +1696,7 @@ When an upstream workflow's output changes (e.g., an OCR correction alters passa
 
 ## ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
 
-**Status:** Accepted (all tiers unscheduled as of 2026-02-24; architecture preserved as design reference) | **Date:** 2026-02-21
+**Status:** Accepted (all tiers unscheduled → PRO-001; architecture preserved as design reference) | **Date:** 2026-02-21
 
 ### Context
 

@@ -17,7 +17,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 7. **DECISIONS.md** — Index and navigational summaries for 119 ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–014, 016–027, 029–044, 046–053, 114–121). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
-   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance); Arc 3+ (staff, brand, operations).
+   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 7 arcs from foundation through community curation at scale, with milestones, deliverables, success criteria, and arc gates
 9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
@@ -88,7 +88,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 119 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (015, 028, 045, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-124 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability).
+**ADR-NNN** (Architecture Decision Records) — 119 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (015, 028, 045, 102–103) exist from restructuring and 125–126 appeared in early explorations but were never adopted; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-124 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability).
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)
@@ -103,7 +103,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`, `PRO-001`. Always zero-pad to three digits.
 
-**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS.md and DESIGN-arc1.md). Rule: DECISIONS.md carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS.md.
+**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS-core.md and DESIGN-arc1.md). Rule: DECISIONS carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS. Titles must match between locations — use the full DECISIONS title in both. When editing a dual-homed ADR, update both locations and verify titles match.
 
 ## Project Skills
 

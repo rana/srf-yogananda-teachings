@@ -9,7 +9,7 @@
 | [DES-001: Design Philosophy](#des-001-design-philosophy) | — | DESIGN.md |
 | [DES-002: Architecture Overview](#des-002-architecture-overview) | 1, 4+ | DESIGN.md |
 | [DES-003: The AI Librarian: Search Architecture](DESIGN-arc1.md#des-003-the-ai-librarian-search-architecture) | 1–2a | DESIGN-arc1.md |
-| &emsp;[ADR-049: Search Suggestions & Autocomplete](DESIGN-arc1.md#adr-049-search-suggestions-autocomplete) | 1, 3a, 5b | DESIGN-arc1.md |
+| &emsp;[ADR-049: Search Suggestions — Corpus-Derived, Not Behavior-Derived](DESIGN-arc1.md#adr-049-search-suggestions--corpus-derived-not-behavior-derived) | 1, 3a, 5b | DESIGN-arc1.md |
 | [DES-004: Data Model](DESIGN-arc1.md#des-004-data-model) | 1+ | DESIGN-arc1.md |
 | [DES-005: Content Ingestion Pipeline](DESIGN-arc1.md#des-005-content-ingestion-pipeline) | 1, 4+ | DESIGN-arc1.md |
 | [ADR-041: Arc 1 Bootstrap](DESIGN-arc1.md#adr-041-arc-1-bootstrap) | 1 | DESIGN-arc1.md |
@@ -36,12 +36,12 @@
 | [DES-026: Editorial Reading Threads — "Teachings in Conversation"](#des-026-editorial-reading-threads-teachings-in-conversation) | 3c+ | DESIGN.md |
 | [DES-027: Reverse Bibliography — "What Yogananda Read"](#des-027-reverse-bibliography-what-yogananda-read) | 3c+ | DESIGN.md |
 | [DES-028: Calendar-Aware Content Surfacing](DESIGN-arc2-3.md#des-028-calendar-aware-content-surfacing) | 3b+ | DESIGN-arc2-3.md |
-| [ADR-048: Chunking Strategy](DESIGN-arc1.md#adr-048-chunking-strategy) | 1+ | DESIGN-arc1.md |
+| [ADR-048: Chunking Strategy Specification](DESIGN-arc1.md#adr-048-chunking-strategy-specification) | 1+ | DESIGN-arc1.md |
 | &emsp;[Semantic Density Classification](DESIGN-arc1.md#semantic-density-classification) | 3a+ | DESIGN-arc1.md |
 | &emsp;[ADR-039 ext: Corpus Stylometric Fingerprint](DESIGN-arc1.md#adr-039-ext-corpus-stylometric-fingerprint) | 3d+ | DESIGN-arc1.md |
 | [DES-029: The Quiet Index — Browsable Contemplative Taxonomy](#des-029-the-quiet-index-browsable-contemplative-taxonomy) | 3b+ | DESIGN.md |
 | [DES-030: Daily Email: Verbatim Passage Delivery](DESIGN-arc4-plus.md#des-030-daily-email-verbatim-passage-delivery) | 5a+ | DESIGN-arc4-plus.md |
-| [ADR-084: Seeker Feedback — DELTA-Compliant Signal Collection](#adr-084-seeker-feedback-delta-compliant-signal-collection) | 3b+ | DESIGN.md |
+| [ADR-084: DELTA-Compliant Seeker Feedback Mechanism](#adr-084-delta-compliant-seeker-feedback-mechanism) | 3b+ | DESIGN.md |
 | [DES-031: MCP Server Strategy](DESIGN-arc1.md#des-031-mcp-server-strategy) | 1+ | DESIGN-arc1.md |
 | [DES-032: Content Management Strategy](DESIGN-arc4-plus.md#des-032-content-management-strategy) | 4+ | DESIGN-arc4-plus.md |
 | [ADR-082: Staff Experience Architecture](DESIGN-arc2-3.md#adr-082-staff-experience-architecture) | 3b+ | DESIGN-arc2-3.md |
@@ -870,7 +870,7 @@ A seeker who arrives at 2 AM seeking comfort needs a different texture than one 
 
 ---
 
-## ADR-084: Seeker Feedback — DELTA-Compliant Signal Collection
+## ADR-084: DELTA-Compliant Seeker Feedback Mechanism
 
 The portal has no mechanism for seekers to communicate back without violating DELTA principles. Three feedback channels, none storing user identifiers:
 

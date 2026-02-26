@@ -64,7 +64,7 @@
 **Type:** Enhancement
 **Governing Refs:** ADR-065
 **Dependencies:** None architectural. Content dependency: curated ambient audio assets.
-**Scheduling Notes:** Listed in ROADMAP.md § Deferred / Suspended. Optional temple bells or nature sounds during reading. Must respect Calm Technology principles — never autoplay, never default-on, never attention-seeking. Evaluated and deferred as non-essential to the core reading experience. Risk of trivializing the portal's contemplative register if poorly executed.
+**Scheduling Notes:** Listed in ROADMAP.md § Unscheduled Features. Optional temple bells or nature sounds during reading. Must respect Calm Technology principles — never autoplay, never default-on, never attention-seeking. Evaluated and deferred as non-essential to the core reading experience. Risk of trivializing the portal's contemplative register if poorly executed.
 **Re-evaluate At:** Post-Arc 3 (after core experience is mature)
 **Decision Required From:** Editorial + UX review
 
