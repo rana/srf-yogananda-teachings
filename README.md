@@ -55,7 +55,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
 | Reranking | Cohere Rerank 3.5 (Milestone 2b+) (ADR-119) |
 | Graph | Postgres-native + Python/NetworkX batch pipeline (Milestone 3b+) (ADR-117) |
-| Cache | Redis/ElastiCache (suggestions, Milestone 2b+) (ADR-120) |
+| Suggestions | Static JSON at CDN edge (Arc 1) + pg_trgm fuzzy fallback; Vercel KV if needed (Milestone 2b+) (ADR-120) |
 | Language detection | fastText (per-query, < 1ms) |
 | CMS | Contentful (Arc 1+) |
 | Auth | Auth0 (Milestone 7a+) |

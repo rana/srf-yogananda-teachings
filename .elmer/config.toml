@@ -14,8 +14,8 @@ max_turns = 5
 [auto_approve]
 model = "sonnet"
 max_turns = 3
-criteria = "document-only proposals with no code changes"
-max_files_changed = 10
+criteria = "proposals that maintain cross-reference integrity across all project documents, do not contradict existing ADRs, preserve identifier sequence consistency (ADR-NNN, DES-NNN, PRO-NNN), and do not introduce speculative content or ungrounded claims about the teachings"
+max_files_changed = 5
 require_proposal = true
 
 [archetype_selection]
@@ -37,6 +37,7 @@ auto_archetype = false            # AI selects archetype for generated topics
 max_concurrent = 5
 generate_threshold = 2          # generate new topics when active < threshold
 generate_count = 5
+max_approvals_per_cycle = 3     # safety bound: conservative for doc-only project
 
 [insights]
 enabled = false                 # extract insights after approval

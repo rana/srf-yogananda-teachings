@@ -412,9 +412,27 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
 
 ### ADR-049: Search Suggestions — Corpus-Derived, Not Behavior-Derived
 
-The search architecture above handles what happens *after* a query is submitted. This section covers what happens *as the seeker types* — autocomplete suggestions that reduce friction, show what the corpus contains, and extend the librarian metaphor.
+The search architecture above handles what happens *after* a query is submitted. This section covers what happens *as the seeker types* — autocomplete suggestions that reduce friction, show what the corpus contains, and extend the librarian metaphor. A librarian who, when you approach the desk, gently surfaces what the library contains.
 
 **Core principle:** Suggestion intelligence is corpus-derived, not behavior-derived. All suggestions are extracted from the content itself, not from user query patterns. This ensures DELTA compliance (ADR-095), guarantees every suggestion leads to results, and aligns with the Calm Technology principle — suggestions show what's available, not what's popular.
+
+#### Seeker Experience
+
+The suggestion system's job is to reduce friction, teach the seeker the library's vocabulary, and deliver them to the right doorway. Everything below — infrastructure, APIs, schemas — serves this experience.
+
+**Scene 1: Focus (zero-state).** The seeker clicks the search bar. Before they type, curated entry points appear — theme chips ("Peace", "Courage", "Grief & Loss") and question prompts ("How do I overcome fear?", "What is the purpose of life?"). This is a librarian gently offering: "Here are some things people come here looking for." Served from `_zero.json` at the CDN edge (< 10ms). Screen reader announces: "Search. What are you seeking? 2 suggestions available."
+
+**Scene 2: Typing (prefix match).** The seeker types "med" and pauses. After the adaptive debounce, the browser fetches `/suggestions/en/me.json` from the CDN (< 10ms), filters client-side to entries matching "med", ranks by weight, and renders the dropdown with category labels (theme, chapter, corpus). No database queried, no function invoked, no API call made. Arrow keys navigate, `Enter` selects, `Escape` dismisses. Screen reader announces each suggestion as arrow keys navigate.
+
+**Scene 3: The bridge moment (the differentiator).** The seeker types "mindful". The client matches against `_bridge.json` and displays: "mindfulness (corpus)" with a bridge hint — "Yogananda's terms: concentration, one-pointed attention, interiorization." The system translates the seeker's modern vocabulary into the library's vocabulary *before submission*. No other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. When the seeker submits this query, the search results page continues the pedagogical work: "Showing results for 'concentration' and 'one-pointed attention' (Yogananda's terms for mindfulness)."
+
+**Scene 4: Curated questions.** The seeker types "How do I". Curated question suggestions appear — editorially written questions the librarian knows the library can answer well. Maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078).
+
+**Scene 5: Fuzzy recovery.** The seeker types "meditatoin" (typo). Prefix match finds nothing. The system silently fires an async pg_trgm request. Within 40–80ms, fuzzy results merge into the dropdown — "meditation" appears. No "did you mean?" prompt. Quiet correction.
+
+**Scene 6: Selection and handoff.** The seeker selects "meditation" (click or Enter). Intent classification (ADR-005 E1, a separate system) determines routing — theme page, search results, or Practice Bridge. The URL reflects the seeker's original selection: `/search?q=meditation`. For bridge-expanded queries, the URL preserves the original term, not the expansion — the bridge expansion is a search-time enhancement, not a URL-visible rewrite. The suggestion system's job is done.
+
+**Scene 7: Mobile.** On viewports < 768px, the dropdown shows a maximum of 5 suggestions (vs. 7 on desktop) to avoid the virtual keyboard competing with results. Touch targets are 44×44px minimum (ADR-003). Zero-state chips use horizontal scroll rather than wrapping.
 
 #### Suggestion Types
 
@@ -424,13 +442,13 @@ Three distinct suggestion types, each with different sources and behavior:
 Seeker types: "med"
  │
  ▼
-TERM COMPLETION (PostgreSQL pg_trgm — < 50ms)
- Prefix match against suggestion index:
+TERM COMPLETION (static JSON at CDN edge — < 10ms)
+ Client-side prefix match against suggestion file:
  ┌─────────────────────────────────────────────────┐
- │ 🔤 meditation (theme) │
- │ 📖 Meditations on God (chapter) │
+ │ 🔤 meditation (theme)                           │
+ │ 📖 Meditations on God (chapter)                 │
  │ 📖 Meditation Promises Richest Results (chapter) │
- │ 🔤 medical intuition (corpus) │
+ │ 🔤 medical intuition (corpus)                   │
  └─────────────────────────────────────────────────┘
 
 Seeker types: "How do I"
@@ -439,9 +457,9 @@ Seeker types: "How do I"
 QUERY SUGGESTION (curated, editorially maintained)
  Match against curated question templates:
  ┌─────────────────────────────────────────────────┐
- │ ❓ How do I overcome fear? (curated) │
- │ ❓ How do I meditate? (curated) │
- │ ❓ How do I find peace? (curated) │
+ │ ❓ How do I overcome fear? (curated)             │
+ │ ❓ How do I meditate? (curated)                  │
+ │ ❓ How do I find peace? (curated)                │
  └─────────────────────────────────────────────────┘
 
 Seeker types: "mindful"
@@ -450,54 +468,120 @@ Seeker types: "mindful"
 BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
  Terminology bridge detects a mapping:
  ┌─────────────────────────────────────────────────┐
- │ 🔤 mindfulness (corpus) │
- │ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
- │ Yogananda's terms: concentration, │
- │ one-pointed attention, interiorization │
+ │ 🔤 mindfulness (corpus)                         │
+ │ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  │
+ │ Yogananda's terms: concentration,               │
+ │ one-pointed attention, interiorization           │
  └─────────────────────────────────────────────────┘
 ```
 
-**1. Term completion.** Prefix matching against a pre-computed suggestion index. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: PostgreSQL `pg_trgm` trigram index for fuzzy prefix matching, or pre-computed trie exported as static JSON and cached at edge (Vercel Edge Config or CDN). Latency target: < 50ms — no database round-trip on the hot path if edge-cached.
+**1. Term completion.** Client-side prefix matching against pre-computed, CDN-served suggestion files partitioned by two-character prefix. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: static JSON files at Vercel CDN edge (Tier A, ADR-120) with pg_trgm async fuzzy fallback (Tier B). Latency target: < 10ms for prefix match (CDN hit + client filter), < 80ms for fuzzy fallback.
 
 **2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 1a.9) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
 
-**3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain.
+**3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain. Bridge hints continue into search results: when a bridge-expanded query produces results, the results page shows "Showing results for 'concentration' and 'one-pointed attention' (Yogananda's terms for mindfulness)."
+
+#### Architecture: Three-Tier Progressive Infrastructure (ADR-120)
+
+The suggestion dictionary is small (~1,500 entries at Arc 1, ~6,300 at full corpus). The infrastructure choice is the *simplest thing that achieves invisible latency*.
+
+```
+Keystroke → adaptive debounce →
+
+If prefix.length < 2:
+  Show zero-state (cached static JSON, _zero.json, < 10ms)
+
+If prefix.length >= 2:
+  Fetch /suggestions/{lang}/{prefix[0:2]}.json from CDN (< 10ms, cached)
+  Client-side filter + rank against the prefix
+  Display immediately
+  ├→ Bridge match? Show terminology hint from _bridge.json
+  ├→ ≥ 3 results: done
+  └→ < 3 results: async pg_trgm fuzzy fallback (40-80ms), merge when ready
+
+Select suggestion → intent classification (ADR-005 E1) → route
+```
+
+**Tier A: Static JSON at CDN edge (Milestone 1a+).** Pre-computed suggestion files:
+
+```
+/public/suggestions/en/_zero.json    — zero-state (theme chips, curated questions)
+/public/suggestions/en/me.json       — all entries starting with "me"
+/public/suggestions/en/_bridge.json  — terminology bridge mappings
+```
+
+< 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB.
+
+**Tier B: pg_trgm fuzzy fallback (Milestone 1b+, always-on).** Async endpoint for misspellings and transliterated input. Queries both `suggestion` and `latin_form` columns — a Hindi seeker typing Romanized "samadhi" matches against `latin_form`. Latency: 40–80ms. Edge-cached: `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+
+**Tier C: Vercel KV (Milestone 2b+, if needed).** Upstash Redis via Vercel integration. Sub-10ms sorted-set prefix lookup. Activated when p95 > 30ms sustained, or dictionary > 50K entries, or learned queries need real-time freshness. ~$20/mo at 1M requests. Global replication, zero VPC, zero Terraform.
+
+See ADR-120 for full tier specifications, migration triggers, and ElastiCache rejection rationale.
 
 #### API Specification
 
+**Fuzzy fallback endpoint** (Tier B — server-side, invoked async when client-side prefix returns < 3 results):
+
 ```
-GET /api/v1/search/suggest?q=med&language=en&limit=7
+GET /api/v1/search/suggest?q=meditatoin&language=en&limit=7
 
 Response:
 {
  "suggestions": [
  { "text": "meditation", "type": "term", "category": "theme" },
- { "text": "Meditations on God", "type": "term", "category": "chapter" },
- { "text": "How do I meditate?", "type": "query", "category": "curated" },
- { "text": "medical intuition", "type": "term", "category": "corpus" }
+ { "text": "Meditations on God", "type": "term", "category": "chapter" }
  ],
  "bridge_hint": null
 }
 ```
 
-When the bridge activates:
+**Static JSON file format** (Tier A — client-side, served from CDN):
 
-```
-GET /api/v1/search/suggest?q=mindful&language=en&limit=7
-
+```json
+// /public/suggestions/en/me.json
 {
  "suggestions": [
- { "text": "mindfulness", "type": "term", "category": "corpus" }
- ],
- "bridge_hint": {
- "seeker_term": "mindfulness",
- "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
- "source_books": ["autobiography-of-a-yogi", "mans-eternal-quest"]
+  { "text": "meditation", "type": "term", "category": "theme", "weight": 0.95 },
+  { "text": "Meditations on God", "type": "term", "category": "chapter", "weight": 0.82 },
+  { "text": "How do I meditate?", "type": "query", "category": "curated", "weight": 0.90 },
+  { "text": "medical intuition", "type": "term", "category": "corpus", "weight": 0.40 }
+ ]
+}
+```
+
+```json
+// /public/suggestions/en/_bridge.json
+{
+ "bridges": {
+  "mindful": {
+   "seeker_term": "mindfulness",
+   "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
+   "source_books": ["autobiography-of-a-yogi", "mans-eternal-quest"]
+  }
  }
 }
 ```
 
-No Claude API call in the suggestion path — pure database/cache lookup. Zero cost per suggestion request.
+```json
+// /public/suggestions/en/_zero.json
+{
+ "chips": ["Peace", "Courage", "Grief & Loss", "Joy", "Meditation"],
+ "questions": [
+  "How do I overcome fear?",
+  "What is the purpose of life?"
+ ]
+}
+```
+
+No Claude API call in the suggestion path — pure static files and database lookup. Zero cost per suggestion request (Tier A), minimal cost per fuzzy fallback (Tier B).
+
+#### Adaptive Debounce
+
+Rather than a fixed interval, the debounce adapts to context:
+
+- **First keystroke after focus:** Fire immediately (0ms). The zero-state → first-results transition is the most important perceived-speed moment.
+- **Subsequent keystrokes:** Fire after `SUGGESTION_DEBOUNCE_MS` (default 100ms, ADR-123) of inactivity. Reduces request volume ~60%.
+- **On slow connections** (`navigator.connection.effectiveType === '2g'`): Extend debounce to `SUGGESTION_DEBOUNCE_SLOW_MS` (default 200ms, ADR-123) to avoid wasting brief connectivity windows on intermediate prefixes.
 
 #### Zero-State Experience
 
@@ -507,7 +591,9 @@ When the search bar receives focus but the seeker has typed nothing, display cur
 - One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
 - The search placeholder remains "What are you seeking?" (Deliverable 1a.7)
 
-Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078).
+Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078). Editorial governance of curated suggestions uses the same review process as theme tagging (resolve before Milestone 1b — see CONTEXT.md).
+
+The zero-state and the typing-state are served from separate static files (`_zero.json` vs. prefix files), enabling independent caching and editorial update cycles.
 
 #### Suggestion Index Construction
 
@@ -523,19 +609,39 @@ Book ingestion pipeline (new step after vocabulary extraction):
  Filter: remove stopwords, common English words, terms with < 2 occurrences
  Output: per-book vocabulary contribution to the suggestion index
 
- Merge into suggestion_dictionary table or static JSON export.
+ Merge into suggestion_dictionary table.
  Index grows with each book — never shrinks.
+
+ 6. STATIC JSON EXPORT
+ Export suggestion_dictionary → partitioned JSON files per language.
+ Two-character prefix partitioning (me.json, yo.json, ...).
+ Separate _zero.json (editorial) and _bridge.json (spiritual-terms.json).
+ Output: /public/suggestions/{language}/*.json
+ Triggered on each ingestion and on editorial suggestion updates.
 ```
+
+#### URL Mapping on Selection
+
+When a seeker selects a suggestion, the URL reflects their *original* selection:
+
+- Term suggestion "meditation" → `/search?q=meditation`
+- Curated question "How do I meditate?" → `/search?q=How+do+I+meditate%3F`
+- Bridge-activated "mindfulness" → `/search?q=mindfulness` (bridge expansion is search-time, not URL-visible)
+
+URLs are shareable and bookmarkable. Intent classification still runs server-side on the selected text regardless of how the seeker arrived.
 
 #### Multilingual Suggestions (Milestone 5b)
 
 Per-language suggestion indices are required. Each language gets:
 - Its own extracted corpus vocabulary (from language-specific chunks)
+- Its own static JSON prefix files (`/public/suggestions/{lang}/*.json`)
 - Localized theme names (from `topic_translations`)
 - Localized curated queries (from `messages/{locale}.json`)
-- Language-specific `pg_trgm` or edge-cached index
+- Language-specific pg_trgm fallback
 
-**Transliteration challenge:** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). CJK languages have no word boundaries, making prefix matching fundamentally different. Thai script also lacks word boundaries and requires ICU segmentation. The suggestion system must handle both native script and Romanized input for Indic and Thai languages. This is an open design question — see CONTEXT.md.
+**Transliteration support via `latin_form`.** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). The `latin_form` column in `suggestion_dictionary` carries the transliterated form. The pg_trgm fuzzy fallback queries both `suggestion` and `latin_form` columns. For static JSON (Tier A), `latin_form` entries are included as additional sort keys so Romanized prefixes match.
+
+**CJK and Thai.** CJK languages have no word boundaries, making prefix matching fundamentally different. Thai script also lacks word boundaries and requires ICU segmentation. These require language-specific tokenization strategies — an open design question for Milestone 5b.
 
 **Sparse-language graceful handling:** If a language has few books, its suggestion index will be thin. When suggestions are sparse, the response should be honest (fewer suggestions, not padded with irrelevant terms) rather than falling back to English suggestions unprompted.
 
@@ -549,25 +655,43 @@ The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
 - Arrow keys navigate suggestions, `Enter` selects, `Escape` dismisses
 - Screen reader announces suggestion count on open ("7 suggestions available")
 - Screen reader announces each suggestion as arrow keys navigate
-- Bridge hints announced as supplementary text
+- Bridge hints announced as supplementary text ("Yogananda's terms: concentration, one-pointed attention, interiorization")
 - High contrast mode: suggestion categories distinguished by prefix text, not color alone
+- Touch targets: 44×44px minimum (ADR-003)
+- Mobile: maximum 5 suggestions visible to accommodate virtual keyboard
 
 #### Milestone Progression
 
-| Milestone | Suggestion Capability | Source |
-|-----------|----------------------|--------|
-| 1a | Basic prefix matching on single-book vocabulary + chapter titles | Corpus extraction from Autobiography, pre-computed |
-| 3a | Multi-book vocabulary + theme names + bridge-powered suggestions + curated queries | Expanded corpus + spiritual-terms.json + editorial |
-| 5b | Per-language suggestion indices + transliteration support | Language-specific indices |
-| 7a | Optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
+| Milestone | Suggestion Capability | Infrastructure |
+|-----------|----------------------|----------------|
+| 1a | Static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips | Tier A: CDN-served static JSON |
+| 1b | + pg_trgm fuzzy fallback endpoint + golden suggestion set (300 entries, 6 tiers) | Tier A + B |
+| 2b | + Vercel KV if migration trigger thresholds reached | Tier A + B + C (conditional) |
+| 3a | + multi-book vocabulary + bridge-powered suggestions + curated queries | Expanded corpus, same tiers |
+| 5b | + per-language suggestion indices + transliteration support | Per-language static JSON + pg_trgm |
+| 7a | + optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
 
 #### Interaction with Intent Classification
 
 Suggestions and intent classification (ADR-005 E1) are complementary, not redundant:
-- **Suggestions** operate *before* query submission (as-you-type, < 50ms, no LLM)
+- **Suggestions** operate *before* query submission (as-you-type, < 10ms, no LLM)
 - **Intent classification** operates *after* query submission (routes the final query, uses Claude Haiku)
 
 When a seeker selects a suggestion, intent classification still runs on the selected text. The suggestion narrows the query; intent classification routes it. A seeker who selects "meditation" (term suggestion) gets routed to the meditation theme page by intent classification. A seeker who selects "How do I meditate?" (curated query) gets routed to search with appropriate expansion.
+
+#### Weight Coefficients
+
+Suggestion ranking uses three signals with configurable weights (ADR-123 named constants in `/lib/config.ts`):
+
+```
+SUGGESTION_WEIGHT_CORPUS = 0.3    — corpus frequency (how often the term appears)
+SUGGESTION_WEIGHT_QUERY = 0.5     — query frequency (aggregated, DELTA-compliant)
+SUGGESTION_WEIGHT_EDITORIAL = 0.2 — editorial boost (0.0–1.0, set by editors)
+```
+
+At launch, `query_frequency` is zero — the effective ranking is `corpus * 0.6 + editorial * 0.4` (renormalized). As query log data accumulates (Tier 5, ADR-053), the full formula activates. Coefficients are application-level constants, not database-generated columns, so they can be tuned without migration.
+
+*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX.*
 
 ---
 
@@ -1153,9 +1277,10 @@ CREATE TABLE suggestion_dictionary (
                                     -- (cf. ADR-090), not individual behavioral profiling.
                                     -- Acceptable under DELTA because no per-user attribution exists.
  editorial_boost  REAL DEFAULT 0,  -- 0.0–1.0, set by editors for promoted suggestions
- weight          REAL GENERATED ALWAYS AS (
-  (corpus_frequency * 0.3) + (query_frequency * 0.5) + (editorial_boost * 0.2)
- ) STORED,                          -- weights sum to 1.0: corpus 30%, query 50%, editorial 20%
+ weight          REAL DEFAULT 0,   -- computed at application level using named constants
+                                    -- (SUGGESTION_WEIGHT_CORPUS, SUGGESTION_WEIGHT_QUERY,
+                                    -- SUGGESTION_WEIGHT_EDITORIAL) from /lib/config.ts (ADR-123).
+                                    -- Not a generated column — allows coefficient tuning without migration.
  entity_id       UUID REFERENCES entity_registry(id),
  book_id         UUID REFERENCES books(id),
  updated_at      TIMESTAMPTZ DEFAULT now()

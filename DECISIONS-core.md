@@ -4115,7 +4115,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
  The three original suggestion types map into this hierarchy: **term completion** spans Tiers 2, 3, and 6; **query suggestion** spans Tiers 1 and 5; **bridge-powered suggestion** is integrated into Tiers 3 and 4 (Sanskrit terms with definitions, bridged concepts with Yogananda's vocabulary).
 
- Implementation: Arc 1 uses PostgreSQL `pg_trgm` for prefix and fuzzy matching. The architecture is designed for Redis (ElastiCache) as the target cache layer (ADR-120), with language-namespaced sorted sets for sub-millisecond prefix lookup. Latency target: < 50ms (pg_trgm), < 5ms (Redis).
+ Implementation: Three-tier progressive architecture (ADR-120). Tier A: static JSON prefix files at CDN edge (< 10ms). Tier B: pg_trgm fuzzy fallback for misspellings and transliteration (40–80ms). Tier C: Vercel KV (Upstash Redis) with sorted sets if Tier A+B latency is insufficient (< 5ms, activated by concrete migration triggers).
 
 3. **New API endpoint: `GET /api/v1/search/suggest`.** Accepts `q` (partial query), `language`, and `limit` parameters. Returns typed suggestions with category metadata (term/query/bridge). No Claude API call — pure database/cache lookup for speed.
 
@@ -4866,22 +4866,24 @@ M4+:          PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
 
 ---
 
-## ADR-120: Redis Suggestion Cache Architecture
+## ADR-120: Three-Tier Suggestion Cache Architecture
 
 - **Status:** Accepted
 - **Date:** 2026-02-23
 
 ### Context
 
-ADR-049 establishes corpus-derived suggestions with three types (term completion, query suggestion, bridge-powered). The implementation notes mention PostgreSQL `pg_trgm` or pre-computed lists for < 50ms latency.
+ADR-049 establishes corpus-derived suggestions with three types (term completion, query suggestion, bridge-powered). For a world-class search experience, suggestion latency should be invisible — ideally < 30ms perceived (network + render). The threshold for human-perceptible lag is ~50ms; above 100ms, autocomplete feels broken. Google achieves 20–40ms, Linear and Notion hit 15–35ms.
 
-For a world-class search experience, suggestion latency should be invisible — ideally < 20ms on every keystroke. pg_trgm can achieve < 50ms for trigram similarity queries, but prefix matching on sorted sets in Redis is consistently < 5ms regardless of dictionary size. The suggestion architecture should be designed for Redis from the start, with pg_trgm as the Arc 1 fallback.
+The suggestion dictionary is small — ~1,500 entries at Arc 1 (single book), ~6,300 at full corpus (25 books × 200 terms + entities + curated queries + Sanskrit + concepts). For a dictionary this size, the infrastructure choice should be the *simplest thing that achieves invisible latency*, not the most powerful.
+
+ElastiCache Redis was initially considered but rejected: it requires VPC networking with Vercel (adding 5–15ms that erases its speed advantage), carries significant operational overhead (subnets, security groups, parameter groups, failover), has a high cost floor (~$50–80/mo minimum for production multi-AZ), and is single-region by default. For a 6K-row suggestion dictionary, this is over-engineering.
 
 ### Decision
 
-Design the suggestion architecture with Redis (ElastiCache) as the target cache layer. The implementation is phased: pg_trgm serves Arc 1; Redis is introduced when suggestion latency or volume warrants it.
+**Three-tier progressive architecture** — each tier is a complete solution; the next tier activates only when the previous one's limits are reached.
 
-**Six-tier suggestion hierarchy** (priority order):
+**Six-tier suggestion hierarchy** (priority order, unchanged):
 
 | Tier | Type | Source | Example |
 |------|------|--------|---------|
@@ -4892,43 +4894,111 @@ Design the suggestion architecture with Redis (ElastiCache) as the target cache 
 | 5 | Learned queries from logs | Anonymized query log (DELTA-compliant) | (grows over time from ADR-053 signal) |
 | 6 | High-value single terms | Hand-curated, ~200–300 terms | "meditation", "karma" |
 
-**Redis architecture:**
-- Language-namespaced sorted sets: `suggestions:{language}` → `(suggestion, weight)`
-- Prefix lookup: `ZRANGEBYLEX suggestions:en "[Yog" "[Yog\xff"` returns in < 1ms
-- Dictionary built offline from corpus enrichment pipeline
-- Sanskrit variants loaded from `sanskrit_terms.common_variants` — all variant forms point to the canonical suggestion
-- Nightly refresh incorporates query log signal (Tier 5)
+#### Tier A: Static JSON at the CDN Edge (Milestone 1a+)
 
-**pg_trgm fallback (Arc 1 and always-on backup):**
-When Redis prefix returns < 3 results (misspelling, mid-word prefix), fall back to:
+Pre-computed suggestion files partitioned by two-character prefix, served as static assets from Vercel's CDN:
+
+```
+/public/suggestions/en/_zero.json    — zero-state suggestions (theme chips, curated questions)
+/public/suggestions/en/me.json       — all suggestions starting with "me"
+/public/suggestions/en/yo.json       — all suggestions starting with "yo"
+/public/suggestions/en/_bridge.json  — terminology bridge mappings
+```
+
+- **Latency: < 10ms globally** (CDN cache hit, no function invocation, no origin roundtrip)
+- **Cost: $0** (static assets on Vercel's CDN)
+- **Cold start: none**
+- **Build step:** Ingestion pipeline exports `suggestion_dictionary` → partitioned JSON. Rebuilds on deploy or content change.
+- **Client-side filtering:** Browser fetches the prefix file (~2–8KB) and filters/ranks locally against the full typed prefix.
+- **Bridge hints:** Included in `_bridge.json`, matched client-side.
+- **Global equity:** The CDN edge node is nearby for seekers in rural Bihar and San Francisco alike (Principle #4).
+
+**Why this works for the portal's scale:** At full corpus (~6,300 entries), each two-character prefix file is 2–8KB. The entire English suggestion set is ~150KB. This is smaller than a single hero image. The browser caches prefix files after first fetch — subsequent keystrokes with the same two-character prefix are instant (0ms network).
+
+#### Tier B: pg_trgm Fuzzy Fallback (Milestone 1b+, always-on)
+
+When client-side prefix filtering returns fewer than 3 results (misspelling, mid-word match, novel prefix), the frontend fires an async request to the fuzzy fallback endpoint:
 
 ```sql
-SELECT suggestion, weight, suggestion_type
+SELECT suggestion, display_text, weight, suggestion_type, latin_form
 FROM suggestion_dictionary
-WHERE similarity(suggestion, $partial_query) > 0.3
+WHERE (similarity(suggestion, $partial_query) > 0.3
+       OR similarity(latin_form, $partial_query) > 0.3)
   AND language = $detected_language
-ORDER BY weight DESC, similarity(suggestion, $partial_query) DESC
+ORDER BY weight DESC,
+         GREATEST(similarity(suggestion, $partial_query),
+                  COALESCE(similarity(latin_form, $partial_query), 0)) DESC
 LIMIT 10;
 ```
 
-**Frontend debounce:** Fire suggestion requests after 80–120ms of keystroke inactivity. Reduces request volume ~60% and eliminates out-of-order response issues.
+- **Latency: 40–80ms** (Neon roundtrip)
+- **Purpose:** Fuzzy matching catches misspellings that prefix matching misses. Also handles transliterated input via `latin_form` matching — a Hindi seeker typing Romanized "samadhi" matches against both `suggestion` and `latin_form` columns.
+- **Async merge:** Fuzzy results merge into the dropdown when they arrive. The seeker sees prefix results instantly, then fuzzy results appear if needed.
+- **Edge caching:** Fuzzy responses carry `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400` — identical misspellings served from edge on repeat.
+
+#### Tier C: Vercel KV (Milestone 2b+, if needed)
+
+If Tier A + B latency is insufficient, Vercel KV (built on Upstash Redis) provides sub-10ms server-side prefix search with zero operational overhead:
+
+- Language-namespaced sorted sets: `suggestions:{language}` → `(suggestion, weight)`
+- Prefix lookup: `ZRANGEBYLEX suggestions:en "[Yog" "[Yog\xff"` returns in < 5ms
+- Dictionary built offline from corpus enrichment pipeline
+- Sanskrit variants loaded from `sanskrit_terms.common_variants` — all variant forms point to the canonical suggestion
+- Nightly refresh incorporates query log signal (Tier 5)
+- **Cost: ~$20/mo at 1M requests** (Upstash pay-per-use via Vercel integration)
+- **Global distribution:** Upstash global replication, no VPC required
+- **No Terraform complexity:** Provisioned via Vercel dashboard or `vercel env`
+
+**Concrete migration trigger:** Activate Tier C when any of these thresholds are sustained for 7 days:
+- Suggestion p95 latency exceeds 30ms (measuring CDN miss + client filter time)
+- Suggestion dictionary exceeds 50K entries per language (prefix files exceed 15KB each)
+- Tier 5 learned queries update more frequently than daily (real-time freshness needed)
+
+**Frontend debounce:** Adaptive debounce rather than fixed interval:
+- **First keystroke after focus:** Fire immediately (0ms). The zero-state → first-results transition is the most important perceived-speed moment.
+- **Subsequent keystrokes:** Fire after 100ms of inactivity (tunable, ADR-123). Reduces request volume ~60%.
+- **On slow connections** (`navigator.connection.effectiveType === '2g'`): Extend debounce to 200ms to avoid wasting brief connectivity windows on intermediate prefixes.
+
+#### Seeker Experience Walkthrough
+
+The suggestion system extends the librarian metaphor — a guide who, when approached, gently surfaces what the library contains.
+
+**Focus (zero-state).** Seeker clicks the search bar. Before typing, curated entry points appear: theme chips ("Peace", "Courage", "Grief & Loss") and question prompts ("How do I overcome fear?"). Served from `_zero.json` at the CDN edge (< 10ms). Screen reader announces: "Search. What are you seeking? 2 suggestions available."
+
+**Typing (prefix match).** Seeker types "med" and pauses. After the debounce, the browser fetches `/suggestions/en/me.json` from the CDN (< 10ms), filters client-side to entries matching "med", ranks by weight, and renders the dropdown with category labels (theme, chapter, corpus). No database queried, no function invoked, no API call made.
+
+**Bridge moment (the differentiator).** Seeker types "mindful". The client matches against `_bridge.json` and displays: "mindfulness (corpus)" with a bridge hint — "Yogananda's terms: concentration, one-pointed attention, interiorization." The system translates the seeker's vocabulary into the library's vocabulary *before submission*. No other search product does this.
+
+**Curated questions.** Seeker types "How do I". Curated question suggestions appear — editorially written questions the librarian knows the library can answer well. Each is maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078).
+
+**Fuzzy recovery.** Seeker types "meditatoin" (typo). Prefix match finds nothing. The system silently fires an async pg_trgm request. Within 40–80ms, fuzzy results merge into the dropdown — "meditation" appears. No "did you mean?" prompt. Quiet correction.
+
+**Selection and handoff.** Seeker selects "meditation" (click or Enter). Intent classification (ADR-005 E1, a separate system) determines routing — theme page, search results, or Practice Bridge. The suggestion system's job is done: it reduced friction, taught the seeker the library's vocabulary, and delivered them to the right doorway. The URL reflects the seeker's original selection: `/search?q=meditation`. For bridge-expanded queries, the URL preserves the original term, not the expansion.
+
+**Mobile experience.** On viewports < 768px, the suggestion dropdown shows a maximum of 5 suggestions (vs. 7 on desktop) to avoid the virtual keyboard competing with results. Touch targets are 44×44px minimum (ADR-003). Zero-state chips use horizontal scroll rather than wrapping.
 
 ### Rationale
 
-- **Invisible latency is the goal.** Suggestion quality and suggestion speed are not tradeoffs — the architecture should deliver both. Redis prefix lookup is O(log N + M) regardless of dictionary size.
-- **Redis is a proven pattern for autocomplete.** Every major search product uses a sorted set or trie for prefix suggestions. The architecture is well-understood, operationally simple, and horizontally scalable.
-- **pg_trgm remains valuable.** Fuzzy matching catches misspellings that prefix matching misses. The two systems are complementary, not competing.
-- **Designing for Redis from the start avoids redesign.** Language-namespaced sorted sets, weighted scoring, and prefix-based lookup are architectural patterns. Building with these patterns in mind — even if the initial implementation is pg_trgm — means adding Redis later is a configuration change, not a restructuring.
+- **Invisible latency through progressive infrastructure.** Static JSON at the CDN edge achieves < 10ms globally for the common case. pg_trgm provides fuzzy recovery. Vercel KV is available as a graduation path if scale demands it. Each tier is a complete, working solution.
+- **Simplest infrastructure that works.** The suggestion dictionary is small (~6K entries at full corpus). Static files at the edge are simpler, cheaper, faster, and more globally distributed than any server-side solution. Start simple; graduate when evidence demands it.
+- **ElastiCache rejected.** VPC networking with Vercel adds latency that erases ElastiCache's speed advantage. Operational overhead (subnets, security groups, monitoring, failover, patching) is disproportionate for a 6K-row dictionary. Single-region by default, expensive at minimum viable configuration. Vercel KV (Upstash Redis) provides the same sorted-set semantics with zero ops and global distribution.
+- **pg_trgm remains essential.** Fuzzy matching catches misspellings that prefix matching misses. The `latin_form` column enables transliterated input for Indic languages. The two systems (prefix + fuzzy) are complementary.
+- **Adaptive debounce respects global equity.** Fixed debounce penalizes seekers on slow connections. Firing immediately on first keystroke makes the zero-state → first-results transition feel instant. Extending debounce on 2G connections avoids wasting brief connectivity windows.
+- **Bridge hints in search results, not just suggestions.** When a bridge-expanded query produces search results, the results page shows: "Showing results for 'concentration' and 'one-pointed attention' (Yogananda's terms for mindfulness)." The bridge hint's pedagogical work continues past the suggestion phase.
 
 ### Consequences
 
-- New `suggestion_dictionary` table in DES-004 (Data Model): `suggestion`, `display_text`, `suggestion_type`, `language`, `script`, `latin_form`, `corpus_frequency`, `weight`, `entity_id`, `book_id`
-- Weight computation: `(corpus_frequency * 0.3) + (query_frequency * 0.5)` — no `click_through` tracking (DELTA compliance)
+- New `suggestion_dictionary` table in DES-004 (Data Model): `suggestion`, `display_text`, `suggestion_type`, `language`, `script`, `latin_form`, `corpus_frequency`, `query_frequency`, `editorial_boost`, `weight`, `entity_id`, `book_id`
+- Weight coefficients (`corpus_frequency * 0.3 + query_frequency * 0.5 + editorial_boost * 0.2`) implemented as named constants in `/lib/config.ts` (ADR-123), not as a generated column — allows tuning without migration
 - ADR-049 updated with six-tier hierarchy
-- Arc 1: pg_trgm implementation
-- Milestone 2b+: Redis (ElastiCache) provisioned when suggestion volume warrants
-- Terraform configuration (ADR-016) extended for ElastiCache
-- The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary
+- Build step in ingestion pipeline: export `suggestion_dictionary` → partitioned static JSON files per language
+- Milestone 1a: Static JSON suggestion files + client-side prefix filtering
+- Milestone 1b: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`)
+- Milestone 2b+: Vercel KV activated if migration trigger thresholds are sustained
+- No Terraform ElastiCache configuration — Vercel KV provisioned via Vercel integration when needed
+- The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary and triggers a static JSON rebuild
+
+*Revised: 2026-02-25, rewrite from ElastiCache to three-tier progressive architecture (Static JSON → pg_trgm → Vercel KV). Rationale: ElastiCache operational overhead disproportionate for dictionary size; VPC networking adds latency with Vercel; Vercel KV provides equivalent Redis semantics with zero ops.*
 
 ---
 

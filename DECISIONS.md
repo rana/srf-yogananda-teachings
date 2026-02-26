@@ -26,7 +26,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 
 **Architecture & Platform**
 
-Defines the technology stack and infrastructure topology. The frontend runs Next.js on Vercel; the database is Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB); AI calls go through AWS Bedrock Claude with model tiering; infrastructure is Terraform-managed from Milestone 1a with GitHub Actions CI/CD, OIDC federation for AWS auth, Terraform Cloud state backend, and CI-agnostic deployment scripts. Also covers PWA strategy, content-addressable deep links, rate limiting, PDF generation, low-tech channel support, language URL design, Postgres-native graph intelligence, and Redis suggestion caching.
+Defines the technology stack and infrastructure topology. The frontend runs Next.js on Vercel; the database is Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB); AI calls go through AWS Bedrock Claude with model tiering; infrastructure is Terraform-managed from Milestone 1a with GitHub Actions CI/CD, OIDC federation for AWS auth, Terraform Cloud state backend, and CI-agnostic deployment scripts. Also covers PWA strategy, content-addressable deep links, rate limiting, PDF generation, low-tech channel support, language URL design, Postgres-native graph intelligence, and three-tier suggestion caching (static JSON → pg_trgm → Vercel KV).
 
 - ADR-008: Next.js + Vercel for Frontend
 - ADR-009: Neon + pgvector for Vector Search
@@ -48,7 +48,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-026: Low-Tech and Messaging Channel Strategy
 - ADR-027: Language API Design — Locale Prefix on Pages, Query Parameter on API
 - ADR-117: Postgres-Native Graph Intelligence Layer
-- ADR-120: Redis Suggestion Cache Architecture
+- ADR-120: Three-Tier Suggestion Cache Architecture
 
 **Content & Data Model**
 

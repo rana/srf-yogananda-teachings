@@ -63,7 +63,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Content-addressable passage deep links: should resolution chain include a semantic/normalized hash tier between exact match and fuzzy search? (ADR-022, ADR-034)
 - [ ] IAST diacritics rendering verification: Merriweather and Lora at all font sizes, particularly 15px. Include in Milestone 2a design QA. (ADR-080, ADR-003)
 - [ ] Circadian content choreography: solar-position awareness vs. fixed clock hours? Browser timezone maps to coordinates for DELTA-compliant calculation. (DES-011, DES-028, ADR-095)
-- [ ] Mobile search suggestion UX: fewer suggestions, different trigger on mobile? (ADR-049)
+- [x] ~~Mobile search suggestion UX: fewer suggestions, different trigger on mobile?~~ *(Resolved 2026-02-25: max 5 suggestions on viewports < 768px, 44×44px touch targets, zero-state chips use horizontal scroll. Same adaptive debounce. See ADR-120 and DESIGN-arc1.md § ADR-049 Seeker Experience Scene 7.)* (ADR-049, ADR-120)
 - [ ] AI citation monitoring: should the portal track whether AI systems (ChatGPT, Perplexity, Gemini, etc.) cite Yogananda correctly when quoting from portal content? Not surveillance — web mention monitoring to evaluate whether `llms.txt` and `ai.txt` citation guidance is effective. Could inform future citation guidance improvements. (ADR-081, Milestone 2b+)
 
 **Stakeholder**
@@ -74,7 +74,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Pastoral care resources: center contacts, counselors for locales where helplines are underserved? (ADR-071)
 - [ ] Crisis resource policy: display locale-appropriate helpline information alongside grief content? (ADR-071)
 - [ ] Philanthropist success metrics at 12 months. (Shapes analytics/reporting)
-- [ ] Editorial governance of curated query suggestions. Same review process as theme tagging? (ADR-049)
+- [x] ~~Editorial governance of curated query suggestions. Same review process as theme tagging?~~ *(Promoted to Tier 2 and resolved 2026-02-25: yes, same human-review gate as all user-facing content (ADR-078). Curated suggestions maintained in `/lib/data/curated-queries.json`, versioned in git, reviewed by SRF-aware editors. Zero-state chips and curated questions require editorial sign-off before Milestone 1b deployment. See DESIGN-arc1.md § ADR-049 Zero-State Experience.)* (ADR-049, ADR-078)
 - [ ] `/guide` alignment with SRF reading recommendations. (DES-048, DES-026)
 - [ ] Worldview pathways: include Muslim/Sufi, agnostic/skeptical entry points? (DES-048)
 - [ ] Worldview-sensitive `/guide` pathways: Christian contemplative, Buddhist, science-of-consciousness starting points? (DES-048, ADR-033, DES-027)
