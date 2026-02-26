@@ -4,9 +4,9 @@
 
 **Arc:** Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.
 
-**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 56 sections total, DES-001 through DES-056), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 14 proposals registered in PROPOSALS.md (PRO-001 through PRO-014; 1 adopted, 2 validated, 11 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
+**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 14 proposals registered in PROPOSALS.md (PRO-001 through PRO-014; 1 adopted, 2 validated, 11 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
 
-**What's next:** Milestone 1a — Prove. No remaining Tier 1 blockers (reclassified 2026-02-25). Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), PDF ingestion into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
+**What's next:** Milestone 1a — Prove. No remaining Tier 1 blockers (reclassified 2026-02-25). Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), book text extraction (ebook or PDF) into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
 ---
 
@@ -26,17 +26,15 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 ### Tier 2: Resolve During Arc 1 (not 1a-specific)
 
-**Technical (reclassified from Tier 1)**
-- [ ] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). Evaluated empirically in Deliverable 1a.9. (ADR-048)
-- [ ] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages. Deliverable 1b.13 addresses this directly.
-- [ ] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? Arc 1 resolved (spiritmaji.com edition, ADR-123 parameter). Multi-edition policy is Arc 3+. (ADR-001, ADR-034, ADR-039, ADR-007)
-- [ ] Milestone 1a parameter validation: already governed by ADR-123. Success criteria in ROADMAP.md include search quality evaluation (Deliverable 1a.9).
+**Technical (reclassified from Tier 1 — resolved through deliverable assignments)**
+- [x] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). *Resolved: evaluated empirically in Deliverable 1a.9.* (ADR-048)
+- [x] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages. *Resolved: Deliverable 1b.13 addresses this directly.* (ADR-115)
+- [x] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? *Resolved: Arc 1 uses spiritmaji.com edition (ADR-123 parameter). Multi-edition policy is Arc 3+.* (ADR-001, ADR-034, ADR-039, ADR-007)
+- [x] Milestone 1a parameter validation. *Resolved: governed by ADR-123. Success criteria in ROADMAP.md include search quality evaluation (Deliverable 1a.9).*
 
-**Stakeholder (reclassified from Tier 1)**
+**Stakeholder (reclassified from Tier 1 — parked, not blocking)**
 - [ ] Which books have official translations in which languages? Not relevant until Milestone 5b. (ADR-075, ADR-077)
 - [ ] *God Talks with Arjuna* Devanāgarī content: not relevant until that book is ingested (Milestone 3a+). (ADR-080, ADR-048)
-
-**Technical (original Tier 2)**
 
 **Technical**
 - [ ] Contentful record capacity: monitor record count during ingestion. Evaluate tier needs at Milestone 3a (multi-book corpus).
@@ -470,53 +468,13 @@ Documented in the SRF AE Tech Stack Brief. Key components relevant to this porta
 
 The teaching portal should use these technologies wherever possible, introducing new tools only when the established stack cannot meet a requirement (e.g., pgvector for vector search, Claude via AWS Bedrock for AI features — ADR-014).
 
+*Note: This table describes SRF's established organizational standard. The portal diverges where requirements demand it: GitHub instead of GitLab (Resolved Question #5, ADR-016); single-database PostgreSQL instead of PostgreSQL + DynamoDB (ADR-013); pg_search instead of Elasticsearch; Sentry as primary monitoring (ADR-095). See DESIGN.md § DES-002 for the portal's actual architecture.*
+
 ---
 
 ## Bootstrap Credentials Checklist
 
-One-time credential provisioning required before the first `terraform apply`. The human principal creates these accounts and tokens — they cannot be automated. See ADR-016 for architecture and DES-039 for deployment spec.
-
-### Milestone 1a (infrastructure bootstrap)
-
-| Credential | Where to create | What it enables | Store as |
-|---|---|---|---|
-| **Terraform Cloud org + workspace** | app.terraform.io → New Organization | State backend (local execution mode), locking, versioning | TFC API token → GitHub secret `TF_API_TOKEN` |
-| **AWS Account** (region: `us-west-2`) | aws.amazon.com | S3 backups, Lambda, Bedrock, EventBridge | — |
-| **AWS IAM OIDC Identity Provider** | AWS IAM Console → Identity Providers | GitHub Actions → AWS auth (no stored keys) | — |
-| **AWS IAM Role (portal-ci)** | AWS IAM Console → Roles | Scoped CI permissions (Terraform, S3, Lambda) | ARN → GitHub secret `AWS_ROLE_ARN` |
-| **AWS IAM User (portal-app-bedrock)** | Created by Terraform (`aws_iam_user` + `aws_iam_access_key`) | Vercel → Bedrock inference (`bedrock:InvokeModel*`, `bedrock:Converse*`) | Terraform sets keys as Vercel env vars automatically |
-| **Neon API key** | console.neon.tech → API Keys | Terraform Neon provider | GitHub secret `NEON_API_KEY` |
-| **Vercel API token** | vercel.com → Settings → Tokens | Terraform Vercel provider | GitHub secret `VERCEL_TOKEN` |
-| **Vercel Org/Team ID** | vercel.com → Settings → General | Scoping Terraform | GitHub secret `VERCEL_ORG_ID` |
-| **Sentry auth token** | sentry.io → Settings → Auth Tokens | Terraform Sentry provider | GitHub secret `SENTRY_AUTH_TOKEN` |
-| **Sentry org slug** | sentry.io → Settings → General | Scoping Terraform | GitHub secret `SENTRY_ORG` |
-| **Neon spend alert** | console.neon.tech → Billing → Alerts | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
-| **Vercel spend alert** | vercel.com → Settings → Billing → Spend Management | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
-
-### Milestone 1b (content + AI)
-
-| Credential | Where to create | What it enables | Store as |
-|---|---|---|---|
-| **AWS Bedrock model access** | AWS Console → Bedrock → Model Access (`us-west-2`) | Claude Haiku inference | Enabled on the `portal-app-bedrock` IAM user |
-| **Voyage AI API key** | dash.voyageai.com → API Keys | Embedding generation (ADR-118) | GitHub secret `VOYAGE_API_KEY` + Vercel env var |
-| **Contentful Management Token** | app.contentful.com → Settings → API Keys | Content ingestion pipeline | GitHub secret `CONTENTFUL_MANAGEMENT_TOKEN` |
-| **Contentful Access Token** | app.contentful.com → Settings → API Keys | Delivery API (read-only) | Vercel env var `CONTENTFUL_ACCESS_TOKEN` |
-| **Contentful Space ID** | app.contentful.com → Settings → General | API scoping | GitHub secret `CONTENTFUL_SPACE_ID` |
-
-### Later milestones (not needed for Arc 1)
-
-| Credential | When | Notes |
-|---|---|---|
-| YouTube API Key | Arc 2 (video integration) | Google Cloud Console |
-| New Relic License Key | Milestone 3d (observability) | New Relic dashboard |
-| Amplitude API Key | Milestone 3d (analytics) | Amplitude dashboard |
-| Resend API Key | Milestone 5a (email) | Resend dashboard |
-| Cloudflare API Token | When custom domain assigned | Cloudflare dashboard |
-| Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard |
-
-**Two AWS auth mechanisms serve different contexts.** GitHub Actions uses OIDC federation (`portal-ci` role) — no stored keys. Vercel functions use an IAM user (`portal-app-bedrock`) with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*`) — keys stored as Vercel env vars and rotated quarterly (manual key rotation until Milestone 3d). Non-AWS providers (Neon, Vercel, Sentry, Voyage) use API tokens stored as GitHub secrets with quarterly manual rotation.
-
-See DES-039 § Environment Configuration for the complete `.env.example`, named constants, CI secrets table, and Claude Code developer tooling setup.
+Extracted to [docs/bootstrap-credentials.md](docs/bootstrap-credentials.md) for operational reference. Covers Milestone 1a (infrastructure), Milestone 1b (content + AI), and later milestones. See ADR-016 for architecture, DES-039 for deployment spec.
 
 ---
 

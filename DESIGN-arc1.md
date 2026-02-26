@@ -1408,19 +1408,35 @@ Webhook → Vercel Function
 
 *Conforms to DES-053 (Unified Content Pipeline Pattern). This is the first pipeline implemented; DES-053's seven-stage pattern was derived from this design. Future content types (video transcripts, magazine articles, audio) should follow the same stages.*
 
-### Arc 1 Pipeline (PDF → Contentful → Neon)
+### Arc 1 Pipeline (Source → Contentful → Neon)
 
-Contentful is the editorial source of truth from Arc 1 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide non-PDF digital text that goes directly into Contentful.
+Contentful is the editorial source of truth from Arc 1 (ADR-010). The ingestion pipeline imports processed text into Contentful, then syncs to Neon for search indexing. Pre-launch, SRF will provide authoritative digital text that replaces any development-phase extraction.
+
+Three extraction paths feed the pipeline, converging at the Contentful import step:
+
+| Path | Source | Tool | Quality | When |
+|------|--------|------|---------|------|
+| **Ebook extraction** | Amazon Cloud Reader (purchased ebook) | Playwright capture + Claude Vision OCR | High (born-digital renders, clean diacritics) | Arc 1 development |
+| **PDF extraction** | spiritmaji.com PDF | `marker` (open-source Python) | Medium (scan-dependent OCR) | Fallback |
+| **SRF digital text** | SRF-provided source files | Direct import | Authoritative | Pre-launch replacement |
+
+The ebook extraction pipeline (`scripts/book-ingest/`) uses Playwright to capture page renders from Amazon Cloud Reader and Claude Vision to OCR structured text from the born-digital images. See `scripts/book-ingest/DESIGN.md` for the complete pipeline specification. This produces significantly cleaner output than PDF OCR, particularly for Sanskrit diacritics (IAST).
+
+All paths converge at Step 3.5 (Contentful import). The extraction tooling remains valuable for validation even after SRF provides authoritative text.
 
 ```
-Step 1: Download PDF
- └── Autobiography of a Yogi from spiritmaji.com
- └── Pre-launch: SRF provides digital text (non-PDF) — goes
-     directly to Step 3.5 (Contentful import)
+Step 1: Acquire source text
+ └── Path A: Ebook — Playwright capture from Amazon Cloud Reader
+     + Claude Vision OCR (scripts/book-ingest/)
+ └── Path B: PDF — Download from spiritmaji.com, convert via
+     `marker` (open-source, Python) or manual extraction
+ └── Path C: SRF digital text (pre-launch) — goes directly
+     to Step 3.5 (Contentful import)
 
-Step 2: Convert PDF → Structured Markdown
- └── Using `marker` (open-source, Python)
- or manual extraction + cleanup
+Step 2: Convert to structured Markdown
+ └── Ebook path: Claude Vision outputs structured Markdown
+     with headings, paragraphs, page numbers preserved
+ └── PDF path: `marker` or manual extraction + cleanup
  └── Output: chapters as separate .md files
  with headings, paragraphs preserved
 
@@ -1575,6 +1591,8 @@ Step 6: Graph updates (Milestone 3b+, ADR-117)
 Step 7: Search index, relations, suggestions, and graph
  are always in sync with editorial source
 ```
+
+*Section revised: 2026-02-26, added ebook extraction path (Amazon Cloud Reader + Claude Vision OCR) alongside PDF and SRF digital text paths. Three extraction paths now documented, converging at Contentful import.*
 
 ---
 
@@ -2194,19 +2212,52 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 **AWS authentication for local development:** The developer (human or AI) authenticates to AWS via an IAM user with an `srf-dev` profile, or via `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`. This is separate from the OIDC federation used by GitHub Actions. The IAM user needs Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) for the configured region.
 
-### Local Development
+### Local Development Environment
 
-Developers run the app locally without Terraform:
+Developers run the app locally without Terraform. The development environment uses a Neon dev branch (not local PostgreSQL) to ensure extension parity (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements).
 
-1. Clone repo
-2. `pnpm install`
-3. Copy `.env.example` → `.env.local`, fill in values (see § Environment Variables above)
-4. `pnpm db:migrate` (applies dbmate migrations to a Neon dev branch)
-5. `pnpm dev` (starts Next.js dev server)
+**Bootstrap sequence:**
 
-Terraform manages deployed environments. Local development uses direct Neon connection strings and local config files.
+1. Clone repo, `pnpm install`
+2. Copy `.env.example` → `.env.local`, fill in values (see § Environment Variables above)
+3. `pnpm db:migrate` — applies dbmate migrations to the Neon dev branch
+4. `pnpm dev` — starts Next.js dev server at `localhost:3000`
+
+**Neon dev branch workflow:**
+
+- The `dev` branch is created from `main` during initial Neon project setup (Terraform or console)
+- Developers connect to the dev branch via `NEON_DATABASE_URL` in `.env.local`
+- Each developer may create personal branches from `dev` for isolated work: `neonctl branches create --name feat/my-feature --parent dev`
+- CI creates ephemeral branches per PR (see § Neon Branch-per-PR above); developers do not share the CI branch
+- When working on migrations, run `pnpm db:migrate` against the dev branch and verify with `pnpm db:status`
+
+**Contentful local access:**
+
+- Contentful Delivery API (read-only) is accessed via `CONTENTFUL_ACCESS_TOKEN` + `CONTENTFUL_SPACE_ID` in `.env.local`
+- The book reader fetches from Contentful Delivery API; search fetches from Neon. Both work locally without additional setup
+- For ingestion development, the `CONTENTFUL_MANAGEMENT_TOKEN` is needed — only for developers working on the ingestion pipeline
+
+**Test data seeding:**
+
+- `pnpm db:seed` loads a minimal dataset for local development: a subset of Autobiography chapters (3–5 chapters), pre-computed embeddings, and a handful of search queries for the golden set
+- The seed script is idempotent — safe to run repeatedly
+- Full corpus ingestion is a separate pipeline step, not part of local dev setup
+
+**Offline/degraded mode:**
+
+- If Neon is unreachable, `pnpm dev` still starts — page rendering works, but search and reader API calls fail with clear error messages
+- If Contentful is unreachable, the book reader shows a fallback message; search continues to work (Neon is the search index)
+- Claude API unavailability (Bedrock) degrades search to pure hybrid results — no query expansion or passage ranking
+
+**Claude Code developer tooling:**
+
+- MCP servers configured in `.claude/settings.json` provide database access and context. See § Developer Tooling above for the Neon MCP configuration
+- Claude Code can run migrations, query the dev branch, and execute the ingestion pipeline directly
+
+Terraform manages deployed environments only. Local development uses direct Neon connection strings and local config files.
 
 *Section revised: 2026-02-25, consolidated environment configuration into single source of truth. Three layers: .env.example (secrets + per-environment), /lib/config.ts (named constants per ADR-123), developer tooling (Claude Code). Region updated to us-west-2 per human directive. Naming standardized: NEON_DATABASE_URL, CONTENTFUL_ACCESS_TOKEN. Updated: CI workflow file structure (ci.yml + terraform.yml + neon-branch.yml + neon-cleanup.yml + dependabot.yml), progressive module activation via feature flags, secret rotation clarified (manual until 3d), Terraform boundary corrected (GitHub settings manual, not Terraform-managed).*
+*Section revised: 2026-02-26, expanded Local Development Environment subsection with Neon branch workflow, Contentful access, test data seeding, offline/degraded mode, and Claude Code tooling.*
 
 ---
 

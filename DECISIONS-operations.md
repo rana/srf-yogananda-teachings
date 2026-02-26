@@ -803,7 +803,7 @@ Implement a **daily email** delivering a single verbatim passage from the sacred
 | Source | `daily_passages` pool (Milestone 3a expands this from *Sayings* and *Where There Is Light*) |
 | Signup | Email address + language. Optional: theme preferences (Milestone 7a). No account required. |
 | Unsubscribe | One-click. CAN-SPAM and GDPR compliant. |
-| Provider | Resend or AWS SES — transactional email services, not marketing platforms |
+| Provider | SendGrid — SRF's standard transactional email provider (Tech Stack Brief § Specialized Services). Open/click tracking must be disabled (DELTA compliance). See PRO-015 for AWS SES alternative analysis. |
 | Tracking | Open rates and click rates are **not tracked**. The email is a gift, not a funnel. Delivery success/bounce rates tracked for operational health only. |
 
 ### The Key Constraint
@@ -820,11 +820,13 @@ The email is a passage, not a newsletter. No announcements, no feature updates, 
 
 ### Consequences
 
-- Need an email sending service (Resend, AWS SES, or Postmark) — adds a small monthly cost
+- Need SendGrid configured for transactional email (SRF standard) with open/click tracking disabled per DELTA — see PRO-015 for SES alternative
 - Need a subscriber table in Neon (email, language, theme_preferences, subscribed_at, unsubscribed_at)
 - Need a daily cron job (Vercel Cron or AWS EventBridge) to send the email
 - Need an unsubscribe endpoint and confirmation page
 - The passage selection logic (random from pool, optional theme filter, optional seasonal weighting) is shared with the Today's Wisdom homepage feature — same code, different delivery channel
+
+*Revised: 2026-02-26, email provider aligned to SendGrid (SRF standard, Tech Stack Brief § Specialized Services), replacing original "Resend or SES" language. Open/click tracking must be disabled for DELTA compliance. PRO-015 documents the case for AWS SES as an alternative — for stakeholder review at Milestone 5a scoping.*
 
 ---
 
@@ -1551,7 +1553,7 @@ The remaining compliance work is primarily documentary (privacy policy, sub-proc
 | **New Relic** | Processor | Performance metrics, log aggregation | US | Yes (Milestone 3d+) |
 | **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-west-2` | Covered by AWS DPA |
 | **Voyage AI** | Processor | Corpus text at embedding time (one-time; ADR-118) | US | Yes |
-| **Resend/SES** | Processor | Subscriber email addresses | US | Yes (Milestone 5a+) |
+| **SendGrid** | Processor | Subscriber email addresses | US | Yes (Milestone 5a+) |
 | **Auth0** | Processor | User accounts (if implemented) | US | Yes (Milestone 7a+) |
 | **Contentful** | Processor | Editorial content (no personal data) | EU | Yes (Arc 1+) |
 

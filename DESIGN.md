@@ -52,6 +52,7 @@
 | [ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard](#adr-007-curation-as-interpretation--the-fidelity-boundary-and-editorial-proximity-standard) | — | DESIGN.md |
 | [DES-037: Observability](#des-037-observability) | 1+ | DESIGN.md |
 | [DES-038: Testing Strategy](#des-038-testing-strategy) | 1+ | DESIGN.md |
+| [DES-057: Error Handling and Resilience](#des-057-error-handling-and-resilience) | 1+ | DESIGN.md |
 | [DES-039: Infrastructure and Deployment](DESIGN-arc1.md#des-039-infrastructure-and-deployment) | 1 | DESIGN-arc1.md |
 | [DES-040: Design Tooling](DESIGN-arc2-3.md#des-040-design-tooling) | 2a+ | DESIGN-arc2-3.md |
 | [DES-041: Magazine Section Architecture](DESIGN-arc4-plus.md#des-041-magazine-section-architecture) | 3d+ | DESIGN-arc4-plus.md |
@@ -230,6 +231,25 @@ Contentful webhook sync (event-driven, Milestone 1b+):
 ```
 
 **Key principle (Arc 1+):** Contentful is where editors work. Neon is where search works. Next.js is where users work. Each system does what it's best at. Contentful is the editorial source of truth from Arc 1 (ADR-010). The production diagram above adds services that arrive in later arcs (Cohere Rerank, graph pipeline, Retool, Cloudflare CDN) but the Contentful → Neon → Next.js architecture is established from Milestone 1a.
+
+### Portal Stack vs. SRF IDP Stack
+
+The portal shares SRF's core infrastructure (AWS, Vercel, Contentful, Neon, Auth0, Amplitude, Sentry) but diverges where the portal's unique requirements — vector search, AI-human editorial collaboration, DELTA-compliant analytics, sacred text fidelity, and a 10-year architecture horizon — make a different choice clearly better. This follows SRF Tech Stack Brief § Guiding Principle #3: *"When a specialized tech vendor does something significantly better than [the standard], utilize that over the less-impressive equivalent."*
+
+| SRF IDP Standard | Portal Choice | Governing ADR | Rationale |
+|---|---|---|---|
+| DynamoDB (single-table) | Neon PostgreSQL + pgvector | ADR-013 | Vector similarity search, BM25 full-text, knowledge graph queries — none feasible in DynamoDB |
+| GitLab SCM + CI/CD | GitHub + GitHub Actions | ADR-016 | Claude Code integration; GitHub Copilot workspace; open-source community norms |
+| Serverless Framework v4 | Terraform | ADR-016 | Portal's IaC spans Neon, Vercel, AWS (S3, Bedrock, Lambda) — Terraform unifies all |
+| New Relic (observability) | Sentry (Arc 1 errors) + New Relic (Arc 3d+ APM) | ADR-041 | Error-first approach for pre-launch; New Relic joins at production scale |
+| Vimeo (private video) | YouTube embed | ADR-054 | SRF's public teachings are on YouTube; portal links to existing assets, not re-hosted copies |
+| SendGrid (transactional email) | SendGrid (aligned) | ADR-091 | Aligned with SRF standard. Open/click tracking disabled for DELTA. PRO-015 evaluates SES alternative for Milestone 5a. |
+| Cypress (E2E testing) | Playwright | ADR-094 | Multi-browser support (Chrome, Firefox, WebKit), native accessibility snapshot API, better CI reliability |
+| Stripo (email templates) | Server-rendered HTML | ADR-091 | One passage, one link — no template designer needed |
+
+**The pattern:** Align with SRF where the use case matches. Diverge where the portal's constraints (vector search, DELTA, sacred text fidelity, AI collaboration) demand it. Document every divergence with an ADR so it reads as principled engineering, not drift, when SRF's AE team encounters the portal.
+
+*Section added: 2026-02-26, to document the principled divergence pattern between the portal stack and SRF's IDP stack.*
 
 ---
 
@@ -749,7 +769,7 @@ All services that process data on the portal's behalf, with their roles, data to
 | **New Relic** | Processor | Performance metrics, log aggregation | US | 3d+ |
 | **AWS Bedrock** | Processor | Search queries (transient, not stored by AWS) | `us-west-2` | 1+ |
 | **Voyage AI** | Processor | Corpus text at embedding time (one-time, not retained; ADR-118) | US | 1+ |
-| **Resend/SES** | Processor | Subscriber email addresses | US | 5a+ |
+| **SendGrid** | Processor | Subscriber email addresses | US | 5a+ |
 | **Auth0** | Processor | User accounts (if implemented) | US | 7a+ |
 | **Contentful** | Processor | Editorial content (no personal data) | EU | 1+ |
 
@@ -1752,6 +1772,19 @@ Beyond the Amplitude event allowlist and APM tooling, the following derived metr
 
 Testing is a fidelity guarantee, not optional polish. A bug that misattributes a quote or breaks search undermines the core mission. See ADR-094.
 
+### Test Pyramid Proportions
+
+The portal's test pyramid reflects its architecture: a thick service layer (`/lib/services/`) with a thin presentation layer (Next.js). Business logic is framework-agnostic TypeScript — highly unit-testable.
+
+| Layer | Proportion | Focus | Speed |
+|-------|-----------|-------|-------|
+| **Unit** | ~60% | Service functions, data transformers, config validation, utility functions. Fast, isolated, no I/O. | < 1s per suite |
+| **Integration** | ~25% | Service → Neon queries, API route handlers, Contentful sync, embedding pipeline. Uses Neon branch isolation. | < 30s per suite |
+| **E2E** | ~10% | Full user flows via Playwright. Cross-browser. Search → read → share. | < 5 min total |
+| **Specialized** | ~5% | Search quality (golden set), accessibility (axe-core), performance (Lighthouse), visual regression. | Varies |
+
+These proportions are guidelines, not gates — the important thing is that most logic is tested at the unit level where feedback is fastest, and E2E tests cover critical user journeys rather than exhaustive paths.
+
 ### Test Layers
 
 | Layer | Tool | What It Tests | Milestone |
@@ -1832,6 +1865,54 @@ Mirrors the search quality evaluation (deliverable 1a.9) but for the pre-compute
 **Test data:** A curated set of ~50 representative paragraphs from across the ingested corpus, spanning topics: meditation, fear, love, death, science, daily life, guru-disciple relationship, and scriptural commentary. Each paragraph has human-judged "expected related" passages and "should not appear" passages.
 
 **Regression gate:** This suite runs as part of the CI pipeline after any content re-ingestion or embedding model change. Quality must not degrade below thresholds.
+
+---
+
+## DES-057: Error Handling and Resilience
+
+The portal's error handling philosophy follows from two principles: **Global Equity** (a degraded experience is still a complete experience) and **Calm Technology** (errors should not alarm the seeker). Every external dependency has a degradation path that preserves the core reading experience.
+
+### Degradation Hierarchy
+
+The portal degrades gracefully through layers. Each layer down removes a capability but never blocks reading or basic search.
+
+| Dependency | If Unavailable | Degradation | Seeker Impact |
+|------------|---------------|-------------|---------------|
+| **Claude API (Bedrock)** | Query expansion, intent classification, passage ranking skip | Pure hybrid search (vector + BM25) — still returns relevant results | Slightly less precise ranking; no intent routing |
+| **Neon PostgreSQL** | Search and API calls fail | Book reader falls back to Contentful Delivery API; search shows calm error message | Reading works, search does not |
+| **Contentful Delivery API** | Book reader pages fail to render | Search still works (Neon is the search index); reader shows fallback message | Search works, reading does not |
+| **Voyage API** | New embedding generation fails | Existing embeddings continue to serve search; ingestion pipeline pauses | Zero seeker impact (ingestion is offline) |
+| **Vercel Edge** | Complete outage | Standard Vercel reliability; no self-hosted fallback in Arc 1 | Full outage (accept this risk) |
+
+### Error Handling Patterns
+
+**Retry policy.** External API calls (Bedrock, Voyage, Contentful) use exponential backoff with jitter: 3 retries, base delay 200ms, max delay 5s. Database connection retries follow Neon's connection pooler recommendations (see ADR-124 § Connection Resilience). No retries on 4xx responses — only 5xx and network errors.
+
+**Circuit breaker.** The Claude API path uses a simple circuit breaker in `/lib/services/`:
+- **Closed** (normal): all requests pass through
+- **Open** (after 5 consecutive failures in 60s): skip Claude, fall back to hybrid-only search for 30s
+- **Half-open**: send one probe request; if it succeeds, close the circuit
+
+This prevents cascading latency when Bedrock is degraded. The circuit breaker state is in-memory (per serverless instance), not shared — acceptable because each Vercel function instance independently detects degradation.
+
+**Timeout policy.** Claude API calls timeout at 8s (query expansion: 3s, intent classification: 2s, passage ranking: 5s). Database queries timeout at 5s. Contentful API calls timeout at 10s. All timeouts implemented via `AbortController` in service functions.
+
+**User-facing error presentation.** Errors follow the portal's contemplative register (ADR-074):
+- Search degradation is invisible — seekers get results, just via a simpler path
+- Reader errors: "This chapter is temporarily unavailable. Please try again shortly."
+- Full search failure: "The search is resting. You might enjoy browsing the library while we restore it." with a link to `/books`
+- Never show stack traces, error codes, or technical details to seekers
+
+**Structured error logging.** All errors are logged via `/lib/logger.ts` with: error type, service name, request ID, duration, and whether degradation was triggered. Sentry captures unhandled exceptions. The `searchMode` field in search response metadata reveals which path was taken (full AI-enhanced, hybrid-only, FTS-only) for operational monitoring.
+
+### Partial Failure in Ingestion Pipeline
+
+The ingestion pipeline (DES-005) processes chunks individually. A failure on one chunk does not abort the pipeline:
+- Failed embeddings are logged and retried in a separate pass
+- Failed enrichment produces a chunk with `enrichment_status = 'failed'` — it is still searchable via FTS, just not enriched
+- The pipeline produces a summary report: N chunks processed, M failures, failure types
+
+*Section added: 2026-02-26, compose chain gap analysis (DES-057).*
 
 ---
 

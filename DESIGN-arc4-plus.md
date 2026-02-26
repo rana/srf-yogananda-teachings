@@ -211,7 +211,7 @@ GET /api/v1/email/unsubscribe?token=xxx
 
 | Component | Service | Notes |
 |-----------|---------|-------|
-| Email delivery | Resend or AWS SES (~$0.10 per 1,000) | Resend for early Milestone 5a; SES for scale |
+| Email delivery | SendGrid (SRF standard) | SRF's established transactional email provider. Disable open/click tracking for DELTA compliance. See PRO-015 for AWS SES alternative. |
 | Cron trigger | Vercel Cron Jobs (Pro: 10/day) or AWS EventBridge | Daily at 5:00 AM UTC |
 | Template | Server-rendered HTML string (no template engine needed) | Keep simple — one passage, one link |
 | Daily passage selection | Same logic as `/api/v1/daily-passage` but with a fixed daily seed | All subscribers receive the same passage on the same day |
