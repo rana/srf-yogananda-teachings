@@ -1899,8 +1899,11 @@ import { neon } from '@neondatabase/serverless';
 
 // For Vercel Functions (edge and serverless):
 // - @neondatabase/serverless uses HTTP-based queries (no persistent connections)
+// - HTTP mode limit: 64MB request/response (irrelevant for API queries; batch ingestion uses Pool)
 // - Each function invocation creates a lightweight client, no pool management needed
 // - Neon's built-in connection pooler (PgBouncer-compatible) handles concurrency server-side
+// - Wrap queries in async-retry with exponential backoff for transient connection drops
+//   (config: DB_RETRY_COUNT, DB_RETRY_FACTOR, DB_RETRY_MIN_TIMEOUT_MS in /lib/config.ts)
 //
 // For Lambda batch workloads (Milestone 3a+, ADR-017):
 // - Use Neon's pooled connection string (port 5432 → pooler endpoint)

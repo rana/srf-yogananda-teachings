@@ -2144,6 +2144,11 @@ export const SEARCH_DEBOUNCE_MS     = 300;
 export const RATE_LIMIT_SEARCH_RPM = 30;
 export const RATE_LIMIT_API_RPM    = 60;
 
+// ── Database Connection Resilience ────────────────────────────
+export const DB_RETRY_COUNT          = 5;
+export const DB_RETRY_FACTOR         = 2;
+export const DB_RETRY_MIN_TIMEOUT_MS = 1000;
+
 // ── Cache TTLs ─────────────────────────────────────────────────
 export const CACHE_TTL_SEARCH_SECONDS     = 300;
 export const CACHE_TTL_SUGGESTIONS_SECONDS = 3600;
