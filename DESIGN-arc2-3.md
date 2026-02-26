@@ -2202,7 +2202,7 @@ When monastic talks are transcribed, the transcripts become a new content type a
 -- VIDEO TRANSCRIPTS (Arc 6)
 -- ============================================================
 CREATE TABLE video_transcripts (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  video_id TEXT NOT NULL, -- YouTube video ID
  video_title TEXT, -- cached from YouTube API
  language TEXT NOT NULL DEFAULT 'en',
@@ -2217,7 +2217,7 @@ CREATE TABLE video_transcripts (
 -- Same chunking strategy as book_chunks. Each chunk carries start/end
 -- timestamps enabling direct links to the exact video playback moment.
 CREATE TABLE video_chunks (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  transcript_id UUID NOT NULL REFERENCES video_transcripts(id) ON DELETE CASCADE,
  content TEXT NOT NULL, -- chunk text (same strategy as book_chunks)
  start_seconds FLOAT NOT NULL, -- timestamp where this chunk begins in the video
@@ -2354,7 +2354,7 @@ A dedicated `/places` page presenting sites of biographical and spiritual signif
 ```sql
 -- Sacred places (SRF properties + biographical sites)
 CREATE TABLE places (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  name TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  category TEXT NOT NULL CHECK (category IN ('srf_property', 'yss_property', 'biographical')),
@@ -2737,7 +2737,7 @@ The `daily_passages` pool already supports optional seasonal weighting. Calendar
 -- CALENDAR EVENTS (date-to-passage associations — Milestone 3b+)
 -- ============================================================
 CREATE TABLE calendar_events (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  name TEXT NOT NULL, -- "Mahasamadhi Anniversary"
  description TEXT, -- brief context
  month INTEGER NOT NULL, -- 1–12
@@ -2748,7 +2748,7 @@ CREATE TABLE calendar_events (
 );
 
 CREATE TABLE calendar_event_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  event_id UUID NOT NULL REFERENCES calendar_events(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  position INTEGER, -- optional ordering
@@ -4055,7 +4055,7 @@ A dedicated `/updates` page presenting seeker-facing release notes in the portal
 ```sql
 -- Portal updates (seeker-facing changelog)
 CREATE TABLE portal_updates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   title TEXT NOT NULL,                          -- seeker-facing title (e.g., "The Library has grown")
   summary TEXT NOT NULL,                        -- 1–2 sentence summary for RSS and /updates listing
   body TEXT,                                    -- full update text (Markdown)

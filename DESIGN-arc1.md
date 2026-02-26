@@ -711,7 +711,7 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;  -- query performance monitor
 -- BOOKS
 -- ============================================================
 CREATE TABLE books (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL,
  subtitle TEXT,
  author TEXT NOT NULL, -- No default; author must be explicit for multi-author corpus (PRO-014)
@@ -774,7 +774,7 @@ CREATE TABLE book_chunks_archive (
 -- CHAPTERS
 -- ============================================================
 CREATE TABLE chapters (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
  chapter_number INTEGER NOT NULL,
  title TEXT,
@@ -789,7 +789,7 @@ CREATE INDEX idx_chapters_book ON chapters(book_id, sort_order);
 -- BOOK CHUNKS (the core search table)
 -- ============================================================
 CREATE TABLE book_chunks (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
  chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
 
@@ -917,7 +917,7 @@ CREATE INDEX idx_chunks_language ON book_chunks(language);
 -- Non-quality categories accessible from "Explore" pages and the Library.
 -- Not shown on the homepage grid to preserve the calm six-door design.
 CREATE TABLE teaching_topics (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  name TEXT NOT NULL UNIQUE, -- English display name: "Peace", "Courage", "Relationships", etc.
  slug TEXT NOT NULL UNIQUE, -- URL slug: "peace", "relationships", etc. (always English for URL stability)
  category TEXT NOT NULL DEFAULT 'quality', -- 'quality', 'situation', 'person', 'principle',
@@ -974,7 +974,7 @@ CREATE INDEX idx_chunk_topics_pending ON chunk_topics(tagged_by) WHERE tagged_by
 -- DAILY PASSAGES (curated pool for "Today's Wisdom")
 -- ============================================================
 CREATE TABLE daily_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  season_affinity TEXT[], -- optional: ['winter', 'renewal'] for seasonal weighting
  tone TEXT, -- 'consoling', 'joyful', 'challenging', 'contemplative', 'practical' (ADR-005 E8)
@@ -990,7 +990,7 @@ CREATE INDEX idx_daily_passages_active ON daily_passages(is_active) WHERE is_act
 -- AFFIRMATIONS (curated pool for "The Quiet Corner")
 -- ============================================================
 CREATE TABLE affirmations (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  content TEXT NOT NULL, -- the affirmation text (verbatim from source)
  book_title TEXT NOT NULL, -- source book
  page_number INTEGER,
@@ -1100,7 +1100,7 @@ INSERT INTO teaching_topics (name, slug, category, sort_order, description) VALU
 -- SEARCH QUERY LOG (anonymized, for understanding seeker needs)
 -- ============================================================
 CREATE TABLE search_queries (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  query_text TEXT NOT NULL,
  query_expanded TEXT[], -- expanded search terms (if AI was used)
  results_count INTEGER,
@@ -1232,7 +1232,7 @@ CREATE INDEX idx_chunk_references_target ON chunk_references(target_chunk_id);
 -- validates against this registry. Feeds suggestion system (ADR-049,
 -- ADR-120 Tiers 2 and 4) and graph intelligence (ADR-117).
 CREATE TABLE entity_registry (
- id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id              UUID PRIMARY KEY DEFAULT uuidv7(),
  canonical_name  TEXT NOT NULL,
  entity_type     TEXT NOT NULL,     -- Teacher|DivineName|Work|Technique|SanskritTerm|Concept|Place|ExperientialState
  aliases         TEXT[],            -- all known surface forms
@@ -1254,7 +1254,7 @@ CREATE INDEX entity_aliases_idx ON entity_registry USING gin(aliases);
 -- Handles transliteration variants: "samadhi" = "Samaadhi" = "samahdi".
 -- All variant forms loaded into suggestion system for fuzzy matching.
 CREATE TABLE sanskrit_terms (
- id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id              UUID PRIMARY KEY DEFAULT uuidv7(),
  canonical_form  TEXT NOT NULL,     -- "samadhi"
  display_form    TEXT NOT NULL,     -- "Samadhi"
  devanagari      TEXT,              -- "समाधि"
@@ -1272,7 +1272,7 @@ CREATE TABLE sanskrit_terms (
 -- Pre-computed suggestion vocabulary derived from corpus enrichment.
 -- Six-tier hierarchy. No click_through tracking (DELTA compliance).
 CREATE TABLE suggestion_dictionary (
- id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id              UUID PRIMARY KEY DEFAULT uuidv7(),
  suggestion      TEXT NOT NULL,
  display_text    TEXT,              -- formatted display (e.g., "Samadhi — superconscious state")
  suggestion_type TEXT NOT NULL,     -- scoped_query|entity|concept|sanskrit|learned_query|term
@@ -1305,7 +1305,7 @@ CREATE INDEX suggestion_weight_idx ON suggestion_dictionary(language, weight DES
 -- Queried directly by graph-augmented retrieval (PATH C, Milestone 3b+).
 -- Graph algorithm batch job reads from this table nightly.
 CREATE TABLE extracted_relationships (
- id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id              UUID PRIMARY KEY DEFAULT uuidv7(),
  chunk_id        UUID REFERENCES book_chunks(id),
  subject_entity  TEXT,
  relationship    TEXT,              -- TEACHES|INTERPRETS|DESCRIBES_STATE|MENTIONS|etc.
@@ -1321,7 +1321,7 @@ CREATE TABLE extracted_relationships (
 -- commitments preserved: no behavioral profiling, no gamification,
 -- no engagement optimization. No profile_embedding column.
 CREATE TABLE user_profiles (
- id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id                  UUID PRIMARY KEY DEFAULT uuidv7(),
  auth0_id            TEXT UNIQUE NOT NULL,
  preferred_language  CHAR(5),
  tradition_background TEXT,         -- optional, user-provided

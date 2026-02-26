@@ -780,7 +780,7 @@ The "Seeking..." entry points already hint at this. Threads make the connection 
 -- EDITORIAL THREADS (curated multi-book reading paths — Milestone 3c+)
 -- ============================================================
 CREATE TABLE editorial_threads (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  slug TEXT NOT NULL UNIQUE, -- URL slug: 'yogananda-on-fear'
  title TEXT NOT NULL, -- "Yogananda on Fear"
  description TEXT, -- Brief editorial introduction
@@ -791,7 +791,7 @@ CREATE TABLE editorial_threads (
 );
 
 CREATE TABLE thread_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  thread_id UUID NOT NULL REFERENCES editorial_threads(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  position INTEGER NOT NULL, -- ordering within the thread
@@ -839,7 +839,7 @@ This is a "Classifying" category use — JSON output, no prose. Spot-checked by 
 -- EXTERNAL REFERENCES (reverse bibliography — Milestone 3c+)
 -- ============================================================
 CREATE TABLE external_references (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  name TEXT NOT NULL, -- "Bhagavad Gita", "Albert Einstein"
  slug TEXT NOT NULL UNIQUE, -- URL slug: 'bhagavad-gita'
  type TEXT NOT NULL, -- 'scripture', 'person', 'text', 'tradition'
@@ -849,7 +849,7 @@ CREATE TABLE external_references (
 );
 
 CREATE TABLE chunk_external_references (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  reference_id UUID NOT NULL REFERENCES external_references(id) ON DELETE CASCADE,
  nature TEXT NOT NULL DEFAULT 'reference', -- 'quote', 'reference', 'discussion', 'allusion'
@@ -917,7 +917,7 @@ The portal has no mechanism for seekers to communicate back without violating DE
 
 ```sql
 CREATE TABLE seeker_feedback (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  feedback_type TEXT NOT NULL CHECK (feedback_type IN (
  'citation_error', 'search_miss', 'general', 'accessibility'
 )),
@@ -1910,7 +1910,7 @@ VLD members access a dedicated section in the admin portal (Auth0 role: `vld`):
 
 ```sql
 CREATE TABLE curation_briefs (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL,
  description TEXT NOT NULL,
  collection_type TEXT NOT NULL,

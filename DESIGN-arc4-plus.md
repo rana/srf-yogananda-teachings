@@ -132,7 +132,7 @@ Logged-in subscribers choose preferred themes (Peace, Courage, etc.). The daily 
 -- EMAIL SUBSCRIBERS (for Daily Wisdom email)
 -- ============================================================
 CREATE TABLE email_subscribers (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  email TEXT NOT NULL UNIQUE,
  language TEXT NOT NULL DEFAULT 'en',
  is_confirmed BOOLEAN NOT NULL DEFAULT false, -- double opt-in

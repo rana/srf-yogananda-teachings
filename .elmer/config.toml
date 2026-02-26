@@ -65,10 +65,14 @@ max_turns = 5
 [invariants]
 model = "sonnet"
 max_turns = 5
-# rules = [                          # custom invariant rules (optional)
-#   "ADR count in CLAUDE.md matches DECISIONS.md entries",
-#   "Phase status in ROADMAP.md matches CLAUDE.md",
-# ]
+rules = [
+  "ADR count in DECISIONS.md index table matches total ADRs across DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md",
+  "DES-NNN identifiers in DESIGN.md index are contiguous and match sections in DESIGN-arc*.md files",
+  "PRO-NNN identifiers in PROPOSALS.md are contiguous with no gaps",
+  "Every ADR-NNN cross-reference in DESIGN*.md files points to an ADR that exists in DECISIONS*.md",
+  "ROADMAP.md milestone deliverable counts match the actual deliverable lists",
+  "CLAUDE.md Quick Reference tech stack matches DESIGN.md tech stack section",
+]
 
 [audit]
 enabled = false                       # enable audit scheduling in daemon
@@ -86,7 +90,7 @@ max_turns = 50
 # ]
 
 [verification]
-# on_done = "pnpm build && pnpm test"  # enable after step 0 scaffolds build system
+on_done = "elmer validate --check"     # doc-coherence gate; switch to "pnpm build && pnpm test" after step 0 scaffolds build system
 max_retries = 2
 
 [implement]

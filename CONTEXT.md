@@ -132,6 +132,7 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-25 | Multi-author three-tier hierarchy: sacred (guru lineage) / authorized (SRF presidents) / commentary (monastics) | PRO-014 |
 | 2026-02-25 | Endowment scope covers all SRF-published authors | PRO-014 |
 | 2026-02-25 | PRO-014 document cascade merged — multi-author scope adopted across Principles, ADRs, DESIGN, schema | PRO-014 (Adopted) |
+| 2026-02-25 | PostgreSQL 18 selected for Neon project — upstream stable since Sept 2025, UUIDv7 schema convention adopted | ADR-124 |
 
 *Tech-selection decisions (embedding model, AI provider, single-database, full-text search, graph layer, language URLs) are fully captured in their governing ADRs (ADR-118, ADR-014, ADR-119, ADR-013, ADR-117, ADR-114, ADR-027) and no longer repeated here.*
 

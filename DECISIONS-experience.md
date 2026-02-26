@@ -119,7 +119,7 @@ Abstract the video model from YouTube-specific to platform-agnostic. Introduce a
 
 ```sql
 CREATE TABLE videos (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  description TEXT,
@@ -235,7 +235,7 @@ Add audio as a primary content type with its own data model, ingestion pipeline,
 
 ```sql
 CREATE TABLE audio_recordings (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  description TEXT,
@@ -258,7 +258,7 @@ CREATE TABLE audio_recordings (
 );
 
 CREATE TABLE audio_segments (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  recording_id UUID NOT NULL REFERENCES audio_recordings(id) ON DELETE CASCADE,
  segment_index INTEGER NOT NULL,
  start_time_ms INTEGER NOT NULL, -- millisecond offset
@@ -478,7 +478,7 @@ Introduce a `content_items` hub table as a thin polymorphic registry for cross-m
 ```sql
 -- Unified content registry for cross-media operations
 CREATE TABLE content_items (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  content_type TEXT NOT NULL CHECK (content_type IN (
  'book_chunk', 'video_chunk', 'audio_segment', 'image'
 )),

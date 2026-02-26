@@ -2359,7 +2359,7 @@ The Lambda function:
 ```sql
 -- Messaging channel subscriptions (daily wisdom opt-in)
 CREATE TABLE messaging_subscriptions (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'sms', 'telegram')),
  channel_id TEXT NOT NULL, -- phone number or Telegram user ID
  subscription_type TEXT NOT NULL DEFAULT 'daily' CHECK (subscription_type IN ('daily')),
@@ -2373,7 +2373,7 @@ CREATE TABLE messaging_subscriptions (
 -- Messaging interaction log (anonymized, for cost tracking and channel health)
 -- NO personal data. NO message content. Just aggregate counts.
 CREATE TABLE messaging_metrics (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  channel TEXT NOT NULL,
  interaction_type TEXT NOT NULL CHECK (interaction_type IN ('search', 'daily', 'subscribe', 'unsubscribe', 'audio')),
  country_code TEXT, -- from phone number prefix (not stored with identity)
@@ -2909,7 +2909,7 @@ Images become a primary content type with their own data model, browse/search ex
 
 ```sql
 CREATE TABLE images (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  description TEXT,
@@ -2943,7 +2943,7 @@ CREATE TABLE images (
 -- Image descriptions embedded for semantic search
 -- Images don't have body text to chunk; the description is the searchable proxy
 CREATE TABLE image_descriptions (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  image_id UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
  description_text TEXT NOT NULL, -- Rich contextual description for embedding
  embedding vector(1024),
@@ -3025,7 +3025,7 @@ Add a **`people`** table as a primary content type, linked to the existing `teac
 
 ```sql
 CREATE TABLE people (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  name TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  title TEXT, -- e.g., "Paramguru," "Avatar," "Yogiraj"
@@ -3327,7 +3327,7 @@ Surface the spiritual terminology bridge as a user-facing glossary with two deli
 
 ```sql
 CREATE TABLE glossary_terms (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  term TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,
  brief_definition TEXT NOT NULL, -- 1-2 sentences, editorially written
@@ -3446,7 +3446,7 @@ Integrate Self-Realization Magazine as a primary content type with differentiate
 
 ```sql
 CREATE TABLE magazine_issues (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  slug TEXT NOT NULL UNIQUE,        -- e.g., '2025-spring', '1925-winter'
  volume INTEGER NOT NULL,
  issue_number INTEGER NOT NULL,
@@ -3464,7 +3464,7 @@ CREATE TABLE magazine_issues (
 );
 
 CREATE TABLE magazine_articles (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  issue_id UUID NOT NULL REFERENCES magazine_issues(id) ON DELETE CASCADE,
  title TEXT NOT NULL,
  slug TEXT NOT NULL UNIQUE,          -- globally unique (ADR-108)
@@ -3480,7 +3480,7 @@ CREATE TABLE magazine_articles (
 );
 
 CREATE TABLE magazine_chunks (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  article_id UUID NOT NULL REFERENCES magazine_articles(id) ON DELETE CASCADE,
  chunk_index INTEGER NOT NULL,
  content TEXT NOT NULL,
@@ -3684,7 +3684,7 @@ Build a **structured spiritual ontology** — a concept graph of Yogananda's tea
 -- SPIRITUAL ONTOLOGY (concept graph — Arc 4+)
 -- ============================================================
 CREATE TABLE ontology_concepts (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  slug TEXT NOT NULL UNIQUE, -- URL slug: 'samadhi'
  name TEXT NOT NULL, -- "Samadhi"
  sanskrit_name TEXT, -- 'samādhi' (IAST transliteration)
@@ -3703,7 +3703,7 @@ CREATE TABLE ontology_concepts (
 );
 
 CREATE TABLE ontology_relations (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  source_id UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
  target_id UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
  relation_type TEXT NOT NULL CHECK (relation_type IN (
@@ -3724,7 +3724,7 @@ CREATE TABLE ontology_relations (
 
 -- Bridge: which passages are the primary source for a concept
 CREATE TABLE ontology_concept_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  concept_id UUID NOT NULL REFERENCES ontology_concepts(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id) ON DELETE CASCADE,
  is_primary BOOLEAN NOT NULL DEFAULT false, -- the single best passage explaining this concept
@@ -4398,7 +4398,7 @@ Produce a yearly **"What Is Humanity Seeking?"** report from aggregated, anonymi
 
 ```sql
 CREATE TABLE search_theme_aggregates (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  period_start DATE NOT NULL,
  period_end DATE NOT NULL,
  period_type TEXT NOT NULL CHECK (period_type IN ('week', 'month', 'quarter', 'year')),
@@ -4638,7 +4638,7 @@ Two first-class tables provide canonical entity resolution for the entire system
 
 ```sql
 CREATE TABLE entity_registry (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuidv7(),
     canonical_name  TEXT NOT NULL,
     entity_type     TEXT NOT NULL,  -- Teacher|DivineName|Work|Technique|SanskritTerm|Concept|Place|ExperientialState
     aliases         TEXT[],         -- all known surface forms
@@ -4659,7 +4659,7 @@ CREATE INDEX entity_aliases_idx ON entity_registry USING gin(aliases);
 
 ```sql
 CREATE TABLE sanskrit_terms (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuidv7(),
     canonical_form  TEXT NOT NULL,     -- "samadhi"
     display_form    TEXT NOT NULL,     -- "Samadhi"
     devanagari      TEXT,              -- "समाधि"

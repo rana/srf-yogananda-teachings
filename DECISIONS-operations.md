@@ -240,7 +240,7 @@ The server-side schema (for Milestone 7a sync) renames the former Talk Preparati
 
 ```sql
 CREATE TABLE study_outlines (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  user_id TEXT, -- nullable: null = localStorage-only, populated on Milestone 7a sync
  title TEXT NOT NULL,
  description TEXT,
@@ -250,7 +250,7 @@ CREATE TABLE study_outlines (
 );
 
 CREATE TABLE study_outline_sections (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  outline_id UUID NOT NULL REFERENCES study_outlines(id) ON DELETE CASCADE,
  title TEXT NOT NULL,
  speaker_notes TEXT, -- user's personal notes (NOT Yogananda's words)
@@ -259,7 +259,7 @@ CREATE TABLE study_outline_sections (
 );
 
 CREATE TABLE study_outline_passages (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  section_id UUID NOT NULL REFERENCES study_outline_sections(id) ON DELETE CASCADE,
  chunk_id UUID NOT NULL REFERENCES book_chunks(id),
  personal_note TEXT,
@@ -319,7 +319,7 @@ Add three DELTA-compliant feedback mechanisms. None store user identifiers. All 
 
 ```sql
 CREATE TABLE seeker_feedback (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  feedback_type TEXT NOT NULL CHECK (feedback_type IN (
  'citation_error', 'search_miss', 'general', 'accessibility'
 )),
@@ -553,7 +553,7 @@ Staff can create structured curation requests that VLD members claim and fulfill
 
 ```sql
 CREATE TABLE curation_briefs (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid,
+ id UUID PRIMARY KEY DEFAULT uuidv7(),
  title TEXT NOT NULL, -- "Passages on Friendship for July"
  description TEXT NOT NULL, -- Detailed brief with guidance
  collection_type TEXT NOT NULL, -- matches ADR-086 types
@@ -2063,7 +2063,7 @@ Every envelope includes:
 
 ```sql
 CREATE TABLE webhook_subscribers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   name TEXT NOT NULL,                      -- "SRF Zapier — Daily Email", "Internal Slack Bot"
   url TEXT NOT NULL,                       -- Delivery URL (HTTPS required)
   secret TEXT NOT NULL,                    -- HMAC signing secret
@@ -2075,7 +2075,7 @@ CREATE TABLE webhook_subscribers (
 );
 
 CREATE TABLE webhook_deliveries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   subscriber_id UUID NOT NULL REFERENCES webhook_subscribers(id),
   event_id TEXT NOT NULL,                  -- From envelope
   event_type TEXT NOT NULL,
@@ -2909,7 +2909,7 @@ Examples:
 
 ---
 
-## ADR-124: Neon Platform Governance — Tier, Compute, Branching, Extensions, and Observability
+## ADR-124: Neon Platform Governance — PostgreSQL Version, Tier, Compute, Branching, Extensions, and Observability
 
 - **Status:** Accepted
 - **Date:** 2026-02-25
@@ -2928,7 +2928,40 @@ A comprehensive audit of Neon's feature catalog against our design documents rev
 
 ### Decision
 
-Establish **Neon Scale tier** as the project's database platform from Milestone 1a, with explicit governance for compute, branching, extensions, and observability.
+Establish **Neon Scale tier with PostgreSQL 18** as the project's database platform from Milestone 1a, with explicit governance for PostgreSQL version, compute, branching, extensions, and observability.
+
+#### PostgreSQL Version: 18
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **PostgreSQL 18** (chosen) | Upstream stable since Sept 2025; UUIDv7, skip scan, virtual generated columns, parallel GIN builds, `casefold()`, Unicode 16.0.0; avoids future major version upgrade; patches through ~2030 (ADR-004) | Neon designates as "preview" (Feb 2026); async I/O disabled on Neon (`io_method = 'sync'`) |
+| PostgreSQL 17 | Neon "stable" designation; fully validated platform features | Older; requires major version upgrade later; misses UUIDv7, skip scan, virtual columns; patches through ~2029 |
+
+**Why PG18:** The portal launches late 2026. Neon will almost certainly exit PG18 preview well before launch — PG18 has been upstream stable for 5 months (since Sept 25, 2025). Starting on PG18 avoids a future major version upgrade. The 10-year design horizon (ADR-004) favors the newer major version.
+
+**PG18 features leveraged:**
+
+| Feature | Arc | Benefit |
+|---------|-----|---------|
+| `uuidv7()` | 1+ | Time-ordered UUIDs for all content tables. Better B-tree index locality than `gen_random_uuid()`. Natural chronological ordering without separate timestamp indexes. |
+| Skip scan on B-tree indexes | 1+ | Composite `(updated_at, id)` indexes (ADR-107) become usable for id-only queries. |
+| Parallel GIN index creation | 1+ | Speeds pg_search/ParadeDB BM25 index builds during ingestion. |
+| Enhanced `RETURNING` (OLD/NEW) | 1+ | Simplifies ingestion pipeline upsert logic and `book_chunks_archive` pattern. |
+| `EXPLAIN ANALYZE` with BUFFERS | 1+ | Included by default, complementing pg_stat_statements observability (this ADR). |
+| Data checksums by default | 1+ | Enabled automatically for new Neon projects. |
+| Unicode 16.0.0 | 1+ | Improved case mapping for Sanskrit/Hindi diacritics (ADR-080). |
+| Virtual generated columns | 1b+ | Compute values at read time without storage overhead. Evaluate for normalized search text. |
+| `casefold()` | 1b+ | Unicode-aware case-insensitive matching. Evaluate for Sanskrit term normalization. |
+| `COPY REJECT_LIMIT` | 1a.4 | Error-tolerant bulk ingestion. Evaluate for PDF import pipeline. |
+| `WITHOUT OVERLAPS` temporal constraints | 2a+ | Evaluate for daily passage scheduling, event scheduling. |
+| `array_sort()` / `array_reverse()` | 2a+ | Tag array processing for teaching topics and entity aliases. |
+| Async I/O | Neon-gated | Neon runs `io_method = 'sync'` during preview. Benefit arrives when Neon enables it — no code changes needed. |
+
+**Schema convention — UUIDv7:** All table primary keys use `DEFAULT uuidv7()` instead of `gen_random_uuid()`. UUIDv7 embeds a millisecond-precision timestamp, providing natural chronological ordering and significantly better B-tree index locality (reduced page splitting on INSERT). The embedded timestamp is not sensitive — all content tables already carry explicit `created_at`/`updated_at` columns.
+
+**Terraform parameter:** Neon project specifies `postgres_version = "18"` explicitly. Never rely on Neon's default version.
+
+**Verification gate (Deliverable 1a.2):** After `terraform apply`, verify all 5 required extensions (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements) install correctly on Neon PG18. If any extension fails, fallback: recreate on PG17 with no code changes required (only Terraform `postgres_version` parameter changes).
 
 #### Tier Selection: Scale
 
@@ -3022,14 +3055,17 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 
 ### Consequences
 
-- Neon project upgraded to Scale tier (or created as Scale from Milestone 1a)
+- Neon project created as PostgreSQL 18, Scale tier from Milestone 1a (`postgres_version = "18"` in Terraform)
+- All table primary keys use `uuidv7()` — schema convention for time-ordered UUIDs
 - Production branch protected; compute configuration applied per environment
-- 5 extensions enabled in first migration (vector, pg_search, pg_trgm, unaccent, pg_stat_statements)
+- 5 extensions verified on PG18 in first migration (vector, pg_search, pg_trgm, unaccent, pg_stat_statements)
 - Branch naming convention and TTL policy enforced in CI scripts
 - `pg_stat_statements` data informs search query optimization from Milestone 1a
 - OpenTelemetry export configured during Milestone 2a observability setup
 - Snapshot schedule configured during Milestone 1a.2 (ADR-019)
 - **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
-- DESIGN-arc1.md § DES-004 schema updated to include all 5 extensions
+- DESIGN-arc1.md § DES-004 schema updated to include all 5 extensions and `uuidv7()` convention
 - ROADMAP.md cost model updated to reflect Scale tier pricing
+
+*Revised: 2026-02-25, added PostgreSQL 18 version selection, UUIDv7 schema convention, and PG18 feature survey.*
 

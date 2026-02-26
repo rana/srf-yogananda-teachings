@@ -50,7 +50,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js on Vercel |
-| Database | Neon PostgreSQL + pgvector + pg_search/ParadeDB (hybrid vector + BM25 full-text search) |
+| Database | Neon PostgreSQL 18 + pgvector + pg_search/ParadeDB (hybrid vector + BM25 full-text search) |
 | AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
 | Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
 | Reranking | Cohere Rerank 3.5 (Milestone 2b+) (ADR-119) |
