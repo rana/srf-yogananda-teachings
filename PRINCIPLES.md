@@ -10,13 +10,15 @@ CLAUDE.md carries the compressed, code-affecting form of each principle. This do
 
 **The AI is a librarian, not an oracle.** It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it never generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. (ADR-001, ADR-005, ADR-015, PRO-014)
 
-The corpus spans a three-tier content hierarchy (PRO-014): **sacred** (Paramahansa Yogananda, Swami Sri Yukteswar — realized masters with SRF-published standalone volumes), **authorized** (Sri Daya Mata, Sri Mrinalini Mata, Rajarsi Janakananda — direct disciples / SRF Presidents), and **commentary** (monastic speakers such as Brother Anandamoy). All tiers receive verbatim fidelity — the AI never generates, paraphrases, or synthesizes any author's words. The tiers govern search inclusion, daily passage eligibility, and social media quotability, not fidelity level.
+The corpus spans a three-tier content hierarchy (PRO-014): **guru** (Paramahansa Yogananda, Swami Sri Yukteswar — the lineage gurus with SRF-published standalone volumes), **president** (Sri Daya Mata, Sri Mrinalini Mata, Rajarsi Janakananda — direct disciples who served as SRF President and spiritual head), and **monastic** (monastic speakers such as Brother Anandamoy). The tiers describe the author's role, not a value judgment — all tiers receive verbatim fidelity. The AI never generates, paraphrases, or synthesizes any author's words. The tiers govern search inclusion, daily passage eligibility, and social media quotability, not fidelity level.
 
 These words are considered transmitted teachings from realized masters and their direct successors. Even subtle paraphrasing can distort meaning — "God-consciousness" and "cosmic consciousness" are not interchangeable in this tradition. The librarian model eliminates hallucination risk entirely: there is nothing to hallucinate because the AI generates no content. This extends to all modalities: AI voice synthesis of sacred text imposes synthetic prosody on the teachings; AI-generated images of the gurus fabricate objects of devotion; AI-generated video of the gurus is impermissible regardless of intent. ADR-015 establishes the three-tier media integrity policy.
 
 Every Claude interaction returns structured data (JSON arrays of IDs, terms, scores, labels), never prose. Claude reads passages to understand them for ranking and classification, but its output is always a label, a score, or an ID — never modified text. The three permitted categories are Finding (locating passages), Classifying (labeling passages), and Drafting (non-sacred text like UI strings, always with human review). ADR-005 is the single authoritative reference for what Claude may and may not do.
 
 The consequence that matters most: chunking quality is paramount. Each chunk must be a coherent, self-contained passage suitable for display as a standalone quote, because the AI cannot fix a poorly chunked passage — it can only retrieve it.
+
+*Section revised: 2026-02-26, content tier values renamed from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature.*
 
 ---
 

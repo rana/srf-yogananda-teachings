@@ -183,7 +183,7 @@
 **Type:** Policy
 **Governing Refs:** ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111
 
-**Summary.** Expanded corpus scope from "Yogananda's published books" to "all SRF/YSS-published books" with a three-tier content hierarchy: sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), commentary (monastic speakers). All tiers receive verbatim fidelity, no AI synthesis, no machine translation. Tiers govern search inclusion, daily passage pool, and social media pool. Both blocking stakeholder decisions resolved 2026-02-25: theological hierarchy confirmed, endowment scope confirmed.
+**Summary.** Expanded corpus scope from "Yogananda's published books" to "all SRF/YSS-published books" with a three-tier content hierarchy by author role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity, no AI synthesis, no machine translation. Tiers govern search inclusion, daily passage pool, and social media pool. Both blocking stakeholder decisions resolved 2026-02-25: theological hierarchy confirmed, endowment scope confirmed. *Tier values renamed 2026-02-26 from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature.*
 
 **Document cascade applied to:** PRINCIPLES.md §1–2, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DESIGN-arc1.md books schema (`content_tier` column, `author` DEFAULT removed).
 

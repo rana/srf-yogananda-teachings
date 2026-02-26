@@ -44,7 +44,7 @@ The AI **never**:
 - **The "no results" case must be handled gracefully.** When the corpus doesn't address a query, the system must say so honestly rather than stretching to find something.
 - **The AI's output format is constrained.** Query expansion returns a JSON array of terms. Passage ranking returns a JSON array of IDs. No prose output.
 - **Consolidated in ADR-005:** The full Claude AI Usage Policy — permitted roles, prohibited uses, output format constraints, and expansion roadmap — is maintained in ADR-005.
-- **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three content tiers: sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), commentary (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
+- **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three content tiers: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
 
 *Revised: 2026-02-25, PRO-014 multi-author expansion merged.*
 
@@ -670,7 +670,7 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 
 ### Context
 
-ADR-001 established the foundational constraint: the portal displays only the verbatim published words of SRF-published authors and never generates, paraphrases, or synthesizes content. This applies to all three content tiers (PRO-014: sacred, authorized, commentary). The constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
+ADR-001 established the foundational constraint: the portal displays only the verbatim published words of SRF-published authors and never generates, paraphrases, or synthesizes content. This applies to all three content tiers (PRO-014: guru, president, monastic). The constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
 
 However, as the portal's feature surface has grown — editorial reading threads (DES-026), theme classification (ADR-032), daily passage selection, calendar-aware surfacing (DES-028), search suggestions with vocabulary bridging (ADR-049), community collections (ADR-086), the `/guide` page (DES-047), and chant metadata (ADR-059) — two gaps have emerged:
 
@@ -1530,10 +1530,10 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 - The former Lambda batch decision is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Milestone 2a) are replaced.
 - `/serverless/` directory becomes `/lambda/`. No `serverless.yml`. No SF v4 dependency.
 - Terraform gains two modules: `/terraform/modules/lambda/` and `/terraform/modules/eventbridge/`.
-- Milestone 3a deliverable 3a.6 provisions Lambda infrastructure (`enable_lambda = true` → `terraform apply`) and deploys all batch functions: backup, ingestion, and relation computation.
+- Milestone 2a deliverable 2a.22 provisions Lambda infrastructure (`enable_lambda = true` → `terraform apply`) for database backup. Milestone 3a deliverable 3a.6 deploys batch functions (ingestion, relation computation) to the already-working infrastructure.
 - All downstream ADRs referencing Lambda batch infrastructure now reference ADR-017. The infrastructure is the same (Lambda + EventBridge); the deployment mechanism and timing differ.
 - Developers familiar with SF v4 should note: Lambda invocation, monitoring, and IAM are identical. Only the deployment tool changes (Terraform instead of `serverless deploy`).
-- **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Milestone 3a).
+- **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Milestone 2a).
 - **Deferred:** Step Functions for complex orchestration (evaluate at Arc 6 if audio/video pipeline complexity warrants it).
 
 ---
@@ -2560,10 +2560,10 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 | 9 | *Journey to Self-Realization* | Third volume of collected talks. |
 | 10 | *Wine of the Mystic* | Rubaiyat commentary — beautiful but niche audience. |
 | 11–12 | *Second Coming of Christ / God Talks With Arjuna* | Massive multi-volume scriptural commentaries. Highest value for advanced students. Require verse-aware chunking (complex). Lower urgency for making the portal essential to newcomers. |
-| 13 | *The Holy Science* (Swami Sri Yukteswar) | Sacred tier (PRO-014). Dense, aphoristic philosophical text. Requires author-specific chunking parameters (shorter target range). Directly relevant to PRO-009 scientific-spiritual bridge themes. |
-| 14 | *Only Love* / *Finding the Joy Within You* / *Enter the Quiet Heart* (Sri Daya Mata) | Authorized tier (PRO-014). Conversational style closer to Yogananda's collected talks. Three short volumes. |
-| 15 | *The Guru and the Disciple* (Sri Mrinalini Mata) | Authorized tier (PRO-014). Editorial/biographical work about Yogananda's posthumous publications. |
-| 16 | *Rajarsi Janakananda: A Great Western Yogi* | Authorized tier (PRO-014). Biographical, SRF-published. |
+| 13 | *The Holy Science* (Swami Sri Yukteswar) | Guru tier (PRO-014). Dense, aphoristic philosophical text. Requires author-specific chunking parameters (shorter target range). Directly relevant to PRO-009 scientific-spiritual bridge themes. |
+| 14 | *Only Love* / *Finding the Joy Within You* / *Enter the Quiet Heart* (Sri Daya Mata) | President tier (PRO-014). Conversational style closer to Yogananda's collected talks. Three short volumes. |
+| 15 | *The Guru and the Disciple* (Sri Mrinalini Mata) | President tier (PRO-014). Editorial/biographical work about Yogananda's posthumous publications. |
+| 16 | *Rajarsi Janakananda: A Great Western Yogi* | President tier (PRO-014). Biographical, SRF-published. |
 
 *Revised: 2026-02-25, PRO-014 — added non-Yogananda SRF-published books at positions 13–16. Catalog requires SRF confirmation.*
 
@@ -3436,7 +3436,7 @@ Integrate Self-Realization Magazine as a primary content type with differentiate
 | Category | Search Index | Theme Tags | Daily Pool | Reader Treatment |
 |----------|-------------|------------|------------|-----------------|
 | Yogananda's articles | Full (same as books) | Yes | Yes | Full reader with gold quote marks |
-| Monastic articles | Filtered (opt-in via `include_commentary` param) | Yes | No | Reader with author byline |
+| Monastic articles | Filtered (opt-in via `content_tier` param including `monastic`) | Yes | No | Reader with author byline |
 | Devotee experiences | No | No | No | Browsable, not searchable |
 | News/editorial | No | No | No | Browsable, archival |
 
@@ -3531,7 +3531,7 @@ See ADR-108 for rationale on flat articles list vs. nested sub-collection route.
 
 ### Search Integration
 
-The `hybrid_search` function extends to query `magazine_chunks` where `author_type = 'yogananda'` alongside `book_chunks`. Monastic articles are searchable via an `include_commentary=true` query parameter (default false — Yogananda's words are always primary).
+The `hybrid_search` function extends to query `magazine_chunks` where `author_type = 'yogananda'` alongside `book_chunks`. Monastic articles are searchable via `content_tier=guru,president,monastic` query parameter (default `guru,president` — Yogananda's words are always primary).
 
 ### Magazine ↔ "What Is Humanity Seeking?" Symbiosis
 

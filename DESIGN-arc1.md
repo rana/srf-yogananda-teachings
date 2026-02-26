@@ -736,13 +736,13 @@ CREATE TABLE books (
  -- chant/poetry = whole-unit pages with chant-to-chant nav.
  -- Chant format enables inline media panel for
  -- performance_of relations (deterministic audio/video links).
- content_tier TEXT NOT NULL DEFAULT 'sacred' -- PRO-014: Multi-author sacred text expansion.
- CHECK (content_tier IN ('sacred', 'authorized', 'commentary')),
- -- 'sacred': Realized masters (Yogananda, Sri Yukteswar). Full search/theme/daily pool/social media.
- -- 'authorized': Direct disciples / SRF Presidents (Daya Mata, Mrinalini Mata, Rajarsi).
+ content_tier TEXT NOT NULL -- PRO-014: Multi-author content hierarchy. No DEFAULT — force explicit on insert.
+ CHECK (content_tier IN ('guru', 'president', 'monastic')),
+ -- 'guru': Lineage gurus (Yogananda, Sri Yukteswar). Full search/theme/daily pool/social media.
+ -- 'president': SRF Presidents / spiritual heads (Daya Mata, Mrinalini Mata, Rajarsi).
  --   Searchable by default, themeable. Not in daily pool or social media pool.
- -- 'commentary': Monastic speakers. Searchable opt-in (include_commentary param). Not in daily/social pool.
- -- Mirrors ADR-040 magazine author_type pattern. All tiers: verbatim fidelity + no machine translation.
+ -- 'monastic': Monastic speakers. Opt-in search (content_tier param includes 'monastic'). Not in daily/social pool.
+ -- Tiers describe author role, not value. All tiers: verbatim fidelity + no machine translation.
  -- Tier assignments confirmed by stakeholder 2026-02-25 — see PRO-014.
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  updated_at TIMESTAMPTZ NOT NULL DEFAULT now
@@ -1339,7 +1339,7 @@ Content Type: Book
 ├── title (Short Text, required, localized)
 ├── subtitle (Short Text, localized)
 ├── author (Short Text, default: "Paramahansa Yogananda")
-├── contentTier (Short Text, default: "sacred", validation: sacred|authorized|commentary) — PRO-014
+├── contentTier (Short Text, required, validation: guru|president|monastic) — PRO-014
 ├── publicationYear (Integer)
 ├── isbn (Short Text)
 ├── coverImage (Media, localized)
@@ -1959,7 +1959,7 @@ After bootstrap, all infrastructure changes flow through PRs → `terraform plan
 
 Modules are activated via feature-flag variables in `dev.tfvars`. This avoids commenting out modules or maintaining separate Terraform configurations per milestone.
 
-| Variable | 1a | 1b | 3a | 4+ |
+| Variable | 1a | 1b | 2a | 3a+ |
 |----------|----|----|----|----|
 | `enable_neon` | `true` | `true` | `true` | `true` |
 | `enable_sentry` | `true` | `true` | `true` | `true` |
@@ -1969,7 +1969,7 @@ Modules are activated via feature-flag variables in `dev.tfvars`. This avoids co
 | `enable_cloudflare` | `false` | `false` | `false` | when domain assigned |
 | `enable_newrelic` | `false` | `false` | `false` | 3d |
 
-Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 3a adds Lambda. Clean, incremental, auditable.
+Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
 
 ### Boundary: Terraform vs. Application Code
 

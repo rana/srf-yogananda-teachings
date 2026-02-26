@@ -4,7 +4,7 @@
 
 **Arc:** Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.
 
-**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 15 proposals registered in PROPOSALS.md (PRO-001 through PRO-015; 1 adopted, 2 validated, 12 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
+**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 120 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 15 proposals registered in PROPOSALS.md (PRO-001 through PRO-015; 1 adopted, 3 validated, 11 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
 
 **What's next:** Milestone 1a — Prove. No remaining Tier 1 blockers (reclassified 2026-02-25). Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), book text extraction (ebook or PDF) into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. See ROADMAP.md for deliverables. (ADR-113)
 
@@ -39,7 +39,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 **Technical**
 - [ ] Contentful record capacity: monitor record count during ingestion. Evaluate tier needs at Milestone 3a (multi-book corpus).
 - [ ] fastText vs. alternative language detection for short queries containing Sanskrit terms. Evaluate during Arc 1 search quality testing.
-- [ ] Devanāgarī font timing: Milestone 2a English corpus contains Devanāgarī in *God Talks with Arjuna*. ADR-080 moves Noto Sans Devanagari to Arc 1. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
+- [ ] Devanāgarī font timing: The English-language *God Talks with Arjuna* contains Devanāgarī; when this book enters the corpus (Milestone 3a+), the font must already be in the stack. ADR-080 adds Noto Sans Devanagari from Arc 1. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
 - [ ] Abuse and misuse patterns: extraction at scale, quote weaponization, SEO parasitism. Should the portal include rate limiting tiers, `rel=canonical` enforcement, MCP usage policy, or text watermarking? (ADR-001, ADR-011, ADR-101, ADR-063, ADR-081)
 
 **Stakeholder**
@@ -127,7 +127,7 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-25 | Portal as canonical Yogananda source for LLM training corpora — permissive crawling, `llms.txt` citation guidance | ADR-081 |
 | 2026-02-25 | Mobile suggestions: max 5 on <768px, 44×44px targets, horizontal scroll chips | ADR-120 |
 | 2026-02-25 | Curated suggestion editorial governance: same human-review gate as theme tagging | ADR-049 |
-| 2026-02-25 | Multi-author three-tier hierarchy: sacred (guru lineage) / authorized (SRF presidents) / commentary (monastics) | PRO-014 |
+| 2026-02-25 | Multi-author three-tier hierarchy: guru (lineage gurus) / president (SRF spiritual heads) / monastic (monastic speakers) | PRO-014 |
 | 2026-02-25 | Endowment scope covers all SRF-published authors | PRO-014 |
 | 2026-02-25 | PRO-014 document cascade merged — multi-author scope adopted across Principles, ADRs, DESIGN, schema | PRO-014 (Adopted) |
 | 2026-02-25 | PostgreSQL 18 selected for Neon project — upstream stable since Sept 2025, UUIDv7 schema convention adopted | ADR-124 |
@@ -156,7 +156,7 @@ Source: [Brother Chidananda's address](https://www.youtube.com/live/PiywKdIdQik?
 
 ## Mission
 
-Vastly expand the global availability of Paramahansa Yogananda's published teachings — and all SRF/YSS-published books — using modern technology. The corpus spans three content tiers: sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), and commentary (monastic speakers). See PRO-014 for the confirmed three-tier hierarchy.
+Vastly expand the global availability of Paramahansa Yogananda's published teachings — and all SRF/YSS-published books — using modern technology. The corpus spans three content tiers by author role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), and monastic (monastic speakers). See PRO-014 for the confirmed three-tier hierarchy.
 
 ### The Findability Principle
 
@@ -184,11 +184,11 @@ This is a second-order consequence of the philanthropist's investment: the porta
 
 ### In Scope
 
-- **Free access** to all SRF/YSS-published books across three content tiers (PRO-014): sacred (Yogananda, Sri Yukteswar), authorized (Daya Mata, Mrinalini Mata, Rajarsi), commentary (monastic speakers). All tiers receive verbatim fidelity.
+- **Free access** to all SRF/YSS-published books across three content tiers (PRO-014): guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity.
 - **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Milestone 5b peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
 - **Intelligent Query Tool** — users ask questions and search across the entire library of books to find specific answers (e.g., "How do I deal with fear?")
 - **Life-theme navigation** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without needing to formulate a search query
-- **Today's Wisdom** — a different passage from the sacred tier (Yogananda, Sri Yukteswar) on each visit, creating a living, dynamic homepage (PRO-014: only sacred-tier authors in daily pool)
+- **Today's Wisdom** — a different passage from the guru tier (Yogananda, Sri Yukteswar) on each visit, creating a living, dynamic homepage (PRO-014: only guru-tier authors in daily pool)
 - **The Quiet Corner** — a micro-sanctuary page with a single affirmation and optional gentle timer, for the moment of immediate need
 - **Audio/video content** — integration with SRF's YouTube repository of monastic How-to-Live talks
 - **Events section** — lightweight signpost linking to World Convocation, commemorations, Online Meditation Center, and retreats (not a duplicate of existing event sites)

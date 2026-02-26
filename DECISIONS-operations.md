@@ -787,9 +787,9 @@ Daily devotional emails are one of the most successful formats in spiritual publ
 
 ### Decision
 
-Implement a **daily email** delivering a single verbatim passage from the sacred content tier (Yogananda, Sri Yukteswar) with full author attribution and citation (PRO-014).
+Implement a **daily email** delivering a single verbatim passage from the guru content tier (Yogananda, Sri Yukteswar) with full author attribution and citation (PRO-014).
 
-**Milestone 5a (non-personalized):** Same passage pool as Today's Wisdom — sacred tier only (PRO-014: authorized and commentary tiers are not in the daily pool). One email per day. Subscriber provides email address and language. No account required.
+**Milestone 5a (non-personalized):** Same passage pool as Today's Wisdom — guru tier only (PRO-014: president and monastic tiers are not in the daily pool). One email per day. Subscriber provides email address and language. No account required.
 
 **Milestone 7a (personalized):** Subscribers can optionally select theme preferences ("I'd like more passages about Peace and Healing"). Passages are filtered by theme from the `chunk_topics` join. This is an *explicit user choice*, never behavioral inference.
 
@@ -852,7 +852,7 @@ Yogananda's teachings are extraordinarily shareable — short, vivid, universal.
 
 **User sharing (Milestone 2a):** Already covered by ADR-068. Clean links with OG cards. Downloadable quote images. No social media buttons. No tracking scripts.
 
-**SRF organizational sharing (Milestone 5a+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the sacred-tier daily_passages pool — Yogananda and Sri Yukteswar only per PRO-014). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
+**SRF organizational sharing (Milestone 5a+):** The portal provides **semi-automated social media asset generation**. A daily quote image and suggested caption are generated automatically (from the guru-tier daily_passages pool — Yogananda and Sri Yukteswar only per PRO-014). A human (SRF social team or content editor) reviews, approves, and posts. The portal never posts automatically.
 
 ### Platform-Specific Considerations
 
@@ -2628,7 +2628,7 @@ Search results are ranked by a composite score combining multiple signals. The h
 | **Accessibility level** | `accessibility_level` column (ADR-005 E3) | Tie-breaker | When two passages are equally relevant, the more accessible passage ranks higher |
 | **Tone appropriateness** | `tone` column (ADR-005 E4) | Tie-breaker | When the query implies emotional need (grief, fear), consoling passages rank higher |
 
-| **Content tier** | `books.content_tier` column (PRO-014) | Tie-breaker | Sacred tier ranks above authorized at equivalent relevance; authorized above commentary. Reflects theological hierarchy, not editorial judgment. |
+| **Content tier** | `books.content_tier` column (PRO-014) | Tie-breaker | Guru tier ranks above president at equivalent relevance; president above monastic. Reflects author role hierarchy. |
 
 **Not used as ranking signals:** Passage length, book popularity, recency, seeker behavior, click-through rates. The portal never uses engagement metrics to shape results (ADR-095, ADR-002).
 
@@ -2797,7 +2797,7 @@ Arc 1 ("Prove") had accumulated 21 deliverables — a mix of the core existentia
 
 The risk: 21 deliverables is a product, not a proof. The most consequential question — whether hybrid vector + FTS search produces quality results over Yogananda's specific prose — was buried among infrastructure tasks. If search quality fails, everything else built in Arc 1 is premature.
 
-Additionally, 118 ADRs and 56 design sections existed with zero lines of code. The design was comprehensive and ready for implementation, but the gap between design and empirical contact was widening.
+Additionally, 120 ADRs and 57 design sections existed with zero lines of code. The design was comprehensive and ready for implementation, but the gap between design and empirical contact was widening.
 
 ### Decision
 
@@ -2845,7 +2845,7 @@ Milestone 1a has two conversation prerequisites (edition confirmation, PDF sourc
 
 ### Context
 
-After a comprehensive review of the project's 118 ADRs, 56 design sections, and 7-arc roadmap, a structural pattern emerged: the documents frequently conflate *principles* (immutable commitments that define the project's identity) with *parameters* (tunable defaults that should adapt to real data). Both are recorded at the same authority level in DECISIONS.md and DESIGN.md, which creates a ratchet effect — every mechanism decision accumulates the weight of a principle decision, and relaxing any parameter *feels* like violating a principle even when it doesn't.
+After a comprehensive review of the project's 120 ADRs, 57 design sections, and 7-arc roadmap, a structural pattern emerged: the documents frequently conflate *principles* (immutable commitments that define the project's identity) with *parameters* (tunable defaults that should adapt to real data). Both are recorded at the same authority level in DECISIONS.md and DESIGN.md, which creates a ratchet effect — every mechanism decision accumulates the weight of a principle decision, and relaxing any parameter *feels* like violating a principle even when it doesn't.
 
 This matters because: (1) no code exists yet; (2) many specific values (cache TTLs, debounce timers, chunk sizes, rate limits, fusion parameters) are pre-production guesses that need validation against real data; (3) the 10-year horizon (ADR-004) demands that future maintainers can tune operational parameters without navigating the full ADR governance process.
 
@@ -2897,7 +2897,7 @@ Examples:
 - **Reduces governance friction.** Future maintainers can adjust a cache TTL without feeling they're violating an architectural decision.
 - **Makes assumptions explicit.** Every parameter documents what would trigger reconsideration — a form of intellectual honesty about what we don't yet know.
 - **Preserves architectural integrity.** Principles remain firm. The distinction *protects* principles by preventing parameter-level fatigue from eroding respect for the governance process.
-- **Serves the 10-year horizon.** In year 7, a new developer can identify what's tunable vs. what's sacred without reading 118 ADRs.
+- **Serves the 10-year horizon.** In year 7, a new developer can identify what's tunable vs. what's sacred without reading 120 ADRs.
 
 ### Consequences
 

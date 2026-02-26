@@ -1929,7 +1929,7 @@ Use **Claude API to generate draft translations** of UI chrome and portal-author
 2. Familiar with SRF's devotional register and spiritual terminology
 3. Able to distinguish clinical/formal tone from warm, devotional tone
 
-**Never use AI (Claude or any other model) to translate, paraphrase, or synthesize any SRF-published author's text.** This applies to all three content tiers (PRO-014: sacred, authorized, commentary). This is an inviolable constraint, not a cost optimization to revisit later.
+**Never use AI (Claude or any other model) to translate, paraphrase, or synthesize any SRF-published author's text.** This applies to all three content tiers (PRO-014: guru, president, monastic). This is an inviolable constraint, not a cost optimization to revisit later.
 
 ### Workflow
 

@@ -270,7 +270,7 @@ Sonnet recommended over Haiku for formatting accuracy (italics, Sanskrit diacrit
     "readerLocationMax": 1044712,
     "edition": "13th Edition",
     "language": "en",
-    "contentTier": "sacred"
+    "contentTier": "guru"
   },
   "toc": [
     {
@@ -414,7 +414,7 @@ Sonnet recommended over Haiku for formatting accuracy (italics, Sanskrit diacrit
     "edition": "13th Edition",
     "editionYear": null,
     "language": "en",
-    "contentTier": "sacred",
+    "contentTier": "guru",
     "totalPages": 558,
     "totalChapters": 48,
     "bookstoreUrl": "https://bookstore.yogananda.org/autobiography-of-a-yogi"
@@ -476,7 +476,7 @@ export interface BookConfig {
   slug: string;
   asin: string;
   readerUrl: string;
-  contentTier: 'sacred' | 'authorized' | 'commentary';
+  contentTier: 'guru' | 'president' | 'monastic';
   language: string;
   expectedChapters?: number;
   goldenPassages?: GoldenPassage[];
@@ -959,7 +959,7 @@ export const config: BookConfig = {
   slug: "mans-eternal-quest",
   asin: "B00XXXX",
   readerUrl: "https://read.amazon.com/?asin=B00XXXX",
-  contentTier: "sacred",
+  contentTier: "guru",
   language: "en",
   expectedChapters: null, // Discovered during Phase 0
   goldenPassages: []
@@ -1006,7 +1006,7 @@ The outputs align with DES-005 Step 3 (Human QA) and Step 3.5 (Contentful Import
 
 A note should be added to DES-005 documenting this alternative ingestion path:
 
-> **Alternative: Amazon Cloud Reader Ingestion.** When the ebook edition is available and provides higher fidelity than a PDF scan, use the Reader ingestion pipeline (`/scripts/book-ingest/`). See `docs/books/BOOK-INGESTION.md`. Produces the same structured output as Steps 1-3, feeding directly into Step 3.5 (Contentful import). Particularly valuable for fixed-layout ebooks where born-digital renders produce significantly better OCR than scanned PDFs.
+> **Alternative: Amazon Cloud Reader Ingestion.** When the ebook edition is available and provides higher fidelity than a PDF scan, use the Reader ingestion pipeline (`/scripts/book-ingest/`). See `scripts/book-ingest/DESIGN.md` for the complete pipeline specification. Produces the same structured output as Steps 1-3, feeding directly into Step 3.5 (Contentful import). Particularly valuable for fixed-layout ebooks where born-digital renders produce significantly better OCR than scanned PDFs.
 
 ---
 

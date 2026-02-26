@@ -202,8 +202,8 @@ Contentful webhook sync (event-driven, Milestone 1b+):
 │ │ └─ Block │ │ Contentful entry IDs) │ │
 │ │ │ │ │ │
 │ │ Locales: │ │ Hybrid search: │ │
-│ │ en, es, de, fr, │ │ vector + BM25 │ │
-│ │ it, pt, ja │ │ │ │
+│ │ en, de, es, fr, it, │ │ vector + BM25 │ │
+│ │ pt, ja, th, hi, bn │ │ │ │
 │ └──────────────────┘ └──────────────────────────┘ │
 │ │ │ │
 │ │ (book text │ (search results) │
@@ -346,8 +346,8 @@ Query params:
  q (required) — user's search query
  language (optional) — default 'en'
  book_id (optional) — restrict to a specific book
- content_tier (optional) — 'sacred', 'authorized', or omit for default behavior.
-   Default: sacred + authorized. Add include_commentary=true for commentary tier. (PRO-014)
+ content_tier (optional) — comma-separated: 'guru', 'president', 'monastic'.
+   Default: 'guru,president'. Specify 'guru,president,monastic' to include all tiers. (PRO-014)
  limit (optional) — default 5, max 20
  mode (optional) — 'hybrid' (default), 'fts', 'vector'
 
@@ -364,7 +364,7 @@ Response (intentionally unpaginated — see § API Conventions):
  "chapter_number": 26,
  "page_number": 312,
  "section_heading": null,
- "content_tier": "sacred",
+ "content_tier": "guru",
  "score": 0.87,
  "reader_url": "/books/autobiography-of-a-yogi/26#chunk-uuid"
  },
@@ -388,7 +388,7 @@ Response:
  "book_title": "Where There Is Light",
  "chapter_title": "Courage",
  "page_number": 42,
- "content_tier": "sacred",
+ "content_tier": "guru",
  "reader_url": "/books/where-there-is-light/3#chunk-uuid"
 }
 
@@ -399,7 +399,7 @@ Implementation:
  JOIN books b ON b.id = bc.book_id
  LEFT JOIN chapters ch ON ch.id = bc.chapter_id
  WHERE dp.is_active = true
- AND b.content_tier = 'sacred' -- PRO-014: only sacred tier in daily pool
+ AND b.content_tier = 'guru' -- PRO-014: only guru tier in daily pool
  AND bc.language = :language -- filter to user's locale
  ORDER BY random
  LIMIT 1;
