@@ -145,6 +145,7 @@ Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc file
 | Feature idea without an arc | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
 | Feature cut from an arc during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original arc/milestone, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
 | ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). Update ADR status to `Suspended → PRO-NNN`. ADR body stays in DECISIONS file. Update ROADMAP.md § Unscheduled Features summary table. |
+| README.md details change (ADR count, tech stack, arc structure, feature list) | Update README.md § Documentation list and § Architecture table |
 
 At arc boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.
 
