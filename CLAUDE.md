@@ -76,7 +76,7 @@ Eleven principles define the project's identity and directly constrain code gene
 /terraform/ — Infrastructure as Code (Neon, Vercel, Sentry, AWS modules)
 /lambda/ — AWS Lambda handlers (Milestone 3a+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
-/scripts/ — CI-agnostic deployment scripts (ADR-018)
+/scripts/ — Bootstrap, CI-agnostic deployment, and environment lifecycle scripts (ADR-018, ADR-020)
 /.github/workflows/ — CI/CD pipelines (ci.yml, terraform.yml, neon-branch.yml)
 /docs/reference/ — Background research (not active project docs)
 /docs/operational/ — Operational playbook (Milestone 3b+: procedures for editorial, ingestion, VLD)

@@ -5,6 +5,10 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+What is idiomatic enterprise world class you would prefer?
+Thoroughness: very thorough
+
+---
 /compose garden greenfield, gaps, coherence, crystallize
 
 /compose garden greenfield, gaps, coherence, docs-quality, crystallize

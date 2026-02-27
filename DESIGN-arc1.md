@@ -1993,13 +1993,46 @@ All infrastructure is defined as code per SRF engineering standards from Milesto
 
 The portal starts greenfield — no existing infrastructure to import. Terraform creates all resources from scratch on first `terraform apply`. Any Neon projects or Vercel projects created during design exploration (e.g., via MCP) should be deleted before bootstrap to avoid naming conflicts.
 
-**One-time manual bootstrap** (before first `terraform apply`):
-1. Create S3 bucket + DynamoDB table for Terraform state (see ADR-016 § Terraform State)
-2. Create AWS IAM OIDC Identity Provider + IAM Role (see ADR-016 § OIDC Federation)
-3. Populate GitHub secrets (see CONTEXT.md § Bootstrap Credentials Checklist)
-4. Run `terraform init` to connect to S3 backend
+**Bootstrap via script** (before first `terraform apply`):
+
+```bash
+./scripts/bootstrap.sh
+```
+
+The bootstrap script automates all CLI-scriptable setup. The human runs one script, pastes two credentials that require manual console creation (Neon org API key, Sentry auth token), and the script handles everything else: S3 bucket creation, DynamoDB table, OIDC provider, IAM role, Vercel CLI link, and GitHub secret population via `gh secret set`. The script is idempotent — safe to re-run.
+
+**What the script does:**
+
+| Step | Tool | What It Creates | Manual? |
+|------|------|----------------|---------|
+| 1 | AWS CLI | S3 bucket (`srf-portal-terraform-state`) — versioning, AES-256, public access blocked | No |
+| 2 | AWS CLI | DynamoDB table (`srf-portal-terraform-locks`) — `LockID` partition key, on-demand | No |
+| 3 | AWS CLI | OIDC provider + IAM role (`portal-ci`) from `terraform/bootstrap/trust-policy.json` | No |
+| 4 | Prompt | Neon org API key — console-only, paste when prompted | **Yes** |
+| 5 | Prompt | Sentry auth token — console-only, paste when prompted | **Yes** |
+| 6 | Vercel CLI | Project link + API token | No |
+| 7 | `gh` CLI | All 6 GitHub secrets in batch | No |
+| 8 | Terraform | `terraform init` — connects to S3 backend | No |
+
+**Prerequisites:** AWS CLI configured (`aws configure`), `gh` CLI authenticated, `vercel` CLI installed, Neon and Sentry accounts exist. See `docs/manual-steps-milestone-1a.md` for the detailed human walkthrough.
 
 After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`.
+
+### Environment Lifecycle Scripts (Arc 4+)
+
+When multi-environment promotion activates in Arc 4, two additional scripts manage environments:
+
+```bash
+# Create a complete environment in ~2 minutes
+./scripts/create-env.sh staging
+
+# Destroy an environment in ~1 minute
+./scripts/destroy-env.sh staging
+```
+
+**`create-env.sh {env}`** creates a Terraform workspace, a Neon branch from `main`, applies Terraform with the environment's tfvars, and configures GitHub Environment protection rules. **`destroy-env.sh {env}`** reverses all four steps. Both scripts are idempotent.
+
+The branch=environment principle (ADR-020) means environments are disposable. Neon branching is instant and zero-cost. Vercel branch deployments are automatic. Sentry uses environment tags on a single DSN. No per-environment project creation needed.
 
 ### Terraform Module Layout
 
@@ -2021,6 +2054,9 @@ After bootstrap, all infrastructure changes flow through PRs → `terraform plan
  dev.tfvars — Milestone 1a (only active environment)
  staging.tfvars — Arc 4+
  prod.tfvars — Arc 4+
+
+ /bootstrap/
+ trust-policy.json — IAM OIDC trust policy template (used by bootstrap.sh)
 ```
 
 #### Progressive Module Activation
@@ -2366,6 +2402,7 @@ Terraform manages deployed environments only. Local development uses direct Neon
 
 *Section revised: 2026-02-25, consolidated environment configuration into single source of truth. Three layers: .env.example (secrets + per-environment), /lib/config.ts (named constants per ADR-123), developer tooling (Claude Code). Region updated to us-west-2 per human directive. Naming standardized: NEON_DATABASE_URL, CONTENTFUL_ACCESS_TOKEN. Updated: CI workflow file structure (ci.yml + terraform.yml + neon-branch.yml + neon-cleanup.yml + dependabot.yml), progressive module activation via feature flags, secret rotation clarified (manual until 3d), Terraform boundary corrected (GitHub settings manual, not Terraform-managed).*
 *Section revised: 2026-02-26, expanded Local Development Environment subsection with Neon branch workflow, Contentful access, test data seeding, offline/degraded mode, and Claude Code tooling.*
+*Section revised: 2026-02-26, bootstrap automation via `scripts/bootstrap.sh` (ADR-020), environment lifecycle scripts (`create-env.sh`/`destroy-env.sh` for Arc 4+), `terraform/bootstrap/trust-policy.json` added to module layout.*
 
 ---
 

@@ -141,6 +141,9 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-26 | Time Travel queries accepted as Milestone 1a development tool — zero implementation cost, already available on Scale tier | PRO-008 (Adopted) |
 | 2026-02-26 | Neon Snapshot API for Layer 2 recovery — API-managed schedule, pre-migration snapshots in CI, on-demand via MCP | ADR-019 |
 | 2026-02-26 | Terraform Neon provider (`kislerdm/neon`) is community-maintained — pin version, review plans on upgrades, never auto-upgrade in CI | ADR-124 |
+| 2026-02-26 | Branch=environment principle adopted: one project per service, branches for separation. Environments disposable via `create-env.sh`/`destroy-env.sh` (Arc 4+) | ADR-020 |
+| 2026-02-26 | Single AWS account with IAM role boundaries (not multi-account) — proportionate to public no-auth portal. Escalate to multi-account only if SRF governance requires it | ADR-020 |
+| 2026-02-26 | Bootstrap automation via `scripts/bootstrap.sh` — human runs one script, pastes 2 credentials, script handles AWS CLI + Vercel CLI + `gh secret set` | ADR-020, DES-039 |
 
 *Tech-selection decisions (embedding model, AI provider, single-database, full-text search, graph layer, language URLs) are fully captured in their governing ADRs (ADR-118, ADR-014, ADR-119, ADR-013, ADR-117, ADR-114, ADR-027) and no longer repeated here.*
 

@@ -39,7 +39,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-017: Terraform-Native Lambda
 - ADR-018: CI-Agnostic Deployment Scripts
 - ADR-019: Database Backup and Recovery Strategy
-- ADR-020: Multi-Tenant Infrastructure Design
+- ADR-020: Multi-Environment Infrastructure Design
 - ADR-021: Redundancy, Failover, and Regional Distribution Strategy
 - ADR-022: Content-Addressable Passage Deep Links
 - ADR-023: Search API Rate Limiting and Abuse Prevention

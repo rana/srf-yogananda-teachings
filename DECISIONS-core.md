@@ -1730,45 +1730,96 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 
 ---
 
-## ADR-020: Multi-Tenant Infrastructure Design
+## ADR-020: Multi-Environment Infrastructure Design
 
 **Status:** Accepted
 **Date:** 2026-02-19
 **Deciders:** Architecture team
-**Context:** ADR-017 (Lambda batch), ADR-018 (CI-agnostic scripts), ADR-019 (S3 backup)
+**Context:** ADR-017 (Lambda batch), ADR-018 (CI-agnostic scripts), ADR-019 (S3 backup), ADR-124 (Neon platform)
 
 ### Context
 
-The portal will operate across multiple environments (dev, staging, production) as it moves toward production readiness. SRF uses AWS as their cloud provider, Terraform for IaC, and has established patterns for multi-account AWS architectures. The architecture team has autonomous design authority for infrastructure decisions regarding CI/CD, AWS account structure, and Contentful space strategy.
+The portal will operate across multiple environments (dev, staging, production) as it moves toward production readiness. SRF uses AWS as their cloud provider and Terraform for IaC. The architecture team has autonomous design authority for infrastructure decisions. Key constraint: the portal is a free, public, no-auth teaching portal — environment isolation requirements differ from SRF's member-facing or e-commerce systems that handle PII and payments.
 
 ### Decision
 
-Design infrastructure for three isolated environments with promotion gates, using SRF's established tooling patterns.
+**Branch = environment.** Each service uses its native branching/environment primitive — one project per service, branches for separation. Environments are created and destroyed with a single script. Arcs 1–3 use `dev` only; multi-environment promotion activates at Arc 4+.
+
+### Core Principle: One Project, Branch-Based Separation
+
+| Service | One Instance | Environment Primitive | How Separation Works |
+|---------|-------------|----------------------|---------------------|
+| **Neon** | One project | Branches | `main` (prod), `staging`, `dev` — instant copy-on-write. Terraform declares persistent branches; operations layer manages ephemeral. |
+| **Vercel** | One project | Branch deployments | Production from `main`, preview from branches. Vercel-native, zero config. |
+| **Sentry** | One project | `environment` tag | Single DSN, events tagged `production`/`staging`/`development`. Standard Sentry pattern. |
+| **Contentful** | One space | Environments feature | `master` (prod), `staging`, `dev` aliases. Content model changes promoted via migration CLI. |
+| **S3 (Terraform state)** | One bucket | Path-based (workspace prefix) | `env:/dev/terraform.tfstate`, `env:/staging/...`, `env:/prod/...` — automatic via Terraform workspaces. |
+| **DynamoDB (locks)** | One table | Shared | Lock key includes workspace path. No duplication. |
+| **Voyage AI** | One API key | N/A | Stateless embedding service. No environment separation needed. |
+
+**Why single-project over multi-project:** Neon branching is instant and zero-cost — creating a separate project per environment is overhead without benefit. Vercel's branch deployment model already maps Git branches to environments. Sentry's environment tagging is the documented best practice. This approach makes environments disposable — create in minutes, destroy in seconds.
 
 ### AWS Account Strategy
 
+Single AWS account with IAM role boundaries for Arcs 1–3. If SRF governance requires separate accounts for production (a stakeholder decision, not a technical one), the Terraform workspace + tfvars model supports multi-account without rearchitecture — add an OIDC role per account and a `provider` alias per workspace.
+
 ```
-SRF AWS Organization
-├── srf-teachings-dev — Development account
-│ ├── Neon dev branch (or separate project)
-│ ├── S3: srf-teachings-dev-assets
-│ ├── Lambda: dev deployments
-│ └── CloudFront: dev distribution
-├── srf-teachings-staging — Staging / QA account
-│ ├── Neon staging branch
-│ ├── S3: srf-teachings-stg-assets
-│ ├── Lambda: staging deployments
-│ └── CloudFront: staging distribution
-└── srf-teachings-prod — Production account
- ├── Neon production (primary)
- ├── S3: srf-teachings-prod-assets
- ├── Lambda: production deployments
- └── CloudFront: production distribution (global edge)
+AWS Account: srf-teachings
+├── IAM Role: portal-ci          — OIDC federation for GitHub Actions
+├── IAM Role: portal-ci-staging  — (Arc 4+) tighter permissions
+├── IAM Role: portal-ci-prod     — (Arc 4+) production-only permissions
+├── IAM User: portal-app-bedrock — Vercel → Bedrock inference
+├── S3: srf-portal-terraform-state — Terraform state (all environments)
+├── S3: srf-portal-assets-{env}  — Per-environment asset buckets
+├── Lambda: {env}-*              — Per-environment functions (Milestone 2a+)
+└── DynamoDB: srf-portal-terraform-locks — State locking (shared)
 ```
 
-- **Account isolation.** Each environment in its own AWS account. IAM boundaries prevent dev from touching prod. SRF standard pattern.
-- **Terraform workspaces.** One Terraform configuration, three workspaces (`dev`, `stg`, `prod`). Environment-specific values in `terraform/environments/{env}.tfvars`.
-- **Neon branching.** Dev and staging use Neon branches (instant, copy-on-write). Production uses the primary Neon project with branch protection enabled (ADR-124). Schema migrations promoted through branches before reaching production. Preview branches per PR with TTL auto-expiry.
+Terraform workspaces + `environments/{env}.tfvars` parameterize resource names, compute sizes, and permissions per environment. Environment-specific IAM roles provide blast-radius containment within a single account.
+
+### Bootstrap Automation
+
+The human should never visit five consoles and copy-paste credentials. A bootstrap script automates everything the AWS CLI, Neon CLI, Vercel CLI, and GitHub CLI can handle — prompting the human only for the two credentials that require manual console creation.
+
+**Script interface:**
+
+```bash
+# One-time infrastructure bootstrap (~5 minutes)
+./scripts/bootstrap.sh
+
+# Create a new environment (Arc 4+, ~2 minutes)
+./scripts/create-env.sh staging
+
+# Destroy an environment (Arc 4+, ~1 minute)
+./scripts/destroy-env.sh staging
+```
+
+**`bootstrap.sh` flow:**
+
+1. AWS CLI: Create S3 bucket, enable versioning + encryption + public access block
+2. AWS CLI: Create DynamoDB table (`srf-portal-terraform-locks`, `LockID` partition key, on-demand)
+3. AWS CLI: Create OIDC provider + IAM role from `terraform/bootstrap/trust-policy.json`
+4. **Prompt:** Neon org API key (console-only — paste when prompted)
+5. **Prompt:** Sentry auth token (console-only — paste when prompted)
+6. Vercel CLI: Link project, get token
+7. GitHub CLI: `gh secret set` for all 6 secrets in batch
+8. Terraform: `terraform init` to connect to S3 backend
+
+The script is idempotent — safe to re-run. Each step checks for existing resources before creating.
+
+**`create-env.sh {env}` flow (Arc 4+):**
+
+1. `terraform workspace new {env}` (or select if exists)
+2. `neonctl branches create --name {env} --parent main`
+3. `terraform apply -var-file="environments/{env}.tfvars"`
+4. `gh api` — configure GitHub Environment with protection rules
+
+**`destroy-env.sh {env}` flow:**
+
+1. `terraform destroy -var-file="environments/{env}.tfvars"`
+2. `neonctl branches delete {env}`
+3. `terraform workspace delete {env}`
+4. `gh api` — remove GitHub Environment
 
 ### CI/CD Promotion Pipeline
 
@@ -1779,35 +1830,30 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - **CI-agnostic scripts.** All deployment logic lives in `/scripts/` (ADR-018). GitHub Actions calls these scripts; any future CI system calls the same scripts.
 - **Manual production gate.** Production deployments always require manual approval. No automatic promotion from staging to production.
 - **GitHub Environments.** Each environment is a GitHub Environment with its own URL and protection rules, enabling deployment tracking and required reviewers.
-
-### Contentful Space Strategy
-
-```
-Contentful Organization
-├── SRF Teachings — Development — dev space (content modeling, testing)
-├── SRF Teachings — Staging — staging space (content preview, QA)
-└── SRF Teachings — Production — production space (published content)
-```
-
-- **Space-per-environment.** Each environment has its own Contentful space. Content is promoted via Contentful's environment aliasing or export/import.
-- **Webhook isolation.** Each space's webhooks point to its corresponding environment's API. Dev webhooks trigger dev sync; prod webhooks trigger prod sync.
-- **Content modeling in dev.** New content types are modeled in the dev space, tested in staging, then promoted to production. Contentful's migration CLI manages schema changes.
+- **Promotion = merge.** Staging → production is a Git merge to `main`. Neon branch promotes. Vercel rebuilds. Terraform applies with `prod.tfvars`.
 
 ### Rationale
 
-- **SRF standard patterns.** Multi-account AWS and Terraform workspaces are established at SRF. This architecture doesn't invent — it applies.
-- **Autonomous design authority.** The user confirmed autonomous decision-making for infrastructure. These decisions align with SRF's tech stack while optimizing for the portal's specific needs.
-- **Blast radius containment.** A broken dev deployment can never affect production. Account-level isolation is the strongest boundary AWS offers.
+- **Branch = environment.** Neon invented branching for this use case. Vercel's model maps Git branches to deployments natively. Using these primitives — instead of creating separate projects per environment — reduces bootstrap overhead from "visit 5 dashboards, create 15 resources" to "run one script, paste two keys."
+- **Proportionate isolation.** This portal has no PII, no authentication (until Milestone 7a+ "if ever"), no financial data. IAM role boundaries within a single AWS account provide sufficient isolation. If SRF governance requires account-level isolation for production, the architecture supports it via workspace-scoped provider aliases — a configuration change, not a rearchitecture.
+- **Disposable environments.** `create-env.sh staging` takes ~2 minutes. `destroy-env.sh staging` takes ~1 minute. Environments are cheap to create and free to destroy. This enables experimentation without overhead.
 - **CI portability.** Because deployment scripts are CI-agnostic (ADR-018), any future SCM migration is a configuration change, not a re-architecture.
 
 ### Consequences
 
-- Terraform configurations parameterized by environment from Arc 1
-- AWS account creation requested through SRF's cloud team (or single-account with IAM isolation if multi-account is delayed)
-- Contentful spaces created per environment (one space per environment)
+- Terraform configurations parameterized by environment from Arc 1 via workspaces + tfvars
+- Single AWS account with IAM role boundaries (escalate to multi-account only if SRF governance requires it)
+- One Neon project with branch-based environment separation (ADR-124)
+- One Vercel project with branch deployments
+- One Sentry project with environment tagging
+- One Contentful space with environment aliases
+- `scripts/bootstrap.sh` created in Deliverable 1a.1 — automates all CLI-scriptable setup
+- `scripts/create-env.sh` and `scripts/destroy-env.sh` created in Arc 4 when multi-environment activates
+- `terraform/bootstrap/trust-policy.json` checked into repo — the one artifact the bootstrap script needs
 - GitHub Environments configured per environment (dev, staging, prod) with protection rules
-- Neon branching strategy documented in runbook
-- **Fallback:** If multi-account AWS is operationally heavy for early arcs, a single account with strict IAM policies and resource tagging provides 80% isolation. Migrate to multi-account when the team is ready.
+- Neon branching strategy documented in runbook (`docs/manual-steps-milestone-1a.md`)
+
+*Revised: 2026-02-26, adopted branch=environment principle, single-project-per-service, bootstrap automation via scripts, single AWS account default. Previous design specified separate projects/accounts per environment — replaced with branch-based separation proportionate to the portal's public, no-auth threat model.*
 
 ---
 
