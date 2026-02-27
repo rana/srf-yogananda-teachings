@@ -29,8 +29,8 @@ The details below document what `bootstrap.sh` automates. Read this if the scrip
 | 3 | OIDC provider (`token.actions.githubusercontent.com`) + IAM role (`portal-ci`) | AWS CLI + `terraform/bootstrap/trust-policy.json` | No |
 | 4 | Neon org API key — Organization Settings → API Keys → Create | **Paste when prompted** | Yes |
 | 5 | Sentry auth token — Settings → Auth Tokens → Create | **Paste when prompted** | Yes |
-| 6 | Sentry org slug — Settings → General | **Paste when prompted** | Yes |
-| 7 | Vercel project link + API token | Vercel CLI | No |
+| 6 | Sentry org slug — derived from auth token via Sentry API | Script fetches automatically | No |
+| 7 | Vercel project link + API token + org ID | Vercel CLI | No |
 | 8 | GitHub secrets (all values in batch) | `gh secret set` | No |
 | 9 | `terraform init` — connects to S3 backend | Terraform CLI | No |
 
@@ -41,7 +41,7 @@ The details below document what `bootstrap.sh` automates. Read this if the scrip
 ### Phase 2 — Claude runs Terraform
 
 You wait. Claude handles:
-1. `terraform apply` — creates Neon project, Sentry project, IAM user, Vercel project
+1. `terraform apply` — creates Neon project, Sentry project, AWS core resources (OIDC, IAM roles, S3, Budget alarm). Vercel activates in Milestone 1b.
 2. MCP verification: `list_projects`, `run_sql` (confirms PG18, Scale tier, extensions)
 3. Retrieves connection strings, DSN, AWS keys from Terraform output and MCP
 4. Populates `.env.local` with all Terraform-derived values
@@ -68,6 +68,28 @@ You wait. Claude handles:
 | Contentful Access Token | `CONTENTFUL_ACCESS_TOKEN` | — | `CONTENTFUL_ACCESS_TOKEN` |
 | Contentful Management Token | `CONTENTFUL_MANAGEMENT_TOKEN` | `CONTENTFUL_MANAGEMENT_TOKEN` | — |
 | Bedrock keys (local dev) | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | — | Set by Terraform |
+
+---
+
+## Who populates `.env.local`
+
+`.env.example` is the reference template — don't edit it. `.env.local` is your working copy. Most values are populated by Claude after `terraform apply`; you fill in only 4.
+
+| Variable | Who | How |
+|----------|-----|-----|
+| `NEON_DATABASE_URL` | Claude | MCP `get_connection_string` after `terraform apply` |
+| `NEON_DATABASE_URL_DIRECT` | Claude | MCP `get_connection_string` after `terraform apply` |
+| `NEON_PROJECT_ID` | Claude | MCP `list_projects` after `terraform apply` |
+| `NEON_API_KEY` | **You** | Phase 3, step 10 — paste project-scoped key |
+| `AWS_REGION` | Claude | Static `us-west-2` |
+| `AWS_ACCESS_KEY_ID` | Claude | Terraform output |
+| `AWS_SECRET_ACCESS_KEY` | Claude | Terraform output |
+| `VOYAGE_API_KEY` | **You** | Milestone 1b — Voyage dashboard |
+| `CONTENTFUL_SPACE_ID` | Claude | Terraform output |
+| `CONTENTFUL_ACCESS_TOKEN` | **You** | Milestone 1b — Contentful dashboard |
+| `CONTENTFUL_MANAGEMENT_TOKEN` | **You** | Milestone 1b — Contentful dashboard |
+| `NEXT_PUBLIC_SENTRY_DSN` | Claude | Terraform output |
+| `SENTRY_AUTH_TOKEN` | Claude | Captured by `bootstrap.sh` |
 
 ---
 
