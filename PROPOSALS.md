@@ -17,7 +17,7 @@
 | PRO-005 | Neon Auth as Auth0 Alternative | Enhancement | Proposed | ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
 | PRO-007 | Logical Replication for Analytics CDC | Feature | Proposed | ADR-124, ADR-095, ADR-099 | Neon platform audit 2026-02-25 |
-| PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Proposed | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
+| PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Adopted → ADR-124, ADR-019, 1a.2 | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-051, ADR-033, DES-048, DES-054, ADR-115 | Dedup 2026-02-25 (3 explorations) |
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116, ADR-049, ADR-050 | Dedup 2026-02-25 |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed (subsumed by PRO-013 if adopted) | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
@@ -105,13 +105,12 @@
 
 ### PRO-008: Time Travel Queries for Production Debugging
 
-**Status:** Proposed
+**Status:** Adopted → ADR-124, ADR-019, Deliverable 1a.2
 **Type:** Enhancement
 **Governing Refs:** ADR-019, ADR-124
 **Dependencies:** Scale tier (30-day PITR window). Already available.
-**Scheduling Notes:** Neon Time Travel Queries allow read-only SQL against any historical database state within the PITR window. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle. Use cases: "what did this chunk's embedding look like before re-ingestion?", "when did this theme tag change?", "what was the search_queries table 2 hours ago?". No restore needed — just reads. Already available on Scale tier; needs documentation in the operational playbook and awareness among developers. Consider adding to Milestone 1a operational setup as a development workflow tool.
-**Re-evaluate At:** Milestone 1a implementation (available now)
-**Decision Required From:** Architecture (self-assessment)
+**Scheduling Notes:** Neon Time Travel Queries allow read-only SQL against any historical database state within the PITR window. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle. Use cases: "what did this chunk's embedding look like before re-ingestion?", "when did this theme tag change?", "what was the search_queries table 2 hours ago?". No restore needed — just reads. Already available on Scale tier.
+**Resolution (2026-02-26):** Accepted as a Milestone 1a development tool. Zero implementation cost — already available on Scale tier. Time Travel is available via Neon MCP `run_sql` with `AT {timestamp}` syntax, or via direct SQL connection with `neon_utils.ttq()`. Referenced in ADR-019 Layer 1 (PITR) and Deliverable 1a.2. Documented in DES-039 § Three-Layer Neon Management Model as an Operations-layer capability.
 
 ### PRO-009: Scientific-Spiritual Bridge Themes
 

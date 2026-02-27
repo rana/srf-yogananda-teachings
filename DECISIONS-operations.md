@@ -3056,6 +3056,30 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 - **Branch discipline.** TTL auto-expiry eliminates orphaned branches — a common operational headache. Named conventions make branches discoverable in the Neon Console.
 - **Extension discipline.** Centralizing extension governance prevents sprawl and ensures every extension has a documented purpose and governing ADR.
 
+#### API Key Scoping Policy
+
+Neon offers three API key types (Personal, Organization, Project-scoped). The portal uses scoped keys to enforce least privilege across management contexts.
+
+| Context | Key Type | GitHub Secret Name | Scope | Rationale |
+|---------|----------|-------------------|-------|-----------|
+| **Terraform** (`terraform.yml`) | Organization API key | `NEON_API_KEY` | All org projects | Terraform creates/deletes projects — requires org-level access |
+| **CI branch ops** (`neon-branch.yml`, `neon-cleanup.yml`) | Project-scoped key | `NEON_PROJECT_API_KEY` | Single project | Can create/delete branches; cannot delete the project |
+| **Claude Code / MCP** (development) | Project-scoped key | local `.env` | Single project | Interactive operations; least privilege for exploratory work |
+
+**Key lifecycle:** Organization key created once during bootstrap (manual, store in password manager + GitHub secret). Project-scoped keys created after `terraform apply` provisions the Neon project — either via Neon Console or `neonctl api-keys create --project-id`. Secret token displayed only once; store immediately. Revocation is immediate and permanent.
+
+**Limitation:** Neon does not offer granular RBAC within a key scope. A project-scoped key can perform all operations on that project except deletion. No finer-grained permissions are available (e.g., "branches only" or "read-only"). This is acceptable for the portal's single-project architecture.
+
+#### Terraform Provider Governance
+
+The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** — not officially supported by Neon. This has operational implications:
+
+- **Pin the provider version** in `versions.tf` with a pessimistic constraint (e.g., `~> 0.6.0`). Never use unconstrained versions.
+- **Review `terraform plan` on provider upgrades.** Provider schema changes can cause unintended resource replacements (destroy + recreate). Never auto-upgrade the Neon provider in CI.
+- **`dependabot.yml` covers provider updates.** Dependabot creates PRs for provider version bumps. These PRs trigger `terraform.yml`, producing a plan diff. Always review before merge.
+- **Monitor for breaking changes.** Track the provider's GitHub releases for deprecation notices.
+- **Fallback:** If the community provider becomes unmaintained, the Neon REST API can be called directly from CI scripts (`neonctl` or `curl`). Terraform manages persistent state (project, protected branches); ephemeral operations already use the API layer (see DES-039 § Three-Layer Neon Management Model).
+
 ### Consequences
 
 - Neon project created as PostgreSQL 18, Scale tier from Milestone 1a (`postgres_version = "18"` in Terraform)
@@ -3065,10 +3089,13 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 - Branch naming convention and TTL policy enforced in CI scripts
 - `pg_stat_statements` data informs search query optimization from Milestone 1a
 - OpenTelemetry export configured during Milestone 2a observability setup
-- Snapshot schedule configured during Milestone 1a.2 (ADR-019)
+- Snapshot schedule configured during Milestone 1a.2 via Neon API (ADR-019)
+- API keys scoped per context: org key for Terraform, project-scoped keys for CI and development
+- Terraform provider version pinned; upgrades reviewed via `terraform plan` in PR
 - **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
 - DESIGN-arc1.md § DES-004 schema updated to include all 5 extensions and `uuidv7()` convention
+- DESIGN-arc1.md § DES-039 updated with Three-Layer Neon Management Model (Infrastructure / Operations / Data)
 - ROADMAP.md cost model updated to reflect Scale tier pricing
 
-*Revised: 2026-02-25, added PostgreSQL 18 version selection, UUIDv7 schema convention, and PG18 feature survey.*
+*Revised: 2026-02-25, added PostgreSQL 18 version selection, UUIDv7 schema convention, and PG18 feature survey. 2026-02-26, added API key scoping policy, Terraform provider governance, and three-layer management model reference.*
 

@@ -1646,15 +1646,17 @@ Available immediately on Scale tier. Restore to any moment within 30 days — co
 - **Pre-restore safety:** Neon automatically creates a backup branch (`{branch}_old_{timestamp}`)
 - **Time Travel Queries:** Before committing to a restore, run read-only queries against historical state to verify the target recovery point is correct. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle.
 
-#### Layer 2: Neon Snapshots (automated schedule)
+#### Layer 2: Neon Snapshots (API-managed, automated schedule)
 
-Configure automated snapshots on the production branch via Neon Console or API:
+Configure automated snapshots on the production branch via **Neon Snapshot API** during Milestone 1a.2 project setup. The Snapshot API supports full CRUD (create, list, restore, update, delete) and backup schedule configuration — no Console interaction needed. Claude configures the schedule via Neon MCP or API call during bootstrap.
 
 - **Daily snapshot** at 03:00 UTC (before nightly pg_dump for redundancy)
 - **Weekly snapshot** on Sundays
 - **Monthly snapshot** on the 1st
 - **Retention:** Up to 10 snapshots (Scale tier limit). Lifecycle: keep 7 daily + 2 weekly + 1 monthly.
-- **Restore:** One-step restore from any snapshot. Faster than PITR for known-good checkpoints.
+- **Restore:** One-step restore from any snapshot via API. Faster than PITR for known-good checkpoints.
+- **Pre-migration snapshots:** CI workflow (`terraform.yml`) creates a snapshot before applying any migration PR. This provides an instant rollback point without timestamp arithmetic. See DES-039 § CI/CD Pipeline.
+- **On-demand snapshots:** Claude creates snapshots via MCP before risky operations (re-ingestion, embedding model migration, bulk data changes). Part of the Operations layer (DES-039 § Three-Layer Neon Management Model).
 
 #### Layer 3: pg_dump to S3 (vendor-independent)
 
@@ -1711,16 +1713,18 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 
 ### Consequences
 
-- PITR and Time Travel Queries available from Milestone 1a (Scale tier)
-- Snapshot schedule configured during Milestone 1a.2 Neon project setup
-- `/terraform/modules/backup/` added in Milestone 2a
+- PITR and Time Travel Queries available from Milestone 1a (Scale tier). Time Travel accepted as development tool (PRO-008).
+- Snapshot schedule configured during Milestone 1a.2 Neon project setup via Neon Snapshot API (not Console)
+- Pre-migration snapshots created by CI workflow before migration PRs
+- On-demand snapshots created by Claude via MCP before risky operations
+- `/terraform/modules/backup/` added in Milestone 2a (S3 bucket, Lambda, EventBridge)
 - Lambda function for nightly pg_dump added when Lambda infrastructure from ADR-017 is first deployed
 - S3 bucket created and managed by Terraform
 - Restore procedure documented in operational playbook
 - Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
 - **Extends ADR-016** (Terraform), **ADR-004** (10-year architecture), and **ADR-124** (Neon platform governance)
 
-*Revised: 2026-02-25, expanded from pg_dump-only to three-layer recovery strategy leveraging Neon Scale tier capabilities.*
+*Revised: 2026-02-25, expanded from pg_dump-only to three-layer recovery strategy leveraging Neon Scale tier capabilities. 2026-02-26, Layer 2 updated to use Snapshot API (not Console) for schedule configuration, added pre-migration and on-demand snapshots, referenced PRO-008 adoption.*
 
 ---
 

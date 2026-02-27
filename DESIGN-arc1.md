@@ -1704,8 +1704,10 @@ See DES-039 § Environment Configuration for the canonical `.env.example`, named
 **Milestone 1a minimum viable `.env.local`** (the subset needed before Contentful is connected):
 
 ```bash
-NEON_DATABASE_URL=               # From Neon Console → Connection Details (pooled)
-NEON_DATABASE_URL_DIRECT=        # From Neon Console → Connection Details (direct)
+NEON_DATABASE_URL=               # From Neon MCP → get_connection_string (pooled)
+NEON_DATABASE_URL_DIRECT=        # From Neon MCP → get_connection_string (direct)
+NEON_PROJECT_ID=                 # From Neon MCP → list_projects
+NEON_API_KEY=                    # Project-scoped key (create after terraform apply — see ADR-124 § API Key Scoping)
 AWS_REGION=us-west-2
 AWS_ACCESS_KEY_ID=               # IAM user with Bedrock inference permissions
 AWS_SECRET_ACCESS_KEY=           # Paired with above
@@ -1811,21 +1813,28 @@ Content Integrity Verification (ADR-039) uses per-chapter content hashes to veri
 
 ## DES-031: MCP Server Strategy
 
-MCP (Model Context Protocol) serves three tiers of AI consumer, all wrapping the same `/lib/services/` functions. MCP tools are the AI-native complement to HTTP API routes — one service layer, two access protocols. (ADR-097 governs third-party MCP servers; ADR-101 governs the portal's own MCP tiers.)
+MCP (Model Context Protocol) serves two fundamentally different purposes in this project, distinguished by audience and lifecycle:
 
-### Third-Party MCP Servers (ADR-097)
+1. **Platform MCP servers** — Claude's tools for operating infrastructure during development. These are third-party MCP servers connected to Claude Code. They manage platforms, not portal content.
+2. **SRF Corpus MCP server** — The portal's own MCP interface for AI consumers (internal and external). Wraps `/lib/services/` functions. Serves content, not infrastructure.
 
-| MCP Server | Use Case | Availability |
-|------------|----------|-------------|
-| **Neon MCP** | Database schema management, SQL execution, migrations during development | Available now |
-| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Arc 1 |
-| **Contentful MCP** | Content model design, entry management during development | Milestone 1b (evaluate) |
+Both ultimately wrap service layers, but they serve different audiences, have different security models, and follow different lifecycles.
+
+### Platform MCP Servers (ADR-097) — AI Operator Tools
+
+These are Claude's operational interface during development. They are the Operations layer of the Three-Layer Neon Management Model (DES-039).
+
+| MCP Server | Use Case | Availability | Role |
+|------------|----------|-------------|------|
+| **Neon MCP** (`@neondatabase/mcp-server-neon`) | Branch creation, SQL execution, schema diffs, migration safety (`prepare_database_migration`/`complete_database_migration`/`compare_database_schema`), connection string retrieval, Time Travel queries | Available now | **Primary operations interface** — replaces Console for verification, experimentation, and development workflows. See DES-039 § Three-Layer Neon Management Model. |
+| **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Arc 1 | Debugging and incident response |
+| **Contentful MCP** | Content model design, entry management during development | Milestone 1b (evaluate) | CMS operations |
 
 See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
 
 ### SRF Corpus MCP — Three-Tier Architecture (ADR-101)
 
-**Status: Unscheduled.** All three SRF Corpus MCP tiers moved to ROADMAP.md § Unscheduled Features (2026-02-24). The architecture below is preserved as design reference for when scheduling is decided. Third-party MCP servers (Neon, Sentry, Contentful) remain on schedule.
+**Status: Unscheduled.** All three SRF Corpus MCP tiers moved to ROADMAP.md § Unscheduled Features (2026-02-24). The architecture below is preserved as design reference for when scheduling is decided. Platform MCP servers (Neon, Sentry, Contentful) remain on schedule — they are separate from this.
 
 ```
 Seeker (browser) → API Route → Service Layer → Neon
@@ -2029,16 +2038,52 @@ Modules are activated via feature-flag variables in `dev.tfvars`. This avoids co
 
 Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
 
-### Boundary: Terraform vs. Application Code
+### Three-Layer Neon Management Model
 
-| Managed by Terraform | Managed by Application Code |
-|---------------------|-----------------------------|
-| Service creation (Neon project, Vercel project, Sentry project) | Database schema + extensions (dbmate SQL migrations — `CREATE EXTENSION IF NOT EXISTS pgvector`, etc.) |
-| Environment variables, secrets placeholders | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
-| AWS IAM roles, S3 buckets, Budgets alarm | Lambda handler code (`/lambda/`) |
-| — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
-| DNS records, domain bindings (when active) | Application routing (`next.config.js`) |
-| Alert rules, Synthetics monitors | Structured logging (`lib/logger.ts`) |
+Neon infrastructure is managed through three distinct control planes, each with a clear purpose and boundary. This model applies to all Neon operations from Milestone 1a.
+
+| Layer | Tool | What It Manages | When | Audit Trail |
+|-------|------|----------------|------|-------------|
+| **Infrastructure** | Terraform (`kislerdm/neon` provider) | Project, tier, persistent branches (production/staging/dev), compute configuration, branch protection | PRs → `terraform plan` → merge → `terraform apply` | Git + Terraform state in S3 |
+| **Operations** | Neon MCP / CLI / API | Ephemeral branches, snapshots, schema diffs, verification, connection strings, Time Travel queries | Development sessions, CI runs | Conversation logs (MCP), CI logs (CLI) |
+| **Data** | SQL via `@neondatabase/serverless` + dbmate | Schema migrations, content, queries, extensions | Application runtime, migration scripts | Git (migrations), database WAL |
+
+**Design principle:** MCP operations should never create persistent state that Terraform doesn't know about. Ephemeral branches (CI test, PR preview, migration test, ingestion sandbox) are Operations-layer concerns — created and deleted within a session or CI run. Persistent branches (production, staging, dev) are Infrastructure-layer concerns — declared in Terraform, never created ad hoc.
+
+**Neon MCP as development tool.** The Neon MCP server (`@neondatabase/mcp-server-neon`) is Claude's primary interface for Neon operations during development sessions. It provides:
+
+| MCP Tool | Use Case |
+|----------|----------|
+| `run_sql` | Verify schema after migrations, test queries, inspect data |
+| `prepare_database_migration` | Create branch, apply migration SQL, return branch for testing |
+| `complete_database_migration` | Apply verified migration to the target branch |
+| `compare_database_schema` | Schema diff between branches — drift detection |
+| `create_branch` | Ephemeral branches for experimentation |
+| `get_connection_string` | Retrieve connection strings for `.env.local` population |
+| `describe_branch` | Verify branch state, compute configuration |
+| `list_projects` | Verify project exists after `terraform apply` |
+
+The MCP occupies the same role as `psql` for a human developer — exploratory, immediate, judgment-based. Terraform provides the plan/apply review gate for persistent infrastructure; MCP provides the interactive feedback loop for operational tasks.
+
+**API key scoping per layer** (see ADR-124 § API Key Scoping Policy):
+
+| Context | Key Type | Scope | Rationale |
+|---------|----------|-------|-----------|
+| Terraform (`terraform.yml`) | Organization API key | All projects in org | Can create/delete projects |
+| CI branch operations (`neon-branch.yml`) | Project-scoped API key | Single project | Can create/delete branches but cannot delete the project |
+| Claude Code / MCP development | Project-scoped API key | Single project | Least privilege for interactive operations |
+
+### Boundary: Terraform vs. Operations vs. Application Code
+
+| Managed by Terraform | Managed by Operations (MCP/CLI/API) | Managed by Application Code |
+|---------------------|--------------------------------------|------------------------------|
+| Service creation (Neon project, Vercel project, Sentry project) | Ephemeral branches (CI, PR, migration test) | Database schema + extensions (dbmate SQL migrations) |
+| Persistent branches (production, staging, dev) | Snapshots (pre-migration, checkpoints) | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
+| Compute configuration (CU, autosuspend) | Schema diffs and verification | Lambda handler code (`/lambda/`) |
+| Environment variables, secrets placeholders | Connection string retrieval | GitHub settings (manual), CI workflows (`.github/workflows/`) |
+| AWS IAM roles, S3 buckets, Budgets alarm | Time Travel queries (debugging) | Application routing (`next.config.js`) |
+| DNS records, domain bindings (when active) | Branch cleanup (nightly script) | Structured logging (`lib/logger.ts`) |
+| Alert rules, Synthetics monitors | Compute start/suspend (operational) | — |
 
 ### Source Control and CI/CD
 
@@ -2063,10 +2108,14 @@ On every PR:
 
 On merge to main:
  1. All of the above
- 2. terraform apply (dev)
+ 2. Neon snapshot (if /migrations/ changed) — pre-migration safety net via Neon Snapshot API (ADR-019 Layer 2)
+ 3. dbmate migrate — apply pending migrations
+ 4. terraform apply (dev)
 ```
 
-Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraform validate`, `terraform plan` on PR, and `terraform apply` on merge. Application changes trigger the full test suite. Both can trigger in the same PR.
+Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraform validate`, `terraform plan` on PR, and `terraform apply` on merge. Migration changes (`/migrations/**`) trigger a pre-migration Neon snapshot before applying — provides instant rollback without timestamp arithmetic. Application changes trigger the full test suite. Multiple triggers can fire in the same PR.
+
+**Pre-migration snapshot pattern:** When `/migrations/**` files change, the merge-to-main workflow calls `/scripts/neon-snapshot.sh` (using `NEON_PROJECT_API_KEY`) to create a snapshot named `pre-migrate-{sha}` before running `dbmate migrate`. If migration fails, restore from the snapshot. No Lambda infrastructure needed — this is a single API call to `POST /projects/{id}/branches/{branch_id}/snapshots`. (See ADR-019 Layer 2.)
 
 #### Workflow File Structure
 
@@ -2130,7 +2179,8 @@ Values that vary per environment or contain secrets. The `.env.example` file is 
 # ── Neon PostgreSQL ─────────────────────────────────────────────
 NEON_DATABASE_URL=               # [terraform] Pooled connection (serverless functions)
 NEON_DATABASE_URL_DIRECT=        # [terraform] Direct connection (dbmate migrations, scripts)
-NEON_PROJECT_ID=                 # [terraform] Neon API calls
+NEON_PROJECT_ID=                 # [terraform] Neon project ID for API calls
+NEON_API_KEY=                    # [secret] Project-scoped API key for dev operations (ADR-124 § API Key Scoping)
 
 # ── AWS (Bedrock inference from Vercel) ─────────────────────────
 AWS_REGION=us-west-2             # [terraform] Bedrock, Lambda, S3
