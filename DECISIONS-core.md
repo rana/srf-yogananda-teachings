@@ -1199,6 +1199,21 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 - **10-year horizon (ADR-004).** AWS Bedrock is a managed service with AWS's long-term commitment. The portal's `/lib/services/claude.ts` abstracts the provider — switching from Bedrock to direct API (or vice versa) requires changing the SDK client, not the business logic.
 - **Graceful degradation is provider-agnostic.** The four-level degradation cascade (DESIGN.md § Claude API Graceful Degradation) works identically regardless of whether Claude is accessed via Bedrock or direct API. Timeouts, errors, and budget caps trigger the same fallthrough.
 
+### LLM Portability
+
+Claude via Bedrock is the initial implementation. The long-term direction is **model portability** — the ability to swap LLM providers without touching business logic.
+
+**Index-time enrichment is the primary LLM use case.** With pure hybrid search as the primary search mode (ADR-119), Claude's role shifts from per-query search enhancement to per-chunk enrichment at ingestion time. This is a batch workload — high-quality structured output, no latency sensitivity. The ideal workload for open-source models.
+
+**Open-source direction:** As open-source models mature (Llama, Mistral, Qwen, and successors), evaluate for index-time enrichment. Requirements: reliable structured JSON output, broad spiritual/philosophical knowledge for terminology bridging, multilingual capability for future locales. Bedrock already hosts Llama and Mistral models — the provider swap is a config change.
+
+**Abstraction points:**
+- `/lib/services/claude.ts` abstracts the provider — switching SDK clients (Bedrock → direct API → open-source inference endpoint) requires no business logic changes
+- Model IDs in `/lib/config.ts` per ADR-123 — the swap point for model selection
+- Enrichment prompt design (ADR-115) is model-agnostic — structured input/output contract, no Claude-specific features
+
+**Evaluation trigger:** At each arc boundary, benchmark the current open-source frontier against Claude for enrichment quality on 30 representative passages. If an open-source model achieves comparable enrichment quality (assessed by the same editorial review process), migrate.
+
 ### Consequences
 
 - `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
@@ -1208,6 +1223,8 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
+
+*Revised: 2026-02-28, added LLM Portability section. Claude is the initial provider; open-source models are the long-term direction. Index-time enrichment (not per-query search) is the primary LLM workload.*
 
 ---
 
@@ -1921,12 +1938,57 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 | Lambda outage | Batch jobs fail (ingestion, backup, email) | Lambda retries automatically. Batch jobs are idempotent — safe to re-run. Email delayed, not lost. |
 | CloudFront outage | Asset delivery degraded | Extremely rare (global service). Fallback: direct S3 URLs (slower, no edge caching). |
 
+### Regional Latency Targets
+
+With pure hybrid search as the primary search mode (ADR-119 — no external AI services in the search hot path), search latency is dominated by database query time (~50–200ms) plus network round-trip time. This achieves competitive global latency without multi-region database infrastructure.
+
+| Region | Network RTT to us-west-2 | DB Query | Search Total | Target |
+|--------|--------------------------|----------|-------------|--------|
+| US West | ~10ms | ~100ms | ~110ms | < 200ms |
+| US East | ~60ms | ~100ms | ~160ms | < 300ms |
+| Europe | ~140ms | ~100ms | ~240ms | < 400ms |
+| South Asia | ~200ms | ~100ms | ~300ms | < 500ms |
+| Southeast Asia | ~150ms | ~100ms | ~250ms | < 400ms |
+| Sub-Saharan Africa | ~250ms | ~100ms | ~350ms | < 500ms |
+| South America | ~150ms | ~100ms | ~250ms | < 400ms |
+
+**Target: search p95 < 500ms from any continent.** This is competitive with general-purpose search engines and appropriate for a contemplative portal. The target is achievable today with pure hybrid search against a single-region Neon instance. No edge caching, multi-region database, or architectural changes required.
+
+*Parameter — latency targets above, evaluate: Milestone 1b real-world traffic patterns (ADR-123).*
+
+**What is already globally distributed (day one):**
+- Book chapters and reading pages (ISR, cached at Vercel's 70+ edge PoPs)
+- Search suggestions (static JSON at CDN edge, < 10ms globally — ADR-120)
+- Daily Passage / Today's Wisdom (pre-rendered at every PoP)
+- All static assets (Vercel CDN + CloudFront)
+
+**What crosses the network to the origin:**
+- Search queries (~200–400ms total — the only user-facing operation with origin latency)
+- Contentful webhook sync (editorial, not user-facing)
+
+### Multi-Region Neon
+
+Neon is the portal's database provider for the long term (ADR-124). When Neon ships cross-region read replicas, activate them to reduce search latency further — particularly for South Asia and Africa where network RTT to us-west-2 is highest.
+
+**Activation plan:**
+- When available: create read replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Terraform
+- Route search API read queries to the nearest replica; writes (ingestion, editorial) to the primary
+- This is a Terraform configuration change, not an architectural change — the application code is unaffected
+- Expected search latency improvement: South Asia drops from ~300ms to ~150ms; Europe from ~240ms to ~140ms
+
+**No exit ramp needed.** Neon's Scale tier, branching workflow, pgvector + pg_search extension ecosystem, and development velocity are the right fit for this project. Plan to grow with Neon, not away from it.
+
 ### Rationale
 
 - **Cost-proportionate resilience.** Active-active multi-region would cost 3–5× more in infrastructure and add significant operational complexity. The portal's availability SLA does not justify this. "Search is down for 30 minutes while Neon fails over" is acceptable; "a seeker loses their reading progress" is not (but all reading state is client-side in `localStorage` anyway).
-- **Edge caching covers the latency gap.** The majority of portal requests — page loads, PDFs, audio streams, static assets — are served from the edge. Only search queries and dynamic API calls reach the origin. For search, 200ms of additional latency to a cross-region origin is acceptable.
-- **Neon read replicas are the right Milestone 5a+ investment.** When traffic justifies it, adding a read replica in `ap-south-1` (Mumbai) cuts search latency for the largest seeker population (India) in half. This is a Terraform change, not an architectural change.
+- **Pure hybrid search removes the latency bottleneck.** With no AI services in the search hot path (ADR-119), search latency is ~200–400ms globally — competitive with Google Search. The AI services (Claude, Cohere) were the latency bottleneck, not the database or network. Removing them from the hot path achieves the p95 < 500ms target without multi-region infrastructure.
+- **Edge distribution covers most requests.** The majority of portal requests — page loads, PDFs, audio streams, static assets, search suggestions — are served from Vercel's edge. Only search queries reach the origin.
+- **Neon multi-region read replicas are the next-level investment.** When Neon ships them, activating replicas in Mumbai and Frankfurt is a Terraform change that further improves the experience for the largest seeker populations (India, Europe).
 - **Backup is separate from failover.** ADR-019 (nightly pg_dump to S3) provides data recovery. This ADR addresses service availability. They complement each other.
+
+### Alternatives Evaluated
+
+- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails Principle 8 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
 
 ### Consequences
 
@@ -1934,9 +1996,12 @@ Edge caching means a seeker in Mumbai requesting a book chapter gets HTML from a
 - Vercel function region co-located with Neon primary
 - Lambda functions deployed to the same region as Neon primary
 - CloudFront distribution configured for all static assets from Arc 1
-- Milestone 5a+: Terraform module for Neon read replicas, S3 CRR, and Vercel multi-region functions
+- Search p95 < 500ms from any continent (achieved by pure hybrid search, no multi-region required)
+- When Neon ships cross-region read replicas: activate via Terraform in `ap-south-1` and `eu-central-1`
 - Health check endpoint (`/api/v1/health`) reports database connectivity, enabling uptime monitoring
-- **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration.
+- **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration. No edge database replacement.
+
+*Revised: 2026-02-28, added Regional Latency Targets, Multi-Region Neon plan, and Turso evaluation note. Pure hybrid search (ADR-119) achieves global latency targets without multi-region database infrastructure.*
 
 ---
 
@@ -4890,64 +4955,78 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 
 ---
 
-## ADR-119: Advanced Search Pipeline — HyDE, Cohere Rerank, Three-Path Retrieval
+## ADR-119: Advanced Search Pipeline — Pure Hybrid Primary, AI-Enhanced Optional
 
 - **Status:** Accepted
 - **Date:** 2026-02-23
 
 ### Context
 
-The Arc 1 search pipeline (DES-003) uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion, with optional Claude Haiku passage ranking. This is a strong foundation but leaves three well-established retrieval enhancements on the table:
+The search pipeline uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion. This pure hybrid approach — with no external AI services in the search path — is the **primary search mode** for all arcs.
 
-1. **HyDE (Hypothetical Document Embedding).** Instead of embedding the user's query (which lives in "query space"), Claude generates a hypothetical passage that would answer the query, and *that passage* is embedded. The search then operates in "document space" — matching document-like text against documents. Research shows significant lift on literary, philosophical, and domain-specific corpora where query language diverges from document language.
+The design invests in index-time enrichment (ADR-115 unified enrichment, ADR-051 terminology bridge, ADR-116 entity resolution) so that the vocabulary gap between seeker language and Yogananda's language is bridged *in the index*, not at query time. A seeker types "mindfulness" and BM25 finds chunks enriched with "concentration" because the terminology bridge already made that connection during ingestion.
 
-2. **Cross-encoder reranking.** The Arc 1 passage ranking uses Claude Haiku — effective but general-purpose. Cohere Rerank 3.5 is a purpose-built cross-encoder that sees query + passage together and produces a true relevance score. It is multilingual-native and requires no language routing.
+Three well-established retrieval enhancements remain available as **optional upgrades**, activated only if Milestone 1a's search quality evaluation demonstrates they are needed:
+
+1. **HyDE (Hypothetical Document Embedding).** Instead of embedding the user's query (which lives in "query space"), an LLM generates a hypothetical passage that would answer the query, and *that passage* is embedded. The search then operates in "document space." Research shows significant lift on literary, philosophical, and domain-specific corpora where query language diverges from document language.
+
+2. **Cross-encoder reranking.** A purpose-built cross-encoder (e.g., Cohere Rerank 3.5 or an open-source alternative like BGE-reranker-v2) sees query + passage together and produces a true relevance score. Multilingual-native, no language routing needed.
 
 3. **Graph-augmented retrieval.** With the knowledge graph (ADR-117) active in Milestone 3b+, a third retrieval path becomes available: entity-aware graph traversal combined with vector similarity. This path finds passages that neither vector nor keyword search can find — passages that never mention the search term but are conceptually adjacent via the graph. Implemented via multi-step SQL queries against Postgres graph tables (no external graph database).
 
 ### Decision
 
-Three enhancements to the search pipeline, phased for implementation:
+**Pure hybrid search is the primary mode.** No external AI services in the search hot path. Search latency is dominated by database query time (~50–200ms) plus network RTT — no LLM or reranker API calls. This achieves search p95 < 500ms from any continent (see ADR-021 § Regional Latency Targets).
 
-**Milestone 2b: HyDE**
-- For complex or experiential queries (not simple keyword lookups), Claude generates a hypothetical passage (~100–200 tokens) that would answer the query
+**Three optional enhancements, activated conditionally:**
+
+**Milestone 2b (if warranted by 1a evaluation): HyDE**
+- For complex or experiential queries (not simple keyword lookups), an LLM generates a hypothetical passage (~100–200 tokens) that would answer the query
 - The hypothesis is embedded with Voyage (`input_type = 'query'`) and used as an additional vector search input alongside the original query embedding
 - Both vectors contribute candidates to the RRF merge
-- Bypass for simple keyword queries (detected by intent classification, ADR-005 E1)
+- Bypass for simple keyword queries (detected by heuristic intent classification)
 
-**Milestone 2b: Cohere Rerank 3.5**
-- After RRF fusion produces ~50 candidates, Cohere Rerank 3.5 sees query + passage pairs
+**Milestone 2b (if warranted by 1a evaluation): Cross-Encoder Reranking**
+- After RRF fusion produces ~50 candidates, a cross-encoder sees query + passage pairs
 - Cross-encoder scoring produces true relevance scores (not just ranking positions)
 - Top 10 returned with confidence scores
-- Replaces Claude Haiku passage ranking for precision; Haiku remains available as fallback
+- Options: Cohere Rerank 3.5 (managed API), BGE-reranker-v2 (open-source, self-hosted on Lambda), or another cross-encoder
 - Multilingual-native — no language routing needed
 
 **Milestone 3b+: Three-Path Parallel Retrieval**
 - **PATH A:** Dense vector (pgvector HNSW) — semantic similarity
 - **PATH B:** BM25 keyword (pg_search) — exact term and phrase matching
 - **PATH C:** Graph-augmented retrieval (Postgres, ADR-117) — entity-aware graph traversal via multi-step SQL queries against `extracted_relationships` and `concept_relations` tables, combined with pgvector similarity. Traverses concept neighborhoods, lineage relationships, cross-tradition bridges, experiential state graph.
-- All three paths contribute candidates to RRF fusion before reranking
+- All three paths contribute candidates to RRF fusion before any optional reranking
 
 ```
-Arc 1 – M2a:  PATH A + PATH B → RRF → Claude Haiku ranking
-M2b – M3a:    PATH A + PATH B + HyDE → RRF → Cohere Rerank
-M4+:          PATH A + PATH B + PATH C + HyDE → RRF → Cohere Rerank
+Primary mode (all arcs):     PATH A + PATH B → RRF → top 5
+Enhanced mode (M2b+, if warranted): PATH A + PATH B + HyDE → RRF → cross-encoder rerank
+Full mode (M4+, if warranted):      PATH A + PATH B + PATH C + HyDE → RRF → cross-encoder rerank
 ```
+
+**Activation gate:** The Milestone 1a search quality evaluation (≥ 80% of test queries return at least one relevant passage in top 3) determines whether the primary mode is sufficient. If the threshold is met comfortably (≥ 90%), AI-enhanced modes are deferred. If met marginally (80–89%), evaluate HyDE and reranking. If not met, activate enhancements and re-evaluate.
 
 ### Rationale
 
-- **HyDE is high-lift for spiritual text.** Seekers often express queries as emotional states ("I feel lost"), questions ("What is the meaning of suffering?"), or experiential descriptions ("a light I saw in meditation"). These live far from Yogananda's document language in embedding space. A hypothetical passage bridges the gap.
-- **Cohere Rerank is purpose-built.** Cross-encoders see query and passage together — they can detect relevance that bi-encoder similarity misses (e.g., a passage that answers a question without using any of the question's words). Cohere Rerank 3.5 is multilingual-native, eliminating language-specific routing.
-- **Graph-augmented retrieval finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage for a seeker searching "Holy Spirit" — neither vector similarity nor BM25 would find it. Note: the terminology bridge (ADR-051) covers many of these mappings; PATH C's unique contribution is for multi-hop traversals beyond direct term mappings.
-- **Phased introduction manages complexity.** Each enhancement can be validated independently against the golden retrieval set before the next is added.
+- **Pure hybrid is fast and globally equitable.** Without AI services in the hot path, search completes in ~200–400ms from anywhere on Earth. A seeker in rural Bihar gets the same latency as one in Los Angeles. Adding Claude and Cohere to the hot path adds 700–1500ms — the AI services become the bottleneck, not the database or network.
+- **Index-time enrichment bridges the vocabulary gap.** The terminology bridge (ADR-051), unified enrichment (ADR-115), and entity resolution (ADR-116) map modern vocabulary to Yogananda's language at ingestion time. "Mindfulness" is linked to "concentration" in the BM25 index. The gap that HyDE solves at query time can instead be solved at index time — with no per-query cost and no per-query latency.
+- **HyDE is high-lift for spiritual text — but may be unnecessary if enrichment is thorough.** Seekers express queries as emotional states ("I feel lost") or experiential descriptions ("a light I saw in meditation"). These diverge from Yogananda's document language. HyDE bridges this gap at query time; enrichment bridges it at index time. If the enrichment pipeline captures emotional quality, experiential depth, and cross-vocabulary mappings (ADR-115), the query-time bridge may be redundant.
+- **Cross-encoder reranking improves precision — at a latency and cost.** Cross-encoders detect relevance that bi-encoder similarity misses. But for a constrained corpus (one book in Arc 1, ~25 books at full corpus), RRF fusion over well-enriched chunks may achieve comparable precision without the per-query API call.
+- **Graph-augmented retrieval finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage — neither vector similarity nor BM25 would find it. This enhancement is not conditional; it activates when the graph is ready (Milestone 3b+).
+- **No external AI in the hot path simplifies operations.** Fewer failure modes, no degradation cascade needed, trivially cacheable results, zero per-query AI cost.
+- **LLM portability.** Where AI is used (index-time enrichment, optional query-time enhancements), the model is specified via `/lib/config.ts` named constants (ADR-123). Claude today; open-source models (Llama, Mistral, Qwen via Bedrock or self-hosted) as the long-term direction. See ADR-014 § LLM Portability.
 
 ### Consequences
 
-- DES-003 (Search Architecture) updated with the full pipeline diagram showing all three stages
-- Cohere Rerank API key added to environment configuration
-- Search latency budget increases: Arc 1 target ~200ms; Milestone 2b target ~350ms (HyDE adds ~100ms, reranking adds ~50ms); Milestone 4 target ~400ms (graph-augmented retrieval adds ~50ms)
-- The golden retrieval set (Milestone 1a) gains HyDE-specific and graph-augmented test queries in later milestones
-- Cost per query increases: ~$0.001 for HyDE (Claude) + ~$0.0005 for Cohere Rerank = ~$0.0015/query total AI cost
+- DES-003 (Search Architecture) updated: primary mode has no AI services in the search path
+- Search latency budget: primary mode ~200ms (database query); enhanced mode ~350ms (HyDE + rerank); full mode ~400ms (graph-augmented)
+- No Cohere API key required for primary mode. Added to environment configuration only if reranking is activated.
+- The golden retrieval set (Milestone 1a) serves as the activation gate for AI enhancements
+- Cost per query: primary mode ~$0 (database only); enhanced mode ~$0.0015 (LLM + reranker)
+- The four-level degradation cascade (DES-003) simplifies: primary mode *is* the degraded mode — it's the baseline, not the fallback
+
+*Revised: 2026-02-28, reframed pure hybrid as primary mode with AI-enhanced as optional. Index-time enrichment bridges the vocabulary gap that previously justified query-time AI. Removes Claude and Cohere from the search hot path by default, improving global latency and operational simplicity.*
 
 ---
 

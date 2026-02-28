@@ -3048,6 +3048,20 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 - Complements application-level observability (ADR-095) with database-level visibility
 - Enables alerts on: connection pool saturation, cache miss rate spikes, replication lag, query duration regressions
 
+### Multi-Region Readiness
+
+Neon is the portal's database provider for the long term. The project plans to grow with Neon as its multi-region capabilities mature.
+
+**Current state (2026-02):** Neon read replicas are same-region only. The portal uses a single-region origin in `us-west-2` with global edge distribution via Vercel CDN. Pure hybrid search (ADR-119) achieves search p95 < 500ms from any continent without multi-region database infrastructure (see ADR-021 § Regional Latency Targets).
+
+**When Neon ships cross-region read replicas:**
+- Activate replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Terraform
+- Route search API read queries to the nearest replica; writes to the primary
+- Expected improvement: South Asia search latency drops from ~300ms to ~150ms
+- This is a Terraform configuration change — no application code changes
+
+**Why Neon, long-term:** Neon's Scale tier, PostgreSQL 18, branching workflow, pgvector + pg_search extension ecosystem, scale-to-zero economics, and developer velocity are the right fit for this project. The single-database architecture (ADR-013) depends on PostgreSQL's extension ecosystem — pgvector, pg_search/ParadeDB, pg_trgm, unaccent, pg_stat_statements — which Neon supports fully. No alternative database (Turso, Aurora DSQL, PlanetScale) provides equivalent single-database hybrid search capability. See ADR-021 § Alternatives Evaluated for the Turso evaluation.
+
 ### Rationale
 
 - **Production readiness from day one.** Scale tier's 30-day PITR, protected branches, and SLA provide the safety net appropriate for a portal serving sacred content.
@@ -3055,6 +3069,8 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 - **Observability completeness.** Application monitoring (ADR-095) without database monitoring is like monitoring a car's dashboard but not the engine. `pg_stat_statements` + OTLP export close this gap.
 - **Branch discipline.** TTL auto-expiry eliminates orphaned branches — a common operational headache. Named conventions make branches discoverable in the Neon Console.
 - **Extension discipline.** Centralizing extension governance prevents sprawl and ensures every extension has a documented purpose and governing ADR.
+
+*Revised: 2026-02-28, added Multi-Region Readiness section. Neon is the long-term database provider; activate cross-region read replicas when available.*
 
 #### API Key Scoping Policy
 

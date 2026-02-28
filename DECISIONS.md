@@ -76,7 +76,7 @@ Specifies what content the portal holds and how it is structured in the database
 
 **Search & AI**
 
-Governs how seekers find passages and how AI assists retrieval. Search uses hybrid vector + BM25 retrieval fused via Reciprocal Rank Fusion, with Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text, and an advanced pipeline adding HyDE query expansion and Cohere Rerank 3.5. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The terminology bridge maps modern phrasing to Yogananda's vocabulary across books.
+Governs how seekers find passages and how AI assists retrieval. Pure hybrid search (vector + BM25, fused via Reciprocal Rank Fusion) is the **primary search mode** with no AI services in the search hot path — achieving search p95 < 500ms globally. Index-time enrichment bridges vocabulary gaps so seekers find passages without query-time AI. Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text. AI-enhanced search (HyDE, cross-encoder reranking) is available as an optional upgrade, activated only if evaluation warrants. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The terminology bridge maps modern phrasing to Yogananda's vocabulary across books.
 
 - ADR-044: Hybrid Search (Vector + Full-Text)
 - ADR-046: Embedding Model Versioning and Migration (updated by ADR-118)
@@ -90,7 +90,7 @@ Governs how seekers find passages and how AI assists retrieval. Search uses hybr
 - ADR-114: pg_search / ParadeDB BM25 for Full-Text Search
 - ADR-115: Unified Enrichment Pipeline — Single Index-Time Pass per Chunk
 - ADR-118: Voyage voyage-3-large as Primary Embedding Model
-- ADR-119: Advanced Search Pipeline — HyDE, Cohere Rerank, Three-Path Retrieval
+- ADR-119: Advanced Search Pipeline — Pure Hybrid Primary, AI-Enhanced Optional
 
 **Cross-Media**
 

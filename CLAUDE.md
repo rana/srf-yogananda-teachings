@@ -63,7 +63,7 @@ Twelve principles define the project's identity and directly constrain code gene
 
 ## Quick Reference
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL 18 Scale tier + pgvector + pg_search/ParadeDB + pg_stat_statements (ADR-124), Contentful (Arc 1+, editorial source of truth; ADR-010), Claude Haiku via AWS Bedrock (librarian — never generates content; ADR-014), Voyage voyage-3-large (embeddings, ADR-118), Cohere Rerank 3.5 (Milestone 2b+, ADR-119), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Vercel KV/Upstash Redis (suggestions Milestone 2b+ if needed, ADR-120; Arc 1 uses static JSON at CDN edge + pg_trgm fuzzy fallback), fastText (language detection), dbmate migrations, Terraform IaC. See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL 18 Scale tier + pgvector + pg_search/ParadeDB + pg_stat_statements (ADR-124), Contentful (Arc 1+, editorial source of truth; ADR-010), Claude via AWS Bedrock (index-time enrichment only — never in search hot path, never generates content; ADR-014, ADR-119), Voyage voyage-3-large (embeddings, ADR-118), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Vercel KV/Upstash Redis (suggestions Milestone 2b+ if needed, ADR-120; Arc 1 uses static JSON at CDN edge + pg_trgm fuzzy fallback), fastText (language detection), dbmate migrations, Terraform IaC. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI in the search path. AI-enhanced search (HyDE, cross-encoder reranking) optional, conditional on evaluation (ADR-119). See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
