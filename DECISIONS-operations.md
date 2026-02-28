@@ -1417,7 +1417,7 @@ Maintain a thirteen-document system with explicit roles, a routing document (CLA
 | Document | Role | Primary Audience |
 |----------|------|-----------------|
 | CLAUDE.md | AI routing, compressed principles, maintenance protocol | AI collaborators |
-| PRINCIPLES.md | 11 immutable commitments with expanded rationale | All audiences |
+| PRINCIPLES.md | 12 immutable commitments with expanded rationale | All audiences |
 | CONTEXT.md | Project background, open questions, stakeholder context | All audiences |
 | DESIGN.md | Cross-cutting architecture, API, observability, testing, personas | Developers, AI |
 | DESIGN-arc1.md | Search, data model, ingestion, chunking, MCP, infrastructure (Arc 1) | Developers, AI |

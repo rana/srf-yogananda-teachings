@@ -88,9 +88,9 @@ This portal is designed and implemented through AI-human collaboration using [Cl
 
 ## Documentation
 
-- [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project
+- [PRINCIPLES.md](PRINCIPLES.md) — 12 immutable commitments that define the project
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints
 - [DESIGN.md](DESIGN.md) — Technical architecture across four files by arc scope
-- [DECISIONS.md](DECISIONS.md) — 122 Architecture Decision Records across three files by concern
+- [DECISIONS.md](DECISIONS.md) — 123 Architecture Decision Records across three files by concern
 - [PROPOSALS.md](PROPOSALS.md) — Proposal registry for features awaiting scheduling
 - [ROADMAP.md](ROADMAP.md) — 7 arcs with milestones, deliverables, and arc gates

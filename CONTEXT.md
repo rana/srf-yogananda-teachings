@@ -187,6 +187,10 @@ Global-First means one product that is complete at every level: fast and dignifi
 
 When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global-First does not constrain ambition. It demands that ambition serve everyone. (ADR-006)
 
+### The Experience Quality Principle
+
+Brother Chidananda described the portal as "world-class." The eleven principles that govern the portal's architecture prevent bad decisions — they constrain what the portal must never do. The twelfth principle demands great ones: every interaction should amaze, and honor the spirit of the teachings it presents. The distance between adequate and amazing is the distance between a portal that works and a portal that moves people. (ADR-127)
+
 ### The Institutional Intelligence Principle
 
 The portal's service layer (`/lib/services/`) and corpus access infrastructure (DES-031, PRO-001) are designed as portal components, but their value extends beyond web serving. SRF's internal stakeholders — monastics preparing services, correspondence staff responding to seekers, magazine editors, center leaders worldwide — all share the same fundamental need the portal addresses for external seekers: **findability of the Master's words at the moment of need.**

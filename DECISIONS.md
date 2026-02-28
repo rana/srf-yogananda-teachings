@@ -6,13 +6,13 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 126. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
+*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 127. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
 
 ### Index by Concern
 
 **Foundational Constraints**
 
-Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, and global equity ensures underserved seekers are never second-class users.
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, global equity ensures underserved seekers are never second-class users, and an experience quality standard demands that execution match the spiritual depth of the content.
 
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
@@ -23,6 +23,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 - ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
 - ADR-015: Verbatim Media Fidelity — Cross-Modal Content Integrity
 - ADR-121: DELTA-Relaxed Authenticated Experience
+- ADR-127: Experience Quality Standard — Honoring the Spirit of the Teachings
 
 **Architecture & Platform**
 

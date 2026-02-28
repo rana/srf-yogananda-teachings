@@ -337,7 +337,7 @@ At every arc boundary:
 1. **Deferred/Suspended items first.** They were already scoped — re-evaluate before new proposals.
 2. **Validated items.** Consider for the upcoming arc. Stakeholder decision required.
 3. **Proposed items.** Principle-check any relevant to the next arc's narrative theme.
-4. **Proposed → Validated:** Requires principle-check (does it violate any of the 11 principles?) and architectural review (does it fit the existing design, or does it need new ADRs?).
+4. **Proposed → Validated:** Requires principle-check (does it violate any of the 12 principles?) and architectural review (does it fit the existing design, or does it need new ADRs?).
 5. **Validated → Adopted:** Stakeholder decision. Add deliverables to the target arc's section in ROADMAP.md. Create ADR/DES sections as needed.
 6. **Any tier → Omitted:** Record rationale in the PRO entry. Add to DES-056 § Explicitly Omitted if the feature was publicly visible.
 

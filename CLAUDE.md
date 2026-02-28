@@ -8,13 +8,13 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 ## Read These Files
 
-1. **PRINCIPLES.md** — The 11 immutable commitments that define the project, with rationale. Always load this.
+1. **PRINCIPLES.md** — The 12 immutable commitments that define the project, with rationale. Always load this.
 2. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 3. **DESIGN.md** — Cross-cutting architecture, API design, observability, testing, personas, editorial patterns
 4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
 5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
 6. **DESIGN-arc4-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — Index and navigational summaries for 122 ADRs across 11 topical groups. ADR bodies split into three files:
+7. **DECISIONS.md** — Index and navigational summaries for 123 ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–014, 016–027, 029–044, 046–053, 114–121, 125–126). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
@@ -46,7 +46,7 @@ Located in `docs/reference/`:
 
 ## Principles (Code-Affecting)
 
-Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
+Twelve principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
 
 1. **Direct quotes only.** The AI is a librarian, not an oracle. It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it NEVER generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. AI generation, synthesis, or cloning of any media representing Yogananda or the lineage gurus is prohibited. The corpus spans three content tiers by author role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity. (ADR-001, ADR-005, ADR-015, PRO-014)
 2. **Sacred text fidelity.** Every displayed passage must include author, book, chapter, and page citation. No orphaned quotes. AI transformation of SRF-published teachings across any medium — text, voice, image, video — is never acceptable for any content tier. Only official SRF/YSS human translations for text; only human recordings for audio narration of sacred text; only authentic photographs and video for guru imagery. Full author name always displayed. (ADR-075, ADR-078, ADR-015, PRO-014)
@@ -59,6 +59,7 @@ Eleven principles define the project's identity and directly constrain code gene
 9. **API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 10. **10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
 11. **Parameters as named constants.** Specific numeric values throughout the documents (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. (ADR-123)
+12. **Honoring the Spirit of the Teachings.** Every interaction should amaze — and honor the spirit of the teachings it presents. The portal's execution quality should match the spiritual depth of its content. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words?" Not just typography that renders text, but typography that honors its rhythm. Not just search that returns results, but search that feels curated. Restraint as excellence — the technology disappears and the teachings shine. (ADR-127)
 
 ## Quick Reference
 
@@ -92,7 +93,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 122 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-126 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment.
+**ADR-NNN** (Architecture Decision Records) — 123 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-127 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment. ADR-127 establishes the **Experience Quality Standard** — every interaction should honor the spirit of the teachings it presents; world-class is the minimum standard.
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)

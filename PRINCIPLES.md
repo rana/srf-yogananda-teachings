@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Principles
 
-Eleven principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify.
+Twelve principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify.
 
 CLAUDE.md carries the compressed, code-affecting form of each principle. This document adds the *why*: enough rationale to prevent well-intentioned erosion across sessions. For the full alternatives-considered analysis, see the referenced ADRs in DECISIONS.md.
 
@@ -128,8 +128,20 @@ The search quality test suite (50-query golden set) serves as the acceptance gat
 
 **Specific numeric values (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments.** Implement them as named constants in `/lib/config.ts`. (ADR-123)
 
-This principle protects the other ten. Without it, every operational parameter accumulates the governance weight of a principle. An engineer who needs to change a cache TTL from 5 minutes to 15 minutes should not feel they are violating an architectural decision. The distinction *preserves* the authority of actual principles by preventing parameter-level fatigue from eroding respect for the governance process.
+This principle protects the other eleven. Without it, every operational parameter accumulates the governance weight of a principle. An engineer who needs to change a cache TTL from 5 minutes to 15 minutes should not feel they are violating an architectural decision. The distinction *preserves* the authority of actual principles by preventing parameter-level fatigue from eroding respect for the governance process.
 
 Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Milestone 1a.9 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables.
 
 In year 7, a new developer can identify what's tunable versus what's sacred without reading the full DECISIONS.md archive.
+
+---
+
+## 12. Honoring the Spirit of the Teachings
+
+**Every interaction should amaze — and honor the spirit of the teachings it presents.** Brother Chidananda described the portal as "world-class." World-class is the minimum standard: the portal's execution quality — its typography, its search experience, its error handling, its silence — should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?" (ADR-127)
+
+The other eleven principles prevent bad decisions. This principle demands great ones. Where the eleven say what *not* to do, this one says what to *aspire to*: every pixel, every transition, every interaction should reflect the care that SRF puts into its printed books. The teachings have been transmitted through an unbroken chain of spiritual care — the digital vessel should honor that chain.
+
+The test is specific: the distance between adequate and amazing. Not just typography that renders the text, but typography that honors its rhythm. Not just search that returns relevant results, but search that feels curated by a wise librarian. Not just error handling that recovers, but error handling that guides gently. When a grieving seeker finds Yogananda's words on the immortality of the soul at 2 AM, the passage should feel like receiving a gift, not reading a database output.
+
+What is amazing: considered simplicity. Typography that honors the text's rhythm. Search results that feel curated. Error messages that guide gently. Loading states that feel like stillness rather than brokenness. Restraint as a form of excellence — the portal that does fewer things with more care is better than one that does more things with less. This aligns with Calm Technology: the technology disappears and the teachings shine.
