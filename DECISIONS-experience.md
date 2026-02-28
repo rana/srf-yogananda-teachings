@@ -1929,7 +1929,7 @@ Use **Claude API to generate draft translations** of UI chrome and portal-author
 2. Familiar with SRF's devotional register and spiritual terminology
 3. Able to distinguish clinical/formal tone from warm, devotional tone
 
-**Never use AI (Claude or any other model) to translate, paraphrase, or synthesize any SRF-published author's text.** This applies to all three content tiers (PRO-014: guru, president, monastic). This is an inviolable constraint, not a cost optimization to revisit later.
+**Never use AI (Claude or any other model) to translate, paraphrase, or synthesize any SRF-published author's text.** This applies to all three author tiers (PRO-014: guru, president, monastic). This is an inviolable constraint, not a cost optimization to revisit later.
 
 ### Workflow
 
@@ -1967,7 +1967,7 @@ The Claude system prompt for UI translation should include:
 
 - **Cost efficiency.** Professional translation of 300 strings × 8 languages = 2,400 translation units. AI drafting reduces this to a review task rather than a from-scratch task, cutting cost and time significantly.
 - **Quality floor.** Claude produces competent translations in all core languages (es, de, fr, it, pt, ja, th, hi, bn). The human reviewer elevates from competent to appropriate — catching tone, register, and spiritual terminology issues.
-- **Sacred text boundary is absolute.** No amount of cost savings justifies AI-translating any SRF-published author's words (PRO-014: all content tiers). The portal serves *official SRF/YSS translations* or nothing. This is a theological constraint, not a technical one.
+- **Sacred text boundary is absolute.** No amount of cost savings justifies AI-translating any SRF-published author's words (PRO-014: all author tiers). The portal serves *official SRF/YSS translations* or nothing. This is a theological constraint, not a technical one.
 - **Scalable.** As new languages are added beyond the core set, the same workflow applies — Claude draft → human review. No need to find full professional translation services for each new locale.
 
 ### Alternatives Considered

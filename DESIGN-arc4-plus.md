@@ -332,7 +332,7 @@ Issue slugs are single-segment, computed from year + season (e.g., `2025-spring`
 
 ### Search Integration
 
-The `hybrid_search` function queries `magazine_chunks` alongside `book_chunks`. Only `author_type = 'yogananda'` articles are included by default. The `content_tier` parameter controls inclusion — specify `content_tier=guru,president,monastic` to extend search to monastic articles. Citations adapt: *— Self-Realization Magazine, Vol. 97 No. 2, p. 14*.
+The `hybrid_search` function queries `magazine_chunks` alongside `book_chunks`, filtering uniformly on `author_tier` across both sources (generated column on `magazine_articles` maps `author_type` to tier). Default `author_tier=guru,president`. Specify `author_tier=guru,president,monastic` to include monastic articles. Devotee/editorial articles (`author_tier IS NULL`) are never in the search index. Citations adapt: *— Self-Realization Magazine, Vol. 97 No. 2, p. 14*.
 
 ---
 

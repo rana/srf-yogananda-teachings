@@ -12,7 +12,7 @@ export interface BookConfig {
   slug: string;
   asin: string;
   readerUrl: string;
-  contentTier: 'sacred' | 'authorized' | 'commentary';
+  authorTier: 'guru' | 'president' | 'monastic';
   language: string;
   expectedChapters?: number;
   goldenPassages?: GoldenPassage[];
@@ -185,7 +185,7 @@ export interface CaptureMeta {
     totalPages: number;
     readerLocationMax: number;
     language: string;
-    contentTier: string;
+    authorTier: string;
   };
   toc: TocEntry[];
   capture: {

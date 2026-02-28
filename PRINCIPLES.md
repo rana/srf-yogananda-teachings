@@ -24,7 +24,7 @@ Every Claude interaction returns structured data (JSON arrays of IDs, terms, sco
 
 The consequence that matters most: chunking quality is paramount. Each chunk must be a coherent, self-contained passage suitable for display as a standalone quote, because the AI cannot fix a poorly chunked passage — it can only retrieve it.
 
-*Section revised: 2026-02-26, content tier values renamed from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature.*
+*Section revised: 2026-02-26, tier values renamed from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature. 2026-02-28, column renamed from `content_tier` to `author_tier` — the tier classifies the author's lineage role, not the content itself, completing the role-based naming alignment.*
 
 ---
 

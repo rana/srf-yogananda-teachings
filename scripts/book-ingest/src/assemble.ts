@@ -314,7 +314,7 @@ async function runAssembly(bookSlug: string): Promise<void> {
       publisher: captureMeta.book.publisher,
       asin: captureMeta.book.asin,
       language: captureMeta.book.language,
-      contentTier: captureMeta.book.contentTier,
+      authorTier: captureMeta.book.authorTier,
       totalPages,
       totalChapters: chapters.length
     },

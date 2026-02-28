@@ -270,7 +270,7 @@ Sonnet recommended over Haiku for formatting accuracy (italics, Sanskrit diacrit
     "readerLocationMax": 1044712,
     "edition": "13th Edition",
     "language": "en",
-    "contentTier": "guru"
+    "authorTier": "guru"
   },
   "toc": [
     {
@@ -414,7 +414,7 @@ Sonnet recommended over Haiku for formatting accuracy (italics, Sanskrit diacrit
     "edition": "13th Edition",
     "editionYear": null,
     "language": "en",
-    "contentTier": "guru",
+    "authorTier": "guru",
     "totalPages": 558,
     "totalChapters": 48,
     "bookstoreUrl": "https://bookstore.yogananda.org/autobiography-of-a-yogi"
@@ -476,7 +476,7 @@ export interface BookConfig {
   slug: string;
   asin: string;
   readerUrl: string;
-  contentTier: 'guru' | 'president' | 'monastic';
+  authorTier: 'guru' | 'president' | 'monastic';
   language: string;
   expectedChapters?: number;
   goldenPassages?: GoldenPassage[];
@@ -959,7 +959,7 @@ export const config: BookConfig = {
   slug: "mans-eternal-quest",
   asin: "B00XXXX",
   readerUrl: "https://read.amazon.com/?asin=B00XXXX",
-  contentTier: "guru",
+  authorTier: "guru",
   language: "en",
   expectedChapters: null, // Discovered during Phase 0
   goldenPassages: []
@@ -982,12 +982,12 @@ The reflowable pipeline would extract HTML directly from iframes — no OCR need
 
 ### Multi-Author Support
 
-Per PRO-014 (adopted), the portal supports three content tiers:
-- **Sacred:** Yogananda, Sri Yukteswar (guru lineage)
-- **Authorized:** Daya Mata, Mrinalini Mata, Rajarsi (SRF presidents)
-- **Commentary:** Monastic speakers
+Per PRO-014 (adopted), the portal supports three author tiers:
+- **Guru:** Yogananda, Sri Yukteswar (lineage gurus)
+- **President:** Daya Mata, Mrinalini Mata, Rajarsi (SRF presidents)
+- **Monastic:** Monastic speakers
 
-The `contentTier` field in `BookConfig` carries through to `book.json` and ultimately to Contentful and Neon. The extraction pipeline is content-tier-agnostic — it processes any ebook the same way.
+The `authorTier` field in `BookConfig` carries through to `book.json` and ultimately to Contentful and Neon. The extraction pipeline is tier-agnostic — it processes any ebook the same way.
 
 ---
 
@@ -1143,7 +1143,7 @@ Autonomous decisions made 2026-02-26, informed by end-system lifecycle analysis:
 2. **Photos: Inline with text + individual crops needed.** Photos display inline at their narrative position (not a separate gallery). However, the current 1232×1572 page images contain both text and photo composited together. **Next step:** Crop individual photos from page images (either manual or via bounding-box detection). For Arc 1 dev, full-page images with photo metadata are sufficient. SRF may provide high-res originals later.
 
 3. **Contentful content model:**
-   - `Book` — title, author, isbn, coverImage (Asset), description, edition, contentTier, language
+   - `Book` — title, author, isbn, coverImage (Asset), description, edition, authorTier, language
    - `Chapter` — book (ref), number, title, slug, pageRange, body (Rich Text with embedded Assets), epigraph, footnotes
    - `Photograph` — image (Asset), caption, altText, pageNumber, chapter (ref), isIllustration
    This aligns with ADR-010 (Contentful as CMS) and the existing `book.json` manifest structure.

@@ -44,7 +44,7 @@ The AI **never**:
 - **The "no results" case must be handled gracefully.** When the corpus doesn't address a query, the system must say so honestly rather than stretching to find something.
 - **The AI's output format is constrained.** Query expansion returns a JSON array of terms. Passage ranking returns a JSON array of IDs. No prose output.
 - **Consolidated in ADR-005:** The full Claude AI Usage Policy — permitted roles, prohibited uses, output format constraints, and expansion roadmap — is maintained in ADR-005.
-- **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three content tiers: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
+- **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three author tiers: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
 
 *Revised: 2026-02-25, PRO-014 multi-author expansion merged.*
 
@@ -292,7 +292,7 @@ This ADR consolidates the Claude AI policy into a single reference and establish
 
 ### The Librarian Model
 
-Claude's role in the portal follows one principle: **Claude helps seekers find the verbatim published words of Yogananda and all SRF-published authors. Claude never speaks for any of them.** (PRO-014: scope extends to all content tiers.)
+Claude's role in the portal follows one principle: **Claude helps seekers find the verbatim published words of Yogananda and all SRF-published authors. Claude never speaks for any of them.** (PRO-014: scope extends to all author tiers.)
 
 Every permitted use falls into one of three categories:
 
@@ -308,9 +308,9 @@ These prohibitions are absolute and permanent. No milestone, feature, or stakeho
 
 Claude **never**:
 
-1. **Generates text that could be mistaken for any SRF-published author's words.** Not even summaries, not even "in the style of." The portal displays only verbatim published text across all content tiers (PRO-014).
+1. **Generates text that could be mistaken for any SRF-published author's words.** Not even summaries, not even "in the style of." The portal displays only verbatim published text across all author tiers (PRO-014).
 2. **Paraphrases, summarizes, or synthesizes across passages.** A seeker reads the author's actual sentences, not Claude's interpretation of them.
-3. **Translates any SRF-published author's text.** Only official SRF/YSS human translations are served. Machine translation of sacred text is never acceptable for any content tier — "inviolable constraint, not a cost optimization" (ADR-078, PRO-014).
+3. **Translates any SRF-published author's text.** Only official SRF/YSS human translations are served. Machine translation of sacred text is never acceptable for any author tier — "inviolable constraint, not a cost optimization" (ADR-078, PRO-014).
 4. **Interprets meditation techniques or spiritual practices.** Kriya Yoga technique instructions and SRF Lesson content are permanently out of scope. Claude must not explain, summarize, or advise on spiritual techniques. Note: Yogananda's *published descriptions* of Kriya Yoga (e.g., Autobiography Ch. 26) are part of the corpus and surfaced normally as search results and theme page content — these are public descriptions, not technique instruction. Claude may find and rank these passages but must not interpret them as practice guidance. (ADR-104)
 5. **Acts as a conversational agent or chatbot.** No dialogue, no follow-up questions, no "let me help you explore that further." The seeker interacts with the search bar, not with Claude.
 6. **Answers questions directly.** Claude finds passages that answer questions. It does not formulate answers itself.
@@ -670,7 +670,7 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 
 ### Context
 
-ADR-001 established the foundational constraint: the portal displays only the verbatim published words of SRF-published authors and never generates, paraphrases, or synthesizes content. This applies to all three content tiers (PRO-014: guru, president, monastic). The constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
+ADR-001 established the foundational constraint: the portal displays only the verbatim published words of SRF-published authors and never generates, paraphrases, or synthesizes content. This applies to all three author tiers (PRO-014: guru, president, monastic). The constraint is architecturally enforced (JSON-only AI output, human review gates, content integrity hashing) and has been consistently applied across all subsequent ADRs.
 
 However, as the portal's feature surface has grown — editorial reading threads (DES-026), theme classification (ADR-032), daily passage selection, calendar-aware surfacing (DES-028), search suggestions with vocabulary bridging (ADR-049), community collections (ADR-086), the `/guide` page (DES-047), and chant metadata (ADR-059) — two gaps have emerged:
 
@@ -688,7 +688,7 @@ However, as the portal's feature surface has grown — editorial reading threads
  - **Transparent framing.** The selection mechanism (a theme label, a date, a search query, a curator name) is visible to the seeker, not hidden behind an opaque algorithm.
  - **Context always available.** Every curated passage links to its full chapter context via "Read in context."
 
-3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how portal-authored prose (not from any SRF-published author) behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for SRF-published author text across all content tiers, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements including full author name (PRO-014), accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
+3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how portal-authored prose (not from any SRF-published author) behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for SRF-published author text across all author tiers, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements including full author name (PRO-014), accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
 
 *Revised: 2026-02-25, PRO-014 — "non-Yogananda prose" boundary redefined. Texts by other SRF-published authors (Sri Yukteswar, Daya Mata, etc.) are sacred text, not editorial prose. The editorial proximity standard governs portal-authored content only.*
 
@@ -3496,7 +3496,7 @@ CREATE TABLE chunk_glossary_terms (
 
 ### Context
 
-The portal's core promise is sacred text fidelity: every displayed passage is verbatim from SRF-published works across all content tiers (PRO-014). But there is no mechanism to *verify* this — to prove that the portal's text hasn't drifted from SRF's source publications. Content-addressable deep links (ADR-022) use content hashes for URL stability, but they don't solve provenance.
+The portal's core promise is sacred text fidelity: every displayed passage is verbatim from SRF-published works across all author tiers (PRO-014). But there is no mechanism to *verify* this — to prove that the portal's text hasn't drifted from SRF's source publications. Content-addressable deep links (ADR-022) use content hashes for URL stability, but they don't solve provenance.
 
 ### Decision
 
@@ -3558,7 +3558,7 @@ Integrate Self-Realization Magazine as a primary content type with differentiate
 | Category | Search Index | Theme Tags | Daily Pool | Reader Treatment |
 |----------|-------------|------------|------------|-----------------|
 | Yogananda's articles | Full (same as books) | Yes | Yes | Full reader with gold quote marks |
-| Monastic articles | Filtered (opt-in via `content_tier` param including `monastic`) | Yes | No | Reader with author byline |
+| Monastic articles | Filtered (opt-in via `author_tier` param including `monastic`) | Yes | No | Reader with author byline |
 | Devotee experiences | No | No | No | Browsable, not searchable |
 | News/editorial | No | No | No | Browsable, archival |
 
@@ -3593,6 +3593,13 @@ CREATE TABLE magazine_articles (
  author_name TEXT NOT NULL,
  author_type TEXT NOT NULL
  CHECK (author_type IN ('yogananda', 'monastic', 'devotee', 'editorial')),
+ author_tier TEXT GENERATED ALWAYS AS (
+   CASE author_type
+     WHEN 'yogananda' THEN 'guru'
+     WHEN 'monastic' THEN 'monastic'
+     ELSE NULL
+   END
+ ) STORED,                              -- unified with books.author_tier for cross-source search
  position INTEGER NOT NULL,
  language TEXT NOT NULL DEFAULT 'en',
  access_level TEXT NOT NULL DEFAULT 'public'
@@ -3653,7 +3660,7 @@ See ADR-108 for rationale on flat articles list vs. nested sub-collection route.
 
 ### Search Integration
 
-The `hybrid_search` function extends to query `magazine_chunks` where `author_type = 'yogananda'` alongside `book_chunks`. Monastic articles are searchable via `content_tier=guru,president,monastic` query parameter (default `guru,president` — Yogananda's words are always primary).
+The `hybrid_search` function extends to query `magazine_chunks` alongside `book_chunks`, filtering uniformly on `author_tier` across both sources (generated column on `magazine_articles` maps `author_type` to tier). Default `author_tier=guru,president` — Yogananda's words are always primary. Specify `author_tier=guru,president,monastic` to include monastic articles.
 
 ### Magazine ↔ "What Is Humanity Seeking?" Symbiosis
 

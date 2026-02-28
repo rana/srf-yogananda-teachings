@@ -788,7 +788,7 @@ Daily devotional emails are one of the most successful formats in spiritual publ
 
 ### Decision
 
-Implement a **daily email** delivering a single verbatim passage from the guru content tier (Yogananda, Sri Yukteswar) with full author attribution and citation (PRO-014).
+Implement a **daily email** delivering a single verbatim passage from the guru author tier (Yogananda, Sri Yukteswar) with full author attribution and citation (PRO-014).
 
 **Milestone 5a (non-personalized):** Same passage pool as Today's Wisdom — guru tier only (PRO-014: president and monastic tiers are not in the daily pool). One email per day. Subscriber provides email address and language. No account required.
 
@@ -2629,7 +2629,7 @@ Search results are ranked by a composite score combining multiple signals. The h
 | **Accessibility level** | `accessibility_level` column (ADR-005 E3) | Tie-breaker | When two passages are equally relevant, the more accessible passage ranks higher |
 | **Tone appropriateness** | `tone` column (ADR-005 E4) | Tie-breaker | When the query implies emotional need (grief, fear), consoling passages rank higher |
 
-| **Content tier** | `books.content_tier` column (PRO-014) | Tie-breaker | Guru tier ranks above president at equivalent relevance; president above monastic. Reflects author role hierarchy. |
+| **Author tier** | `books.author_tier` column (PRO-014) | Tie-breaker | Guru tier ranks above president at equivalent relevance; president above monastic. Reflects author role hierarchy. |
 
 **Not used as ranking signals:** Passage length, book popularity, recency, seeker behavior, click-through rates. The portal never uses engagement metrics to shape results (ADR-095, ADR-002).
 
@@ -2637,7 +2637,7 @@ Search results are ranked by a composite score combining multiple signals. The h
 
 Each search result displays:
 - **Passage text** — the verbatim chunk content. No AI-generated summary, no truncation below 200 characters.
-- **Author name** — full author name on ALL passages across ALL content tiers (PRO-014). Always "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata", etc. — never shortened. Displayed in search results, passage display, daily wisdom, social media cards, and all other citation contexts.
+- **Author name** — full author name on ALL passages across ALL author tiers (PRO-014). Always "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata", etc. — never shortened. Displayed in search results, passage display, daily wisdom, social media cards, and all other citation contexts.
 - **Citation** — author name, book title, chapter title, page number. Always present. Never omitted for brevity.
 - **"Read in context" link** — deep link to the reader at the passage's location. This link is the critical bridge between the librarian's finding and the seeker's reading (ADR-001).
 - **Relevance score** — not displayed to seekers. Used internally for debugging and search quality evaluation.

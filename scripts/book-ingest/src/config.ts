@@ -36,7 +36,7 @@ export const AUTOBIOGRAPHY_OF_A_YOGI: BookConfig = {
   slug: 'autobiography-of-a-yogi',
   asin: 'B00JW44IAI',
   readerUrl: 'https://read.amazon.com/?asin=B00JW44IAI',
-  contentTier: 'sacred',
+  authorTier: 'guru',
   language: 'en',
   expectedChapters: 49,
   goldenPassages: AOY_GOLDEN_PASSAGES

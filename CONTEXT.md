@@ -169,7 +169,7 @@ Source: [Brother Chidananda's address](https://www.youtube.com/live/PiywKdIdQik?
 
 ## Mission
 
-Vastly expand the global availability of Paramahansa Yogananda's published teachings — and all SRF/YSS-published books — using modern technology. The corpus spans three content tiers by author role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), and monastic (monastic speakers). See PRO-014 for the confirmed three-tier hierarchy.
+Vastly expand the global availability of Paramahansa Yogananda's published teachings — and all SRF/YSS-published books — using modern technology. The corpus spans three author tiers by role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), and monastic (monastic speakers). See PRO-014 for the confirmed three-tier hierarchy.
 
 ### The Findability Principle
 
@@ -201,7 +201,7 @@ This is a second-order consequence of the philanthropist's investment: the porta
 
 ### In Scope
 
-- **Free access** to all SRF/YSS-published books across three content tiers (PRO-014): guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity.
+- **Free access** to all SRF/YSS-published books across three author tiers (PRO-014): guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity.
 - **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Milestone 5b peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
 - **Intelligent Query Tool** — users ask questions and search across the entire library of books to find specific answers (e.g., "How do I deal with fear?")
 - **Life-theme navigation** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without needing to formulate a search query

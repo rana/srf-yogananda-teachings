@@ -691,11 +691,11 @@ SUGGESTION_WEIGHT_EDITORIAL = 0.2 — editorial boost (0.0–1.0, set by editors
 
 At launch, `query_frequency` is zero — the effective ranking is `corpus * 0.6 + editorial * 0.4` (renormalized). As query log data accumulates (Tier 5, ADR-053), the full formula activates. Coefficients are application-level constants, not database-generated columns, so they can be tuned without migration.
 
-#### Content Tier and Suggestions
+#### Author Tier and Suggestions
 
-Suggestions are **tier-agnostic by design** — all content tiers (guru, president, monastic) contribute equally to the suggestion vocabulary. The suggestion system operates *before* query submission and does not filter by content tier. When `content_tier` influences results, it acts as a **sort parameter** on the search API (DES-019), not a filter on suggestions. A seeker typing "meditation" sees the same suggestions regardless of which tiers they'll search. This matches the portal's design: suggestions narrow the query; the search API's `content_tier` parameter controls which tiers appear in results.
+Suggestions are **tier-agnostic by design** — all author tiers (guru, president, monastic) contribute equally to the suggestion vocabulary. The suggestion system operates *before* query submission and does not filter by author tier. When `author_tier` influences results, it acts as a **sort parameter** on the search API (DES-019), not a filter on suggestions. A seeker typing "meditation" sees the same suggestions regardless of which tiers they'll search. This matches the portal's design: suggestions narrow the query; the search API's `author_tier` parameter controls which tiers appear in results.
 
-*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX. 2026-02-26, content_tier note clarifying tier-agnostic suggestions.*
+*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX. 2026-02-26, author_tier note clarifying tier-agnostic suggestions.*
 
 ---
 
@@ -740,12 +740,12 @@ CREATE TABLE books (
  -- chant/poetry = whole-unit pages with chant-to-chant nav.
  -- Chant format enables inline media panel for
  -- performance_of relations (deterministic audio/video links).
- content_tier TEXT NOT NULL -- PRO-014: Multi-author content hierarchy. No DEFAULT — force explicit on insert.
- CHECK (content_tier IN ('guru', 'president', 'monastic')),
+ author_tier TEXT NOT NULL  -- PRO-014: Author role hierarchy (denormalized from author). No DEFAULT — force explicit on insert.
+ CHECK (author_tier IN ('guru', 'president', 'monastic')),
  -- 'guru': Lineage gurus (Yogananda, Sri Yukteswar). Full search/theme/daily pool/social media.
  -- 'president': SRF Presidents / spiritual heads (Daya Mata, Mrinalini Mata, Rajarsi).
  --   Searchable by default, themeable. Not in daily pool or social media pool.
- -- 'monastic': Monastic speakers. Opt-in search (content_tier param includes 'monastic'). Not in daily/social pool.
+ -- 'monastic': Monastic speakers. Opt-in search (author_tier param includes 'monastic'). Not in daily/social pool.
  -- Tiers describe author role, not value. All tiers: verbatim fidelity + no machine translation.
  -- Tier assignments confirmed by stakeholder 2026-02-25 — see PRO-014.
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -899,7 +899,7 @@ CREATE TABLE book_chunks_archive (
  embedding VECTOR(1024), -- matches current model dimension (ADR-118)
  embedding_model TEXT NOT NULL,
  content_hash TEXT,
- content_tier TEXT, -- preserved from books.content_tier at archive time (PRO-014)
+ author_tier TEXT,  -- preserved from books.author_tier at archive time (PRO-014)
  language TEXT NOT NULL DEFAULT 'en',
  edition TEXT, -- edition this chunk belonged to
  archived_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -1388,7 +1388,7 @@ CREATE TABLE user_profiles (
 );
 ```
 
-*Schema revised: 2026-02-26, deep review — fixed DEFAULT now() syntax across 7 tables, added missing columns (chapters.content_hash per ADR-039, updated_at per ADR-107 on chapters/book_chunks/teaching_topics/daily_passages/affirmations), resolved content_hash definition conflict (GENERATED ALWAYS AS per ADR-022), reordered tables (archive after chapters/book_chunks), added book_chunks_archive.content_tier per PRO-014, added search_theme_aggregates and chapter_study_notes table definitions per Deliverable 1a.2, added composite (updated_at, id) indexes per ADR-107.*
+*Schema revised: 2026-02-26, deep review — fixed DEFAULT now() syntax across 7 tables, added missing columns (chapters.content_hash per ADR-039, updated_at per ADR-107 on chapters/book_chunks/teaching_topics/daily_passages/affirmations), resolved content_hash definition conflict (GENERATED ALWAYS AS per ADR-022), reordered tables (archive after chapters/book_chunks), added book_chunks_archive.author_tier per PRO-014, added search_theme_aggregates and chapter_study_notes table definitions per Deliverable 1a.2, added composite (updated_at, id) indexes per ADR-107.*
 
 ### Contentful Content Model (Arc 1+)
 
@@ -1399,7 +1399,7 @@ Content Type: Book
 ├── title (Short Text, required, localized)
 ├── subtitle (Short Text, localized)
 ├── author (Short Text, default: "Paramahansa Yogananda")
-├── contentTier (Short Text, required, validation: guru|president|monastic) — PRO-014
+├── authorTier (Short Text, required, validation: guru|president|monastic) — PRO-014
 ├── publicationYear (Integer)
 ├── isbn (Short Text)
 ├── coverImage (Media, localized)
