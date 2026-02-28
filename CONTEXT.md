@@ -179,13 +179,13 @@ The philanthropist's question was: *"What can we do to help SRF make Paramahansa
 
 The world does not lack spiritual content. It lacks *findability in the moment of need.* The portal must therefore go beyond a search engine that waits for queries. It must meet seekers where they are — in their suffering — through thematic entry points, daily wisdom, and a place of immediate calm. The teachings should find the seeker, not only the other way around.
 
-### The Global Equity Principle
+### The Global-First Principle
 
-"Throughout the world" is not metaphor — it is an engineering requirement. A seeker in rural Bihar on a JioPhone over 2G and a seeker in San Francisco on a laptop over fiber both have a full claim on the beauty and depth of this portal. Neither experience is a compromised version of the other.
+"Throughout the world" is not metaphor — it is an engineering requirement. A seeker in rural Bihar on a JioPhone over 2G and a seeker in Los Angeles on a laptop over fiber both have a full claim on the beauty and depth of this portal. Neither experience is a compromised version of the other.
 
-Global Equity means one product that is complete at every level: fast and dignified on the most constrained connection, spacious and contemplative on the most capable screen. Progressive enhancement is the mechanism — HTML is the foundation, CSS enriches, JavaScript enhances. Each layer is whole at its own level.
+Global-First means one product that is complete at every level: fast and dignified on the most constrained connection, spacious and contemplative on the most capable screen. Progressive enhancement is the mechanism — HTML is the foundation, CSS enriches, JavaScript enhances. Each layer is whole at its own level.
 
-When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global Equity does not constrain ambition. It demands that ambition serve everyone. (ADR-006)
+When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global-First does not constrain ambition. It demands that ambition serve everyone. (ADR-006)
 
 ### The Institutional Intelligence Principle
 

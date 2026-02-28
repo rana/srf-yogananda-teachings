@@ -2861,7 +2861,7 @@ Examples:
 - Human review as mandatory gate (ADR-005, ADR-032, ADR-078)
 - DELTA-compliant analytics (ADR-095)
 - Sacred text fidelity (ADR-075)
-- Global Equity (ADR-006)
+- Global-First (ADR-006)
 - Calm Technology (ADR-065)
 - Signpost, not destination (ADR-104)
 - 10-year architecture horizon (ADR-004)

@@ -2487,7 +2487,7 @@ Allow: /
 
 ### 3a. No Content Gating — Architectural Prohibition on DRM
 
-The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered text, image-based text, JavaScript-dependent text rendering, or other machine-opaque content presentation is permitted. Content gating contradicts the portal's founding mission, violates Global Equity (Principle 4), breaks accessibility compliance (Principle 6), and undermines the portal's role as canonical source of Yogananda's teachings for search engines and AI systems.
+The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered text, image-based text, JavaScript-dependent text rendering, or other machine-opaque content presentation is permitted. Content gating contradicts the portal's founding mission, violates Global-First (Principle 4), breaks accessibility compliance (Principle 6), and undermines the portal's role as canonical source of Yogananda's teachings for search engines and AI systems.
 
 **Why this section exists:** The question "should we gate the content?" will recur — from well-intentioned copyright concerns, from comparisons to commercial publishers using FlipBook3D or similar technology, from organizational instinct to "protect" content. This section prevents that regression by documenting why the answer is architecturally no.
 
@@ -2495,7 +2495,7 @@ The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered 
 
 **Five reasons content gating is architecturally prohibited:**
 
-1. **Global Equity.** FlipBook3D, canvas-rendered text, and similar technologies require JavaScript, modern browser rendering, and substantial bandwidth. A seeker in rural Bihar on a JioPhone accessing via 2G cannot use them. The HTML-first, progressive-enhancement architecture (Principle 4) means the full text must be in the DOM — and if it's in the DOM, it's crawlable. There is no technical path to "readable by humans but not by machines" that doesn't destroy Global Equity.
+1. **Global-First.** FlipBook3D, canvas-rendered text, and similar technologies require JavaScript, modern browser rendering, and substantial bandwidth. A seeker in rural Bihar on a JioPhone accessing via 2G cannot use them. The HTML-first, progressive-enhancement architecture (Principle 4) means the full text must be in the DOM — and if it's in the DOM, it's crawlable. There is no technical path to "readable by humans but not by machines" that doesn't destroy Global-First.
 
 2. **Accessibility.** Screen readers, text-to-speech tools, browser readers, translation services, Braille displays, and assistive technologies all consume the DOM. Any DRM layer that prevents machine reading also prevents assistive technology. WCAG 2.1 AA compliance and content gating are fundamentally incompatible at the level the portal requires (Principle 6).
 
@@ -2604,7 +2604,7 @@ Audio and portal update feeds are added to relevant pages only: `/feed/audio.xml
 
 **DELTA-compliant subscription.** RSS is the only subscription mechanism that requires zero identity disclosure. Email subscription requires an address. App push notifications require a device token. Account-based notifications require authentication. RSS requires nothing — the seeker's feed reader polls a public URL. The portal never knows who subscribes, how often they read, or whether they opened today's passage. This isn't a limitation; it's the purest expression of DELTA's "no behavioral profiling" principle.
 
-**Zero-auth, zero-SDK consumption.** The portal's JSON API (`/api/v1/`) is designed for developers who can parse JSON and handle pagination. RSS is designed for everyone else. A seeker in rural India with a basic RSS reader on a feature phone can subscribe to Today's Wisdom. A monastery's internal system can pull daily passages. A volunteer's Zapier workflow can trigger email campaigns. No API key, no client library, no rate limit negotiation, no documentation to read. RSS is the lowest-friction distribution channel that exists — and that aligns directly with the Global Equity commitment (ADR-006).
+**Zero-auth, zero-SDK consumption.** The portal's JSON API (`/api/v1/`) is designed for developers who can parse JSON and handle pagination. RSS is designed for everyone else. A seeker in rural India with a basic RSS reader on a feature phone can subscribe to Today's Wisdom. A monastery's internal system can pull daily passages. A volunteer's Zapier workflow can trigger email campaigns. No API key, no client library, no rate limit negotiation, no documentation to read. RSS is the lowest-friction distribution channel that exists — and that aligns directly with the Global-First commitment (ADR-006).
 
 **Automation ecosystem.** Zapier, IFTTT, Make.com, n8n, and Power Automate all have native RSS triggers that require zero configuration beyond a feed URL. SRF's existing Zapier workflows (SRF Tech Stack Brief) can consume portal RSS feeds immediately — no custom integration code, no webhook registration, no API key provisioning. For organizations that use no-code automation, RSS *is* the API.
 

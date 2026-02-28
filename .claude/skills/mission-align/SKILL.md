@@ -15,7 +15,7 @@ Audit against the project's stated principles:
 3. **DELTA compliance** (ADR-095) — No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only.
 4. **Signpost, not destination** — Points toward deeper practice without tracking conversions. No engagement metrics optimizing for screen time. No "sign up to access" gates.
 5. **Human review as mandatory gate** (ADR-078, ADR-032, ADR-005) — No user-facing content without human verification. AI proposes, humans approve.
-6. **Global equity** (ADR-006) — One product, complete at every level. Bihar to San Francisco. Performance budgets, progressive enhancement, data-cost awareness.
+6. **Global-First** (ADR-006) — One product, complete at every level. Bihar to Los Angeles. Performance budgets, progressive enhancement, data-cost awareness.
 7. **Content availability honesty** — No machine-translated substitutes. Honest about scope. English fallback always marked `[EN]`.
 8. **10-year architecture horizon** (ADR-004, ADR-013) — Dependencies as commitments. Data in PostgreSQL. Business logic framework-agnostic.
 9. **Accessibility from Milestone 2a** (ADR-003) — WCAG 2.1 AA. Semantic HTML, keyboard navigation, 44×44px touch targets. Performance for 3G in rural India.

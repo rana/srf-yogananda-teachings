@@ -2693,7 +2693,7 @@ The warm cream background and gold accents do nothing for blind seekers. The spo
 
 **Testing criterion:** Milestone 2a screen reader testing (VoiceOver, NVDA, TalkBack) evaluates not only "can the seeker navigate and read" but also "does the experience carry warmth and contemplative quality."
 
-#### Performance as Accessibility (Global Equity Principle)
+#### Performance as Accessibility (Global-First Principle)
 
 | Requirement | Implementation |
 |-------------|---------------|
@@ -3654,7 +3654,7 @@ All organization uses index-time enrichment data computed under the editorial re
 
 **Contextual feedback.** When a passage feels inappropriate for a given exploration context, seekers can flag via the DELTA-compliant feedback mechanism (ADR-084). Feedback is categorized (see DES-035 § Feedback Categorization) and routed to editorial staff. Over time, patterns in contextual feedback may inform a new enrichment dimension — audience suitability — but this is a future consideration (see CONTEXT.md § Open Questions), not a Milestone 3b requirement.
 
-**Global Equity (ADR-006).** The exploration view is HTML-first — sub-theme groupings are semantic `<section>` elements with heading hierarchy, not JavaScript-dependent interactive widgets. The full exploration renders without JavaScript. Progressive enhancement adds expand/collapse for passage groups, smooth scroll to sections, and keyboard-driven group navigation (DES-013). Performance budget: exploration response renders within the existing FCP < 1.5s target; passage groups beyond the first two are lazy-loaded to keep initial payload under the 50KB homepage budget for the exploration entry point.
+**Global-First (ADR-006).** The exploration view is HTML-first — sub-theme groupings are semantic `<section>` elements with heading hierarchy, not JavaScript-dependent interactive widgets. The full exploration renders without JavaScript. Progressive enhancement adds expand/collapse for passage groups, smooth scroll to sections, and keyboard-driven group navigation (DES-013). Performance budget: exploration response renders within the existing FCP < 1.5s target; passage groups beyond the first two are lazy-loaded to keep initial payload under the 50KB homepage budget for the exploration entry point.
 
 **Screen reader experience (ADR-073).** Each sub-theme group is an ARIA landmark region with a descriptive label. The "Across the Library" section provides an audio-friendly summary of corpus distribution — the screen reader user hears the library's breadth before diving into individual passages. "Terms You May Encounter" links each term to the glossary with `aria-describedby` for inline definitions.
 

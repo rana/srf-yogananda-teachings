@@ -19,7 +19,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 - ADR-003: Accessibility Foundation
 - ADR-004: Architecture Longevity — 10-Year Design Horizon
 - ADR-005: Claude AI Usage Policy — Permitted Roles, Prohibited Uses, and Expansion Roadmap
-- ADR-006: Global Equity — Serving Earth's Underserved Seekers
+- ADR-006: Global-First — Serving Earth's Underserved Seekers
 - ADR-007: Curation as Interpretation — The Fidelity Boundary and Editorial Proximity Standard
 - ADR-015: Verbatim Media Fidelity — Cross-Modal Content Integrity
 - ADR-121: DELTA-Relaxed Authenticated Experience

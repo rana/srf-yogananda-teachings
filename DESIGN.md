@@ -1887,7 +1887,7 @@ Mirrors the search quality evaluation (deliverable 1a.9) but for the pre-compute
 
 ## DES-057: Error Handling and Resilience
 
-The portal's error handling philosophy follows from two principles: **Global Equity** (a degraded experience is still a complete experience) and **Calm Technology** (errors should not alarm the seeker). Every external dependency has a degradation path that preserves the core reading experience.
+The portal's error handling philosophy follows from two principles: **Global-First** (a degraded experience is still a complete experience) and **Calm Technology** (errors should not alarm the seeker). Every external dependency has a degradation path that preserves the core reading experience.
 
 ### Degradation Hierarchy
 
@@ -2067,7 +2067,7 @@ The portal's personas are **need-based, not demographic**. A 16-year-old in care
 | **The scholar** | Citation-driven, cross-referencing, export-oriented | ADR-067 (#7) | ADR-043, ADR-061 |
 | **The study circle leader** | Find → collect → arrange → share → present | ADR-082 external personas | ADR-006 §5, ADR-086 |
 | **The crisis seeker** | 2 AM, acute distress, grief, suicidal ideation | DES-011 (Quiet Corner) | ADR-071 |
-| **The Global South seeker** | Rural Bihar, 2G, JioPhone, paying per MB | ADR-006 (Global Equity) | ADR-003 |
+| **The Global South seeker** | Rural Bihar, 2G, JioPhone, paying per MB | ADR-006 (Global-First) | ADR-003 |
 
 ### Worldview Pathways (14 entry points)
 

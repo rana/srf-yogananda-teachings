@@ -547,7 +547,7 @@ The portal works without Claude. Claude makes it *world-class*.
 
 ---
 
-## ADR-006: Global Equity — Serving Earth's Underserved Seekers
+## ADR-006: Global-First — Serving Earth's Underserved Seekers
 
 **Status:** Accepted | **Date:** 2026-02-19
 
@@ -4998,7 +4998,7 @@ Pre-computed suggestion files partitioned by two-character prefix, served as sta
 - **Build step:** Ingestion pipeline exports `suggestion_dictionary` → partitioned JSON. Rebuilds on deploy or content change.
 - **Client-side filtering:** Browser fetches the prefix file (~2–8KB) and filters/ranks locally against the full typed prefix.
 - **Bridge hints:** Included in `_bridge.json`, matched client-side.
-- **Global equity:** The CDN edge node is nearby for seekers in rural Bihar and San Francisco alike (Principle #4).
+- **Global-First:** The CDN edge node is nearby for seekers in rural Bihar and Los Angeles alike (Principle #4).
 
 **Why this works for the portal's scale:** At full corpus (~6,300 entries), each two-character prefix file is 2–8KB. The entire English suggestion set is ~150KB. This is smaller than a single hero image. The browser caches prefix files after first fetch — subsequent keystrokes with the same two-character prefix are instant (0ms network).
 

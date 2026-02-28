@@ -44,15 +44,15 @@ The technique boundary is absolute: the portal never teaches Kriya Yoga, Hong-Sa
 
 ---
 
-## 4. Global Equity
+## 4. Global-First
 
-**A seeker in rural Bihar on 2G and a seeker in San Francisco on fiber both get the complete experience.** Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. (ADR-006)
+**Supports all humans of Earth equally.** Low-resourced peoples and high-resourced peoples. Low-resource phones with limited and intermittent bandwidth, high-resource phones with high bandwidth, tablets, and desktops. A seeker in rural Bihar on 2G and a seeker in Los Angeles on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Core reading and search experiences degrade gracefully with intermittent or absent connectivity. (ADR-006)
 
-"Throughout the world" is not metaphor — it is an engineering requirement. The world includes seekers paying per megabyte on JioPhones, elderly devotees sharing a family smartphone, practitioners in cybercafes, and monks navigating by screen reader. Every one of them has a full claim on the beauty and depth of the portal. Neither experience is a compromised version of the other.
+"Throughout the world" is not metaphor — it is an engineering requirement. The world includes seekers paying per megabyte on JioPhones, elderly devotees sharing a family smartphone, practitioners in cybercafes, and monks navigating by screen reader. The portal equally serves those with the fewest resources and those with the most. Every one of them has a full claim on the beauty and depth of the portal. Neither experience is a compromised version of the other.
 
-The commitments are specific: homepage initial payload under 50KB; text-only mode toggle (no images, no web fonts, no decorative elements — a *considered* experience, not a degraded one); aggressive caching so repeat visits cost zero data; progressive enhancement so the reading experience works with JavaScript disabled; Milestone 2a KaiOS emulator in CI; 44×44px touch targets baseline, 48px minimum on form inputs and navigation on pages likely accessed from feature phones (ADR-003, ADR-006); no "Welcome back" personalization that would expose one family member's reading to another on shared devices.
+The commitments are specific: homepage initial payload under 50KB; text-only mode toggle (no images, no web fonts, no decorative elements — a *considered* experience, not a degraded one); aggressive caching so repeat visits cost zero data; progressive enhancement so the reading experience works with JavaScript disabled; Milestone 2a KaiOS emulator in CI; 44×44px touch targets baseline, 48px minimum on form inputs and navigation on pages likely accessed from feature phones (ADR-003, ADR-006); no "Welcome back" personalization that would expose one family member's reading to another on shared devices; core reading and search degrade gracefully when connectivity is intermittent or absent.
 
-When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global Equity does not constrain ambition. It demands that ambition serve everyone.
+When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global-First does not constrain ambition. It demands that ambition serve everyone.
 
 ---
 
