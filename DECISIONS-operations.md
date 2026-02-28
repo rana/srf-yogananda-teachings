@@ -881,7 +881,7 @@ This is a **content production tool**, not an auto-poster. The human decides whe
 - **Sacred content deserves human curation.** Automated posting of Yogananda's words risks contextual inappropriateness (posting about joy during a global tragedy) and robotic tone. A human touch is non-negotiable.
 - **The portal generates the assets; humans distribute them.** This reduces staff effort dramatically while maintaining editorial control.
 - **WhatsApp is underestimated.** In India (YSS audience), Latin America, Africa, and Southeast Asia, WhatsApp is the primary sharing channel. OG cards in WhatsApp are the highest-impact social feature for the portal's global mission.
-- **YouTube Shorts synergy.** SRF's existing Shorts program can draw from the portal's quote library for visual content.
+- **YouTube Shorts synergy.** SRF's existing Shorts program can draw from the portal's passage catalog for visual content.
 
 ### Consequences
 
@@ -2236,7 +2236,7 @@ If both `updated_since` and `created_since` are provided, the API returns a 400 
 Not affected:
 - `GET /api/v1/search` — query-driven, not collection-based
 - `GET /api/v1/daily-passage` — returns a single item, not a collection
-- `GET /api/v1/quiet` — returns a single affirmation
+- `GET /api/v1/affirmations` — returns a single affirmation
 - `GET /api/v1/health` — operational, not content
 - `GET /api/v1/graph/*` — pre-computed, served from CDN
 - `GET /api/v1/search/suggest` — autocomplete, not a syncable collection
@@ -2423,7 +2423,7 @@ ALTER TABLE magazine_articles ADD CONSTRAINT magazine_articles_slug_key UNIQUE (
 **Status:** Accepted
 **Date:** 2026-02-22
 **Deciders:** Architecture team
-**Context:** ADR-025 (PDF routes), ADR-050 (chunk relations), ADR-055 (video integration), ADR-057 (audio library), ADR-108 (magazine API rationalization)
+**Context:** ADR-025 (PDF routes), ADR-050 (chunk relations), ADR-055 (video integration), ADR-057 (audio), ADR-108 (magazine API rationalization)
 
 ### Context
 
@@ -2487,7 +2487,7 @@ Returns title, author, description, cover image, publication year, bookstore URL
 
 ### Not Changed
 
-- **`/api/v1/videos/latest` and `/api/v1/videos/library`** remain as-is. These are Milestone 2b YouTube-proxy convenience endpoints. When videos become database-backed in Arc 6, the main `GET /api/v1/videos` endpoint with query parameters supersedes them. Premature to rationalize a transitional design.
+- **`/api/v1/videos/latest` and `/api/v1/videos/catalog`** remain as-is. These are Milestone 2b YouTube-proxy convenience endpoints. When videos become database-backed in Arc 6, the main `GET /api/v1/videos` endpoint with query parameters supersedes them. Premature to rationalize a transitional design.
 
 - **Nested routes where nesting is correct.** `/books/[slug]/chapters/[number]`, `/themes/[slug]/passages`, `/people/[slug]/passages`, `/images/{slug}/related` — these nest a subordinate or relationship resource under its parent. The nesting is appropriate and stays.
 
@@ -2583,7 +2583,7 @@ The search endpoint returns ranked results (default 5, max 20) with no `paginati
 
 #### 5. `exclude` parameter for refresh behavior
 
-Endpoints supporting "show me another" (random single-item responses) accept an `exclude` query parameter — the ID of the item to omit. Prevents repeat-on-refresh without client-side deduplication. Applied to: `/api/v1/daily-passage`, `/api/v1/quiet`.
+Endpoints supporting "show me another" (random single-item responses) accept an `exclude` query parameter — the ID of the item to omit. Prevents repeat-on-refresh without client-side deduplication. Applied to: `/api/v1/daily-passage`, `/api/v1/affirmations`.
 
 ### Alternatives Considered
 

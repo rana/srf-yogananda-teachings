@@ -393,7 +393,7 @@ The portal is transparent about what it has and what it doesn't. This honesty is
 - When search returns no results, the portal says so honestly rather than stretching to find something. (ADR-001)
 - When a book is not available in a language, it is simply not listed — no machine translation substitute. (ADR-075)
 - When English fallback content supplements a seeker's language, it is always clearly marked with an `[EN]` tag — never silently substituted. (ADR-075)
-- The Library page shows what exists, not what's promised. "More books are being added" is truthful and forward-looking. No fixed promises, no dates.
+- The Books page shows what exists, not what's promised. "More books are being added" is truthful and forward-looking. No fixed promises, no dates.
 - Content availability per language is asymmetric — some languages have more books than others. This asymmetry is visible and honest, not hidden.
 
 ### 10-Year Architecture Horizon

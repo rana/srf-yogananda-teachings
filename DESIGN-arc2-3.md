@@ -16,7 +16,7 @@
 | `/search?q=...` | Search results — ranked verbatim quotes | Neon (hybrid search) | SSR | Yes (via `SearchAction`) |
 | `/themes/[slug]` | Topic page — curated passages for a theme, person, principle, or practice | Neon (topic-tagged chunks) | ISR (1 hr) | Yes |
 | `/quiet` | The Quiet Corner — single affirmation, timer, stillness | Neon (affirmations pool) | ISR (1 hr) | Yes |
-| `/books` | The Library — book catalog with editorial descriptions | Contentful (SSG/ISR) | ISR (24 hr) | Yes |
+| `/books` | Books — book catalog with editorial descriptions | Contentful (SSG/ISR) | ISR (24 hr) | Yes |
 | `/books/[slug]` | Book landing page with cover, description, chapter list | Contentful (SSG/ISR) | ISR (24 hr) | Yes |
 | `/bookmarks` | Lotus Bookmarks — saved chapters and passages (client-only, `localStorage`) | `localStorage` (no server) | CSR | No (`noindex`) |
 | `/books/[slug]/[chapter]` | Chapter reader | Contentful (SSG/ISR) | ISR (7 days) | Yes |
@@ -26,7 +26,7 @@
 | `/events` | Gatherings & Events — convocation, commemorations, online events, retreats | Static (ISR) | ISR (24 hr) | Yes |
 | `/places` | Sacred Places — SRF/YSS properties and biographical sites | Neon `places` table (ISR) | ISR (7 days) | Yes |
 | `/places/[slug]` | Individual place detail with book cross-references | Neon `places` + `chunk_places` (ISR) | ISR (7 days) | Yes |
-| `/videos` | Video library — categorized by playlist | YouTube API (ISR) | ISR (1 hr) | Yes |
+| `/videos` | Videos — categorized by playlist | YouTube API (ISR) | ISR (1 hr) | Yes |
 | `/videos/[category]` | Filtered view (e.g., How-to-Live, Meditations) | YouTube API (ISR) | ISR (1 hr) | Yes |
 | `/study` | Study Workspace — passage collection, teaching arc assembly, export (Arc 4, ADR-083) | `localStorage` (no server) | CSR | No (`noindex`) |
 | `/collections` | Community Collections gallery — published/featured curated passage collections (Milestone 7b, ADR-086) | Neon (`study_outlines` where visibility = published/featured) | ISR (1 hr) | Yes |
@@ -282,7 +282,7 @@ Six **quality** theme cards displayed below the search bar. Each links to `/them
 - No icons, no images, no descriptions — the single word is the invitation
 - Cards use `--portal-quote-bg` background, transitioning to `--srf-gold` left border on hover
 
-**"Explore all themes" link:** Below the six doors, a quiet text link ("Explore all themes →") leads to `/themes`, which organizes all theme categories into distinct sections. This page is also linked from the Library. (ADR-032, ADR-033)
+**"Explore all themes" link:** Below the six doors, a quiet text link ("Explore all themes →") leads to `/themes`, which organizes all theme categories into distinct sections. This page is also linked from Books. (ADR-032, ADR-033)
 
 **Exploration categories on `/themes`:**
 
@@ -367,16 +367,16 @@ Framed through aspiration, not suffering. "Seeking" aligns with the search bar's
 
 **DELTA alignment:** No behavioral profiling. The entry points are the same for every visitor. They are informed by aggregated search trends ("What is humanity seeking?"), not individual tracking.
 
-### The Library (`/books`) and Book Landing Page (`/books/[slug]`)
+### Books (`/books`) and Book Landing Page (`/books/[slug]`)
 
-The library is how seekers browse and discover books. Even with a single book in Milestone 2a, the page should feel like the entrance to a real library — warm, unhurried, and honest about what's inside.
+This page is how seekers browse and discover books. Even with a single book in Milestone 2a, the page should feel like the entrance to a real library — warm, unhurried, and honest about what's inside.
 
-#### The Library (`/books`)
+#### Books (`/books`)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ │
-│ The Library │
+│ Books │
 │ │
 │ The published teachings of Paramahansa Yogananda, │
 │ freely available for seekers everywhere. │
@@ -407,7 +407,7 @@ The library is how seekers browse and discover books. Even with a single book in
 **Design principles:**
 - **Warm, not empty.** Even with one book, the page should feel intentional — not like a placeholder or a broken catalog.
 - **Honest about scope.** "More books are being added" is truthful and forward-looking. No fixed promises, no dates.
-- **The SRF Bookstore link** is a natural signpost: seekers can explore the full catalog of physical books while the digital library grows.
+- **The SRF Bookstore link** is a natural signpost: seekers can explore the full catalog of physical books while the digital collection grows.
 - **Each book entry is a generous card** — not a cramped grid item. Whitespace, the cover image (if available from SRF), and a brief editorial description give each book the space it deserves.
 - **No "empty state" design needed in Milestone 2a** — there will always be at least one book.
 
@@ -420,9 +420,9 @@ The library is how seekers browse and discover books. Even with a single book in
 - "Begin reading →" link to chapter 1
 - "Find this book →" link to SRF Bookstore
 
-**Milestone 3a growth:** As Wave 2a–2d books are ingested, the library page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-030), which mirrors life-impact ordering.
+**Milestone 3a growth:** As Wave 2a–2d books are ingested, the books page naturally fills out. The layout scales from 1 book to 15+ without redesign. Books are ordered by ingestion priority (ADR-030), which mirrors life-impact ordering.
 
-**Milestone 5b multi-language:** The library shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-075 content availability matrix).
+**Milestone 5b multi-language:** The books page shows books available in the user's language, plus an "Also available in English" section for untranslated works (per ADR-075 content availability matrix).
 
 **API:** `GET /api/v1/books` (already defined). Returns all books with metadata, chapter count, and slugs.
 
@@ -582,7 +582,7 @@ Detection uses `navigator.connection` (Network Information API) where available,
 **API:**
 
 ```
-GET /api/v1/chunks/[chunk-id]/related
+GET /api/v1/passages/[passage-id]/related
  Query params:
  limit (optional) — default 3, max 20
  book_id (optional) — filter to a specific book
@@ -669,7 +669,7 @@ Clean. Centered. The next chapter is the only call to action in the reading colu
 
 This separation means:
 - The **reading column** belongs to the book. Next chapter is always primary.
-- The **side panel** belongs to the library. Cross-book exploration is available but never intrudes on the linear reading experience.
+- The **side panel** belongs to the reading experience. Cross-book exploration is available but never intrudes on the linear reading experience.
 - The reader chooses when to explore. "Continue the Thread" is a gift, not an interruption.
 
 **Exception — no-panel tiers (Save-Data, 2G, text-only mode):** "Continue the Thread" appears inline at chapter end, *below* the Next Chapter invitation. This is the sole cross-book connection for these seekers, and it's part of the page render (zero extra network cost). Next Chapter is still primary, with "Continue the Thread" as a quiet secondary section beneath it.
@@ -878,7 +878,7 @@ A passage about concentration means something different on the first reading ver
 
 **Who this serves:** The seeker who has already encountered a passage and wants to understand it more deeply — without leaving the reading flow. This is what a scholar does manually over years. The portal's relationship graph already contains this data; the experience makes it browsable from within the reading.
 
-**API:** No new endpoints. Uses existing `/api/v1/chunks/[chunk-id]/related` and chunk neighbor queries. The "context" layer is fetched from the chapter data already loaded in the reader.
+**API:** No new endpoints. Uses existing `/api/v1/passages/[passage-id]/related` and chunk neighbor queries. The "context" layer is fetched from the chapter data already loaded in the reader.
 
 **Milestone:** 3c (alongside editorial reading threads, DES-026). Requires Related Teachings (ADR-050, Milestone 2b) and chapter data already in the reader.
 
@@ -1395,7 +1395,7 @@ The portal's mission is to reach the world. Without SEO, it serves only people w
 
 | Page Type | Title Pattern | Description |
 |-----------|--------------|-------------|
-| Homepage | "Teachings of Paramahansa Yogananda — Free Online Library" | Portal overview |
+| Homepage | "Teachings of Paramahansa Yogananda — Free Online Teachings" | Portal overview |
 | Theme page | "Yogananda on [Theme] — Verbatim Passages" | Theme-specific, includes life challenge keywords |
 | Book page | "[Book Title] by Paramahansa Yogananda — Read Free Online" | Book-specific |
 | Chapter page | "[Chapter Title] — [Book Title]" | Chapter-specific |
@@ -1938,12 +1938,12 @@ export { sql };
 | `/api/v1/books/[slug]/chapters/[number]` | `max-age=86400, stale-while-revalidate=604800` | Book text is effectively immutable |
 | `/api/v1/daily-passage` | `max-age=3600` | Changes daily, not every second |
 | `/api/v1/themes/[slug]/passages` | `max-age=3600` | Theme curation changes infrequently |
-| `/api/v1/quiet` | `max-age=300` | Affirmation rotates but isn't time-critical |
+| `/api/v1/affirmations` | `max-age=300` | Affirmation rotates but isn't time-critical |
 | `/api/v1/search` | `no-store` | Query-dependent, not cacheable |
 | `/api/v1/themes` | `max-age=86400` | Theme list rarely changes |
 | `/api/v1/books` | `max-age=86400` | Book catalog rarely changes |
 | `/api/v1/books/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Book metadata is effectively immutable |
-| `/api/v1/chunks/[id]/related` | `max-age=86400, stale-while-revalidate=604800` | Relations stable; only change on new content ingestion |
+| `/api/v1/passages/[id]/related` | `max-age=86400, stale-while-revalidate=604800` | Relations stable; only change on new content ingestion |
 | `/api/v1/books/[slug]/chapters/[number]/thread` | `max-age=86400, stale-while-revalidate=604800` | Same as related — changes only on new content |
 | `/api/v1/magazine/issues` | `max-age=86400` | Issue catalog changes rarely |
 | `/api/v1/magazine/issues/{slug}` | `max-age=86400, stale-while-revalidate=604800` | Issue metadata is effectively immutable |
@@ -2022,7 +2022,7 @@ The video section auto-updates from the @YoganandaSRF YouTube channel without ma
 │ │ ISR revalidate: 1 hour │ │
 │ └─────────────────────────────────────┘ │
 │ │
-│ "Full Video Library" (categorized by playlist) │
+│ "All Videos" (categorized by playlist) │
 │ ┌─────────────────────────────────────┐ │
 │ │ YouTube Data API v3 │ │
 │ │ (API key, 10,000 units/day free) │ │
@@ -2104,7 +2104,7 @@ Response:
 }
 ```
 
-#### `GET /api/v1/videos/library`
+#### `GET /api/v1/videos/catalog`
 
 ```
 Source: YouTube Data API v3 (API key required)
@@ -3326,7 +3326,7 @@ A curated recommendation page organized by spiritual need. Where `/browse` answe
 │ God Talks With Arjuna is Yogananda's verse-by-verse │
 │ commentary. The reverse bibliography shows every │
 │ passage referencing the Gita. See Krishna in the │
-│ People Library. │
+│ Spiritual Figures. │
 │ │
 │ ... │
 │ │
@@ -4004,7 +4004,7 @@ The subgraph endpoint powers embeddable mini-graphs in other pages: the reader's
 
 **Milestone:** Arc 4+ (constellation). Milestone 3d delivers Knowledge Graph mode only.
 
-Linked from Library and themes pages (not primary nav).
+Linked from Books and themes pages (not primary nav).
 
 ### ADR-043: `/ontology` — Spiritual Concept Map
 

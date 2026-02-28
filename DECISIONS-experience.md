@@ -216,7 +216,7 @@ Search results and Related Teachings maintain this hierarchy visually. A documen
 
 ---
 
-## ADR-057: Audio Library and Cross-Media Audio Search
+## ADR-057: Audio and Cross-Media Audio Search
 
 **Status:** Accepted
 **Date:** 2026-02-19
@@ -293,7 +293,7 @@ CREATE INDEX idx_audio_segments_embedding ON audio_segments USING ivfflat (embed
 
 - **Synchronized transcript.** As audio plays, the transcript highlights the current segment. Seekers can read along or click any segment to jump to that point.
 - **Sacred artifact treatment.** Recordings of Yogananda's own voice receive special visual treatment — a subtle indicator and contextual note about the recording's provenance. These are not "content" in the same way as a book excerpt; they are encounters with the Master's voice.
-- **Browse experience.** Audio library page with filtering by speaker, recording type, date, and collection. Visual design consistent with the book library and video library.
+- **Browse experience.** Audio page with filtering by speaker, recording type, date, and collection. Visual design consistent with Books and Videos.
 - **Playback controls.** Standard: play/pause, seek, speed (0.75×–1.5×), volume. No social features, no comments, no likes.
 
 ### Rationale
@@ -309,7 +309,7 @@ CREATE INDEX idx_audio_segments_embedding ON audio_segments USING ivfflat (embed
 - Audio ingestion Lambda functions added to `/lambda/`
 - CloudFront distribution configured for audio streaming (Terraform module)
 - Cross-media search API updated to include audio segments in results
-- Audio player component built for reader/library (synchronized transcript display)
+- Audio player component built for the reader and browse experience (synchronized transcript display)
 - `is_yogananda_voice` flag enables special sacred artifact presentation
 - Storage costs: audio files are larger than text but smaller than video. S3 Standard for active, S3 IA for archive.
 - Future: chapter-aligned audio (e.g., audiobook chapters mapped to book chapters for side-by-side reading+listening)
@@ -581,11 +581,11 @@ Each result's `content_type` determines presentation: book passages show verbati
 ## ADR-061: Knowledge Graph Visualization
 
 **Status:** Accepted | **Date:** 2026-02-20
-**Context:** ADR-050 (chunk relations), ADR-032 (theme taxonomy), DES-027 (reverse bibliography), ADR-033 (exploration categories), ADR-036 (people library)
+**Context:** ADR-050 (chunk relations), ADR-032 (theme taxonomy), DES-027 (reverse bibliography), ADR-033 (exploration categories), ADR-036 (Spiritual Figures)
 
 ### Context
 
-The portal's schema contains a complete semantic map of Yogananda's teachings: chunk relations (similarity), theme tags (quality, situation, person, principle, scripture, practice, yoga_path), reverse bibliography (external references), editorial cross-references, People Library entities, and cross-language alignment. No such map exists for any major spiritual figure. This semantic structure is navigable through linear interfaces (search, theme pages, reader side panel) but has never been visualized as a whole.
+The portal's schema contains a complete semantic map of Yogananda's teachings: chunk relations (similarity), theme tags (quality, situation, person, principle, scripture, practice, yoga_path), reverse bibliography (external references), editorial cross-references, Spiritual Figures entities, and cross-language alignment. No such map exists for any major spiritual figure. This semantic structure is navigable through linear interfaces (search, theme pages, reader side panel) but has never been visualized as a whole.
 
 ### Decision
 
@@ -595,7 +595,7 @@ Build an interactive knowledge graph visualization at `/explore` that renders th
 - Books (large, colored by book)
 - Passages / chunks (small, clustered around their book)
 - Themes (medium, connecting clusters)
-- People (medium, from People Library)
+- People (medium, from Spiritual Figures)
 - Scriptures and external references
 
 **Edges:**
@@ -621,7 +621,7 @@ Milestone 3d (after chunk relations are computed across the full multi-book corp
 
 ### Consequences
 
-- New page at `/explore` (linked from Library and themes pages, not primary nav)
+- New page at `/explore` (linked from Books and themes pages, not primary nav)
 - Pre-computed graph JSON generated nightly by Lambda (extension of chunk relation computation)
 - Client-side rendering adds ~50-80KB JS (loaded only on `/explore` — not in the global bundle)
 - Graph data is a static artifact — no database queries during exploration
@@ -636,7 +636,7 @@ Milestone 3d (after chunk relations are computed across the full multi-book corp
 - **Status:** Accepted
 - **Date:** 2026-02-21
 - **Supersedes aspects of:** ADR-061 (original Knowledge Graph visualization — now the Milestone 3d baseline, not the final form)
-- **Relates to:** ADR-060 (Unified Content Hub), ADR-055 (Video Transcripts), ADR-057 (Audio Library), ADR-035 (Images), ADR-056 (Platform-Agnostic Video), ADR-036 (People Library), ADR-040 (Magazine), ADR-043 (Spiritual Ontology)
+- **Relates to:** ADR-060 (Unified Content Hub), ADR-055 (Video Transcripts), ADR-057 (Audio), ADR-035 (Images), ADR-056 (Platform-Agnostic Video), ADR-036 (Spiritual Figures), ADR-040 (Magazine), ADR-043 (Spiritual Ontology)
 
 ### Context
 
@@ -1154,7 +1154,7 @@ Each of these paths should be as excellent as the search experience. "Excellent"
  Enhancements:
  - Above the passage: "A passage from the teachings of Paramahansa Yogananda" — framing context for seekers unfamiliar with the author.
  - Below the citation: "This passage appears in *[Book Title]*, Chapter [N]. Continue reading →" — framing the book as a world to enter, not a citation to note.
- - Below the book link: "Explore more teachings →" — linking to the homepage, not the library (the homepage's Today's Wisdom provides a second immediate encounter).
+ - Below the book link: "Explore more teachings →" — linking to the homepage, not Books (the homepage's Today's Wisdom provides a second immediate encounter).
  - The warm cream background, decorative quote mark (DES-008), and generous whitespace ensure the page is visually the most beautiful thing the recipient sees in their social feed that day.
 
 2. **The Google-arrival chapter page has a gentle context header.** When a seeker lands on `/books/[slug]/[chapter]` without navigating through the portal (referrer is external or empty), a subtle one-line context bar appears above the chapter title: "You're reading *[Book Title]* by Paramahansa Yogananda — [Chapter N] of [Total] — Start from the beginning →". Styled in `--portal-text-muted`, `--text-sm`. Dismissed on scroll. Not shown when navigating within the portal.
@@ -1542,7 +1542,7 @@ These concerns apply not only to seekers with cognitive disabilities but also to
 
  This tag is used internally for pool selection (Today's Wisdom favors `accessible`; Quiet Corner uses only `accessible`; search returns all levels) — never displayed to the seeker. Not a quality judgment. Dense passages are not lesser teachings — they are teachings that reward deeper attention.
 
-3. **Simplified reading mode.** An optional "Focus" toggle in the reader header (Milestone 2b, alongside Dwell) that reduces the reader to: reading column + Next Chapter. The Related Teachings side panel, keyboard shortcut overlay, dwell icon, and bookmark icon are suppressed. The toggle is stored in `localStorage`. This mode serves seekers who want to read a book linearly without the library-navigation features — and it naturally serves cognitive accessibility needs without labeling them.
+3. **Simplified reading mode.** An optional "Focus" toggle in the reader header (Milestone 2b, alongside Dwell) that reduces the reader to: reading column + Next Chapter. The Related Teachings side panel, keyboard shortcut overlay, dwell icon, and bookmark icon are suppressed. The toggle is stored in `localStorage`. This mode serves seekers who want to read a book linearly without the browse-navigation features — and it naturally serves cognitive accessibility needs without labeling them.
 
 4. **Consistent, minimal gesture vocabulary for core tasks.** The portal's essential experience (read, search, navigate) requires only: click, scroll, and type. All other gestures (long-press, hover-wait, keyboard shortcuts) are enhancements. The portal must be fully functional with only the three basic gestures. This is already approximately true but should be an explicit design constraint tested in QA.
 
@@ -1771,7 +1771,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 4. **Locale + English fallback is the multilingual model.** The practical need is the seeker's language plus English supplementation — not arbitrary cross-language search (e.g., Japanese query finding German results). The multilingual embedding model *enables* cross-language search at near-zero cost, but the core experience is locale-first with English fallback. Cross-language search may be activated later if usage data justifies it, but it is not a core Milestone 5b deliverable.
 
-5. **`canonical_book_id` links translations to originals.** A new column on `books` enables "Available in 6 languages" on the library page and "Read in English →" navigation between editions. The `canonical_chunk_id` column on `book_chunks` enables passage-level cross-language links.
+5. **`canonical_book_id` links translations to originals.** A new column on `books` enables "Available in 6 languages" on the Books page and "Read in English →" navigation between editions. The `canonical_chunk_id` column on `book_chunks` enables passage-level cross-language links.
 
 6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
@@ -2323,7 +2323,7 @@ Every page emits schema.org JSON-LD appropriate to its content type:
  "@type": "BreadcrumbList",
  "itemListElement": [
    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://teachings.yogananda.org/" },
-   { "@type": "ListItem", "position": 2, "name": "Library", "item": "https://teachings.yogananda.org/books" },
+   { "@type": "ListItem", "position": 2, "name": "Books", "item": "https://teachings.yogananda.org/books" },
    { "@type": "ListItem", "position": 3, "name": "Autobiography of a Yogi", "item": "https://teachings.yogananda.org/books/autobiography-of-a-yogi" },
    { "@type": "ListItem", "position": 4, "name": "Chapter 14" }
  ]
@@ -2345,7 +2345,7 @@ Schema types per page:
 | About | `Organization`, `Person` (Yogananda) — both with `sameAs` |
 | Quiet Corner | `WebPage` with meta description (indexed — seekers searching "meditation timer" or "spiritual affirmation" should find it) |
 | Browse | `CollectionPage`, `BreadcrumbList` |
-| Library | `CollectionPage`, `BreadcrumbList` |
+| Books | `CollectionPage`, `BreadcrumbList` |
 
 ### 2. `llms.txt` — AI Agent Guidance
 

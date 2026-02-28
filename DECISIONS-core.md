@@ -715,7 +715,7 @@ However, as the portal's feature surface has grown — editorial reading threads
 ## ADR-015: Verbatim Media Fidelity — Cross-Modal Content Integrity
 
 **Status:** Accepted (Foundational) | **Date:** 2026-02-25
-**Context:** ADR-001 (direct quotes only), ADR-005 (Claude AI usage policy), ADR-042 (sacred image guidelines), ADR-057 (audio library), ADR-058 (AI audio generation), Principles 1 and 2
+**Context:** ADR-001 (direct quotes only), ADR-005 (Claude AI usage policy), ADR-042 (sacred image guidelines), ADR-057 (audio), ADR-058 (AI audio generation), Principles 1 and 2
 
 ### Context
 
@@ -952,7 +952,7 @@ All API routes use a versioned prefix from Arc 1:
 /api/v1/daily-passage
 /api/v1/themes/[slug]/passages
 /api/v1/books/[slug]/chapters/[number]
-/api/v1/quiet
+/api/v1/affirmations
 /api/v1/og/[chunk-id]
 /api/v1/email/subscribe
 ```
@@ -999,7 +999,7 @@ Explicit HTTP caching directives on every API response:
 | `/api/v1/books/[slug]/chapters/[number]` | `max-age=86400, stale-while-revalidate=604800` (book text rarely changes) |
 | `/api/v1/search` | `no-store` (query-dependent, not cacheable) |
 | `/api/v1/themes/[slug]/passages` | `max-age=3600` (theme curation changes infrequently) |
-| `/api/v1/quiet` | `max-age=300` (5 min — affirmation rotates but isn't time-critical) |
+| `/api/v1/affirmations` | `max-age=300` (5 min — affirmation rotates but isn't time-critical) |
 
 Mobile apps get intelligent caching for free. The web frontend benefits from the same headers.
 
@@ -1885,7 +1885,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 **Status:** Accepted
 **Date:** 2026-02-19
 **Deciders:** Architecture team
-**Context:** ADR-017 (Lambda batch), ADR-019 (S3 backup), ADR-057 (audio library), ADR-020 (multi-tenant infrastructure)
+**Context:** ADR-017 (Lambda batch), ADR-019 (S3 backup), ADR-057 (audio), ADR-020 (multi-tenant infrastructure)
 
 ### Context
 
@@ -2192,7 +2192,7 @@ navigator.share({
 **Status:** Accepted
 **Date:** 2026-02-19
 **Deciders:** Architecture team
-**Context:** ADR-006 (Global South delivery), ADR-083 (Study Workspace), ADR-057 (audio library)
+**Context:** ADR-006 (Global South delivery), ADR-083 (Study Workspace), ADR-057 (audio)
 
 ### Context
 
@@ -2309,7 +2309,7 @@ Pre-renderable PDFs are GET endpoints on their parent resources. But a seeker wh
 **Status:** Accepted
 **Date:** 2026-02-19
 **Deciders:** Architecture team
-**Context:** ADR-011 (API-first), ADR-006 (Global South delivery), ADR-017 (Lambda batch), ADR-024 (native share), ADR-057 (audio library)
+**Context:** ADR-011 (API-first), ADR-006 (Global South delivery), ADR-017 (Lambda batch), ADR-024 (native share), ADR-057 (audio)
 
 ### Context
 
@@ -2534,7 +2534,7 @@ CREATE INDEX idx_messaging_metrics_daily ON messaging_metrics(created_at, channe
 - Milestone 7b: SMS access gateway (requires cost evaluation per region, dedicated phone numbers)
 - Milestone 7b: Telegram bot (low cost, incremental after WhatsApp)
 - Future: USSD (requires telco partnership, evaluate in Milestone 7b)
-- Future: IVR/Voice (evaluate after audio library exists, Arc 6+)
+- Future: IVR/Voice (evaluate after audio section exists, Arc 6+)
 - `messaging_subscriptions` and `messaging_metrics` tables added to schema
 - Lambda function for channel routing (`/lambda/functions/messaging/`)
 - WhatsApp Business account registration (requires Meta business verification)
@@ -2794,7 +2794,7 @@ The portal's theme taxonomy needed to expand to serve both dimensions without co
 Implement a **multi-category theme taxonomy** with a `category` column on `teaching_topics`:
 
 - **`quality`** — spiritual/emotional states (Peace, Courage, Healing, Joy, Purpose, Love). Displayed as "Doors of Entry" on the homepage. Six cards, stable.
-- **`situation`** — life circumstances (Relationships, Parenting, Loss & Grief, Work, Loneliness, Aging, and others as content supports). Accessible from "Explore all themes" page linked below the Doors of Entry and from the Library. Not on the homepage grid.
+- **`situation`** — life circumstances (Relationships, Parenting, Loss & Grief, Work, Loneliness, Aging, and others as content supports). Accessible from "Explore all themes" page linked below the Doors of Entry and from Books. Not on the homepage grid.
 - **`person`**, **`principle`**, **`scripture`**, **`practice`**, **`yoga_path`** — added in ADR-033. Accessible from the "Explore all themes" page. Same tagging pipeline.
 
 All categories use the same theme page template (`/themes/[slug]`). No visual distinction — a seeker browsing "Christ" gets the same reverent, passage-focused experience as one browsing "Peace."
@@ -3119,7 +3119,7 @@ CREATE TABLE image_places (
 
 ---
 
-## ADR-036: People Library — Spiritual Figures as First-Class Entities
+## ADR-036: Spiritual Figures as First-Class Entities
 
 **Status:** Accepted | **Date:** 2026-02-20
 
@@ -3141,7 +3141,7 @@ The same pattern applies to Places, which already have a dedicated `places` tabl
 
 ### Decision
 
-Add a **`people`** table as a primary content type, linked to the existing `teaching_topics` system for passage tagging. Create a People Library (`/people`) parallel to the Books library (`/books`) and Sacred Places (`/places`).
+Add a **`people`** table as a primary content type, linked to the existing `teaching_topics` system for passage tagging. Create a Spiritual Figures section (`/people`) parallel to Books (`/books`) and Sacred Places (`/places`).
 
 #### Schema
 
@@ -3208,13 +3208,13 @@ GET /api/v1/people/[slug]/passages → Passages tagged with this person
 
 | Route | Purpose |
 |-------|---------|
-| `/people` | People Library — spiritual figures organized by category (guru lineage, avatars, saints, referenced figures) |
+| `/people` | Spiritual Figures — organized by category (guru lineage, avatars, saints, referenced figures) |
 | `/people/[slug]` | Person detail — biography, lineage, places, passages |
 
-The People Library links bidirectionally with:
+The Spiritual Figures section links bidirectionally with:
 - **Theme pages:** `/people/krishna` links to `/themes/krishna` (tagged passages) and vice versa
 - **Sacred Places:** `/people/sri-yukteswar` links to `/places/serampore` and `/places/puri`
-- **Book reader:** Inline references to a person in the text can link to their People Library entry
+- **Book reader:** Inline references to a person in the text can link to their Spiritual Figures entry
 - **Reverse Bibliography:** `/references/bhagavad-gita` links to `/people/krishna`
 
 #### Relationship to existing theme system
@@ -3225,9 +3225,9 @@ The theme page (`/themes/krishna`) continues to serve the question "What did Yog
 
 - **Seekers ask two kinds of questions about spiritual figures.** "What did Yogananda say about X?" (theme page) and "Who is X?" (person page). Both are natural; each deserves its own answer.
 - **Avatars are constant.** Krishna, Christ, and the guru lineage do not change. Their biographical entries are stable reference content — a different kind of value than the growing, curated passage collection on theme pages.
-- **Monastics and living teachers.** As new monastics lead SRF, the People Library preserves their biographical context. This is a respectful, mission-aligned record.
-- **Cross-referencing is the unique value.** The People Library connects people to places, to books, to passages, and to each other. No other digital resource provides this integrated view of the spiritual figures in Yogananda's world.
-- **Parallel to Places and Books.** The portal already has a Books library (entities with metadata + linked passages) and a Places library (entities with metadata + linked passages). People is the natural third pillar.
+- **Monastics and living teachers.** As new monastics lead SRF, the Spiritual Figures section preserves their biographical context. This is a respectful, mission-aligned record.
+- **Cross-referencing is the unique value.** The Spiritual Figures section connects people to places, to books, to passages, and to each other. No other digital resource provides this integrated view of the spiritual figures in Yogananda's world.
+- **Parallel to Places and Books.** The portal already has Books (entities with metadata + linked passages) and Places (entities with metadata + linked passages). People is the natural third pillar.
 - **Low schema cost, high editorial value.** One table, two junction tables. The biographical content is editorial — written once, updated rarely.
 
 ### Consequences
@@ -3236,24 +3236,24 @@ The theme page (`/themes/krishna`) continues to serve the question "What did Yog
 - `person_places` and `person_relations` junction tables added alongside
 - `/people` and `/people/[slug]` routes added to the frontend (Milestone 3c)
 - API endpoints `GET /api/v1/people` and `GET /api/v1/people/[slug]` added (Milestone 3c)
-- People Library entries require SRF editorial review and approval before publication (`is_published` gate)
+- Spiritual Figures entries require SRF editorial review and approval before publication (`is_published` gate)
 - Guru photographs on person pages follow ADR-042 sacred image guidelines
 - Cross-language person entries linked via `canonical_person_id` (Milestone 5b)
-- Theme pages for person-category topics gain a "Learn about [person] →" link to the People Library
-- Reader inline references to named figures can link to People Library entries (Milestone 3c+)
+- Theme pages for person-category topics gain a "Learn about [person] →" link to Spiritual Figures
+- Reader inline references to named figures can link to Spiritual Figures entries (Milestone 3c+)
 - **Extends ADR-031** (teaching topics), **ADR-069** (Sacred Places), **ADR-033** (exploration categories)
 
 ---
 
 ---
 
-## ADR-037: Monastic & Presidential Lineage in the People Library
+## ADR-037: Monastic & Presidential Lineage
 
 **Status:** Accepted | **Date:** 2026-02-21
 
 ### Context
 
-ADR-036 established the People Library as a primary content type with a `people` table, `person_relations` junction table, and five editorial categories on the `/people` index: guru lineage, avatars, saints and sages, referenced figures, and SRF/YSS leadership. The schema includes `birth_year`, `death_year`, `lineage_position`, and `person_relations` with relation types `guru_of`, `disciple_of`, `contemporary`, `referenced_by`.
+ADR-036 established the Spiritual Figures section as a primary content type with a `people` table, `person_relations` junction table, and five editorial categories on the `/people` index: guru lineage, avatars, saints and sages, referenced figures, and SRF/YSS leadership. The schema includes `birth_year`, `death_year`, `lineage_position`, and `person_relations` with relation types `guru_of`, `disciple_of`, `contemporary`, `referenced_by`.
 
 This foundation handles "Who is Krishna?" and the guru lineage (Babaji → Lahiri Mahasaya → Sri Yukteswar → Yogananda) well. But three distinct monastic and organizational use cases expose gaps:
 
@@ -3267,7 +3267,7 @@ The Santa Rosa SRF Meditation Group displays a lineage of SRF presidents as an o
 
 ### Decision
 
-Extend ADR-036's People Library with structured monastic and organizational metadata, temporal relationship tracking, and presentation patterns for lineage and commemoration.
+Extend ADR-036's Spiritual Figures section with structured monastic and organizational metadata, temporal relationship tracking, and presentation patterns for lineage and commemoration.
 
 #### Schema extensions to `people` table
 
@@ -4374,7 +4374,7 @@ In Arc 1 (English only), this is equivalent to the original "top 30" — the Eng
 - The ingestion pipeline gains a new Step 7: Compute Chunk Relations (after embedding, before final verification)
 - A `chunk_relations` table is added to migration 001 (empty until Milestone 3c populates it with multi-book content)
 - A `chunk_references` table is added for human-curated editorial cross-references (supplements automatic similarity)
-- Two new API endpoints: `/api/v1/chunks/[id]/related` and `/api/v1/books/[slug]/chapters/[number]/thread`
+- Two new API endpoints: `/api/v1/passages/[id]/related` and `/api/v1/books/[slug]/chapters/[number]/thread`
 - Two new service functions: `relations.ts` and `thread.ts`
 - The Book Reader component gains a Related Teachings side panel (desktop) and bottom sheet (mobile)
 - A related content quality test suite (Milestone 3c+) validates that pre-computed relations are thematically relevant, cross-book diverse, and free of false friends

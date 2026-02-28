@@ -285,7 +285,7 @@ The API surface exists to make the teachings findable by machines — mobile app
 **Resource identifiers.** Resources use the identifier type natural to their domain:
 - **Books** use slugs (human-readable, SEO-friendly): `/api/v1/books/autobiography-of-a-yogi`
 - **Chapters** use numbers within their book: `/api/v1/books/{slug}/chapters/26`
-- **Chunks (passages)** use UUIDs (stable across re-ingestion via content-hash fallback, ADR-022): `/api/v1/chunks/{uuid}`
+- **Passages** use UUIDs (stable across re-ingestion via content-hash fallback, ADR-022): `/api/v1/passages/{uuid}`
 - **Themes** use English slugs (stable across locales, ADR-027): `/api/v1/themes/peace`
 - **People, places, glossary terms** use slugs: `/api/v1/people/sri-yukteswar`, `/api/v1/glossary/samadhi`
 
@@ -333,7 +333,7 @@ When timestamp filtering is active (ADR-107), responses include `sync` metadata 
 
 **Search is intentionally unpaginated.** The search endpoint returns the best-ranked results (default 5, max 20) with no cursor or `has_more`. This is deliberate: the AI librarian returns the *most relevant* passages, not a paginated result set to browse. Pagination would imply browsing a corpus dump, which contradicts the librarian metaphor (ADR-001). If a seeker needs broader exploration, theme pages and the `/browse` index serve that purpose.
 
-**`exclude` parameter.** Endpoints that support "show me another" behavior accept an `exclude` query parameter (a resource ID to omit from results). Used on `/api/v1/daily-passage` and `/api/v1/quiet` for repeat-free refresh without client-side deduplication.
+**`exclude` parameter.** Endpoints that support "show me another" behavior accept an `exclude` query parameter (a resource ID to omit from results). Used on `/api/v1/daily-passage` and `/api/v1/affirmations` for repeat-free refresh without client-side deduplication.
 
 ### Error Response Contract
 
@@ -468,6 +468,26 @@ Implementation:
  ORDER BY lt.category, lt.sort_order;
 ```
 
+### `GET /api/v1/themes/{slug}`
+
+Returns metadata for a single theme.
+
+Response (single resource — see § API Conventions):
+
+```json
+{
+  "id": "uuid",
+  "name": "Peace",
+  "slug": "peace",
+  "description": "Yogananda's teachings on inner peace...",
+  "category": "quality",
+  "passage_count": 47,
+  "language": "en",
+  "created_at": "2026-03-01T00:00:00Z",
+  "updated_at": "2026-03-15T12:00:00Z"
+}
+```
+
 ### `GET /api/v1/themes/[slug]/passages`
 
 ```
@@ -505,7 +525,7 @@ Implementation:
  Only serves tags with tagged_by IN ('manual', 'reviewed') — never 'auto'.
 ```
 
-### `GET /api/v1/quiet`
+### `GET /api/v1/affirmations`
 
 ```
 Query params:
@@ -618,7 +638,7 @@ Response:
 }
 ```
 
-### `GET /api/v1/chunks/[chunk-id]/related`
+### `GET /api/v1/passages/[passage-id]/related`
 
 ```
 Query params:
@@ -726,6 +746,8 @@ When active, responses include `sync` metadata within `meta` for the consumer's 
 ```
 
 See ADR-107 for the full endpoint coverage table, schema requirements (`updated_at` columns and triggers on all content tables), and phasing.
+
+*Section revised: 2026-02-28. Terminology and API surface consistency pass: `/api/v1/chunks/` → `/api/v1/passages/`, `/api/v1/quiet` → `/api/v1/affirmations`, added `GET /api/v1/themes/{slug}` detail endpoint. Page names: "The Library" → "Books", "Audio Library" → "Audio", "Video library" → "Videos", "People Library" → "Spiritual Figures". API: `/api/v1/videos/library` → `/api/v1/videos/catalog`. Metaphorical "library" usage (the portal as library, the librarian metaphor) preserved throughout.*
 
 ---
 

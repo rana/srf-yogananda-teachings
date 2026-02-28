@@ -733,7 +733,7 @@ CREATE TABLE books (
  edition_year INTEGER, -- year of this specific edition (ADR-034)
  canonical_book_id UUID REFERENCES books(id), -- links translations to the original (English) edition;
  -- NULL for originals. Enables "Available in 6 languages"
- -- on library page and cross-language navigation.
+ -- on books page and cross-language navigation.
  content_format TEXT NOT NULL DEFAULT 'prose' -- 'prose' (default), 'chant', 'poetry' (ADR-059).
  CHECK (content_format IN ('prose', 'chant', 'poetry')),
  -- Controls reader rendering: prose = continuous scroll,
@@ -933,7 +933,7 @@ CREATE TABLE book_chunks_archive (
 -- 'scripture' — scriptural frameworks Yogananda interprets: Yoga Sutras, Bhagavad Gita, Bible
 -- 'practice' — spiritual practices: Meditation, Concentration, Pranayama, Affirmation
 -- 'yoga_path' — yoga paths: Kriya, Raja, Bhakti, Karma, Jnana, Hatha, Mantra, Laya
--- Non-quality categories accessible from "Explore" pages and the Library.
+-- Non-quality categories accessible from "Explore" pages and Books.
 -- Not shown on the homepage grid to preserve the calm six-door design.
 CREATE TABLE teaching_topics (
  id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -1978,7 +1978,7 @@ Tier 1 and Tier 2 tools return raw service-layer output (matching the HTTP API s
 - `tools/corpus.ts` — search, theme, reference, vocabulary bridge tools
 - `tools/editorial.ts` — internal editorial tools (Tier 2 only)
 - `tools/graph.ts` — Knowledge Graph traversal tools
-- `tools/people.ts` — People Library tools
+- `tools/people.ts` — Spiritual Figures tools
 - `tools/fidelity.ts` — fidelity metadata envelope wrapper (Tier 3)
 
 All tools delegate to `/lib/services/` — zero business logic in the MCP layer.

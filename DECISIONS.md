@@ -55,7 +55,7 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 
 **Content & Data Model**
 
-Specifies what content the portal holds and how it is structured in the database. Autobiography of a Yogi is the Arc 1 focus book; ingestion priority follows life-impact over scholarly significance; the data model is edition-aware with teaching topics taxonomy, exploration themes, a living glossary, a people library (including monastic lineage), and a canonical entity registry with Sanskrit normalization. Content integrity verification, sacred image guidelines, and a structured spiritual ontology ensure fidelity and machine-readability.
+Specifies what content the portal holds and how it is structured in the database. Autobiography of a Yogi is the Arc 1 focus book; ingestion priority follows life-impact over scholarly significance; the data model is edition-aware with teaching topics taxonomy, exploration themes, a living glossary, a spiritual figures section (including monastic lineage), and a canonical entity registry with Sanskrit normalization. Content integrity verification, sacred image guidelines, and a structured spiritual ontology ensure fidelity and machine-readability.
 
 - ADR-029: Autobiography of a Yogi as Focus Book
 - ADR-030: Book Ingestion Priority — Life-Impact Over Scholarly Significance
@@ -64,8 +64,8 @@ Specifies what content the portal holds and how it is structured in the database
 - ADR-033: Exploration Theme Categories — Persons, Principles, Scriptures, Practices, Yoga Paths
 - ADR-034: Edition-Aware Content Model
 - ADR-035: Image Content Type — Photographs as First-Class Content
-- ADR-036: People Library — Spiritual Figures as First-Class Entities
-- ADR-037: Monastic & Presidential Lineage in the People Library
+- ADR-036: Spiritual Figures as First-Class Entities
+- ADR-037: Monastic & Presidential Lineage
 - ADR-038: Living Glossary — Spiritual Terminology as User-Facing Feature
 - ADR-039: Content Integrity Verification
 - ADR-040: Magazine Integration — Self-Realization Magazine as First-Class Content
@@ -94,12 +94,12 @@ Governs how seekers find passages and how AI assists retrieval. Pure hybrid sear
 
 **Cross-Media**
 
-Decides how video, audio, image, and cross-media content integrate into the portal. YouTube videos use hybrid RSS + API ingestion; transcripts are time-synced for passage-level linking; the video model is platform-agnostic to support future migration. Audio gets its own library with cross-media search; AI-generated audio is policy-controlled. The knowledge graph evolves to treat all content types as nodes, with visualization, digital watermarking for SRF images, and multi-size image serving.
+Decides how video, audio, image, and cross-media content integrate into the portal. YouTube videos use hybrid RSS + API ingestion; transcripts are time-synced for passage-level linking; the video model is platform-agnostic to support future migration. Audio gets its own section with cross-media search; AI-generated audio is policy-controlled. The knowledge graph evolves to treat all content types as nodes, with visualization, digital watermarking for SRF images, and multi-size image serving.
 
 - ADR-054: YouTube Integration via Hybrid RSS + API with ISR
 - ADR-055: Video Transcript Time-Synced Architecture
 - ADR-056: Platform-Agnostic Video Model and Documentary Integration
-- ADR-057: Audio Library and Cross-Media Audio Search
+- ADR-057: Audio and Cross-Media Audio Search
 - ADR-058: AI Audio Generation for Portal Audio Assets
 - ADR-059: Chant Reader — Devotional Poetry with Deterministic Cross-Media Linking
 - ADR-060: Unified Content Hub — Cross-Media Relations, Search, and Theming

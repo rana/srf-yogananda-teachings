@@ -76,7 +76,7 @@ The project is planned across 7 thematic arcs, each delivering a coherent narrat
 |-----|-------|-------|
 | **1: Foundation** | Proving the Light | Ingest one book, prove semantic search works, deploy with AI librarian (Milestones 1a/1b) |
 | **2: Presence** | The Living Library | All pages, reading experience, accessibility, design system, PWA (Milestones 2a/2b) |
-| **3: Wisdom** | Expanding Understanding | Multi-book library, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
+| **3: Wisdom** | Expanding Understanding | Multi-book catalog, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
 | **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, GitLab |
 | **5: Reach** | Every Seeker, Everywhere | Email, social, messaging, regional distribution, 10 languages (Milestones 5a/5b) |
 | **6: Media** | All Paths to Truth | Video, audio, images, cross-media hub, Cosmic Chants |
