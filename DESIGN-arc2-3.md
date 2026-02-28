@@ -709,7 +709,8 @@ A `@media print` stylesheet ensures passages and chapters print beautifully:
 - Portal URL in small footer: `teachings.yogananda.org`
 - Page breaks between chapters (for full chapter printing)
 - No background colors (saves ink, respects user paper)
-- **Non-Latin font support (Milestone 5b):** Print stylesheet must be locale-aware. Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Thai for Thai, Noto Serif Devanagari for Hindi, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
+- **Hindi print support (Arc 1):** Print stylesheet is locale-aware from Arc 1. Hindi pages use `font-family: 'Noto Serif Devanagari'` at 12pt (scaled from Latin 11pt for optical equivalence). Drop capitals omitted for Devanāgarī. Line length adjusted for 40–50 aksharas per line.
+- **Additional non-Latin font support (Milestone 5b):** Font-family falls back per script: Noto Serif JP for Japanese, Noto Serif Thai for Thai, Noto Serif Bengali for Bengali. CJK text at 10.5pt (equivalent optical size to 11pt Latin). Define per-locale `@media print` font stacks alongside the web font stacks.
 
 #### ADR-059: Chant Reader Variant
 
@@ -1210,7 +1211,7 @@ Every passage throughout the portal — search results, reader, theme pages, Qui
 - Uses `@vercel/og` (Satori) to render a PNG: passage text in Merriweather on warm cream, citation below, subtle SRF lotus mark, portal URL at bottom
 - Same image used for OG cards and "Save as image" download
 - Suitable for messaging apps, social media, printing, phone wallpaper
-- **Non-Latin script support (Milestone 5b):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Japanese or Hindi quote image will render as empty boxes unless the build bundles Noto font subsets for each active script. The OG image route must select the correct font based on the passage's `language` column. Font map: `ja` → Noto Serif JP, `hi` → Noto Serif Devanagari, `bn` → Noto Serif Bengali. All Latin-script languages use Merriweather.
+- **Hindi script support (Arc 1):** Satori requires explicit font files for non-Latin characters — it does not fall back to system fonts. A Hindi quote image will render as empty boxes unless the build bundles Noto Serif Devanagari font subsets. The OG image route selects font based on the passage's `language` column. Font map for Arc 1: `hi` → Noto Serif Devanagari; `en`, `es` → Merriweather. **Additional scripts (Milestone 5b):** `ja` → Noto Serif JP, `bn` → Noto Serif Bengali, `th` → Noto Serif Thai. All Latin-script languages use Merriweather.
 
 **Email sharing :**
 - "Email this passage" opens the seeker's email client via `mailto:` link
@@ -1483,12 +1484,13 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --font-serif-alt: 'Lora', Georgia, serif;
  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
- /* === Non-Latin Script Fonts (ADR-077, ADR-080) === */
- /* Noto Sans Devanagari loaded from Arc 1 — God Talks with Arjuna
- contains original Bhagavad Gita verses in Devanāgarī script.
- Loaded conditionally: only on pages containing Devanāgarī characters.
+ /* === Non-Latin Script Fonts (ADR-077, ADR-080, ADR-128) === */
+ /* Devanagari loaded from Arc 1 — Hindi Autobiography (full text),
+ God Talks with Arjuna (Gita verses), Holy Science (Sanskrit verses).
+ Hindi locale (/hi/): eager preload. English pages: conditional.
  Milestone 5b adds Thai and Bengali font stacks. */
- --font-devanagari: 'Noto Sans Devanagari', 'Noto Serif Devanagari', sans-serif;
+ --font-devanagari-reading: 'Noto Serif Devanagari', 'Noto Sans Devanagari', serif;
+ --font-devanagari-ui: 'Noto Sans Devanagari', 'Noto Serif Devanagari', sans-serif;
  --font-thai: 'Noto Sans Thai', 'Noto Serif Thai', sans-serif; /* Milestone 5b */
  --font-bengali: 'Noto Sans Bengali', sans-serif; /* Milestone 5b */
 
@@ -1505,6 +1507,12 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
  --text-lg: 1.375rem; /* 22px — large body, form inputs */
  --text-xl: 1.75rem; /* 28px — section headings */
  --text-2xl: 2rem; /* 32px — page headings */
+
+ /* === Hindi/Devanāgarī Font Scale Overrides (ADR-080, ADR-128) === */
+ /* Devanāgarī glyphs are optically smaller than Latin at the same
+    point size due to shirorekha and complex conjuncts. ~11% increase. */
+ --text-base-hi: 1.25rem;  /* 20px — Hindi body text */
+ --leading-relaxed-hi: 1.9; /* Hindi reading — extra vertical for shirorekha + matras */
 
  /* === Font Weights (Merriweather supports 300, 400, 700) === */
  --font-light: 300; /* Elegant headings, pull quotes */
@@ -1533,7 +1541,10 @@ The following tokens are derived from analysis of yogananda.org, convocation.yog
 | UI chrome (nav, buttons, labels) | Open Sans | 400/600 | `--text-sm` (15px) | `--leading-normal` (1.6) |
 | Citations below quotes | Open Sans | 400 | `--text-sm` | `--leading-normal` |
 | Chapter titles in reader | Lora | 400 | `--text-xl` | `--leading-tight` |
-| Devanāgarī verses (Gita) | Noto Sans Devanagari | 400 | `--text-base` (18px) | `--leading-relaxed` (1.8) |
+| Devanāgarī verses (Gita, Holy Science) | Noto Sans Devanagari | 400 | `--text-base` (18px) | `--leading-relaxed` (1.8) |
+| Hindi body text (reading) | Noto Serif Devanagari | 400 | `--text-base-hi` (20px) | `--leading-relaxed-hi` (1.9) |
+| Hindi UI chrome (nav, buttons) | Noto Sans Devanagari | 400/600 | `--text-sm` (15px) | `--leading-normal` (1.6) |
+| Hindi headings | Noto Serif Devanagari | 700 | `--text-2xl` (32px) | `--leading-tight` (1.3) |
 
 **IAST diacritics note (ADR-080):** Merriweather and Lora must render IAST combining characters (ā, ī, ū, ṛ, ṃ, ḥ, ñ, ṅ, ṭ, ḍ, ṇ, ś, ṣ) correctly at all sizes. Verify during Milestone 2a design QA — particularly at `--text-sm` (15px) where combining marks are most likely to collide or render incorrectly.
 
@@ -1658,12 +1669,12 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 | **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Arc 1, activated in Milestone 5b). **Never machine-translate sacred text.** | 5b |
 | **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | 5b |
 
-### Milestone 2a — English Only, i18n-Ready
+### Milestone 2a — Trilingual Content, i18n-Ready for All Languages
 
-Content is English only. But the i18n infrastructure is in place from day one:
+Arc 1 ingests content in English, Hindi, and Spanish (ADR-128 Tier 1). The i18n infrastructure is in place from day one for all 10 core languages:
 
 - All UI strings externalized to `messages/en.json` (never hardcoded in components)
-- `next-intl` configured with `en` as sole locale
+- `next-intl` configured with `en`, `hi`, `es` locales (remaining locales added in Milestone 5b)
 - CSS logical properties throughout (`ms-4` not `ml-4`, `text-align: start` not `text-align: left`)
 - `lang="en"` on `<html>` element
 - `language` column already present on `book_chunks`, `search_queries`, `email_subscribers`
@@ -1749,7 +1760,7 @@ The `[EN]` tag is a small, muted language indicator. It is honest, not apologeti
 
 > **Note:** pg_search BM25 indexes are configured per-language using ICU tokenization (defined in § Data Model). Each chunk's `language` column determines the appropriate analyzer at query time. No additional indexes are needed when new languages are added in Milestone 5b — only new content rows with the correct `language` value and the corresponding ICU analyzer configuration.
 
-**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. Voyage voyage-3-large (ADR-118) supports 26 languages and places semantically equivalent passages in different languages close together in the unified cross-lingual embedding space. This means English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
+**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. Voyage voyage-3-large (ADR-118) supports 26 languages and places semantically equivalent passages in different languages close together in the unified cross-lingual embedding space. This means Arc 1 embeddings (en/hi/es) remain valid when German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
 **Query expansion:** Claude handles all target languages. The expansion prompt includes the target language:
 
@@ -1830,7 +1841,7 @@ Selection stored in a cookie. Available on every page. Not gated by account.
 | Bengali | Bengali | Noto Serif Bengali (reading), Noto Sans Bengali (UI) |
 | All Latin | Latin | Merriweather / Lora / Open Sans (existing stack) |
 
-All non-Latin fonts loaded conditionally — only when the user selects that locale, not on every page load.
+Non-Latin font loading strategy: Hindi locale (`/hi/`) eagerly preloads Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI) in `<head>`. English pages load Noto Sans Devanagari conditionally (only when Devanāgarī characters are present — Gita verses, Holy Science verses). All other non-Latin fonts loaded conditionally when the user selects that locale.
 
 ### Per-Language SEO
 
@@ -1855,7 +1866,7 @@ All non-Latin fonts loaded conditionally — only when the user selects that loc
 
 > **Central registry:** CONTEXT.md § Open Questions. The Milestone 5b questions below are tracked there with the full stakeholder list.
 
-- Digital text availability of official translations for all 9 non-English core languages (highest-impact Milestone 5b question)
+- Digital text availability of official translations for the remaining 7 non-English core languages beyond Hindi and Spanish (highest-impact Milestone 5b question; Hindi and Spanish already sourced for Arc 1)
 - Translation reviewer staffing per language
 - YSS portal branding for Hindi/Bengali/Thai locales
 - Whether translated editions preserve paragraph structure (affects `canonical_chunk_id` alignment)

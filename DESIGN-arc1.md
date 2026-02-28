@@ -1554,7 +1554,7 @@ Step 5: Language Detection (per-chunk, fastText)
  └── Detect primary language of each chunk
  └── Detect script (Latin, Devanagari, CJK, etc.)
  └── Assign language_confidence score
- └── Arc 1: English-only, but column populated for future use
+ └── Arc 1: trilingual (en/hi/es); column populated for all chunks
 
 Step 6: Entity Resolution (ADR-116)
  └── Resolve names, places, Sanskrit terms against entity_registry

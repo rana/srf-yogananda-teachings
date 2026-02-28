@@ -22,7 +22,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 ### Tier 1: No remaining blockers — Milestone 1a can begin
 
-*Reclassified 2026-02-25. These questions are real but discoverable through implementation, not prerequisites for starting. Chunk size is evaluated in Deliverable 1a.9. Enrichment prompt is Deliverable 1b.13. Edition variance resolved for Arc 1 (spiritmaji.com edition); multi-edition is Arc 3+. Parameter validation already governed by ADR-123. Translation matrix and Devanāgarī typeface are not relevant to the English-only Autobiography ingestion.*
+*Reclassified 2026-02-25. These questions are real but discoverable through implementation, not prerequisites for starting. Chunk size is evaluated in Deliverable 1a.9. Enrichment prompt is Deliverable 1b.13. Edition variance resolved for Arc 1 (spiritmaji.com English edition; Amazon Hindi/Spanish editions); multi-edition is Arc 3+. Parameter validation already governed by ADR-123. Devanāgarī typeface selection is now Arc 1 relevant (trilingual launch — ADR-128).*
 
 ### Tier 2: Resolve During Arc 1 (not 1a-specific)
 
@@ -39,7 +39,7 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 **Technical**
 - [ ] Contentful record capacity: monitor record count during ingestion. Evaluate tier needs at Milestone 3a (multi-book corpus).
 - [ ] fastText vs. alternative language detection for short queries containing Sanskrit terms. Evaluate during Arc 1 search quality testing.
-- [ ] Devanāgarī font timing: The English-language *God Talks with Arjuna* contains Devanāgarī; when this book enters the corpus (Milestone 3a+), the font must already be in the stack. ADR-080 adds Noto Sans Devanagari from Arc 1. Confirm whether *The Holy Science* also contains Devanāgarī. (ADR-080, ADR-048)
+- [x] Devanāgarī font timing: *Resolved 2026-02-28.* Both *God Talks with Arjuna* and *The Holy Science* contain Devanāgarī. The Hindi *Autobiography* (Arc 1, ADR-128) is entirely Devanāgarī. Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI) load from Arc 1 — eagerly on `/hi/` locale, conditionally on English pages. (ADR-080)
 - [ ] Abuse and misuse patterns: extraction at scale, quote weaponization, SEO parasitism. Should the portal include rate limiting tiers, `rel=canonical` enforcement, MCP usage policy, or text watermarking? (ADR-001, ADR-011, ADR-101, ADR-063, ADR-081)
 - [x] Cloudflare adoption and scope. *Resolved 2026-02-26: Vercel-native (Firewall Rules, DDoS protection, bot detection, CDN). Cloudflare removed from portal infrastructure — double-CDN adds complexity without unique value for this portal. PRO-017 created for re-evaluation if SRF routes the domain through Cloudflare. All documents updated.* (PRO-017)
 - [ ] VLD editorial authentication: Milestone 3b+ VLD curation (ADR-082) references Auth0 roles, but Auth0 arrives at Milestone 7a+. What authentication mechanism serves the editorial portal before Auth0? Options: API keys, HTTP Basic, or lightweight auth (e.g., Neon Auth per PRO-005). Needs resolution before Milestone 3b scoping.
@@ -123,7 +123,7 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-24 | Contentful from Arc 1, not Arc 6 — avoids costly migration of 15+ books at Arc 6 | ADR-010 |
 | 2026-02-24 | PDF source: spiritmaji.com for Arc 1 PoC; SRF digital text before launch imported to Contentful | — |
 | 2026-02-24 | SRF Corpus MCP: all three tiers unscheduled, architecture preserved in DES-031 | PRO-001 |
-| 2026-02-24 | Hindi/Bengali: all 9 non-English core languages are Milestone 5b peers, no wave ordering | ADR-077 |
+| 2026-02-24 | Hindi/Bengali: core languages prioritized by reachable population; Hindi and Spanish are Tier 1, activated in Arc 1 alongside English | ADR-077, ADR-128 |
 | 2026-02-25 | SCM: GitHub confirmed; GitLab migration path clean via CI-agnostic scripts if needed | ADR-016 |
 | 2026-02-25 | Full crawlability with copyright retention — no content gating, library model | ADR-081, PRO-012 |
 | 2026-02-25 | Portal as canonical Yogananda source for LLM training corpora — permissive crawling, `llms.txt` citation guidance | ADR-081 |
@@ -144,6 +144,7 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-28 | Reachable population adopted as quantitative prioritization metric — scope ordered by `speakers × internet_penetration × content_availability`. Roadmap reordered: breadth-first (languages) before depth-first (reader polish, study tools) | ADR-128 |
 | 2026-02-28 | Hindi and Spanish elevated to Tier 1 languages — *Autobiography* ingested in Arc 1 alongside English. "No wave ordering" replaced by demographic-priority ordering. Amazon editions as temporary PoC sources (same approach as spiritmaji.com for English) | ADR-077, ADR-128 |
 | 2026-02-28 | Language priority ordering: Hindi/Spanish (Tier 1, Arc 1) → Portuguese/Bengali (Tier 2) → German/Japanese/French/Italian/Thai (Tier 3). Languages ship independently as they clear readiness gates | ADR-077, ADR-128 |
+| 2026-02-28 | Devanāgarī scope: *The Holy Science* confirmed to contain Devanāgarī. Hindi *Autobiography* (Arc 1) makes Devanāgarī a primary reading script, not just supplemental verses. ADR-080 extended with full-text Hindi typography (serif reading font, font size scaling, line height, conjunct QA) | ADR-080 |
 | 2026-02-26 | Branch=environment principle adopted: one project per service, branches for separation. Environments disposable via `create-env.sh`/`destroy-env.sh` (Arc 4+) | ADR-020 |
 | 2026-02-26 | Single AWS account with IAM role boundaries (not multi-account) — proportionate to public no-auth portal. Escalate to multi-account only if SRF governance requires it | ADR-020 |
 | 2026-02-26 | Bootstrap automation via `scripts/bootstrap.sh` — human runs one script, pastes 2 credentials, script handles AWS CLI + Vercel CLI + `gh secret set` | ADR-020, DES-039 |
@@ -205,7 +206,7 @@ This is a second-order consequence of the philanthropist's investment: the porta
 ### In Scope
 
 - **Free access** to all SRF/YSS-published books across three author tiers (PRO-014): guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity.
-- **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. All non-English languages are Milestone 5b peers. Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077.
+- **Multi-language support** (English + 9 non-English core languages). Core set: en, de, es, fr, it, pt, ja, th, hi, bn. Hindi and Spanish are Tier 1 priorities activated in Arc 1 alongside English; remaining 7 languages follow in Milestone 5b ordered by reachable population (ADR-128). Evaluation candidates beyond the core set: Chinese, Korean, Russian, Arabic. See ADR-075, ADR-077, ADR-128.
 - **Intelligent Query Tool** — users ask questions and search across the entire library of books to find specific answers (e.g., "How do I deal with fear?")
 - **Life-theme navigation** — curated thematic entry points (Peace, Courage, Healing, Joy, Purpose, Love) so seekers can explore without needing to formulate a search query
 - **Today's Wisdom** — a different passage from the guru tier (Yogananda, Sri Yukteswar) on each visit, creating a living, dynamic homepage (PRO-014: only guru-tier authors in daily pool)
@@ -350,7 +351,7 @@ The philanthropist's question was about making Yogananda's books "available free
 - **UI:** All strings are externalized to locale files (`messages/*.json`) from Milestone 2a. CSS logical properties (`margin-inline-start` not `margin-left`) are used throughout, ensuring RTL languages work without refactoring. The `lang` attribute is set on `<html>`.
 - **Content fidelity:** Only official SRF/YSS human translations are served. Machine translation of Yogananda's words is never acceptable (see Sacred Text Fidelity above). If an official translation does not exist, the book is unavailable in that language — the portal is honest about content availability.
 
-Arc 1 launches in English only, but the architecture is locale-ready. Milestone 5b activates multilingual content. The gap between "English only" and "multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-075, ADR-076, ADR-077, ADR-078.)
+Arc 1 launches in English, Hindi, and Spanish (ADR-128 Tier 1 languages). Milestone 5b activates the remaining 7 core languages ordered by reachable population. The gap between "trilingual" and "fully multilingual" should require zero schema migrations, zero API changes, and zero search function rewrites — only content ingestion and UI string translation. If a design decision today would require rework to support a new language tomorrow, the design is wrong. (See ADR-075, ADR-076, ADR-077, ADR-078, ADR-128.)
 
 ### Calm Technology Principles
 
@@ -447,7 +448,7 @@ The constraints above are architectural and ethical. This section names somethin
 
 **Crisis-adjacent content carries responsibility.** The portal will reach people in acute distress. The grief entry point targets seekers searching "what happens after death" and "spiritual comfort after loss." Some of these seekers may be in active danger. Yogananda's passages about the immortality of the soul and the freedom of death are truthful, but without context could be read in unintended ways. The portal's response is not to withhold the teachings but to quietly, non-intrusively provide crisis resources alongside content that touches on death, suffering, and despair. Not a modal, not a gate — a gentle presence. (ADR-071)
 
-**The portal transmits Indian teachings through Western infrastructure — and holds this honestly.** The portal is designed in English, built on American technology (Vercel, AWS, Neon, Cloudflare), funded by a British philanthropist, and serves the teachings of an Indian master to seekers worldwide. Every individual decision is defensible. The aggregate pattern — who designed it, whose aesthetic it uses, whose languages come first, whose infrastructure it runs on — warrants honest acknowledgment and a design process that includes non-Western voices as co-creators, not only as reviewers of completed designs. Cultural consultation is not a Milestone 5b deliverable — it is a posture maintained throughout all arcs. YSS representatives, Indian designers, and Global South perspectives should participate in design decisions from Arc 1. (Relates to ADR-006, ADR-077, ADR-079)
+**The portal transmits Indian teachings through Western infrastructure — and holds this honestly.** The portal is designed in English, built on American technology (Vercel, AWS, Neon, Cloudflare), funded by a British philanthropist, and serves the teachings of an Indian master to seekers worldwide. Every individual decision is defensible. The aggregate pattern — who designed it, whose aesthetic it uses, whose infrastructure it runs on — warrants honest acknowledgment and a design process that includes non-Western voices as co-creators, not only as reviewers of completed designs. The trilingual Arc 1 launch (en/hi/es — ADR-128) is a concrete step: Hindi is the first non-Western language, not an afterthought. Cultural consultation is not a Milestone 5b deliverable — it is a posture maintained throughout all arcs. YSS representatives, Indian designers, and Global South perspectives should participate in design decisions from Arc 1. (Relates to ADR-006, ADR-077, ADR-079, ADR-128)
 
 **The unmeasurable encounter is the highest success.** The metrics section (§ Measuring Success) carefully avoids engagement metrics. But the portal's highest impact will be in encounters that no analytics system can capture: the person who found exactly the right words at 2 AM, the seeker in rural India who read about meditation and sat quietly for the first time, the grieving parent who felt less alone. These encounters are the mission fulfilled. The "What Is Humanity Seeking?" dashboard (ADR-090) is the portal's best answer to the measurement problem — shifting the narrative from "how many users" to "what is the world asking." That reframing is itself a teaching about what matters.
 
@@ -538,7 +539,10 @@ The SRF Home Study Lessons are the organization's core spiritual curriculum — 
 
 ### Arc 1 Content Sources
 
-For Arc 1 development, PDFs are available at https://spiritmaji.com/. These are unofficial scans and would be replaced with authoritative SRF-provided digital text for production.
+For Arc 1 development:
+- **English:** PDFs available at https://spiritmaji.com/. These are unofficial scans and would be replaced with authoritative SRF-provided digital text for production.
+- **Hindi:** YSS edition purchased from Amazon (https://www.amazon.com/dp/9389432472). Temporary PoC source; replaced with authoritative YSS digital text for production.
+- **Spanish:** SRF edition purchased from Amazon (https://www.amazon.com/dp/0876120982). Temporary PoC source; replaced with authoritative SRF digital text for production.
 
 ---
 

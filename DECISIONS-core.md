@@ -4057,8 +4057,8 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 
 **The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. Voyage voyage-3-large embeds 26 languages in a unified vector space as a design goal — not an incidental capability. This means:
 
-- English embeddings generated in Arc 1 remain valid when Spanish, German, and Japanese chunks are added in Milestone 5b — no re-embedding of the English corpus.
-- The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — even when the user typed their query in Spanish.
+- Arc 1 embeddings (en/hi/es) remain valid when German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus.
+- The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — validated from Arc 1 when Hindi or Spanish queries find English passages.
 - Cross-language passage alignment (`canonical_chunk_id`) is validated by embedding proximity, not just paragraph index matching.
 - Any future embedding model migration must preserve this multilingual property.
 
@@ -4100,7 +4100,7 @@ Three dimensions of embedding quality matter for this portal:
 
 1. **Voyage voyage-3-large is the Arc 1 embedding model.** ADR-118 adopted Voyage voyage-3-large (1024 dimensions, 26 languages, 32K token input) based on its multilingual-first design, asymmetric encoding support (`input_type = 'document'` at ingestion, `input_type = 'query'` at search time), and strong performance on literary/spiritual text retrieval. Originally, OpenAI text-embedding-3-small (1536 dimensions) was selected for its simplicity and adequate multilingual support; ADR-118 superseded that choice after the RAG Architecture Proposal demonstrated that Voyage's intentional multilingual design and literary retrieval quality justified the switch before any corpus was embedded.
 
-2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestone 1a English-only evaluation (Deliverable 1a.9) cannot assess multilingual retrieval quality — this is an inherent limitation of evaluating before multilingual content exists. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
+2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestone 1a trilingual evaluation (Deliverable 1a.9: 50 en + 15 hi + 15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
 
 3. **Domain-adapted embeddings remain a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
  - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
@@ -4126,13 +4126,13 @@ Three dimensions of embedding quality matter for this portal:
 
 - **Quality is the differentiator.** At < $10 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Voyage voyage-3-large was selected because it is designed multilingual-first, supports asymmetric encoding for retrieval optimization, and outperforms OpenAI models on literary retrieval benchmarks at a smaller dimension (1024 vs. 1536).
 - **Domain adaptation is the highest-ceiling option.** General models compete on benchmarks across all domains. A model fine-tuned on Yogananda's corpus would compete on one domain — the only one that matters for this portal. This is the path to world-class retrieval quality.
-- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on English-only data — missing the point.
+- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on only 3 languages — Arc 1's trilingual corpus (en/hi/es) provides a starting point but not the full linguistic diversity needed.
 - **The architecture is already ready.** ADR-046's model versioning, the Neon branch migration workflow, and the per-language evaluation suites provide the complete infrastructure for model evolution. This ADR adds strategic direction, not architectural changes.
 
 ### Consequences
 
 - Arc 1 proceeds with Voyage voyage-3-large (1024 dimensions)
-- Deliverable 1a.9 scope note: English-only evaluation is acknowledged as insufficient for multilingual quality assessment
+- Deliverable 1a.9 scope note: trilingual evaluation (en/hi/es) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
 - Milestone 5b benchmarks Voyage as the baseline against multilingual-optimized alternatives (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, domain-adapted fine-tunes)
 - Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
@@ -4356,7 +4356,7 @@ In a multilingual corpus, a naive "top 30 global" approach underserves non-Engli
 - Total: up to 40 rows per chunk (at 400K chunks across all languages = 16M rows — trivial for PostgreSQL)
 - The `rank` column indicates rank within its group (1–30 for same-language, 1–10 for English supplemental)
 
-In Arc 1 (English only), this is equivalent to the original "top 30" — the English supplemental slots are simply empty.
+In Arc 1 (en/hi/es), English chunks have empty supplemental slots; Hindi and Spanish chunks populate both same-language (up to 30) and English supplemental (up to 10) relations from the start.
 
 **Filtering:** Relations are filtered at query time via JOINs — by book, content type, language, or life theme. Top 30 same-language relations provide ample headroom for filtered queries within a language. English supplemental relations are included when the same-language results are insufficient, following the same pattern as the search English fallback (always marked with `[EN]`). When filtering yields < 3 results, fall back to a real-time vector similarity query with the filter as a WHERE clause.
 
@@ -4647,7 +4647,7 @@ CREATE INDEX chunks_bm25_ja ON book_chunks
 
 - `tsvector` columns and indexes are not needed; pg_search BM25 indexes replace them entirely
 - The `hybrid_search` SQL function uses `paradedb.score(id)` and `@@@` operator instead of `ts_rank` and `@@`
-- Arc 1 BM25 index uses ICU tokenizer (English); CJK-specific indexes added in Milestone 5b
+- Arc 1 BM25 indexes use ICU tokenizer for English, Hindi (Devanagari), and Spanish; CJK-specific indexes added in Milestone 5b
 - DESIGN.md DES-003 (Search Architecture) updated to reflect pg_search in the search flow
 - A `script` column on `book_chunks` routes queries to the appropriate partial index at Milestone 5b
 
@@ -4820,7 +4820,7 @@ CREATE TABLE sanskrit_terms (
 - Suggestion dictionary (ADR-049, ADR-120) draws Tier 2 and Tier 4 entries from these tables
 - Knowledge graph relationships (ADR-117) reference entity registry entries via canonical ID
 - DESIGN.md DES-004 (Data Model) updated with both table schemas
-- ADR-080 (Sanskrit Display and Search Normalization) extended by the `sanskrit_terms` table
+- ADR-080 (Sanskrit Display, Search Normalization, and Devanāgarī Typography) extended by the `sanskrit_terms` table
 
 ---
 

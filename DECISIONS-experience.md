@@ -1741,12 +1741,12 @@ Implement a **three-layer localization strategy** with English fallback:
 
 ### Milestone 2a i18n Infrastructure
 
-Even though Milestone 2a is English-only, the following must be in place from day one:
+Even though Milestone 2a's UI chrome is initially English (Hindi/Spanish UI strings are a Milestone 5b deliverable), the i18n infrastructure must be in place from day one (Arc 1 content is trilingual — en/hi/es):
 
 | Requirement | Rationale |
 |-------------|-----------|
 | All UI strings in `messages/en.json` | Retrofitting i18n into hardcoded JSX is expensive |
-| `next-intl` configured with `en` as sole locale | Adding locales later is a config change, not a refactor |
+| `next-intl` configured with `en`, `hi`, `es` locales | Adding more locales later is a config change, not a refactor |
 | CSS logical properties (`margin-inline-start`, not `margin-left`) | Free RTL support for future languages |
 | `lang` attribute on `<html>` element | Screen readers and search engines depend on this |
 | `language` column on all content tables | Already present in the schema |
@@ -1775,13 +1775,13 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
-7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's English-only search quality evaluation (Deliverable 1a.9) and prevents launching a language with degraded retrieval quality.
+7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's trilingual search quality evaluation (Deliverable 1a.9: 50 en + 15 hi + 15 es queries) and prevents launching a language with degraded retrieval quality.
 
 8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Milestone 5b ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
 
 ### Consequences
 
-- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization) even though content is English-only
+- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization); Arc 1 content is trilingual (en/hi/es) per ADR-128
 - Arc 1 includes the `topic_translations` table (empty until Milestone 5b)
 - Milestone 5b requires knowing which books SRF has in digital translated form (stakeholder question)
 - Milestone 5b UI string translation uses an AI-assisted workflow: Claude generates drafts of locale JSON files, then a human reviewer (fluent in the target language and familiar with SRF's devotional register) refines tone, spiritual terminology, and cultural nuance. See ADR-078.
@@ -1898,7 +1898,7 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 
 ### Risks
 
-- **Tier 1 in Arc 1 adds scope.** Hindi and Spanish ingestion in Arc 1 requires per-language search quality evaluation and font loading (Noto Sans Devanagari). Mitigated: same ingestion pipeline, same embedding model (Voyage multilingual), same search infrastructure. Incremental cost is modest.
+- **Tier 1 in Arc 1 adds scope.** Hindi and Spanish ingestion in Arc 1 requires per-language search quality evaluation, full Devanāgarī typography (Noto Serif Devanagari for reading, Noto Sans Devanagari for UI — ADR-080), and conjunct rendering QA. Mitigated: same ingestion pipeline, same embedding model (Voyage multilingual), same search infrastructure. Incremental cost is modest.
 - **Digital text availability.** Confirmed that official translations exist in all core languages. Digital text availability (machine-readable format) must be verified per language — a critical stakeholder question. Arc 1 uses purchased books as temporary sources (same approach as spiritmaji.com for English).
 - **Human reviewer availability.** Each language needs a fluent, SRF-aware reviewer for UI strings (ADR-078). The readiness gate ensures no language ships with unreviewed translations.
 - **Thai script complexity.** Thai has no word boundaries, combining characters, and tone marks. Search tokenization (pg_search ICU) handles Thai, but per-language search quality benchmarking is essential.
@@ -1909,7 +1909,7 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 - Remaining languages activate ordered by reachable population, each clearing the readiness gate independently
 - Need to confirm digital text availability for all core languages (stakeholder question)
 - YSS-specific UI adaptations needed for Hindi and Bengali locales (organizational branding differences between SRF and YSS per ADR-079)
-- Font stacks: Noto Sans/Serif Devanagari (Hindi), Noto Sans/Serif Bengali (Bengali), Noto Sans/Serif Thai (Thai), Noto Sans/Serif JP (Japanese). All loaded conditionally per locale.
+- Font stacks: Noto Serif/Sans Devanagari (Hindi — eagerly preloaded on `/hi/` locale, conditionally on English pages), Noto Sans/Serif Bengali (Bengali), Noto Sans/Serif Thai (Thai), Noto Sans/Serif JP (Japanese). Non-Hindi fonts loaded conditionally per locale.
 - Portal URL and branding question for Hindi/Bengali: same domain (`teachings.yogananda.org/hi/`) or YSS-branded domain?
 - YSS representatives participate in Hindi/Bengali design decisions as co-equal stakeholders (see CONTEXT.md § Stakeholders)
 - Thai design decisions require input from SRF/YSS Thailand community
@@ -2092,7 +2092,7 @@ Organization branding configuration:
 
 ---
 
-## ADR-080: Sanskrit Display and Search Normalization Policy
+## ADR-080: Sanskrit Display, Search Normalization, and Devanāgarī Typography
 
 **Status:** Accepted | **Date:** 2026-02-21
 
@@ -2128,11 +2128,27 @@ Implementation:
 
 **3. Devanāgarī handling in the English corpus.**
 
-*God Talks with Arjuna* contains original Bhagavad Gita verses in Devanāgarī alongside romanized transliteration and English commentary. Each chapter typically includes: (a) Devanāgarī verse, (b) romanized transliteration, (c) word-by-word translation, (d) Yogananda's full commentary.
+*God Talks with Arjuna* contains original Bhagavad Gita verses in Devanāgarī alongside romanized transliteration and English commentary. *The Holy Science* by Sri Yukteswar contains Sanskrit verses in Devanāgarī. The *Autobiography* contains heavy IAST transliteration. Each *Gita* chapter typically includes: (a) Devanāgarī verse, (b) romanized transliteration, (c) word-by-word translation, (d) Yogananda's full commentary.
 
-- **Display:** Devanāgarī verses are preserved in `chunk_content` and rendered using Noto Sans Devanagari in the font stack. The Devanāgarī font loads from Arc 1 (not Milestone 5b) because the English-language Gita commentary contains Devanāgarī.
-- **Search indexing:** Devanāgarī script passages are excluded from the embedding input via a script-detection preprocessing step. The English commentary and romanized transliteration are embedded. Rationale: although Voyage voyage-3-large (ADR-118) has stronger multilingual support than its predecessor (26 languages including Indic scripts), embedding raw Devanāgarī verses alongside English commentary would dilute retrieval quality for the English-language search context — seekers search the commentary, not the original verses.
-- **Chunking (extends ADR-048):** For verse-aware chunking, the Devanāgarī verse text is preserved as metadata on the verse-commentary chunk but excluded from the token count that determines chunk splitting. The romanized transliteration is included in both the chunk content and the embedding input.
+- **Display:** Devanāgarī verses are preserved in `chunk_content` and rendered using Noto Sans Devanagari in the font stack. The Devanāgarī font loads from Arc 1 (not Milestone 5b) because the English-language Gita and Holy Science contain Devanāgarī — and because Hindi content is ingested in Arc 1 (ADR-128).
+- **Search indexing:** Devanāgarī script passages *in the English corpus* are excluded from the embedding input via a script-detection preprocessing step. The English commentary and romanized transliteration are embedded. Rationale: embedding raw Devanāgarī verses alongside English commentary would dilute retrieval quality for the English-language search context — seekers search the commentary, not the original verses. **Exception:** Hindi corpus chunks are entirely Devanāgarī and are embedded normally — the exclusion applies only to Devanāgarī verse blocks within English-language chunks.
+- **Chunking (extends ADR-048):** For verse-aware chunking in the English corpus, the Devanāgarī verse text is preserved as metadata on the verse-commentary chunk but excluded from the token count that determines chunk splitting. The romanized transliteration is included in both the chunk content and the embedding input. Hindi corpus chunks use standard chunking — the entire text is Devanāgarī and is treated as primary content.
+
+**5. Devanāgarī as primary reading script (Hindi locale — Arc 1).**
+
+With Hindi *Autobiography of a Yogi* in Arc 1 (ADR-128), Devanāgarī transitions from supplemental verse blocks to a full-text reading experience. This requires typography treatment fundamentally different from occasional verse rendering:
+
+- **Reading font:** Noto **Serif** Devanagari for sustained body text reading (not Noto Sans, which is used for UI chrome and verse display). Hindi readers expect serif-like letterforms with modulated stroke weight for long-form reading, analogous to Merriweather for English.
+- **Font size scaling:** Devanāgarī glyphs are optically smaller than Latin at the same point size due to the shirorekha (headline) and complex conjunct forms. Hindi body text uses `--text-base-hi: 1.25rem` (20px) — approximately 11% larger than the Latin `--text-base` of 18px. This is a design token, not a hack.
+- **Line height:** `--leading-relaxed-hi: 1.9` (vs. 1.8 for Latin). Devanāgarī requires slightly more vertical space due to the shirorekha connecting characters at the top and matras (vowel signs) extending below the baseline.
+- **Optimal line length:** 40–50 aksharas (syllabic units) per line, vs. 65–75 characters for Latin. Hindi words tend to be longer due to conjunct clusters. `max-width` for the Hindi reader adjusted accordingly.
+- **Drop capitals:** Omitted for Devanāgarī — this is a Western book convention with no equivalent in Hindi typographic tradition.
+- **Font loading strategy:** On `/hi/` locale pages, Noto Serif Devanagari and Noto Sans Devanagari load **eagerly** (preload in `<head>`), not conditionally. Conditional loading remains for Devanāgarī content appearing on English-locale pages (Gita verses, Holy Science verses).
+- **Conjunct rendering QA:** Hindi has hundreds of conjunct characters (jodakshar): क्ष, त्र, ज्ञ, श्र, and many more. Matras (vowel signs like ि, ी, ु, ू, े, ै, ो, ौ) must not collide with consonants at any font size. Halant/virama (्) must render correctly for consonant clusters. Verify at `--text-sm` (15px equivalent) where rendering issues are most likely.
+- **Nukta characters:** Hindi borrows sounds from Persian/Arabic (फ़, ज़, ख़, ग़). Verify that the YSS Hindi *Autobiography* edition's usage is preserved faithfully.
+- **Quote image generation:** `@vercel/og` (Satori) requires explicit font files — it does not fall back to system fonts. Hindi passage images use Noto Serif Devanagari. The OG image route selects font based on the passage's `language` column. This is Arc 1 scope, not Milestone 5b.
+- **PDF export:** Hindi passages use Noto Serif Devanagari at 12pt (scaled from Latin 11pt). PDF generation pipeline must bundle the Devanāgarī font.
+- **Print stylesheet:** `@media print` font-family for `/hi/` locale uses `'Noto Serif Devanagari'` at 12pt. Arc 1 scope.
 
 **4. Terminology bridge extensions for Sanskrit and cross-tradition terms.**
 
@@ -2161,7 +2177,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 - **Unicode NFC normalization** is standard practice for text processing pipelines that handle combining characters. Without it, identical-looking strings can fail equality checks, deduplication, and search matching.
 - **ICU tokenization in pg_search BM25** (ADR-114) handles diacritics normalization natively, collapsing orthographic variants in the search index without altering stored data. The `unaccent` extension remains for pg_trgm fuzzy matching.
 - **The Aum/Om exception** reflects a general principle: search normalization handles orthography; the terminology bridge handles semantics. Collapsing semantically distinct terms in the index would lose information that cannot be recovered.
-- **Devanāgarī font in Arc 1** because the content is present in Arc 1. Deferring font support to Milestone 5b creates a rendering gap for the Gita commentary — Devanāgarī would fall back to system fonts, breaking the visual coherence of the sacred reading experience.
+- **Devanāgarī fonts in Arc 1** because the content is present in Arc 1 — both as Gita/Holy Science verses in the English corpus and as the entire Hindi *Autobiography* (ADR-128). Deferring font support to Milestone 5b would break rendering for Hindi readers. Noto Serif Devanagari for reading and Noto Sans Devanagari for UI/verses — the same serif/sans distinction as the Latin stack (Merriweather/Open Sans).
 - **Pronunciation in the glossary** serves seekers who encounter Sanskrit for the first time. Phonetic guides are a minimal editorial effort with high impact for newcomers. Audio pronunciation is deferred until SRF can provide approved recordings.
 - **`has_teaching_distinction`** enables the glossary UI to highlight terms where the gap between common and Yogananda-specific usage is pedagogically important — inviting seekers into the teaching through the vocabulary itself.
 
@@ -2169,7 +2185,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 
 - **Ingestion pipeline:** Unicode NFC normalization added as a mandatory preprocessing step (Step 2.5 in DESIGN.md § Content Ingestion Pipeline)
 - **Search index:** pg_search BM25 index with ICU tokenizer handles diacritics normalization natively (ADR-114). The `unaccent` extension remains for pg_trgm fuzzy matching.
-- **Font stack:** `'Noto Sans Devanagari'` added to the serif font stack for Arc 1. Loaded conditionally (only when Devanāgarī characters are present on the page) to avoid unnecessary font downloads on pages that don't need it
+- **Font stack:** Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI/verses) added for Arc 1. Hindi locale loads eagerly; English pages with Devanāgarī content load conditionally
 - **Glossary schema:** Three new nullable columns (`phonetic_guide`, `pronunciation_url`, `has_teaching_distinction`) on `glossary_terms`
 - **Terminology bridge:** Two new extraction categories (inline Sanskrit definitions, cross-tradition terms) added to the ADR-051 vocabulary extraction lifecycle
 - **ADR-048:** Verse-aware chunking for *God Talks with Arjuna* extended with Devanāgarī script handling
@@ -2177,7 +2193,11 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 - **New stakeholder questions:** SRF editorial policy on contested transliterations; pronunciation recording availability; *God Talks with Arjuna* Devanāgarī display confirmation
 - **New technical questions:** IAST diacritics rendering verification in Merriweather/Lora at small sizes
 
+- **Quote images and PDF:** Devanāgarī font bundled for `@vercel/og` and PDF generation from Arc 1 (Hindi passages must render correctly in shared images and printed output)
+- **Devanāgarī typography QA:** Conjunct rendering, matra placement, halant/virama, and nukta characters verified at all font sizes as a Milestone 1a success criterion
+
 *Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
+*Revised: 2026-02-28, extended from supplemental verse rendering to full-text Hindi reading experience (ADR-128 trilingual Arc 1)*
 
 ---
 

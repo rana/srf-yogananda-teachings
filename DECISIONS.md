@@ -135,7 +135,7 @@ Architects the portal for worldwide multilingual access from the foundation up. 
 - ADR-077: Core Language Set and Priority Ordering
 - ADR-078: AI-Assisted Translation Workflow
 - ADR-079: YSS Organizational Branding and Locale Strategy
-- ADR-080: Sanskrit Display and Search Normalization Policy
+- ADR-080: Sanskrit Display, Search Normalization, and Devanāgarī Typography
 - ADR-081: Machine-Readable Content and AI Citation Strategy
 
 **Staff & Community**
