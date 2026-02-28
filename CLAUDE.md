@@ -14,8 +14,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
 5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
 6. **DESIGN-arc4-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — Index and navigational summaries for 123 ADRs across 11 topical groups. ADR bodies split into three files:
-   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–014, 016–027, 029–044, 046–053, 114–121, 125–126). Arc 1+.
+7. **DECISIONS.md** — Index and navigational summaries for 124 ADRs across 11 topical groups. ADR bodies split into three files:
+   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–053, 114–121, 125–128). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 7 arcs from foundation through community curation at scale, with milestones, deliverables, success criteria, and arc gates

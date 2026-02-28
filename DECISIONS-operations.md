@@ -2798,7 +2798,7 @@ Arc 1 ("Prove") had accumulated 21 deliverables — a mix of the core existentia
 
 The risk: 21 deliverables is a product, not a proof. The most consequential question — whether hybrid vector + FTS search produces quality results over Yogananda's specific prose — was buried among infrastructure tasks. If search quality fails, everything else built in Arc 1 is premature.
 
-Additionally, 120 ADRs and 57 design sections existed with zero lines of code. The design was comprehensive and ready for implementation, but the gap between design and empirical contact was widening.
+Additionally, 120+ ADRs and 57 design sections existed with zero lines of code. The design was comprehensive and ready for implementation, but the gap between design and empirical contact was widening.
 
 ### Decision
 
@@ -2898,7 +2898,7 @@ Examples:
 - **Reduces governance friction.** Future maintainers can adjust a cache TTL without feeling they're violating an architectural decision.
 - **Makes assumptions explicit.** Every parameter documents what would trigger reconsideration — a form of intellectual honesty about what we don't yet know.
 - **Preserves architectural integrity.** Principles remain firm. The distinction *protects* principles by preventing parameter-level fatigue from eroding respect for the governance process.
-- **Serves the 10-year horizon.** In year 7, a new developer can identify what's tunable vs. what's sacred without reading 120 ADRs.
+- **Serves the 10-year horizon.** In year 7, a new developer can identify what's tunable vs. what's sacred without reading 120+ ADRs.
 
 ### Consequences
 

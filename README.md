@@ -10,13 +10,13 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 
 ## Arc 1: What We're Proving First
 
-The first arc answers one question: **does semantic search work over Yogananda's text?**
+The first arc answers one question: **does trilingual semantic search work over Yogananda's text?**
 
-- **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries ("How do I find inner peace?") and returns ranked verbatim passages with book, chapter, and page citations
-- **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful
-- **Search quality evaluation** — 50-query golden set proving retrieval relevance before anything else is built
+- **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries in English, Hindi, and Spanish, returning ranked verbatim passages with book, chapter, and page citations
+- **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful, with Devanagari support for Hindi
+- **Search quality evaluation** — ~80-query trilingual golden set (~50 en + ~15 hi + ~15 es) proving retrieval relevance before anything else is built
 
-One book (*Autobiography of a Yogi*). One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
+One book (*Autobiography of a Yogi*) in three languages (en/hi/es), serving ~1.25 billion reachable people from the proof-of-concept. One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
 
 ## The Full Vision
 
@@ -51,7 +51,7 @@ All content is freely accessible. No sign-up gates. No conversion tracking. No b
 |-------|-----------|
 | Frontend | Next.js on Vercel |
 | Database | Neon PostgreSQL 18 + pgvector + pg_search/ParadeDB (hybrid vector + BM25 full-text search) |
-| AI | Claude Haiku via AWS Bedrock (query expansion, passage ranking, intent classification — never content generation) |
+| AI | Claude via AWS Bedrock (index-time enrichment, ingestion QA — never in search hot path, never content generation; ADR-119) |
 | Embeddings | Voyage voyage-3-large (multilingual, 1024 dimensions) (ADR-118) |
 | Reranking | Cohere Rerank 3.5 (Milestone 2b+) (ADR-119) |
 | Graph | Postgres-native + Python/NetworkX batch pipeline (Milestone 3b+) (ADR-117) |
@@ -74,10 +74,10 @@ The project is planned across 7 thematic arcs, each delivering a coherent narrat
 
 | Arc | Theme | Focus |
 |-----|-------|-------|
-| **1: Foundation** | Proving the Light | Ingest one book, prove semantic search works, deploy with AI librarian (Milestones 1a/1b) |
+| **1: Foundation** | Proving the Light | Ingest one book in 3 languages (en/hi/es), prove trilingual semantic search, deploy with AI librarian (Milestones 1a/1b) |
 | **2: Presence** | The Living Library | All pages, reading experience, accessibility, design system, PWA (Milestones 2a/2b) |
 | **3: Wisdom** | Expanding Understanding | Multi-book catalog, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
-| **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, GitLab |
+| **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |
 | **5: Reach** | Every Seeker, Everywhere | Email, social, messaging, regional distribution, 10 languages (Milestones 5a/5b) |
 | **6: Media** | All Paths to Truth | Video, audio, images, cross-media hub, Cosmic Chants |
 | **7: Community** | Shared Journey | Optional accounts, events, study circles, VLD curation (Milestones 7a/7b) |

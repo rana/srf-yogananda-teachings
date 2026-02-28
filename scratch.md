@@ -5,6 +5,10 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+Think slowly and carefully.
+Be proactive — bias to action.
+
+---
 What is idiomatic enterprise world class you would prefer?
 Thoroughness: very thorough
 What would make it smooth and graceful for a human?
