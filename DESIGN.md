@@ -1197,7 +1197,7 @@ The portal uses AI (Claude via AWS Bedrock) throughout the content pipeline. Thi
 | Ingestion QA | Flags probable OCR errors, formatting issues | Makes every correction decision | 1a | ADR-005 E4 |
 | Tone classification | Classifies passage tone (consoling/joyful/challenging/contemplative/practical) | Spot-checks | 3b | ADR-005 E8 |
 | Accessibility rating | Classifies passage depth (universal/accessible/deep) | Spot-checks | 3b | ADR-005 E3 |
-| UI string translation | Drafts translations for all ~200–300 UI strings | Reviews every string before production | 5b | ADR-078 |
+| UI string translation | Drafts translations for all ~200–300 UI strings | Reviews every string before production | 2a (hi/es), 5b (remaining) | ADR-078 |
 | Alt text generation | Generates reverential alt text for photographs | Reviews before publication | 2a | ADR-005 E7 |
 | Social media captions | Generates caption text with citation | Reviews and edits before posting | 5a | ADR-092 |
 | Relation type classification | Classifies cross-book relation types | Spot-checks | 3c | ADR-005 E6 |

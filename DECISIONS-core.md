@@ -4264,7 +4264,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 4. **Zero-state experience is editorially curated.** When the search bar is focused but empty, display curated entry points (theme names, "Seeking..." prompts). This is an editorial statement — governance follows the same human-review principle as all user-facing content.
 
-5. **Milestone progression:** Basic prefix matching in Arc 1 (single-book vocabulary). Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices in Milestone 5b. Optional personal "recent searches" (client-side only, no server storage) in Milestone 7a.
+5. **Milestone progression:** Basic prefix matching in Arc 1 — trilingual (en/hi/es) from day one, with Devanāgarī native-script prefix files for < 10ms Hindi suggestions. Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices for remaining 7 languages in Milestone 5b. Optional personal "recent searches" (client-side only, no server storage) in Milestone 7a.
 
 ### Alternatives Considered
 
@@ -5165,13 +5165,15 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - Weight coefficients (`corpus_frequency * 0.3 + query_frequency * 0.5 + editorial_boost * 0.2`) implemented as named constants in `/lib/config.ts` (ADR-123), not as a generated column — allows tuning without migration
 - ADR-049 updated with six-tier hierarchy
 - Build step in ingestion pipeline: export `suggestion_dictionary` → partitioned static JSON files per language
-- Milestone 1a: Static JSON suggestion files + client-side prefix filtering
-- Milestone 1b: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`)
+- Milestone 1a: Trilingual static JSON suggestion files (en/hi/es) + client-side prefix filtering. Hindi includes Devanāgarī native-script prefix files (`स.json`) alongside Latin prefix files for Romanized input (`sa.json`). `latin_form` populated during Hindi/Spanish ingestion for transliteration support.
+- Milestone 1b: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`) — queries both `suggestion` and `latin_form` columns for transliteration
 - Milestone 2b+: Vercel KV activated if migration trigger thresholds are sustained
+- Milestone 5b: Per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies
 - No Terraform ElastiCache configuration — Vercel KV provisioned via Vercel integration when needed
 - The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary and triggers a static JSON rebuild
 
 *Revised: 2026-02-25, rewrite from ElastiCache to three-tier progressive architecture (Static JSON → pg_trgm → Vercel KV). Rationale: ElastiCache operational overhead disproportionate for dictionary size; VPC networking adds latency with Vercel; Vercel KV provides equivalent Redis semantics with zero ops.*
+*Revised: 2026-02-28, trilingual suggestions from Arc 1 (en/hi/es) — aligned with trilingual content and UI chrome. Devanāgarī native-script prefix files for < 10ms Hindi suggestions. Transliteration (`latin_form`) populated during ingestion, not deferred to 5b.*
 
 ---
 

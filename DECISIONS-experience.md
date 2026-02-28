@@ -1739,9 +1739,9 @@ Implement a **three-layer localization strategy** with English fallback:
 
 **English fallback:** When the user's language has insufficient content (fewer than 3 search results, sparse theme pages, small daily passage pool), supplement with English passages clearly marked with a `[EN]` language tag and "Read in English" links. The fallback is transparent — never silent.
 
-### Milestone 2a i18n Infrastructure
+### Milestone 2a i18n Infrastructure + Trilingual UI
 
-Even though Milestone 2a's UI chrome is initially English (Hindi/Spanish UI strings are a Milestone 5b deliverable), the i18n infrastructure must be in place from day one (Arc 1 content is trilingual — en/hi/es):
+Milestone 2a delivers **trilingual UI chrome** (English, Hindi, Spanish) alongside trilingual content (ADR-128 Tier 1). Hindi and Spanish UI strings are translated via Claude draft → human review (ADR-078) in Milestone 2a — not deferred to 5b. Remaining language UI strings are a Milestone 5b deliverable. The i18n infrastructure is in place from day one for all 10 core languages:
 
 | Requirement | Rationale |
 |-------------|-----------|
@@ -1781,10 +1781,10 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 ### Consequences
 
-- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization); Arc 1 content is trilingual (en/hi/es) per ADR-128
+- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization) and **trilingual UI chrome** (en/hi/es) via Claude draft → human review (ADR-078); Arc 1 content is trilingual (en/hi/es) per ADR-128
 - Arc 1 includes the `topic_translations` table (empty until Milestone 5b)
 - Milestone 5b requires knowing which books SRF has in digital translated form (stakeholder question)
-- Milestone 5b UI string translation uses an AI-assisted workflow: Claude generates drafts of locale JSON files, then a human reviewer (fluent in the target language and familiar with SRF's devotional register) refines tone, spiritual terminology, and cultural nuance. See ADR-078.
+- Milestone 2a Hindi/Spanish UI string translation uses the AI-assisted workflow (ADR-078): Claude generates drafts, human reviewer refines tone, spiritual terminology, and cultural nuance. Milestone 5b repeats this proven workflow for remaining 7 languages.
 - The content availability matrix creates asymmetric experiences per language — this is honest, not a bug
 - The book catalog per language shows only available books, plus a "Also available in English" section
 - The `hybrid_search` function accepts a `search_language` parameter and filters to the user's locale
@@ -1795,6 +1795,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 - `books.bookstore_url` provides "Find this book" links to SRF Bookstore. Per-language bookstore routing (e.g., YSS Bookstore for Hindi/Bengali) can be added via a simple lookup table if needed at Milestone 5b.
 
 *Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
+*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a — trilingual content deserves trilingual chrome (ADR-128, ADR-127)*
 
 ---
 
@@ -1925,7 +1926,7 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 
 ### Context
 
-Milestone 5b requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 6+ languages. The question: who translates these, and how?
+The portal requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 9 languages. Hindi and Spanish (Tier 1) are translated in Milestone 2a alongside trilingual content — a seeker reading Hindi content deserves Hindi navigation. Remaining 7 languages are translated in Milestone 5b. The question: who translates these, and how?
 
 Three categories of translatable content exist in the portal, each with fundamentally different fidelity requirements:
 
@@ -1977,6 +1978,28 @@ The Claude system prompt for UI translation should include:
 - Instruction to preserve the warm, devotional tone — avoid clinical or corporate phrasing
 - Context for each string (where it appears, what it does) so the translation fits the UI context
 - Instruction to flag uncertainty rather than guess (e.g., mark `[REVIEW]` when unsure)
+- ICU MessageFormat awareness — interpolated strings (`{count} results found`) require correct grammar for the target language's number/gender agreement
+
+### Translation Automation
+
+**Why Claude over DeepL/Google.** The bottleneck for spiritual UI text isn't vocabulary accuracy — it's *devotional register*. "Search the teachings" should feel like an invitation from a friend, not a software prompt. Claude can absorb the full glossary, tone guidance, and per-string context simultaneously. No other service processes all four inputs in a single call. DeepL produces accurate words in the wrong voice; Claude produces the right voice that needs minor corrections.
+
+**Script:** `scripts/translate-ui.ts` — runs on-demand (not CI-integrated). Reads `messages/en.json`, diffs against existing `messages/{locale}.json`, loads `messages/glossary-{locale}.json` and `messages/en.context.json`, sends new/changed keys to Claude API (via AWS Bedrock), writes `messages/{locale}.draft.json`. Logs which strings were flagged `[REVIEW]`.
+
+**String context file:** `messages/en.context.json` — parallel to `en.json`, maps each key to a one-line description of where it appears and what it does. Version-controlled. Example:
+
+```json
+{
+  "search.placeholder": "Search input placeholder on the main search page",
+  "search.noResults": "Shown when search returns zero results, below the search box",
+  "nav.books": "Top navigation bar link to the Books listing page",
+  "quiet.timerStart": "Button label to begin the Quiet Corner meditation timer"
+}
+```
+
+**Glossary bootstrap (Milestone 2a).** `glossary-hi.json` and `glossary-es.json` seeded from: (1) existing YSS Hindi publications for approved Hindi spiritual terminology, (2) existing SRF Spanish publications for approved Spanish spiritual terminology, (3) Sanskrit proper nouns that remain untranslated (Kriya Yoga, samadhi, pranayama). The glossary is the most important artifact — it's what makes Claude's output devotionally correct rather than merely linguistically correct. Built before any translation runs.
+
+**Reviewer recruitment.** The human review dependency is the actual bottleneck — not the technology. YSS (Yogoda Satsanga Society of India) has Hindi speakers. SRF has Spanish-speaking monastics and members across Latin America. Identifying reviewers is a stakeholder question that should be resolved early in Milestone 2a.
 
 ### Rationale
 
@@ -2031,12 +2054,14 @@ The glossary is a critical dependency for both the AI drafting step and the huma
 
 ### Consequences
 
-- Milestone 5b uses AI-assisted workflow: Claude draft → human review → production
+- Milestone 2a (hi/es) and Milestone 5b (remaining 7 languages) use AI-assisted workflow: Claude draft → human review → production
 - Spiritual terminology glossary stored as `/messages/glossary-{locale}.json` — built incrementally during first review cycle, referenced by both AI drafting and human review
 - The `messages/{locale}.draft.json` → `messages/{locale}.json` promotion step should be tracked (Git diff review)
 - Reviewer recruitment: SRF likely has multilingual monastics and volunteers who can review UI translations — this is a stakeholder question
 - The same workflow applies to portal-authored content (About page, theme descriptions, "Seeking..." entry points, etc.)
 - Glossary files migrate to Contentful content types when Contentful Custom Apps are activated
+
+*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a; added translation automation spec (scripts/translate-ui.ts, en.context.json, glossary bootstrap)*
 
 ---
 

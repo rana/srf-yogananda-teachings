@@ -11,7 +11,7 @@ Read CONTEXT.md, DESIGN.md, DECISIONS.md, and ROADMAP.md to ground in the projec
 Audit against the project's stated principles:
 
 1. **Verbatim fidelity** (ADR-001, ADR-075, ADR-078) — The AI is a librarian, never an oracle. Every passage has book/chapter/page citation. No orphaned quotes. No paraphrasing. Only official SRF/YSS translations.
-2. **Calm technology** — No gamification, no aggressive notifications, no dopamine loops. Warm cream, serif typography, generous whitespace.
+2. **Calm technology** — No gamification, no aggressive notifications, no autoplay. Warm cream, serif typography, generous whitespace.
 3. **DELTA compliance** (ADR-095) — No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only.
 4. **Signpost, not destination** — Points toward deeper practice without tracking conversions. No engagement metrics optimizing for screen time. No "sign up to access" gates.
 5. **Human review as mandatory gate** (ADR-078, ADR-032, ADR-005) — No user-facing content without human verification. AI proposes, humans approve.

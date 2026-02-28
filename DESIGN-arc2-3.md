@@ -1665,21 +1665,26 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 
 | Layer | What | Approach | Milestone |
 |-------|------|----------|-----------|
-| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-078). | Infrastructure in Milestone 2a. Translations in Milestone 5b. |
+| **UI chrome** | Nav, labels, buttons, errors, search prompts (~200–300 strings) | `next-intl` with locale JSON files. URL-based routing (`/es/...`, `/de/...`). AI-assisted workflow: Claude drafts → human review → production (ADR-078). | Infrastructure + hi/es translations in Milestone 2a. Remaining 7 languages in Milestone 5b. |
 | **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Arc 1, activated in Milestone 5b). **Never machine-translate sacred text.** | 5b |
 | **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | 5b |
 
-### Milestone 2a — Trilingual Content, i18n-Ready for All Languages
+### Milestone 2a — Trilingual Content and Trilingual UI
 
-Arc 1 ingests content in English, Hindi, and Spanish (ADR-128 Tier 1). The i18n infrastructure is in place from day one for all 10 core languages:
+Arc 1 ingests content in English, Hindi, and Spanish (ADR-128 Tier 1). **Milestone 2a delivers trilingual UI chrome** — Hindi and Spanish UI strings translated via Claude draft → human review (ADR-078). A seeker reading Hindi content deserves Hindi navigation. The i18n infrastructure is in place from day one for all 10 core languages:
 
 - All UI strings externalized to `messages/en.json` (never hardcoded in components)
+- Hindi and Spanish UI strings translated: `messages/hi.json`, `messages/es.json` (ADR-078 workflow)
+- Spiritual terminology glossaries bootstrapped: `messages/glossary-hi.json`, `messages/glossary-es.json`
+- String context file: `messages/en.context.json` — per-key description of where each string appears
+- Translation script: `scripts/translate-ui.ts` — generates `{locale}.draft.json` from `en.json` + glossary + context
 - `next-intl` configured with `en`, `hi`, `es` locales (remaining locales added in Milestone 5b)
 - CSS logical properties throughout (`ms-4` not `ml-4`, `text-align: start` not `text-align: left`)
-- `lang="en"` on `<html>` element
+- `lang` attribute set dynamically per locale on `<html>` element
 - `language` column already present on `book_chunks`, `search_queries`, `email_subscribers`
+- Playwright visual snapshots verify Hindi/Spanish UI renders correctly (ADR-080 typography, no truncation)
 
-Adding new locales later is a configuration change, not a codebase refactor.
+Adding new locales later is a configuration change, not a codebase refactor. Adding new UI strings triggers `scripts/translate-ui.ts` to generate drafts for review.
 
 ### URL Structure
 

@@ -515,7 +515,7 @@ ALTER TABLE study_outlines ADD COLUMN language TEXT DEFAULT 'en';
 
 1. **Allow community curation without any review.** Rejected. Yogananda's teachings can be arranged misleadingly (cherry-picking quotes to support positions he'd disagree with). The theological integrity gate is non-negotiable.
 2. **Require authentication for all sharing.** Rejected. Shared-link tier serves center leaders who need to share a reading plan with their study group immediately. Authentication adds friction for the lowest-risk tier.
-3. **Community voting/ranking.** Rejected. Engagement metrics violate DELTA (ADR-095) and create dopamine dynamics the portal explicitly avoids.
+3. **Community voting/ranking.** Rejected. Engagement metrics violate DELTA (ADR-095) and create engagement dynamics the portal explicitly avoids.
 4. **Commenting on collections.** Rejected. The portal is not a social platform. Collections are curated arrangements, not discussion threads.
 
 ### Consequences

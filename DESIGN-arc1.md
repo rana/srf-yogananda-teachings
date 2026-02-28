@@ -502,15 +502,20 @@ If prefix.length >= 2:
 Select suggestion → intent classification (ADR-005 E1) → route
 ```
 
-**Tier A: Static JSON at CDN edge (Milestone 1a+).** Pre-computed suggestion files:
+**Tier A: Static JSON at CDN edge (Milestone 1a+).** Pre-computed suggestion files, trilingual from Arc 1:
 
 ```
-/public/suggestions/en/_zero.json    — zero-state (theme chips, curated questions)
-/public/suggestions/en/me.json       — all entries starting with "me"
+/public/suggestions/en/_zero.json    — English zero-state (theme chips, curated questions)
+/public/suggestions/en/me.json       — all English entries starting with "me"
 /public/suggestions/en/_bridge.json  — terminology bridge mappings
+/public/suggestions/hi/_zero.json    — Hindi zero-state (Devanāgarī theme chips)
+/public/suggestions/hi/स.json        — Devanāgarī native-script prefix (Unicode first-character)
+/public/suggestions/hi/sa.json       — Hindi entries for Romanized "sa" prefix (latin_form match)
+/public/suggestions/es/_zero.json    — Spanish zero-state
+/public/suggestions/es/me.json       — all Spanish entries starting with "me"
 ```
 
-< 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB.
+< 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB. Hindi and Spanish sets are smaller (single-book vocabulary). **Devanāgarī native-script prefix files** use Unicode first-character partitioning — a Hindi seeker typing "सम" hits `स.json` for the same < 10ms experience as a Latin-script seeker.
 
 **Tier B: pg_trgm fuzzy fallback (Milestone 1b+, always-on).** Async endpoint for misspellings and transliterated input. Queries both `suggestion` and `latin_form` columns — a Hindi seeker typing Romanized "samadhi" matches against `latin_form`. Latency: 40–80ms. Edge-cached: `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
 
@@ -630,18 +635,24 @@ When a seeker selects a suggestion, the URL reflects their *original* selection:
 
 URLs are shareable and bookmarkable. Intent classification still runs server-side on the selected text regardless of how the seeker arrived.
 
-#### Multilingual Suggestions (Milestone 5b)
+#### Multilingual Suggestions
 
-Per-language suggestion indices are required. Each language gets:
+**Trilingual from Arc 1 (en/hi/es).** Suggestion indices are generated for all languages with ingested content. Arc 1 ingests the Autobiography in English, Hindi, and Spanish (ADR-128 Tier 1) — all three languages get full suggestion infrastructure from Milestone 1a. Per-language suggestion indices for the remaining 7 languages activate in Milestone 5b.
+
+Each language gets:
 - Its own extracted corpus vocabulary (from language-specific chunks)
 - Its own static JSON prefix files (`/public/suggestions/{lang}/*.json`)
 - Localized theme names (from `topic_translations`)
 - Localized curated queries (from `messages/{locale}.json`)
 - Language-specific pg_trgm fallback
 
-**Transliteration support via `latin_form`.** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). The `latin_form` column in `suggestion_dictionary` carries the transliterated form. The pg_trgm fuzzy fallback queries both `suggestion` and `latin_form` columns. For static JSON (Tier A), `latin_form` entries are included as additional sort keys so Romanized prefixes match.
+**Devanāgarī native-script prefix files.** Latin two-character prefix partitioning (`me.json`, `yo.json`) doesn't serve a Hindi seeker typing Devanāgarī. Hindi gets **Unicode first-character prefix files**: `स.json`, `य.json`, `म.json`, etc. The partitioning is identical to Latin — just first-character instead of two-character (Devanāgarī consonant clusters make two-character partitioning impractical). Single-book Hindi vocabulary is small enough that first-character files stay within the 2–8KB target.
 
-**CJK and Thai.** CJK languages have no word boundaries, making prefix matching fundamentally different. Thai script also lacks word boundaries and requires ICU segmentation. These require language-specific tokenization strategies — an open design question for Milestone 5b.
+**Transliteration support via `latin_form`.** Hindi/Bengali seekers often type Romanized input (e.g., "samadhi" not "समाधि"). The `latin_form` column in `suggestion_dictionary` carries the transliterated form — populated during ingestion, not deferred. The pg_trgm fuzzy fallback queries both `suggestion` and `latin_form` columns. For static JSON (Tier A), `latin_form` entries are included as additional sort keys in Latin prefix files so Romanized prefixes match. A Hindi seeker typing "sam" hits the Latin `sa.json` file and sees "समाधि — अतिचेतन अवस्था" (Devanāgarī with inline definition).
+
+**Remaining 7 languages (Milestone 5b).** Each new language follows the same pattern — suggestion extraction during ingestion, static JSON generation, transliteration where applicable.
+
+**CJK and Thai (Milestone 5b).** CJK languages have no word boundaries, making prefix matching fundamentally different. Thai script also lacks word boundaries and requires ICU segmentation. These require language-specific tokenization strategies — an open design question for Milestone 5b.
 
 **Sparse-language graceful handling:** If a language has few books, its suggestion index will be thin. When suggestions are sparse, the response should be honest (fewer suggestions, not padded with irrelevant terms) rather than falling back to English suggestions unprompted.
 
@@ -664,11 +675,11 @@ The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
 
 | Milestone | Suggestion Capability | Infrastructure |
 |-----------|----------------------|----------------|
-| 1a | Static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips | Tier A: CDN-served static JSON |
+| 1a | Trilingual (en/hi/es) static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips. Hindi: Devanāgarī native-script prefix files + Latin prefix files for Romanized input. `latin_form` populated during ingestion. | Tier A: CDN-served static JSON |
 | 1b | + pg_trgm fuzzy fallback endpoint + golden suggestion set (300 entries, 6 tiers) | Tier A + B |
 | 2b | + Vercel KV if migration trigger thresholds reached | Tier A + B + C (conditional) |
 | 3a | + multi-book vocabulary + bridge-powered suggestions + curated queries | Expanded corpus, same tiers |
-| 5b | + per-language suggestion indices + transliteration support | Per-language static JSON + pg_trgm |
+| 5b | + per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies | Per-language static JSON + pg_trgm (hi/es already live from Arc 1) |
 | 7a | + optional personal "recent searches" (client-side `localStorage` only, no server storage) | On-device only |
 
 #### Interaction with Intent Classification
