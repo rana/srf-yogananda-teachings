@@ -1844,54 +1844,69 @@ Tailwind CSS supports logical properties via the `ms-*` (margin-start), `me-*` (
 
 ---
 
-## ADR-077: Core Language Set
+## ADR-077: Core Language Set and Priority Ordering
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
-- *Revised: 2026-02-24, replaced Hindi/Bengali locale roadmap with a unified core language set. Wave structure removed — all non-English languages are Milestone 5b peers.*
+- *Revised: 2026-02-24, replaced Hindi/Bengali locale roadmap with a unified core language set.*
+- *Revised: 2026-02-28, replaced "no wave ordering" with reachable-population priority ordering per ADR-128. Hindi and Spanish elevated to Tier 1 (Arc 1). Remaining languages ordered by demographic impact.*
 
 ### Context
 
 The portal's mission — making the teachings "available freely throughout the world" — requires multi-language support. The question is not *whether* to support multiple languages, but *which* languages constitute the core commitment and how to sequence them.
 
-Official SRF/YSS translations of Yogananda's works exist in multiple languages. The core language set should reflect the intersection of mission reach, available translations, and organizational presence.
+Official SRF/YSS translations of Yogananda's works exist in multiple languages. The core language set should reflect the intersection of mission reach, available translations, and organizational presence. A previous revision (2026-02-24) adopted "no wave ordering" to avoid Western-before-Indian sequencing. However, analysis revealed that "all 9 simultaneously" in practice meant "none until we can resource all 9" — deferring Hindi (609M speakers, Yogananda's country) and Bengali (284M speakers, Yogananda's mother tongue) to the same timeline as Italian (68M speakers). ADR-128 established a quantitative framework to resolve this: order by reachable population.
 
 ### Decision
 
-Define a **core language set of 10 languages** that the portal commits to supporting. All 9 non-English languages are Milestone 5b peers — no wave ordering, no Western-before-Indian sequencing.
+Define a **core language set of 10 languages** that the portal commits to supporting. Languages are **ordered by reachable population** (ADR-128) and ship as they clear a readiness gate.
 
-| Language | Code | Script | Rationale |
-|----------|------|--------|-----------|
-| **English** | en | Latin | Default. All content originates in English. |
-| **Spanish** | es | Latin | ~550M speakers. Strong SRF Latin America presence. Official translations exist. |
-| **German** | de | Latin | SRF Deutschland. Official translations exist. |
-| **French** | fr | Latin | Francophone Africa (~130M speakers) + France. Official translations exist. |
-| **Italian** | it | Latin | Official translations exist. |
-| **Portuguese** | pt | Latin | ~260M speakers (Brazil dominant). Official translations exist. |
-| **Japanese** | ja | CJK | Official translations exist. Established SRF Japan presence. |
-| **Thai** | th | Thai | Official translations exist. SRF/YSS Thailand presence. |
-| **Hindi** | hi | Devanagari | ~600M speakers. YSS audience. Yogananda's country. Official YSS translations. |
-| **Bengali** | bn | Bengali | ~230M speakers. Yogananda's mother tongue. Official YSS translations. |
+**Priority ordering:**
 
-**Evaluation candidates** (not in core set, evaluated based on demand data and translation availability): Chinese, Korean, Russian, Arabic.
+| Priority | Language | Code | Script | Reachable | Rationale |
+|----------|----------|------|--------|-----------|-----------|
+| — | **English** | en | Latin | ~390M L1 | Default. All content originates in English. |
+| **Tier 1** | **Hindi** | hi | Devanagari | **~425M** | Yogananda's country. YSS homeland. Largest non-English audience. |
+| **Tier 1** | **Spanish** | es | Latin | **~430M** | Highest L1 ratio (86.7%). Strong SRF Latin America presence. |
+| Tier 2 | **Portuguese** | pt | Latin | ~225M | Brazil digital leader. High L1 ratio (93.6%). |
+| Tier 2 | **Bengali** | bn | Bengali | ~130M | Yogananda's mother tongue. Deep YSS catalog. |
+| Tier 3 | **German** | de | Latin | ~123M | SRF Deutschland. Near-universal internet. |
+| Tier 3 | **Japanese** | ja | CJK | ~119M | Established SRF Japan presence. |
+| Tier 3 | **French** | fr | Latin | ~116M | Francophone Africa + France + Canada. |
+| Tier 3 | **Italian** | it | Latin | ~61M | Official translations exist. |
+| Tier 3 | **Thai** | th | Thai | ~49M | SRF/YSS Thailand. Script diversity forcing function. |
+
+*Speaker data: Ethnologue 2025. Internet penetration: ITU/DataReportal 2025–2026. Full analysis: docs/reference/Prioritizing Global Language Rollout.md.*
+
+**Tier 1 (Hindi, Spanish):** Activated in Arc 1 alongside English. *Autobiography of a Yogi* ingested in all three languages. Together these serve ~855M reachable people — more than double English L1.
+
+**Tier 2 (Portuguese, Bengali):** Activated as the next priority after Tier 1 languages are live. Bengali's mission weight (Yogananda's mother tongue, YSS heartland) is significant despite lower internet penetration.
+
+**Tier 3 (German, Japanese, French, Italian, Thai):** Activated as content and reviewer readiness permits, ordered by reachable population within resourcing constraints.
+
+**Language readiness gate:** A language ships when: (1) *Autobiography of a Yogi* digital text is ingested, (2) UI strings (~200–300) are translated and human-reviewed per ADR-078, (3) per-language search quality evaluation passes (15–20 test queries, ≥ 80% relevant in top 3). Languages ship independently — no language waits for another.
+
+**Evaluation candidates** (not in core set, evaluated based on demand data and translation availability): Chinese, Korean, Russian, Arabic, Indonesian. See ADR-128 § Evaluation Candidates for demographic analysis.
 
 ### Rationale
 
 - **Mission integrity.** The core set covers the languages where official Yogananda translations exist and SRF/YSS has organizational presence. Every core language has published translations — the portal serves verbatim text, not machine-translated content.
-- **No wave ordering.** The previous wave structure (Western first, Indian second) created an equity gap that contradicted the mission. All 9 non-English languages are Milestone 5b peers. Resourcing constraints may require sequencing during implementation, but the *architectural commitment* is equal.
+- **Reachable population ordering.** Priority determined by `speakers × internet_penetration × content_availability` (ADR-128). Hindi and Spanish each individually match English L1 reach. Deferring them behind English-only features contradicts Principle 5.
 - **Population reach.** The core set covers ~3 billion speakers across 6 scripts (Latin, CJK, Thai, Devanagari, Bengali). Hindi + Bengali alone exceed 830M speakers.
 - **Script diversity drives architectural quality.** Supporting Latin, CJK, Thai, Devanagari, and Bengali from the core set forces robust i18n infrastructure — font loading, line-height adaptation, word-boundary handling (Thai has none), search tokenization.
 - **Thai inclusion.** Official Thai translations exist. Thai script's lack of word boundaries makes it an excellent forcing function for search tokenization quality. SRF/YSS has presence in Thailand.
 
 ### Risks
 
-- **Capacity.** 9 non-English languages in a single milestone is ambitious. Implementation may need to be sequenced by resourcing reality, but this is an operational decision made during Milestone 5b execution — not an architectural pre-commitment to ordering.
-- **Digital text availability.** Confirmed that official translations exist in all core languages. Digital text availability (machine-readable format) must be verified per language — a critical stakeholder question.
+- **Tier 1 in Arc 1 adds scope.** Hindi and Spanish ingestion in Arc 1 requires per-language search quality evaluation and font loading (Noto Sans Devanagari). Mitigated: same ingestion pipeline, same embedding model (Voyage multilingual), same search infrastructure. Incremental cost is modest.
+- **Digital text availability.** Confirmed that official translations exist in all core languages. Digital text availability (machine-readable format) must be verified per language — a critical stakeholder question. Arc 1 uses purchased books as temporary sources (same approach as spiritmaji.com for English).
+- **Human reviewer availability.** Each language needs a fluent, SRF-aware reviewer for UI strings (ADR-078). The readiness gate ensures no language ships with unreviewed translations.
 - **Thai script complexity.** Thai has no word boundaries, combining characters, and tone marks. Search tokenization (pg_search ICU) handles Thai, but per-language search quality benchmarking is essential.
 
 ### Consequences
 
-- Milestone 5b serves all 9 non-English core languages as peers — no wave sub-milestones
+- Hindi and Spanish *Autobiography* ingested in Arc 1 alongside English — trilingual from the proof-of-concept
+- Remaining languages activate ordered by reachable population, each clearing the readiness gate independently
 - Need to confirm digital text availability for all core languages (stakeholder question)
 - YSS-specific UI adaptations needed for Hindi and Bengali locales (organizational branding differences between SRF and YSS per ADR-079)
 - Font stacks: Noto Sans/Serif Devanagari (Hindi), Noto Sans/Serif Bengali (Bengali), Noto Sans/Serif Thai (Thai), Noto Sans/Serif JP (Japanese). All loaded conditionally per locale.

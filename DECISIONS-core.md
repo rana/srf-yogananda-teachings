@@ -5551,3 +5551,113 @@ The portal offers two experience tiers:
 **Governs:** Principle 3 in PRINCIPLES.md
 
 *Revised: 2026-02-28, principle number updated from 12 to 3 per principles restructuring.*
+
+---
+
+## ADR-128: Reachable Population — Quantitative Prioritization Framework
+
+- **Status:** Accepted (Foundational)
+- **Date:** 2026-02-28
+
+### Context
+
+The portal's roadmap originally ordered milestones by feature sophistication — build the experience for English users first, then expand to other languages. This optimized for depth of experience before breadth of reach. But Principle 5 (Global-First) commits to serving "all humans of Earth equally," and the portal's philanthropic mission is to make Yogananda's teachings "available freely throughout the world."
+
+When two independent milestones compete for priority, the project lacked a quantitative framework for choosing between them. Decisions defaulted to Western software convention: polish before reach, features before languages. This resulted in non-English languages (serving ~2.6 billion reachable people) being scheduled after reader polish and study tools (serving existing English users).
+
+A data-driven analysis of global language demographics (see [docs/reference/Prioritizing Global Language Rollout.md](docs/reference/Prioritizing%20Global%20Language%20Rollout.md) — 53 cited sources from Ethnologue, ITU, UNESCO, DataReportal, GSMA) revealed that the depth-first ordering contradicted the mission. Hindi and Spanish each individually serve reachable populations comparable to English L1 speakers.
+
+### Decision
+
+Adopt **reachable population** as the default prioritization metric for all scope decisions. When two milestones or features are architecturally independent, the one serving more reachable people ships first.
+
+**Metric definition:**
+
+```
+Reachable Population = speakers × internet_penetration × content_availability
+```
+
+- **speakers:** Total speakers (L1 + L2) from Ethnologue 2025 data
+- **internet_penetration:** Regional internet penetration from ITU Global Connectivity Report 2025 and DataReportal Digital 2026
+- **content_availability:** Binary for now (1 = digital text exists for at least one book, 0 = no digital text). Becomes fractional when per-language book availability is cataloged.
+
+**Language priority table:**
+
+| Priority | Language | Speakers | Internet % | Reachable | Mission Alignment |
+|----------|----------|----------|------------|-----------|-------------------|
+| — | English (baseline) | 1,528M | ~95% (L1 regions) | ~390M L1 | Default. All content originates in English. |
+| 1 | **Hindi** | 609M | ~70% | **~425M** | Yogananda's country. YSS homeland. Largest non-English audience. |
+| 2 | **Spanish** | 558M | ~77% | **~430M** | Highest L1 ratio (86.7%). Strong SRF Latin America presence. |
+| 3 | **Portuguese** | 267M | ~85% | **~225M** | Brazil digital leader. High L1 ratio (93.6%). |
+| 4 | **Bengali** | 284M | ~45% | **~130M** | Yogananda's mother tongue. Deep YSS catalog. |
+| 5 | **German** | 130M | ~95% | **~123M** | SRF Deutschland. Near-universal internet. |
+| 6 | **Japanese** | 125M | ~95% | **~119M** | Established SRF Japan presence. |
+| 7 | **French** | 312M | ~37%* | **~116M** | *Francophone Africa drags average down. France + Canada well-connected. |
+| 8 | **Italian** | 68M | ~90% | **~61M** | Official translations exist. |
+| 9 | **Thai** | 61M | ~80% | **~49M** | SRF/YSS Thailand. Script diversity forcing function. |
+
+*Sources: Ethnologue 2025 (speaker counts), ITU Global Connectivity Report 2025 (internet penetration), DataReportal Digital 2026 (regional breakdowns). Full analysis with 53 citations in docs/reference/Prioritizing Global Language Rollout.md.*
+
+Hindi and Spanish together serve **~855M reachable people** — more than double English L1. This makes them Tier 1 priorities, activated alongside English from Arc 1.
+
+### Application Protocol
+
+When a future scope decision arises:
+
+1. **Identify the populations affected** by each option.
+2. **Calculate reachable population** for each using the metric above.
+3. **The higher-reach option is the default** unless:
+   - An architectural dependency prevents it (can't ship languages before i18n infrastructure)
+   - A Content Identity principle (1–4) would be violated (never compromise verbatim fidelity for reach)
+   - A security or accessibility requirement is at stake (these are not optional regardless of reach)
+4. **If reach is comparable** (within 20%), other factors (mission alignment, implementation effort, dependencies) break the tie.
+
+### Worked Examples
+
+| Decision | Option A | Option B | Resolution |
+|----------|----------|----------|------------|
+| Reader polish vs. Hindi Autobiography | Dwell mode serves existing English readers (~390M) | Hindi Autobiography serves ~425M new people | **Hindi ships first** — higher reach, architecturally independent |
+| PDF export vs. Portuguese activation | PDF serves engaged users across active languages | Portuguese activates ~225M new people | **Portuguese ships first** — reach delta is large |
+| Dark mode vs. Italian activation | Dark mode serves all existing users across all active languages | Italian activates ~61M new people | **Depends on active user base** — if users across active languages significantly exceed 61M, dark mode has higher reach |
+| Cross-book search vs. more languages | Cross-book search improves experience for ~1.25B (en+hi+es users) | Next language tier adds ~355M (pt+bn) | **Cross-book search first** — higher total impact |
+
+### Consequences
+
+- **Roadmap reordered:** Languages (formerly Milestone 5b) move before reader refinement (formerly Milestone 2b) and before study tools (formerly Arc 4). Hindi and Spanish Autobiography ingestion moves into Arc 1.
+- **ADR-077 revised:** Language priority ordering replaces "no wave ordering." Languages ship as they clear a readiness gate (content + UI strings + human reviewer), ordered by reachable population.
+- **Breadth-first, not depth-first:** The portal reaches 3 billion people with a good experience before reaching 390 million with a perfect experience.
+- **Decision audit trail:** Future scope decisions reference this ADR with the specific reach calculation.
+- **Data refresh:** At each arc boundary, verify speaker counts and internet penetration against the latest ITU and DataReportal reports. Update the priority table if any language's reachable population shifts by >10%.
+
+### Limits
+
+This metric does **not** override:
+- **Architectural dependencies.** Can't ship languages before the i18n infrastructure exists. Can't ship cross-book search before multiple books are ingested.
+- **Content Identity principles.** Never machine-translate sacred text for reach. Never compromise attribution for speed.
+- **Accessibility and security.** These are not negotiable regardless of population.
+- **Organizational readiness.** Human reviewers for UI translations (ADR-078) must be available. The metric determines *priority*, not *readiness*.
+
+### Audio Equity Note
+
+UNESCO 2024 data reports 739 million adults globally lack basic literacy, with 347 million in Central and Southern Asia — the YSS heartland. For these populations, text-only content provides **no access**, not limited access. YSS currently offers Hindi, Bengali, and other Indic-language *Autobiography of a Yogi* audiobooks.
+
+This ADR recommends that when a language is activated, existing audio content ships alongside text where available — not deferred to a separate media arc. Audio is an **access modality**, not an enhancement. The availability of existing SRF/YSS audio recordings for each language is a stakeholder question that should be raised at language activation time.
+
+### Evaluation Candidates
+
+ADR-077 lists Chinese, Korean, Russian, and Arabic as evaluation candidates beyond the core 10. Applying this framework:
+
+| Language | Speakers | Reachable | Barrier |
+|----------|----------|-----------|---------|
+| Mandarin Chinese | 1,184M | ~950M* | *Great Firewall may require specialized CDN. Translation availability unconfirmed. |
+| Russian | 253M | ~200M | Translation availability unconfirmed. |
+| Indonesian | 252M | ~185M | Not in current evaluation list. Translation availability unconfirmed. |
+| Arabic (Standard) | 335M | ~200M | Zero L1 speakers (Modern Standard). Translation availability unconfirmed. Complex script. |
+| Korean | ~80M | ~76M | Translation availability unconfirmed. |
+
+Mandarin and Russian warrant investigation when the core 10 languages are stable. Indonesian is a notable omission from the evaluation list — 252M speakers with 75% internet penetration.
+
+**Extends:** Principle 5 (Global-First), ADR-077 (Core Language Set), ADR-030 (Book Ingestion Priority)
+**Governs:** ROADMAP.md arc and milestone ordering. All future scope prioritization decisions.
+
+*Full demographic analysis: docs/reference/Prioritizing Global Language Rollout.md (53 citations: Ethnologue, ITU, UNESCO, DataReportal, GSMA, World Bank).*

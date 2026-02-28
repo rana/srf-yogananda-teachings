@@ -4,7 +4,7 @@
 
 | Arc | Theme | Milestones | Focus |
 |-----|-------|------------|-------|
-| [1: Foundation](#arc-1-foundation--proving-the-light) | Proving the Light | [1a: Prove](#milestone-1a-prove), [1b: Deploy](#milestone-1b-deploy) | Ingest one book, prove semantic search, deploy with AI librarian |
+| [1: Foundation](#arc-1-foundation--proving-the-light) | Proving the Light | [1a: Prove](#milestone-1a-prove), [1b: Deploy](#milestone-1b-deploy) | Ingest one book in **3 languages (en/hi/es)**, prove multilingual semantic search, deploy with AI librarian |
 | [2: Presence](#arc-2-presence--the-living-library) | The Living Library | [2a: Build](#milestone-2a-build), [2b: Refine](#milestone-2b-refine) | All pages, reading experience, accessibility, design system, PWA |
 | [3: Wisdom](#arc-3-wisdom--expanding-understanding) | Expanding Understanding | [3a: Corpus](#milestone-3a-corpus), [3b: Editorial](#milestone-3b-editorial), [3c: Intelligence](#milestone-3c-intelligence), [3d: Complete](#milestone-3d-complete) | Multi-book catalog, editorial operations, cross-book intelligence, full corpus |
 | [4: Service](#arc-4-service--tools-for-devotion) | Tools for Devotion | — | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |
@@ -21,7 +21,31 @@
 
 ## Arc Philosophy
 
-Each arc delivers a working, demonstrable increment organized around a spiritual narrative theme. 7 arcs total, with internal milestones. Arc 1 (Foundation) proves that semantic search works and deploys the AI-enhanced portal. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and activates multi-environment promotion (dev/staging/prod). Arc 5 (Reach) extends distribution channels and activates multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
+Each arc delivers a working, demonstrable increment organized around a spiritual narrative theme. 7 arcs total, with internal milestones. **Arc ordering follows the reachable population metric (ADR-128): when milestones are architecturally independent, the one serving more people ships first.** This produces a breadth-first roadmap — languages and content before polish and tools.
+
+Arc 1 (Foundation) proves that multilingual semantic search works across English, Hindi, and Spanish — serving ~1.25 billion reachable people from the proof-of-concept — and deploys the AI-enhanced portal. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and activates multi-environment promotion (dev/staging/prod). Arc 5 (Reach) extends distribution channels and activates remaining multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
+
+**Roadmap reordering (ADR-128).** The original roadmap ordered milestones depth-first: perfect the English experience, then expand to other languages. ADR-128 reorders breadth-first: languages move before reader polish, corpus expansion moves before reader refinement. The detailed reordering of milestones within arcs is governed by the reachable population metric — see ADR-128 for the application protocol and worked examples. Key changes: Hindi and Spanish ingestion in Arc 1; corpus expansion (more books) before reader refinement (dwell mode, bookmarks); remaining languages before study tools. See the milestone-level details within each arc for the current execution sequence.
+
+**Execution reordering (ADR-128).** The arc numbering below reflects *narrative themes*, but the **execution sequence** is reordered by reachable population. Architecturally independent milestones ship in this order:
+
+| Execution Order | Milestone | What | People Served |
+|----------------|-----------|------|---------------|
+| 1 | **1a: Prove** | Ingest Autobiography in en/hi/es, prove trilingual search | ~1.25B |
+| 2 | **1b: Deploy** | Homepage, search, reader — trilingual | ~1.25B |
+| 3 | **2a: Build** | All pages, i18n infrastructure, accessibility | ~1.25B |
+| 4 | **3a: Corpus** | Ingest high-impact books (en + hi/es translations as available) | ~1.25B × more content |
+| 5 | **5b: Languages** | Activate remaining 7 languages (Tiers 2–3) | **~3B** |
+| 6 | **2b: Refine** | Reader polish (dwell, bookmarks, typography) — now benefits all 10 languages | ~3B |
+| 7 | **3b: Editorial** | Theme tagging, editorial portal, guide | ~3B |
+| 8 | **3c: Intelligence** | Related Teachings, cross-book connections | ~3B |
+| 9 | **3d: Complete** | Remaining books, verse-aware chunking, observability | ~3B |
+| 10 | **5a: Distribution** | Email, WhatsApp, RSS, social media | ~3B+ |
+| 11 | **4: Service** | Study tools, PDF, magazine, Contentful Custom Apps | ~3B |
+| 12 | **6: Media** | Video, audio, images, cross-media search | ~3B |
+| 13 | **7: Community** | Accounts, events, study circles | ~3B |
+
+Key reordering moves: corpus expansion (3a) before reader polish (2b); remaining languages (5b) before reader polish (2b) and study tools (4). Every polish and tool investment after 5b benefits all 10 languages instead of just English. A future session should renumber arcs and update cross-references to match this execution sequence.
 
 **Parallel workstreams and feature-flag activation (ADR-123):** Arcs are *narrative themes*, not strictly sequential gates. Where deliverables within an arc have no technical dependency on another arc's organizational prerequisites, they proceed in parallel. Specifically: Milestone 3c algorithmic computation proceeds alongside Milestone 3b editorial tooling; Arc 4 multi-environment activation proceeds independently of other Arc 4 deliverables; Milestone 5b language waves run in parallel where resources permit; Milestone 7a localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
@@ -39,11 +63,11 @@ Each arc delivers a working, demonstrable increment organized around a spiritual
 
 ### Milestone 1a: Prove
 
-**Goal:** Answer the existential question: does pure hybrid search (vector + BM25 + RRF) across Yogananda's text return high-quality, relevant, verbatim passages with accurate citations? Deliver the minimum vertical slice: ingest → search → read. Everything else waits until this works. Pure hybrid search — with no AI services in the search path — is the **primary search mode** for the portal, not a stepping stone to AI-enhanced search. (ADR-119)
+**Goal:** Answer the existential question: does pure hybrid search (vector + BM25 + RRF) across Yogananda's text return high-quality, relevant, verbatim passages with accurate citations — **in English, Hindi, and Spanish**? Deliver the minimum vertical slice: ingest → search → read, across three languages serving ~1.25 billion reachable people. Everything else waits until this works. Pure hybrid search — with no AI services in the search path — is the **primary search mode** for the portal, not a stepping stone to AI-enhanced search. (ADR-119, ADR-128)
 
-*Milestone 1a is deliberately small. The design is 120 ADRs deep — the risk is no longer under-design but over-design without empirical contact. Ship this, learn from it, then build the foundation.* (ADR-113)
+*Milestone 1a is deliberately small but deliberately trilingual. The design is 120+ ADRs deep — the risk is no longer under-design but over-design without empirical contact. Hindi and Spanish prove that the multilingual architecture works from day one, not as a deferred afterthought. Ship this, learn from it, then build the foundation.* (ADR-113, ADR-128)
 
-**Focus book:** Autobiography of a Yogi
+**Focus book:** Autobiography of a Yogi — in **English, Hindi, and Spanish** (ADR-128 Tier 1)
 
 ### Prerequisites (conversations, not code)
 
@@ -51,6 +75,7 @@ These are blocking conversations that must happen before ingestion begins:
 
 1. **~~Edition confirmation:~~** *(Resolved 2026-02-24.)* Use edition indicated in PDF source (spiritmaji.com). Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition.
 2. **~~PDF source confirmation:~~** *(Resolved 2026-02-24.)* spiritmaji.com PDF accepted for Arc 1 proof. Non-PDF digital text will replace before launch.
+3. **~~Hindi and Spanish source confirmation:~~** *(Resolved 2026-02-28.)* Purchase from Amazon for Arc 1 proof (same temporary-source approach as spiritmaji.com for English). Hindi: [YSS Hindi edition](https://www.amazon.com/Autobiography-HINDI-Hindi-Paramahansa-Yogananda/dp/9389432472). Spanish: [SRF Spanish edition](https://www.amazon.com/Autobiografia-Autobiography-Self-Realization-Fellowship-Spanish/dp/0876120982). SRF/YSS-provided digital text will replace before launch.
 
 ### Deliverables
 
@@ -64,7 +89,8 @@ These are blocking conversations that must happen before ingestion begins:
 | 1a.6 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. Claude-based enhancements added in Milestone 1b. (ADR-011, ADR-044) |
 | 1a.7 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
 | 1a.8 | **Basic book reader** | Chapter-by-chapter reading view serving content from Contentful Delivery API. Deep-link anchors, optimal line length (65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
-| 1a.9 | **Search quality evaluation** | Test suite of ~50 representative queries with expected passages (golden retrieval set). Claude drafts the query set spanning all intent types (topical, emotional, definitional, situational, empty-result); human validates that queries represent real seeker needs and verifies expected passages against the Autobiography text. Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3. Scope note: this evaluation is English-only and cannot assess multilingual retrieval quality — multilingual embedding model benchmarking is deferred to Milestone 5b when translated content exists (ADR-047). (ADR-005 E5) |
+| 1a.9 | **Search quality evaluation (trilingual)** | Test suite of ~50 English queries + ~15 Hindi queries + ~15 Spanish queries with expected passages (golden retrieval set). Claude drafts the query set spanning all intent types (topical, emotional, definitional, situational, empty-result); human validates that queries represent real seeker needs and verifies expected passages against the Autobiography text. Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3, per language. Hindi and Spanish evaluation validates that multilingual search works from day one — the portal proves it can serve 1.25 billion reachable people, not just 390 million. (ADR-005 E5, ADR-128, ADR-077) |
+| 1a.10 | **Hindi and Spanish Autobiography ingestion** | Same pipeline as English (1a.4). Purchase Hindi (YSS) and Spanish (SRF) editions from Amazon as temporary PoC sources. Extract text via same ebook capture / PDF pipeline. Ingest with `language: 'hi'` and `language: 'es'` — the `language` column exists on all content tables from the first migration (Principle 11). Generate embeddings via Voyage voyage-3-large (natively multilingual). Create `canonical_book_id` cross-language link between the three editions. Validate: Hindi queries return Hindi passages, Spanish queries return Spanish passages, cross-language fallback works (English results shown when target language has no match, clearly marked `[EN]`). Font loading: Noto Sans Devanagari for Hindi (ADR-080). (ADR-077, ADR-128) |
 
 ### Technology
 
@@ -88,14 +114,19 @@ These are blocking conversations that must happen before ingestion begins:
 - `pnpm dev` starts a working Next.js application locally
 - `dbmate status` shows migration 001 applied
 - Contentful space contains Autobiography content (Book, Chapters, Sections, TextBlocks)
-- A seeker can type "How do I overcome fear?" and receive 3–5 relevant, verbatim Yogananda quotes with accurate book/chapter/page citations
+- A seeker can type "How do I overcome fear?" (English), "भय कैसे दूर करें?" (Hindi), or "¿Cómo superar el miedo?" (Spanish) and receive relevant, verbatim Yogananda quotes with accurate book/chapter/page citations in the queried language
 - "Read in context" links navigate to the correct passage in the reader
 - Simple keyword searches ("divine mother") work without any LLM involvement
 - Search latency < 2 seconds for hybrid queries
 - Zero AI-generated content appears in any user-facing result
 - The book reader enforces 65–75 character line length
 - "Find this book" links are present on every passage and link to the SRF Bookstore
-- Search quality evaluation passes: ≥ 80% of test queries return at least one relevant passage in the top 3 results
+- Search quality evaluation passes: ≥ 80% of test queries return at least one relevant passage in the top 3 results, per language (en, hi, es)
+- Hindi *Autobiography* ingested with correct citations and `language: 'hi'`
+- Spanish *Autobiography* ingested with correct citations and `language: 'es'`
+- Hindi search queries return Hindi passages; Spanish queries return Spanish passages
+- Cross-language fallback: English results shown (marked `[EN]`) when target language has no match
+- Noto Sans Devanagari loads correctly for Hindi content
 
 ### What If Search Quality Fails?
 
@@ -112,11 +143,11 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 **Goal:** Deploy to Vercel, build the homepage, establish observability, activate Contentful webhook sync, seed the entity registry, and design the enrichment pipeline. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI services in the search hot path. Milestone 1b transforms the working local proof into a deployed, observable portal.
 
-*Milestone 1b depends on Milestone 1a's search quality evaluation passing. If the core search doesn't work, everything built here is premature.* (ADR-113)
+*Milestone 1b depends on Milestone 1a's search quality evaluation passing — in all three languages. If the core search doesn't work, everything built here is premature.* (ADR-113)
 
 *AI-enhanced search (query expansion, Claude passage ranking, Cohere reranking) is deferred to Milestone 2b, conditional on Milestone 1a evaluation. If pure hybrid search meets quality targets comfortably (≥ 90% of test queries return relevant passages in top 3), AI enhancements may not be needed. See ADR-119.*
 
-**Focus book:** Autobiography of a Yogi
+**Focus book:** Autobiography of a Yogi (English, Hindi, Spanish)
 
 ### Deliverables
 
@@ -512,9 +543,11 @@ The portal becomes a distribution platform — daily email, social media quote i
 
 ### Milestone 5b: Languages
 
-**Goal:** Serve content and search in 9 non-English core languages, activating Milestone 2a's i18n infrastructure. (ADR-075, ADR-076, ADR-077)
+**Goal:** Serve content and search in the remaining 7 core languages (Tiers 2–3), activating Milestone 2a's i18n infrastructure. Hindi and Spanish (Tier 1) are already live from Arc 1. (ADR-075, ADR-076, ADR-077, ADR-128)
 
-The core language set (ADR-077) defines 10 languages: en, de, es, fr, it, pt, ja, th, hi, bn. All 9 non-English languages are Milestone 5b peers — no wave ordering. Resourcing may require sequencing during implementation, but the architectural commitment is equal. Per-language search quality evaluation ensures no language goes live with degraded retrieval. YSS co-equal design stakeholder participation for Hindi/Bengali cultural adaptation. SRF/YSS Thailand community input for Thai locale. The impact dashboard provides leadership visibility into global reach and unmet demand.
+The core language set (ADR-077) defines 10 languages ordered by reachable population (ADR-128). **Tier 1 (Hindi, Spanish) activated in Arc 1.** This milestone activates Tier 2 (Portuguese, Bengali) and Tier 3 (German, Japanese, French, Italian, Thai). Languages ship independently as they clear the readiness gate: *Autobiography* ingested + UI strings translated + human reviewer confirmed + per-language search quality evaluation passes. Per-language search quality evaluation ensures no language goes live with degraded retrieval. YSS co-equal design stakeholder participation for Hindi/Bengali cultural adaptation. SRF/YSS Thailand community input for Thai locale. The impact dashboard provides leadership visibility into global reach and unmet demand.
+
+**Note (ADR-128):** This milestone is a candidate for reordering — the reachable population metric suggests remaining languages should ship before reader refinement (current 2b) and before study tools (current Arc 4). The full milestone reordering across arcs is pending. See ADR-128 § Consequences and ROADMAP.md § Arc Philosophy for the reordering principle.
 
 - AI-assisted UI translations with mandatory human review per locale (ADR-078)
 - Localized book content ingestion with content availability matrix

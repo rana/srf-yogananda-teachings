@@ -32,8 +32,8 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [x] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? *Resolved: Arc 1 uses spiritmaji.com edition (ADR-123 parameter). Multi-edition policy is Arc 3+.* (ADR-001, ADR-034, ADR-039, ADR-007)
 - [x] Milestone 1a parameter validation. *Resolved: governed by ADR-123. Success criteria in ROADMAP.md include search quality evaluation (Deliverable 1a.9).*
 
-**Stakeholder (reclassified from Tier 1 — parked, not blocking)**
-- [ ] Which books have official translations in which languages? Not relevant until Milestone 5b. (ADR-075, ADR-077)
+**Stakeholder (reclassified from Tier 1 — now Arc 1 relevant for Hindi/Spanish)**
+- [ ] Which books have official translations in which languages? **Critical for Tier 1 (Hindi, Spanish) in Arc 1.** Content availability matrix needed: Language × Book × Format (print/ebook/digital text/audio). Arc 1 uses Amazon-purchased editions as temporary sources; full matrix needed before Tier 2 activation. (ADR-075, ADR-077, ADR-128)
 - [ ] *God Talks with Arjuna* Devanāgarī content: not relevant until that book is ingested (Milestone 3a+). (ADR-080, ADR-048)
 
 **Technical**
@@ -141,6 +141,9 @@ Questions about Milestone 3b+ features — multilingual scale, multimedia, MCP d
 | 2026-02-26 | Time Travel queries accepted as Milestone 1a development tool — zero implementation cost, already available on Scale tier | PRO-008 (Adopted) |
 | 2026-02-26 | Neon Snapshot API for Layer 2 recovery — API-managed schedule, pre-migration snapshots in CI, on-demand via MCP | ADR-019 |
 | 2026-02-26 | Terraform Neon provider (`kislerdm/neon`) is community-maintained — pin version, review plans on upgrades, never auto-upgrade in CI | ADR-124 |
+| 2026-02-28 | Reachable population adopted as quantitative prioritization metric — scope ordered by `speakers × internet_penetration × content_availability`. Roadmap reordered: breadth-first (languages) before depth-first (reader polish, study tools) | ADR-128 |
+| 2026-02-28 | Hindi and Spanish elevated to Tier 1 languages — *Autobiography* ingested in Arc 1 alongside English. "No wave ordering" replaced by demographic-priority ordering. Amazon editions as temporary PoC sources (same approach as spiritmaji.com for English) | ADR-077, ADR-128 |
+| 2026-02-28 | Language priority ordering: Hindi/Spanish (Tier 1, Arc 1) → Portuguese/Bengali (Tier 2) → German/Japanese/French/Italian/Thai (Tier 3). Languages ship independently as they clear readiness gates | ADR-077, ADR-128 |
 | 2026-02-26 | Branch=environment principle adopted: one project per service, branches for separation. Environments disposable via `create-env.sh`/`destroy-env.sh` (Arc 4+) | ADR-020 |
 | 2026-02-26 | Single AWS account with IAM role boundaries (not multi-account) — proportionate to public no-auth portal. Escalate to multi-account only if SRF governance requires it | ADR-020 |
 | 2026-02-26 | Bootstrap automation via `scripts/bootstrap.sh` — human runs one script, pastes 2 credentials, script handles AWS CLI + Vercel CLI + `gh secret set` | ADR-020, DES-039 |

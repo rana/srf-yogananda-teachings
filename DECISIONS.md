@@ -6,13 +6,13 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 127. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
+*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 128. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
 
 ### Index by Concern
 
 **Foundational Constraints**
 
-Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, global equity ensures underserved seekers are never second-class users, and an experience quality standard demands that execution match the spiritual depth of the content.
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, global equity ensures underserved seekers are never second-class users, an experience quality standard demands that execution match the spiritual depth of the content, and scope is prioritized by reachable population so the most people are served soonest.
 
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
@@ -24,6 +24,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 - ADR-015: Verbatim Media Fidelity — Cross-Modal Content Integrity
 - ADR-121: DELTA-Relaxed Authenticated Experience
 - ADR-127: Experience Quality Standard — Honoring the Spirit of the Teachings
+- ADR-128: Reachable Population — Quantitative Prioritization Framework
 
 **Architecture & Platform**
 
@@ -127,11 +128,11 @@ Shapes how the portal feels and behaves for readers. The design system derives f
 
 **Internationalization**
 
-Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) — all non-English languages are Milestone 5b peers with no wave ordering. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation with full crawler support. Content gating (DRM, FlipBook) is architecturally prohibited (§3a); `ai.txt` provides machine-parseable AI permissions (§3b); copyright asserted through metadata and legal layers, not technology walls.
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) ordered by reachable population (ADR-128); Hindi and Spanish are Tier 1 priorities activated alongside English from Arc 1. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation with full crawler support. Content gating (DRM, FlipBook) is architecturally prohibited (§3a); `ai.txt` provides machine-parseable AI permissions (§3b); copyright asserted through metadata and legal layers, not technology walls.
 
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
 - ADR-076: CSS Logical Properties
-- ADR-077: Core Language Set
+- ADR-077: Core Language Set and Priority Ordering
 - ADR-078: AI-Assisted Translation Workflow
 - ADR-079: YSS Organizational Branding and Locale Strategy
 - ADR-080: Sanskrit Display and Search Normalization Policy

@@ -80,6 +80,8 @@ The commitments are specific: homepage initial payload under 50KB; text-only mod
 
 When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global-First does not constrain ambition. It demands that ambition serve everyone.
 
+**Prioritization metric:** When scope must be ordered, the option serving more reachable people ships first. Reachable population (speakers × internet penetration × content availability) is the default tiebreaker for all scope decisions. Hindi and Spanish — each serving ~425–430M reachable people — are Tier 1 priorities activated alongside English from Arc 1, not deferred to a distant milestone. See ADR-128 for the full quantitative framework, application protocol, and demographic data.
+
 ---
 
 ### 6. Calm Technology
