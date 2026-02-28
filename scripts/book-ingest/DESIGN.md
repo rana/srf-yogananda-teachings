@@ -1148,7 +1148,7 @@ Autonomous decisions made 2026-02-26, informed by end-system lifecycle analysis:
    - `Photograph` — image (Asset), caption, altText, pageNumber, chapter (ref), isIllustration
    This aligns with ADR-010 (Contentful as CMS) and the existing `book.json` manifest structure.
 
-4. **Text gaps: Mark with editorial annotation.** Critical gaps (188, 216) are flagged in `book.json` for human recovery. The portal should NOT silently omit text. If gaps remain at publication, display: `[Text continues on page N of the print edition]` — consistent with Principle 2 (sacred text fidelity: no fabrication, no silent omission).
+4. **Text gaps: Mark with editorial annotation.** Critical gaps (188, 216) are flagged in `book.json` for human recovery. The portal should NOT silently omit text. If gaps remain at publication, display: `[Text continues on page N of the print edition]` — consistent with Principle 2 (full attribution: no fabrication, no silent omission).
 
 5. **Cover image: Captured from Reader.** 1232×1572 PNG sufficient for `og:image`, book cards, and listings. SRF may provide higher-res marketing art later.
 

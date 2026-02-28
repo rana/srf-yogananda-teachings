@@ -719,7 +719,7 @@ However, as the portal's feature surface has grown — editorial reading threads
 
 ### Context
 
-Principles 1 and 2 — "Direct Quotes Only" and "Sacred Text Fidelity" — establish that Yogananda's words must be transmitted verbatim, with full citation, and never generated, paraphrased, translated, or synthesized by AI. These principles were authored when "content" implicitly meant text. As the portal evolves into cross-media territory (Arc 6: video, audio, images), the same theological reasoning must govern all modalities.
+Principles 1 and 2 — "Direct Quotes Only" and "Full Attribution Always" — establish that Yogananda's words must be transmitted verbatim, with full citation, and never generated, paraphrased, translated, or synthesized by AI. These principles were authored when "content" implicitly meant text. As the portal evolves into cross-media territory (Arc 6: video, audio, images), the same theological reasoning must govern all modalities.
 
 If paraphrasing Yogananda's words is prohibited because even subtle changes distort the meaning of a realized master's teachings, then:
 
@@ -1988,7 +1988,7 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 
 ### Alternatives Evaluated
 
-- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails Principle 8 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
+- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails Principle 11 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
 
 ### Consequences
 
@@ -5530,15 +5530,17 @@ The portal offers two experience tiers:
 
 **Status:** Accepted (Foundational)
 
-**Context:** The portal's eleven architectural principles effectively constrain bad decisions — no AI synthesis, no gamification, no content gating, no feature gating behind connectivity. But constraints alone do not produce excellence. Brother Chidananda described the portal as "world-class." A quality aspiration was implicit across several principles (Calm Technology's "entering a library, not a marketplace," Global-First's "full claim on the beauty and depth," Accessibility's "warmth" requirement) but had no explicit governance home. Without it, "it works" could be mistaken for "it's done."
+**Context:** The portal's architectural principles effectively constrain bad decisions — no AI synthesis, no gamification, no content gating, no feature gating behind connectivity. But constraints alone do not produce excellence. Brother Chidananda described the portal as "world-class." A quality aspiration was implicit across several principles (Calm Technology's "entering a library, not a marketplace," Global-First's "full claim on the beauty and depth," Accessibility's "warmth" requirement) but had no explicit governance home. Without it, "it works" could be mistaken for "it's done."
 
-**Decision:** Adopt Principle 12: Honoring the Spirit of the Teachings. Every interaction should amaze — and honor the spirit of the teachings it presents. The portal's execution quality should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?"
+**Decision:** Adopt Principle 3: Honoring the Spirit of the Teachings. Every interaction should amaze — and honor the spirit of the teachings it presents. The portal's execution quality should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?"
 
 **Consequences:**
-- Creates an aspiration gate alongside existing constraint gates — components must be both correct (per Principles 1–11) and excellent (per Principle 12)
+- Creates an aspiration gate alongside existing constraint gates — components must be both correct (per Principles 1–2, 4–11) and excellent (per Principle 3)
 - Applies to all implementation arcs from the first component
 - Aligns with Calm Technology: restraint as a form of excellence, not a limitation
 - Provides the AI architect/implementer with a self-referential evaluation standard: measure the portal's quality against the content's own character (warm, calm, profound, inviting)
 - Does not conflict with Global-First performance budgets — a slow portal is not worthy of the teachings either
 
-**Governs:** Principle 12 in PRINCIPLES.md
+**Governs:** Principle 3 in PRINCIPLES.md
+
+*Revised: 2026-02-28, principle number updated from 12 to 3 per principles restructuring.*

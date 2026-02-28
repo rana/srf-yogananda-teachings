@@ -1,12 +1,18 @@
 # SRF Online Teachings Portal — Principles
 
-Twelve principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify.
+Eleven principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify. When principles tension against each other, Content Identity principles take precedence over Seeker Experience, which takes precedence over Engineering Foundation.
 
 CLAUDE.md carries the compressed, code-affecting form of each principle. This document adds the *why*: enough rationale to prevent well-intentioned erosion across sessions. For the full alternatives-considered analysis, see the referenced ADRs in DECISIONS.md.
 
+Specific numeric values throughout these documents (chunk sizes, rate limits, thresholds) are tunable parameters, not principles — implement them as named constants in `/lib/config.ts` per ADR-123.
+
 ---
 
-## 1. Direct Quotes Only
+## Content Identity
+
+*What this project is. Violating these destroys the project's purpose.*
+
+### 1. Direct Quotes Only
 
 **The AI is a librarian, not an oracle.** It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it never generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. (ADR-001, ADR-005, ADR-015, PRO-014)
 
@@ -22,17 +28,33 @@ The consequence that matters most: chunking quality is paramount. Each chunk mus
 
 ---
 
-## 2. Sacred Text Fidelity
+### 2. Full Attribution Always
 
-**Every displayed passage must include author, book, chapter, and page citation.** No orphaned quotes. AI transformation of SRF-published teachings across any medium — text translation, voice synthesis, image generation, video fabrication — is never acceptable for any content tier. Only official SRF/YSS translations for text; only human recordings for audio narration of sacred text; only authentic photographs and video for guru imagery. Full author name always displayed — "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata" — never shortened. (ADR-075, ADR-078, ADR-015, PRO-014)
+**Every displayed passage carries full provenance: author, book, chapter, page.** No orphaned quotes — every search result links to its full chapter context. Full author name always displayed — "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata" — never shortened. When no official translation exists, the content is unavailable in that language — honest absence over synthetic substitution. (ADR-075, ADR-078, ADR-039)
 
-When an official translation doesn't exist for a language, the book is simply unavailable in that language — the portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition. The same reasoning extends to voice and image: a synthetic voice reading Yogananda's words imposes machine prosody on sacred transmission; an AI-generated guru portrait fabricates an object of devotion. The portal preserves what exists with the highest fidelity — it does not fill gaps with synthetic substitutes.
+When a seeker encounters a passage, they must always know who said it, where it was published, and how to read the surrounding context. This is not a citation convention — it is a commitment to the integrity of transmission. In the SRF tradition, the source of a teaching matters: the same phrase from Yogananda, from Sri Yukteswar, and from a monastic speaker carries different authority and context. Full provenance preserves this.
 
 Content integrity verification (ADR-039) ensures that published text has not been modified, truncated, or corrupted. Every passage carries provenance: which book, which edition, which chapter, which page. The "Read in context" deep link is architecturally critical — every search result must link to the full chapter, positioned at the passage, so seekers can always verify the surrounding context.
 
+The translation honesty commitment deserves emphasis: when an official translation doesn't exist for a language, the book is simply unavailable in that language. The portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition.
+
+*Section revised: 2026-02-28, sharpened from "Sacred Text Fidelity" — removed duplication with Principle 1 (AI/media prohibition), focused on the unique commitments: provenance, attribution, translation honesty.*
+
 ---
 
-## 3. Signpost, Not Destination
+### 3. Honoring the Spirit of the Teachings
+
+**Every interaction should amaze — and honor the spirit of the teachings it presents.** Brother Chidananda described the portal as "world-class." World-class is the minimum standard: the portal's execution quality — its typography, its search experience, its error handling, its silence — should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?" (ADR-127)
+
+The other ten principles prevent bad decisions. This principle demands great ones. Where the ten say what *not* to do, this one says what to *aspire to*: every pixel, every transition, every interaction should reflect the care that SRF puts into its printed books. The teachings have been transmitted through an unbroken chain of spiritual care — the digital vessel should honor that chain.
+
+The test is specific: the distance between adequate and amazing. Not just typography that renders the text, but typography that honors its rhythm. Not just search that returns relevant results, but search that feels curated by a wise librarian. Not just error handling that recovers, but error handling that guides gently. When a grieving seeker finds Yogananda's words on the immortality of the soul at 2 AM, the passage should feel like receiving a gift, not reading a database output.
+
+What is amazing: considered simplicity. Typography that honors the text's rhythm. Search results that feel curated. Error messages that guide gently. Loading states that feel like stillness rather than brokenness. Restraint as a form of excellence — the portal that does fewer things with more care is better than one that does more things with less. This aligns with Calm Technology: the technology disappears and the teachings shine.
+
+---
+
+### 4. Signpost, Not Destination
 
 **The portal leads seekers toward practice — it never substitutes for it.** Practice Bridge routes technique queries to SRF Lessons information. Crisis query detection provides safety interstitials. The AI never interprets meditation techniques or spiritual practices. (ADR-104, ADR-122, ADR-069)
 
@@ -44,7 +66,11 @@ The technique boundary is absolute: the portal never teaches Kriya Yoga, Hong-Sa
 
 ---
 
-## 4. Global-First
+## Seeker Experience
+
+*Who we serve and how. Violating these harms seekers.*
+
+### 5. Global-First
 
 **Supports all humans of Earth equally.** Low-resourced peoples and high-resourced peoples. Low-resource phones with limited and intermittent bandwidth, high-resource phones with high bandwidth, tablets, and desktops. A seeker in rural Bihar on 2G and a seeker in Los Angeles on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Core reading and search experiences degrade gracefully with intermittent or absent connectivity. (ADR-006)
 
@@ -56,7 +82,7 @@ When a feature proposal seems to conflict with this principle, the response is n
 
 ---
 
-## 5. Calm Technology
+### 6. Calm Technology
 
 **No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI.** The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
 
@@ -68,7 +94,7 @@ Personalization features are classified into three tiers (ADR-002): build (langu
 
 ---
 
-## 6. Accessibility from Milestone 2a
+### 7. Accessibility from Milestone 2a
 
 **WCAG 2.1 AA from the first component.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 
@@ -80,7 +106,7 @@ Screen reader quality goes beyond mere compliance. ADR-073 specifies that the sp
 
 ---
 
-## 7. DELTA-Compliant Analytics
+### 8. DELTA-Compliant Analytics
 
 **No user identification, no session tracking, no behavioral profiling.** Amplitude event allowlist only. (ADR-095, ADR-099)
 
@@ -92,27 +118,11 @@ The consequence for code: never install analytics that track users. Never add se
 
 ---
 
-## 8. Multilingual from the Foundation
+## Engineering Foundation
 
-**Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
+*How we build. Violating these creates technical debt.*
 
-The multilingual commitment shapes technical decisions made long before any translation exists. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — even though Arc 1 is English only. pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
-
-The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
-
----
-
-## 9. API-First Architecture
-
-**All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
-
-Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Arcs 1–6, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
-
-The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
-
----
-
-## 10. 10-Year Design Horizon
+### 9. 10-Year Design Horizon
 
 **Every component is designed for graceful evolution over a decade.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Every Tier 3 component is replaceable without touching Tier 1. (ADR-004)
 
@@ -124,24 +134,22 @@ The search quality test suite (50-query golden set) serves as the acceptance gat
 
 ---
 
-## 11. Parameters as Named Constants
+### 10. API-First Architecture
 
-**Specific numeric values (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments.** Implement them as named constants in `/lib/config.ts`. (ADR-123)
+**All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 
-This principle protects the other eleven. Without it, every operational parameter accumulates the governance weight of a principle. An engineer who needs to change a cache TTL from 5 minutes to 15 minutes should not feel they are violating an architectural decision. The distinction *preserves* the authority of actual principles by preventing parameter-level fatigue from eroding respect for the governance process.
+Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Arcs 1–6, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
-Every parameter documents three things: its current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration). When tuned based on evidence, the change is annotated in DESIGN.md: `*Parameter tuned: [date], [old] -> [new], [evidence].*` Milestone 1a.9 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables.
-
-In year 7, a new developer can identify what's tunable versus what's sacred without reading the full DECISIONS.md archive.
+The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
 
 ---
 
-## 12. Honoring the Spirit of the Teachings
+### 11. Multilingual from the Foundation
 
-**Every interaction should amaze — and honor the spirit of the teachings it presents.** Brother Chidananda described the portal as "world-class." World-class is the minimum standard: the portal's execution quality — its typography, its search experience, its error handling, its silence — should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?" (ADR-127)
+**Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 
-The other eleven principles prevent bad decisions. This principle demands great ones. Where the eleven say what *not* to do, this one says what to *aspire to*: every pixel, every transition, every interaction should reflect the care that SRF puts into its printed books. The teachings have been transmitted through an unbroken chain of spiritual care — the digital vessel should honor that chain.
+The multilingual commitment shapes technical decisions made long before any translation exists. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — even though Arc 1 is English only. pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
 
-The test is specific: the distance between adequate and amazing. Not just typography that renders the text, but typography that honors its rhythm. Not just search that returns relevant results, but search that feels curated by a wise librarian. Not just error handling that recovers, but error handling that guides gently. When a grieving seeker finds Yogananda's words on the immortality of the soul at 2 AM, the passage should feel like receiving a gift, not reading a database output.
+The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
-What is amazing: considered simplicity. Typography that honors the text's rhythm. Search results that feel curated. Error messages that guide gently. Loading states that feel like stillness rather than brokenness. Restraint as a form of excellence — the portal that does fewer things with more care is better than one that does more things with less. This aligns with Calm Technology: the technology disappears and the teachings shine.
+*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with Principle 1 removed. "Honoring the Spirit" elevated from position 12 to position 3.*
