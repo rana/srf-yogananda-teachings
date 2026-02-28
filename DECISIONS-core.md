@@ -1202,8 +1202,8 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 ### Consequences
 
 - `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
-- `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for the `portal-app-bedrock` IAM user (Vercel → Bedrock). No `ANTHROPIC_API_KEY`.
-- Terraform creates the `portal-app-bedrock` IAM user with Bedrock inference permissions only (`bedrock:InvokeModel*`, `bedrock:Converse*` — covers both legacy and unified APIs, scoped to configured model ARNs) and manages Bedrock model access
+- `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ROLE_ARN` for the `portal-vercel-runtime` IAM role (Vercel OIDC → Bedrock). No `ANTHROPIC_API_KEY`, no stored access keys. See ADR-126.
+- Terraform creates the `portal-vercel-runtime` IAM role with Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) + Secrets Manager read access. Vercel functions authenticate via OIDC federation (ADR-126) — zero long-lived credentials.
 - Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_BATCH` (default: Opus)
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
@@ -1764,14 +1764,18 @@ The portal will operate across multiple environments (dev, staging, production) 
 Single AWS account with IAM role boundaries for Arcs 1–3. If SRF governance requires separate accounts for production (a stakeholder decision, not a technical one), the Terraform workspace + tfvars model supports multi-account without rearchitecture — add an OIDC role per account and a `provider` alias per workspace.
 
 ```
-AWS Account: srf-teachings
-├── IAM Role: portal-ci          — OIDC federation for GitHub Actions
-├── IAM Role: portal-ci-staging  — (Arc 4+) tighter permissions
-├── IAM Role: portal-ci-prod     — (Arc 4+) production-only permissions
-├── IAM User: portal-app-bedrock — Vercel → Bedrock inference
-├── S3: srf-portal-terraform-state — Terraform state (all environments)
-├── S3: srf-portal-assets-{env}  — Per-environment asset buckets
-├── Lambda: {env}-*              — Per-environment functions (Milestone 2a+)
+AWS Account: srf-teachings (dedicated account within SRF AWS Organization)
+├── IAM OIDC Provider: token.actions.githubusercontent.com — GitHub Actions federation
+├── IAM OIDC Provider: oidc.vercel.com/{TEAM_SLUG}       — Vercel runtime federation (ADR-126)
+├── IAM Role: portal-ci              — OIDC federation for GitHub Actions
+├── IAM Role: portal-ci-staging      — (Arc 4+) tighter permissions
+├── IAM Role: portal-ci-prod         — (Arc 4+) production-only permissions
+├── IAM Role: portal-vercel-runtime  — Vercel OIDC → Bedrock + Secrets Manager (ADR-126)
+├── KMS Key: portal-secrets          — Encrypts all Secrets Manager entries (ADR-125)
+├── Secrets Manager: /portal/{env}/* — All application secrets (ADR-125)
+├── S3: srf-portal-terraform-state   — Terraform state (all environments)
+├── S3: srf-portal-assets-{env}      — Per-environment asset buckets
+├── Lambda: {env}-*                  — Per-environment functions (Milestone 2a+)
 └── DynamoDB: srf-portal-terraform-locks — State locking (shared)
 ```
 
@@ -5084,6 +5088,294 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 *Revised: 2026-02-25, rewrite from ElastiCache to three-tier progressive architecture (Static JSON → pg_trgm → Vercel KV). Rationale: ElastiCache operational overhead disproportionate for dictionary size; VPC networking adds latency with Vercel; Vercel KV provides equivalent Redis semantics with zero ops.*
 
 ---
+
+---
+
+## ADR-125: Secrets Management Strategy — Two-Tier Model with AWS Secrets Manager
+
+- **Status:** Accepted
+- **Date:** 2026-02-28
+
+### Context
+
+The portal manages ~12 secrets across multiple services (Neon, Voyage, Contentful, Sentry, AWS Bedrock). A secrets management strategy must address:
+
+1. **Audit trail.** Who accessed what secret, when? CloudTrail provides this for AWS-managed secrets. Platform-native stores (GitHub Secrets, Vercel env vars) do not.
+2. **Single source of truth.** Each secret should live in exactly one place, distributed to consumers by Terraform — not duplicated across platforms.
+3. **Rotation without redeployment.** Secrets Manager supports runtime reads with caching — rotation takes effect on the next cache refresh without redeployment. Vercel env vars require a redeployment.
+4. **SRF organizational alignment.** SRF's established technology stack (Tech Stack Brief § 7) designates AWS Secrets Manager for sensitive credentials and SSM Parameter Store for non-sensitive config.
+5. **10-year design horizon (ADR-004).** The credential count will grow as arcs add services (Cohere, YouTube, SendGrid, New Relic, Amplitude, Auth0). A centralized foundation now avoids retrofitting later.
+
+### Decision
+
+Adopt a **two-tier configuration model** with AWS Secrets Manager as the single source of truth for all application secrets.
+
+#### Tier 1 — Code + Vercel Environment Variables (non-secrets)
+
+Values that are not sensitive. Two sub-categories:
+
+| Sub-tier | Where | Changes via | Examples |
+|----------|-------|-------------|----------|
+| Named constants | `/lib/config.ts` (ADR-123) | Code PR | Model IDs, chunk sizes, rate limits, cache TTLs |
+| Per-environment config | Vercel env vars (set by Terraform) | `terraform apply` or Vercel dashboard | `AWS_REGION`, `NEON_PROJECT_ID`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_*` build-time vars |
+
+**`NEXT_PUBLIC_*` carve-out:** Variables prefixed `NEXT_PUBLIC_` are injected at build time by the Next.js build runtime. They cannot be sourced from Secrets Manager at runtime — this is a hard Vercel/Next.js constraint, not a design choice. Documented as intentional divergence from the SRF standard, which was written for Lambda (runtime-only).
+
+#### Tier 2 — AWS Secrets Manager (all secrets)
+
+Every credential, API key, token, and connection string lives in Secrets Manager. One secret per logical credential, organized by path convention:
+
+```
+/portal/{environment}/{service}/{key-name}
+```
+
+Examples:
+- `/portal/production/neon/database-url`
+- `/portal/production/voyage/api-key`
+- `/portal/production/contentful/access-token`
+- `/portal/production/sentry/auth-token`
+
+**Access patterns:**
+
+| Context | How secrets are accessed | Auth mechanism |
+|---------|------------------------|----------------|
+| **Vercel functions (runtime)** | `@aws-sdk/client-secrets-manager` via `/lib/config.ts` facade, cached with 5-minute TTL | Vercel OIDC role (ADR-126) |
+| **Lambda functions** | IAM execution role → `GetSecretValue` | IAM role (automatic) |
+| **GitHub Actions / Terraform** | `aws secretsmanager get-secret-value` via OIDC role, or Terraform `data "aws_secretsmanager_secret_version"` | GitHub OIDC (ADR-016) |
+| **Local development** | `.env.local` (fallback — facade checks env vars before Secrets Manager) | AWS profile `srf-dev` |
+
+**The `/lib/config.ts` facade.** Call sites import config from `/lib/config.ts` and never know whether a value came from `process.env`, Secrets Manager, or a hardcoded constant. The facade's resolution order:
+
+1. Environment variable (if set) — enables `.env.local` override for local dev
+2. Secrets Manager (if running in AWS-accessible environment) — cached with TTL
+3. Default value (for non-required config) or throw (for required secrets)
+
+This makes migrating a value between tiers invisible to all consumers. Adding SSM Parameter Store as a third tier in the future requires only facade changes — zero call-site modifications.
+
+#### SSM Parameter Store — Deferred, Not Rejected
+
+The SRF Tech Stack Brief designates SSM Parameter Store for non-sensitive runtime config. The portal defers SSM adoption because:
+
+- The portal has ~8 non-sensitive config values, all well-served by `/lib/config.ts` + Vercel env vars
+- SSM's primary value is for large Lambda fleets with hundreds of config values requiring runtime mutation without redeployment
+- The `/lib/config.ts` facade preserves the option to add SSM with zero application code changes when a concrete need arises (feature flags, runtime log-level switching, etc.)
+
+This is an intentional, documented divergence from the SRF standard — not an oversight. The critical SRF alignment point (Secrets Manager for sensitive credentials) is fully honored.
+
+#### AWS Account Model
+
+The portal operates in a **dedicated AWS account within SRF's AWS Organization**. This provides:
+
+- Full blast-radius isolation from other SRF services
+- Organizational billing consolidation
+- Service Control Policies (SCPs) from the org for guardrails
+- Independent IAM policies and OIDC trust relationships
+- No credential sharing or cross-account access needed for portal operations
+
+#### Terraform Integration
+
+Terraform manages secret *resources* (names, policies, KMS encryption, rotation configuration) but not secret *values*:
+
+```hcl
+resource "aws_secretsmanager_secret" "voyage_api_key" {
+  name        = "/portal/${var.environment}/voyage/api-key"
+  description = "Voyage voyage-3-large embedding API key (ADR-118)"
+  kms_key_id  = aws_kms_key.portal_secrets.arn
+}
+# Secret VALUE populated manually or via bootstrap script — never in Terraform state
+```
+
+Terraform data sources read secrets for distribution to Vercel:
+
+```hcl
+data "aws_secretsmanager_secret_version" "voyage_api_key" {
+  secret_id = aws_secretsmanager_secret.voyage_api_key.id
+}
+
+resource "vercel_project_environment_variable" "voyage_api_key" {
+  value = data.aws_secretsmanager_secret_version.voyage_api_key.secret_string
+  # ...
+}
+```
+
+This means Vercel env vars are *derived from* Secrets Manager via Terraform, not independently managed. Single source of truth, Terraform-distributed.
+
+### Alternatives Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **AWS Secrets Manager (chosen)** | SRF standard; CloudTrail audit; rotation automation; single source of truth; Lambda-native | ~$5/month (12 secrets × $0.40); SDK call on cold start (mitigated by caching) |
+| **GitHub Secrets + Vercel env vars only** | Zero additional cost; simpler setup; native to each platform | No audit trail; manual multi-platform rotation; credential duplication; no rotation-without-redeployment; SRF non-conformant |
+| **HashiCorp Vault** | Most powerful; multi-cloud; dynamic secrets | Operational overhead (self-hosted or Cloud); not in SRF stack; overkill for portal scale |
+| **SSM Parameter Store (SecureString)** | Free; AWS-native | No built-in rotation; limited audit granularity; SRF standard reserves it for non-sensitive config |
+
+### Consequences
+
+- All `[secret]`-tagged env vars in `.env.example` have a corresponding `aws_secretsmanager_secret` Terraform resource
+- DES-039 § Environment Configuration updated with secrets management architecture and `/lib/config.ts` facade specification
+- `docs/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Terraform
+- `.env.example` uses `[secrets-manager]` tag: Secrets Manager in deployed environments; env var in `.env.local` for local dev
+- Rotation is single-point: update Secrets Manager, run `terraform apply`, done. No multi-platform coordination.
+- CloudTrail logs all `GetSecretValue` calls — audit trail for secret access from Milestone 1a
+- KMS customer-managed key encrypts all portal secrets (cost: ~$1/month per key)
+- **Extends:** ADR-016 (Terraform), ADR-020 (environment lifecycle), ADR-124 (Neon keys)
+- **Enables:** ADR-126 (Vercel OIDC — secrets accessed via role, not stored keys)
+
+---
+
+## ADR-126: Vercel OIDC Federation — Zero Long-Lived AWS Credentials
+
+- **Status:** Accepted
+- **Date:** 2026-02-28
+
+### Context
+
+The portal authenticates to AWS from two contexts:
+
+1. **GitHub Actions → AWS:** OIDC federation (ADR-016). Ephemeral tokens scoped by repo and branch. No stored credentials.
+2. **Vercel functions → AWS Bedrock + Secrets Manager (ADR-125):** Needs an authentication mechanism.
+
+The standard approach for Vercel → AWS is an IAM user with static access keys stored as Vercel env vars. But Vercel OIDC federation is GA and available on all plans:
+
+- Uses `AssumeRoleWithWebIdentity` — the same mechanism as GitHub Actions OIDC
+- Supports **team issuer mode** with environment-scoped `sub` claims (production, preview, development)
+- SDK helper: `@vercel/functions/oidc` provides `awsCredentialsProvider` with automatic STS exchange and credential refresh
+
+Using OIDC for both CI and runtime achieves **zero long-lived AWS credentials anywhere**.
+
+### Decision
+
+Adopt **Vercel OIDC federation** as the exclusive runtime AWS authentication mechanism. No IAM user access keys.
+
+#### Architecture
+
+```
+Vercel Function
+  → getVercelOidcToken()                    # Short-lived JWT from Vercel IdP
+  → AWS STS AssumeRoleWithWebIdentity       # Exchange JWT for temporary credentials
+  → Temporary IAM credentials (auto-refreshed, ~1hr TTL)
+  → Bedrock / Secrets Manager calls
+```
+
+#### AWS Configuration
+
+**1. Register Vercel as an OIDC Identity Provider:**
+
+| Parameter | Value |
+|-----------|-------|
+| Provider URL | `https://oidc.vercel.com/{TEAM_SLUG}` (team issuer mode) |
+| Audience | `https://vercel.com/{TEAM_SLUG}` |
+
+**2. Create IAM role `portal-vercel-runtime`:**
+
+Trust policy scopes by team, project, and environment:
+
+```json
+{
+  "Effect": "Allow",
+  "Principal": {
+    "Federated": "arn:aws:iam::{ACCOUNT_ID}:oidc-provider/oidc.vercel.com/{TEAM_SLUG}"
+  },
+  "Action": "sts:AssumeRoleWithWebIdentity",
+  "Condition": {
+    "StringEquals": {
+      "oidc.vercel.com/{TEAM_SLUG}:aud": "https://vercel.com/{TEAM_SLUG}"
+    },
+    "StringLike": {
+      "oidc.vercel.com/{TEAM_SLUG}:sub": "owner:{TEAM_SLUG}:project:{PROJECT_NAME}:environment:*"
+    }
+  }
+}
+```
+
+**3. Attach permissions:**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+        "bedrock:Converse",
+        "bedrock:ConverseStream"
+      ],
+      "Resource": "arn:aws:bedrock:us-west-2:*:inference-profile/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:us-west-2:{ACCOUNT_ID}:secret:/portal/*"
+    }
+  ]
+}
+```
+
+#### Application Code
+
+```typescript
+import { awsCredentialsProvider } from '@vercel/functions/oidc';
+
+const credentials = awsCredentialsProvider({
+  roleArn: process.env.AWS_ROLE_ARN,  // Not a secret — just a resource identifier
+});
+
+// Bedrock client
+const bedrock = new BedrockRuntimeClient({ region: 'us-west-2', credentials });
+
+// Secrets Manager client
+const secrets = new SecretsManagerClient({ region: 'us-west-2', credentials });
+```
+
+The `awsCredentialsProvider` handles STS exchange and credential refresh transparently. It falls back to the standard AWS credential chain when no OIDC token is present (local dev, CI).
+
+#### Environment Variables
+
+| Variable | Purpose | Secret? |
+|----------|---------|---------|
+| `AWS_ROLE_ARN` | IAM role ARN for OIDC assumption | No — resource identifier, set by Terraform |
+| `AWS_REGION` | Bedrock and Secrets Manager region | No — static `us-west-2` |
+
+No `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` in any deployed environment. Dependency: `@vercel/functions` (for OIDC helper).
+
+#### Environment-Scoped Security
+
+The OIDC `sub` claim includes the Vercel environment: `owner:{TEAM}:project:{PROJECT}:environment:{ENV}`. This enables environment-scoped IAM roles:
+
+| Environment | Role | Secrets Access |
+|-------------|------|---------------|
+| Production | `portal-vercel-runtime-prod` | `/portal/production/*` only |
+| Preview | `portal-vercel-runtime-preview` | `/portal/preview/*` only |
+| Development | `portal-vercel-runtime-dev` | `/portal/development/*` only |
+
+A preview deployment cannot assume the production role — environment isolation enforced at the IAM level.
+
+#### Local Development
+
+OIDC tokens only exist inside Vercel's runtime. For local development:
+
+- The `awsCredentialsProvider` falls back to the standard AWS credential chain
+- Developers use `~/.aws/credentials` with an `srf-dev` profile, or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local`
+- This is the same pattern Lambda-based services use when running locally
+- The `/lib/config.ts` facade's env-var-first resolution order means `.env.local` secrets override Secrets Manager lookups, so local dev works without AWS Secrets Manager access
+
+### Alternatives Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Vercel OIDC (chosen)** | Zero stored credentials; environment-scoped; auto-refresh; no rotation needed; GA on all plans | Requires OIDC provider setup; local dev uses different auth path |
+| **IAM user with static access keys** | Simple setup; works everywhere identically | Long-lived credentials; quarterly rotation; environment-agnostic (same keys work in any env); credential in Terraform state |
+
+### Consequences
+
+- Terraform creates `aws_iam_openid_connect_provider` (Vercel) alongside existing GitHub OIDC provider (ADR-016)
+- Terraform creates `portal-vercel-runtime` IAM role(s) with Bedrock + Secrets Manager permissions, scoped per environment
+- `AWS_ROLE_ARN` set as Vercel env var by Terraform (non-secret)
+- `@vercel/functions` added as project dependency
+- **Zero long-lived AWS credentials in any environment** — GitHub OIDC (CI) + Vercel OIDC (runtime)
+- **Extends:** ADR-016 (OIDC pattern), ADR-125 (Secrets Manager access via role)
 
 ---
 

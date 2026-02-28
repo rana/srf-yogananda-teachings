@@ -2205,59 +2205,33 @@ The portal has three distinct configuration layers — application environment v
 
 #### 1. Application Environment Variables (`.env.example`)
 
-Values that vary per environment or contain secrets. The `.env.example` file is the local development reference. Deployed environments receive these via Terraform outputs and Vercel encrypted env vars.
+Values that vary per environment or contain secrets. The `.env.example` file is the local development reference. In deployed environments, Terraform reads secrets from AWS Secrets Manager (ADR-125) and distributes them as Vercel environment variables. See `.env.example` for the canonical variable list with tag legend.
 
-```bash
-# .env.example — Application environment variables
-# Copy to .env.local for local development.
-# In deployed environments, Terraform outputs and Vercel secrets populate these.
+**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secrets-manager]` = stored in AWS Secrets Manager; Terraform reads and distributes to Vercel; fill manually in `.env.local` for local dev. `[static]` = fixed value, same across all environments.
 
-# ── Neon PostgreSQL ─────────────────────────────────────────────
-NEON_DATABASE_URL=               # [terraform] Pooled connection (serverless functions)
-NEON_DATABASE_URL_DIRECT=        # [terraform] Direct connection (dbmate migrations, scripts)
-NEON_PROJECT_ID=                 # [terraform] Neon project ID for API calls
-NEON_API_KEY=                    # [secret] Project-scoped API key for dev operations (ADR-124 § API Key Scoping)
+**Secrets management architecture (ADR-125).** Two tiers:
 
-# ── AWS (Bedrock inference from Vercel) ─────────────────────────
-AWS_REGION=us-west-2             # [terraform] Bedrock, Lambda, S3
-AWS_ACCESS_KEY_ID=               # [terraform] IAM user: portal-app-bedrock (Bedrock inference only)
-AWS_SECRET_ACCESS_KEY=           # [terraform] Paired with above — keys in encrypted S3 state
+| Tier | What | Where | Changes via |
+|------|------|-------|-------------|
+| **Config** (non-secrets) | Named constants, per-environment config, `NEXT_PUBLIC_*` build-time vars | `/lib/config.ts` + Vercel env vars | Code PR or `terraform apply` |
+| **Secrets** (all credentials) | API keys, tokens, connection strings | AWS Secrets Manager → Terraform → Vercel env vars | Secrets Manager update (+ `terraform apply` for Vercel distribution) |
 
-# ── AI ──────────────────────────────────────────────────────────
-VOYAGE_API_KEY=                  # [secret] Voyage voyage-3-large embeddings (ADR-118)
+Secrets Manager path convention: `/portal/{environment}/{service}/{key-name}` (e.g., `/portal/production/voyage/api-key`).
 
-# ── Contentful ──────────────────────────────────────────────────
-CONTENTFUL_SPACE_ID=             # [terraform] Space identifier
-CONTENTFUL_ACCESS_TOKEN=         # [secret] Delivery API (read-only)
-CONTENTFUL_MANAGEMENT_TOKEN=     # [secret] Management API — ingestion scripts only
+**Credential distribution pattern.** Terraform data sources read secret values from Secrets Manager and set them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` distributes secrets to Vercel — the human never manually copies secrets between platforms. For local development, `.env.local` provides the same values directly. The `/lib/config.ts` facade checks environment variables first, so local dev works without Secrets Manager access.
 
-# ── Observability ───────────────────────────────────────────────
-NEXT_PUBLIC_SENTRY_DSN=          # [terraform] Sentry error tracking (bundled into client JS)
-SENTRY_AUTH_TOKEN=               # [secret] Source map uploads
-
-# ── Future milestones (commented until needed) ──────────────────
-# YOUTUBE_API_KEY=               # [secret] Arc 2+ — video integration
-# RESEND_API_KEY=                # [secret] Milestone 5a — email
-# NEXT_PUBLIC_AMPLITUDE_KEY=     # [terraform] Milestone 3d — analytics
-# NEW_RELIC_LICENSE_KEY=         # [secret] Milestone 3d — observability
-```
-
-**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secret]` = set manually everywhere, never in Terraform state.
-
-**Credential distribution pattern.** Terraform's AWS module creates the `portal-app-bedrock` IAM user and generates access keys (`aws_iam_access_key`). Terraform's Vercel module reads those outputs and sets them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` creates the IAM user AND distributes its credentials to Vercel — the human never sees or handles the raw secret key. The secret key exists in encrypted S3 state (acceptable; bucket is access-controlled with versioning and server-side encryption). For secrets that Terraform doesn't create (Voyage API key, Contentful tokens), Terraform provisions empty Vercel env var placeholders, and the human populates them in the Vercel dashboard.
-
-**AWS authentication by context:**
+**AWS authentication by context (ADR-126):**
 
 | Context | Auth mechanism | Credentials |
 |---|---|---|
-| **Vercel functions → Bedrock** | IAM user (`portal-app-bedrock`) | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` as Vercel env vars |
+| **Vercel functions → Bedrock + Secrets Manager** | Vercel OIDC federation (`portal-vercel-runtime` role) | `AWS_ROLE_ARN` env var (not a secret) — no stored keys |
 | **Lambda → Bedrock/S3** | IAM execution role (attached by Terraform) | No env vars needed — role is automatic |
-| **GitHub Actions → AWS** | OIDC federation (ADR-016) | `AWS_ROLE_ARN` secret, no stored keys |
-| **Local dev → Bedrock** | IAM user or named profile | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local`, or `AWS_PROFILE=srf-dev` |
+| **GitHub Actions → AWS** | GitHub OIDC federation (ADR-016, `portal-ci` role) | `AWS_ROLE_ARN` secret, no stored keys |
+| **Local dev → Bedrock** | AWS credential chain fallback | `AWS_PROFILE=srf-dev` or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local` |
 
-The Vercel IAM user (`portal-app-bedrock`) has Bedrock inference permissions only: `bedrock:InvokeModel*` and `bedrock:Converse*`, scoped to the configured model ARNs in `us-west-2`. This covers both the legacy `InvokeModel` API and the newer unified `Converse` API (plus their streaming variants), allowing the `@anthropic-ai/bedrock-sdk` to use either without IAM failures. It cannot access S3, Lambda, or any other AWS service. Terraform creates this user; credentials are rotated quarterly via manual key rotation (create new key → update Vercel env var → delete old key). Automated rotation deferred to Milestone 3d operational maturity. This is separate from the CI OIDC role (which has broader permissions for Terraform apply, S3 backups, Lambda deployment).
+**Zero long-lived AWS credentials.** Vercel OIDC (ADR-126) authenticates Vercel functions to AWS via short-lived OIDC tokens exchanged for temporary IAM credentials through `AssumeRoleWithWebIdentity`. The `awsCredentialsProvider` from `@vercel/functions/oidc` handles the STS exchange and credential refresh. Combined with GitHub Actions OIDC (ADR-016), no long-lived AWS credentials exist in any environment.
 
-**Future optimization: Vercel runtime OIDC.** If Vercel supports OIDC federation for serverless function → AWS auth (as it does for deployment contexts), `portal-app-bedrock` can be replaced with an IAM role + Vercel trust policy — eliminating stored credentials entirely. Same zero-key security model as GitHub Actions OIDC. Evaluate at Milestone 3d operational maturity review.
+**Environment-scoped security.** The Vercel OIDC `sub` claim includes the deployment environment (`production`, `preview`, `development`). Separate IAM roles per environment scope Secrets Manager access: production deployments can only read `/portal/production/*` secrets. Preview deployments cannot assume the production role.
 
 **`ANTHROPIC_API_KEY` is removed from `.env.example`.** The application code uses `@anthropic-ai/bedrock-sdk` (not `@anthropic-ai/sdk`) for all Claude calls, routing through Bedrock in every environment including local dev. One code path, one auth mechanism. If a developer cannot access Bedrock (e.g., no AWS account yet during initial scaffold), the search pipeline gracefully degrades — search works without Claude-powered query expansion, returning BM25 + vector results only.
 
@@ -2403,6 +2377,7 @@ Terraform manages deployed environments only. Local development uses direct Neon
 *Section revised: 2026-02-25, consolidated environment configuration into single source of truth. Three layers: .env.example (secrets + per-environment), /lib/config.ts (named constants per ADR-123), developer tooling (Claude Code). Region updated to us-west-2 per human directive. Naming standardized: NEON_DATABASE_URL, CONTENTFUL_ACCESS_TOKEN. Updated: CI workflow file structure (ci.yml + terraform.yml + neon-branch.yml + neon-cleanup.yml + dependabot.yml), progressive module activation via feature flags, secret rotation clarified (manual until 3d), Terraform boundary corrected (GitHub settings manual, not Terraform-managed).*
 *Section revised: 2026-02-26, expanded Local Development Environment subsection with Neon branch workflow, Contentful access, test data seeding, offline/degraded mode, and Claude Code tooling.*
 *Section revised: 2026-02-26, bootstrap automation via `scripts/bootstrap.sh` (ADR-020), environment lifecycle scripts (`create-env.sh`/`destroy-env.sh` for Arc 4+), `terraform/bootstrap/trust-policy.json` added to module layout.*
+*Section revised: 2026-02-28, secrets management architecture — AWS Secrets Manager as single source of truth (ADR-125), Vercel OIDC federation for zero long-lived AWS credentials (ADR-126), environment-scoped security, /lib/config.ts facade pattern.*
 
 ---
 

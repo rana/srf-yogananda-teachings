@@ -6,7 +6,7 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring; 125–126 appeared in early explorations but were never adopted. New ADRs append after 124. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
+*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 126. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
 
 ### Index by Concern
 
@@ -26,7 +26,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 
 **Architecture & Platform**
 
-Defines the technology stack and infrastructure topology. The frontend runs Next.js on Vercel; the database is Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB); AI calls go through AWS Bedrock Claude with model tiering; infrastructure is Terraform-managed from Milestone 1a with GitHub Actions CI/CD, OIDC federation for AWS auth, S3 + DynamoDB state backend, and CI-agnostic deployment scripts. Also covers PWA strategy, content-addressable deep links, rate limiting, PDF generation, low-tech channel support, language URL design, Postgres-native graph intelligence, and three-tier suggestion caching (static JSON → pg_trgm → Vercel KV).
+Defines the technology stack and infrastructure topology. The frontend runs Next.js on Vercel; the database is Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB); AI calls go through AWS Bedrock Claude with model tiering; infrastructure is Terraform-managed from Milestone 1a with GitHub Actions CI/CD, OIDC federation for AWS auth, S3 + DynamoDB state backend, and CI-agnostic deployment scripts. Secrets management uses a two-tier model: AWS Secrets Manager for all credentials (ADR-125), with Vercel OIDC federation eliminating all long-lived AWS credentials (ADR-126). Also covers PWA strategy, content-addressable deep links, rate limiting, PDF generation, low-tech channel support, language URL design, Postgres-native graph intelligence, and three-tier suggestion caching (static JSON → pg_trgm → Vercel KV).
 
 - ADR-008: Next.js + Vercel for Frontend
 - ADR-009: Neon + pgvector for Vector Search
@@ -49,6 +49,8 @@ Defines the technology stack and infrastructure topology. The frontend runs Next
 - ADR-027: Language API Design — Locale Prefix on Pages, Query Parameter on API
 - ADR-117: Postgres-Native Graph Intelligence Layer
 - ADR-120: Three-Tier Suggestion Cache Architecture
+- ADR-125: Secrets Management Strategy — Two-Tier Model with AWS Secrets Manager
+- ADR-126: Vercel OIDC Federation — Zero Long-Lived AWS Credentials
 
 **Content & Data Model**
 
@@ -158,7 +160,7 @@ Governs the portal's public identity and outreach channels. SRF imagery follows 
 
 **Operations & Engineering**
 
-Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end with Neon branch-per-PR isolation and schema diff in CI; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. Neon platform governance (ADR-124) covers PostgreSQL version selection (PG18), tier selection, compute configuration, branch lifecycle, extension management, UUIDv7 schema convention, and database observability. MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
+Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end with Neon branch-per-PR isolation and schema diff in CI; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. Neon platform governance (ADR-124) covers PostgreSQL version selection (PG18), tier selection, compute configuration, branch lifecycle, extension management, UUIDv7 schema convention, and database observability. Secrets management (ADR-125) and Vercel OIDC (ADR-126) are in the Architecture group (DECISIONS-core.md). MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
 
 - ADR-093: Engineering Standards for SRF Projects
 - ADR-094: Testing Strategy
@@ -193,7 +195,7 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 
 | File | Groups | ADRs | Arc Relevance |
 |------|--------|------|---------------|
-| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–027, 029–044, 046–053, 114–121 | Arc 1+ (implementation-critical) |
+| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–027, 029–044, 046–053, 114–121, 125–126 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
 | [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123–124 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

@@ -14,8 +14,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
 5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
 6. **DESIGN-arc4-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — Index and navigational summaries for 120 ADRs across 11 topical groups. ADR bodies split into three files:
-   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–014, 016–027, 029–044, 046–053, 114–121). Arc 1+.
+7. **DECISIONS.md** — Index and navigational summaries for 122 ADRs across 11 topical groups. ADR bodies split into three files:
+   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–014, 016–027, 029–044, 046–053, 114–121, 125–126). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 7 arcs from foundation through community curation at scale, with milestones, deliverables, success criteria, and arc gates
@@ -41,7 +41,7 @@ Located in `docs/reference/`:
 
 - **overview-youtube.md** — Brother Chidananda's announcement of the portal (YouTube transcript)
 - **SRF Teaching Portal Research & Design (Gemini 3 Pro).md** — Comprehensive theological, pedagogical, and technical analysis
-- **SRF Tech Stack Brief-3.md** — SRF's established technology stack (AWS, Vercel, Contentful, Neon, Auth0, etc.)
+- **SRF Tech Stack Brief-3.md** — SRF's established technology stack (AWS, Vercel, Contentful, Neon, Auth0, etc.). **Conformance note:** This document is prescriptive for SRF projects. When designing infrastructure, compare choices against this brief and document divergences with explicit justification. The portal adopted Secrets Manager (ADR-125) and OIDC (ADR-126) aligned with this standard; SSM Parameter Store deferred with documented rationale. See ADR-125 § "SSM Parameter Store — Deferred, Not Rejected."
 - **RAG_Architecture_Proposal.md** — Comprehensive RAG architecture and feature proposal (Claude Web, Feb 2026). Merge-reviewed: ADR-114–121 and DES-054–056 adopted; Features 10–11 omitted/constrained; stack divergences annotated.
 
 ## Principles (Code-Affecting)
@@ -92,7 +92,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 120 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 102–103) exist from restructuring and 125–126 appeared in early explorations but were never adopted; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-124 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability).
+**ADR-NNN** (Architecture Decision Records) — 122 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-126 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment.
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)
