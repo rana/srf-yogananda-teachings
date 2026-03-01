@@ -2875,7 +2875,7 @@ Examples:
 - Signpost, not destination (ADR-104)
 - 10-year architecture horizon (ADR-004)
 - API-first architecture (ADR-011)
-- Accessibility from Milestone 2a (ADR-003)
+- Accessibility from first deployment (ADR-003)
 - Multilingual from the foundation (ADR-075)
 
 **Parameters** — Tunable defaults. Ship with the documented value. Adjust based on evidence. Changes are configuration updates, not architectural decisions. Document the current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration).

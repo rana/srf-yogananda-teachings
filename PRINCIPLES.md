@@ -96,15 +96,17 @@ Personalization features are classified into three tiers (ADR-002): build (langu
 
 ---
 
-### 7. Accessibility from Milestone 2a
+### 7. Accessibility from First Deployment
 
-**WCAG 2.1 AA from the first component.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
+**WCAG 2.1 AA from the first component. Mobile-first responsive design from the first deployable page.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 
-SRF's mission is to serve "all of humanity." "All" includes people with disabilities. This is a theological imperative, not a compliance exercise. SRF's existing app already invested in screen reader support — the portal must meet or exceed that standard.
+SRF's mission is to serve "all of humanity." "All" includes people with disabilities — and people on phones. This is a theological imperative, not a compliance exercise. SRF's existing app already invested in screen reader support — the portal must meet or exceed that standard.
 
-Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free. Semantic HTML, keyboard navigation, and ARIA landmarks cost nothing if done from the start. They cost massive effort to retrofit after inaccessible patterns get baked into components and propagated. Later milestones handle audit and polish (professional WCAG audit, TTS, advanced reading mode) — accessibility is not a late-stage addition.
+Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free. Semantic HTML, keyboard navigation, and ARIA landmarks cost nothing if done from the start. They cost massive effort to retrofit after inaccessible patterns get baked into components and propagated. The same is true of mobile-first CSS: writing `px-4 md:px-8` costs nothing at Milestone 1a; retrofitting desktop-first layouts for mobile costs real effort. When ~70% of the Hindi and Spanish audience (ADR-128 Tier 1) accesses the portal on mobile phones, mobile-first is not polish — it is access. Later milestones handle audit and polish (professional WCAG audit, TTS, advanced reading mode, full responsive design strategy) — accessibility and mobile readiness are not late-stage additions.
 
 Screen reader quality goes beyond mere compliance. ADR-073 specifies that the spoken interface should carry the same warmth as the visual one — not just "Bookmark button" but a voice that conveys the portal's devotional register. ADR-072 addresses cognitive accessibility: consistent navigation, no autoplay, clear language, predictable behavior.
+
+*Principle revised: 2026-02-28, renamed from "Accessibility from Milestone 2a" — Milestone 1c is the first production deployment, and the majority of the Hindi/Spanish target audience (ADR-128) is mobile-first. Applying ADR-128's reachable population logic to devices: mobile readiness ships with first deployment, not after it. ADR-006 (Global-First) governs the commitments; this principle governs the timing.*
 
 ---
 

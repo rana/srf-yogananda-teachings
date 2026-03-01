@@ -599,19 +599,22 @@ In many families globally, one phone serves 3–5 people. The portal must not as
 
 #### 4. Intermittent Connectivity as the Norm
 
-The PWA (ADR-012) is scheduled for Milestone 2b. For Arc 1, seekers with unreliable connections have no offline support beyond cached static assets.
+The PWA (ADR-012) is scheduled for Milestone 2b. Milestone 1c (first production deployment) establishes the baseline: cached static assets and an offline indicator. Seekers with unreliable connections get protection from the day the portal is reachable.
 
 **Commitments:**
-- **Milestone 2a: Service Worker for static assets only.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker. Full book content offline caching is a later enhancement, but the portal loads instantly on repeat visits even with no connectivity change.
+- **Milestone 1c: Service Worker for app shell.** The app shell (HTML, CSS, JS, fonts) is cached by a minimal Service Worker from the first production deployment. The portal loads instantly on repeat visits. Offline indicator banner from day one.
+- **Milestone 2a: Extended caching.** Service Worker enhanced to cover all 2a pages and self-hosted fonts. Integration with text-only mode (skip font caching when text-only enabled).
 - **Milestone 2b: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
 - **Offline indicator.** When the Service Worker detects no connectivity, a subtle banner appears: *"You're reading offline. Search requires a connection."* Not an error state — a calm acknowledgment. Matches the portal's warm cream palette, not a red warning bar.
+
+*Revised: 2026-02-28, Service Worker moved from Milestone 2a to 1c — applying ADR-128 reachable population logic to device readiness. Milestone 1c is the first production deployment; seekers on intermittent connections need cached assets from day one.*
 
 #### 5. Community and Group Reading
 
 In India, Latin America, and many African communities, spiritual texts are read aloud in groups — satsang, study circles, family devotions. The portal's reader is designed for individual silent reading.
 
 **Commitments:**
-- **Presentation mode (Arc 4).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern.
+- **Presentation mode (Milestone 2b).** A "Present" button in the reader header. When activated: text enlarges to 24px+ (readable from 2–3 meters), all chrome hides (no header, no sidebar, no share icons), chapter navigation becomes swipe/arrow-key only, warm cream background fills the viewport. The device becomes a digital lectern. *(Pulled from Arc 4 to Milestone 2b — communal reading is the primary engagement mode in Indian, African, and Latin American cultures.)*
 - **This is not a separate feature — it is a CSS mode.** The same reader component, the same content, the same accessibility. `data-mode="present"` on the reader container triggers the enlarged, chrome-free layout.
 
 #### 6. Cultural Consultation for Entry Points
@@ -651,10 +654,11 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 ### Consequences
 
 - Homepage payload budget tightened from 100KB to 50KB (HTML + critical CSS + inline JS)
-- Text-only mode added to site footer and reader settings (Milestone 2a)
-- Minimal Service Worker deployed in Milestone 2a (static assets only), expanded in Milestone 2b (last-read chapter)
+- Text-only mode deployed in Milestone 1c (footer toggle); integrated into reader settings and design system in Milestone 2a
+- Minimal Service Worker deployed in Milestone 1c (app shell caching), enhanced in Milestone 2a (all pages + fonts), expanded in Milestone 2b (last-read chapter)
+- Low-bandwidth detection banner deployed in Milestone 1c (2G/slow-2G suggestion); extended adaptation in Milestone 2b
 - KaiOS emulator added to CI in Milestone 2a
-- Presentation mode added to the reader in Arc 4
+- Presentation mode added to the reader in Milestone 2b *(pulled from Arc 4)*
 - Cultural consultation budget required for Milestone 5b multilingual launch
 - RTL design review by native reader required before any RTL language goes live
 - `font-display: swap` and unicode-range subsetting are non-negotiable for all font loading
