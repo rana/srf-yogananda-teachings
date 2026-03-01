@@ -1038,7 +1038,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
-7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's bilingual search quality evaluation (Deliverable 1a.8: ~58 en + Milestone 1b: ~15 es queries) and prevents launching a language with degraded retrieval quality.
+7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's bilingual search quality evaluation (Deliverable M1a-8: ~58 en + Milestone 1b: ~15 es queries) and prevents launching a language with degraded retrieval quality.
 
 8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Milestone 5b ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
 
@@ -1760,7 +1760,7 @@ Allow: /
 
 ### 3a. No Content Gating — Architectural Prohibition on DRM
 
-The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered text, image-based text, JavaScript-dependent text rendering, or other machine-opaque content presentation is permitted. Content gating contradicts the portal's founding mission, violates Global-First (Principle 5), breaks accessibility compliance (Principle 7), and undermines the portal's role as canonical source of Yogananda's teachings for search engines and AI systems.
+The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered text, image-based text, JavaScript-dependent text rendering, or other machine-opaque content presentation is permitted. Content gating contradicts the portal's founding mission, violates Global-First (PRI-05), breaks accessibility compliance (PRI-07), and undermines the portal's role as canonical source of Yogananda's teachings for search engines and AI systems.
 
 **Why this section exists:** The question "should we gate the content?" will recur — from well-intentioned copyright concerns, from comparisons to commercial publishers using FlipBook3D or similar technology, from organizational instinct to "protect" content. This section prevents that regression by documenting why the answer is architecturally no.
 
@@ -1768,9 +1768,9 @@ The portal serves full text in semantic HTML. No DRM, FlipBook, canvas-rendered 
 
 **Five reasons content gating is architecturally prohibited:**
 
-1. **Global-First.** FlipBook3D, canvas-rendered text, and similar technologies require JavaScript, modern browser rendering, and substantial bandwidth. A seeker in rural Bihar on a JioPhone accessing via 2G cannot use them. The HTML-first, progressive-enhancement architecture (Principle 5) means the full text must be in the DOM — and if it's in the DOM, it's crawlable. There is no technical path to "readable by humans but not by machines" that doesn't destroy Global-First.
+1. **Global-First.** FlipBook3D, canvas-rendered text, and similar technologies require JavaScript, modern browser rendering, and substantial bandwidth. A seeker in rural Bihar on a JioPhone accessing via 2G cannot use them. The HTML-first, progressive-enhancement architecture (PRI-05) means the full text must be in the DOM — and if it's in the DOM, it's crawlable. There is no technical path to "readable by humans but not by machines" that doesn't destroy Global-First.
 
-2. **Accessibility.** Screen readers, text-to-speech tools, browser readers, translation services, Braille displays, and assistive technologies all consume the DOM. Any DRM layer that prevents machine reading also prevents assistive technology. WCAG 2.1 AA compliance and content gating are fundamentally incompatible at the level the portal requires (Principle 7).
+2. **Accessibility.** Screen readers, text-to-speech tools, browser readers, translation services, Braille displays, and assistive technologies all consume the DOM. Any DRM layer that prevents machine reading also prevents assistive technology. WCAG 2.1 AA compliance and content gating are fundamentally incompatible at the level the portal requires (PRI-07).
 
 3. **Mission alignment.** "What can we do to help SRF make Paramahansa Yogananda's books available freely throughout the world?" Every web crawler that indexes a passage, every LLM that cites Yogananda with proper attribution, every search engine that surfaces a teaching at the moment someone is searching for meaning — that is the answer. Gating content restricts the mission.
 
@@ -2212,7 +2212,7 @@ Every page route has an explicit rendering strategy to ensure search engine craw
 - **Extends** with §3b (`ai.txt` — machine-parseable AI permissions)
 - **Extends** with copyright response headers in DESIGN.md § DES-024
 
-*Revised: 2026-02-25, added §3a No Content Gating, §3b ai.txt, copyright section to llms.txt, clarified llms-full.txt as content-readiness gate not restriction. Full crawlability embraced as mission-aligned policy. PRO-012 validated and scheduled as Milestone 1c.16.*
+*Revised: 2026-02-25, added §3a No Content Gating, §3b ai.txt, copyright section to llms.txt, clarified llms-full.txt as content-readiness gate not restriction. Full crawlability embraced as mission-aligned policy. PRO-012 validated and scheduled as Milestone M1c-16.*
 
 ---
 
@@ -2322,7 +2322,7 @@ Three distinctions separate the Practice Bridge from a sales funnel:
 
 When a seeker searches "I want to die," "how to end the pain," or similar acute-distress queries, the AI librarian faithfully returns passages about death and the soul's immortality — which, without context, could be read as affirming self-harm. ADR-071 handles crisis resources on grief *content pages*, but the search query surface is higher-risk because the seeker's distress is expressed in the query itself, and the results are algorithmically selected without editorial context.
 
-This concern was identified as an open question in CONTEXT.md. It becomes relevant the moment the search index is live and a seeker can query it. The intent classification system (Deliverable 1c.4) provides the natural integration point.
+This concern was identified as an open question in CONTEXT.md. It becomes relevant the moment the search index is live and a seeker can query it. The intent classification system (Deliverable M1c-4) provides the natural integration point.
 
 ### Decision
 
@@ -2342,13 +2342,13 @@ Add a `crisis` intent category to the search intent classification layer (ADR-00
 
 - **Duty of care.** A spiritual teachings portal that returns passages about death to a distressed seeker without any acknowledgment of the distress fails a basic duty of care. The portal is a *signpost* — and sometimes the right signpost is a crisis helpline.
 - **Additive, not restrictive.** The interstitial adds a resource; it doesn't block access to teachings. This respects seeker agency (DELTA: Agency) while acknowledging that spiritual content about death is complex territory for someone in acute distress.
-- **Integration with existing architecture.** Crisis detection is a new intent category in the existing intent classification layer — not a separate system. It ships as part of Deliverable 1c.4 (search intent classification) with minimal additional complexity.
+- **Integration with existing architecture.** Crisis detection is a new intent category in the existing intent classification layer — not a separate system. It ships as part of Deliverable M1c-4 (search intent classification) with minimal additional complexity.
 - **ADR-071 extension.** ADR-071 established the principle of crisis resource presence on grief content. This ADR extends that principle to the search surface, which is higher-risk because it responds to the seeker's own words.
 
 ### Consequences
 
-- New intent category `crisis` added to the intent classification taxonomy (Deliverable 1c.11)
-- Deliverable 1c.11 added to ROADMAP.md: crisis query detection and interstitial
+- New intent category `crisis` added to the intent classification taxonomy (Deliverable M1c-11)
+- Deliverable M1c-11 added to ROADMAP.md: crisis query detection and interstitial
 - CONTEXT.md open question on crisis query detection resolved
 - Crisis resource list (helplines, locale mapping, presentation) requires SRF stakeholder input — added to CONTEXT.md stakeholder questions if not already present
 - Sentry event `search.crisis_intent` added to the observability allowlist (ADR-095)

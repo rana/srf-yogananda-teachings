@@ -14,7 +14,13 @@ Greenfield perspective. Does the project apply the principles in practice? Consi
 
 Greenfield perspective. Choice of project markdown file characteristics (quantity, logical naming, sizing, etc, other). What do you prefer? What would an AI architect, designer, and implementer prefer? You have complete design autonomy.
 
-How might the teachings portal support YSS? YSS has an online bookstore https://yssofindia.org/.  The Basic Series of Yogoda Satsanga Lessons is available in English, Hindi, Tamil, and Telugu. Consider how we make make parts or whole to support YSS? How would they use the teachings portal for their core audiences? Are there components, APIs, tools that would benefit from? Re-branding is good. Think beyond re-branding. They maintain their organization independently- a sister organization. How can we help serve them?
+---
+Think slowly, carefully, and deeply.
+Think generatively and imaginatively.
+Be proactive.
+How might the teachings portal support YSS? Perhaps they could have a design surface for reusing aor developing features they wish to select into YSS. How to empower them to build for their specific audience tastes and needs? Can leveerage the platform features? Develop new ones? How to harmonisouly develop independently, yet share and rely on each other's offerings? We have ADRs, DESs, PROs in support? What have we not asked? What questions would I benefit from asking? What serves YSS?
+
+YSS has an online bookstore https://yssofindia.org/.  The Basic Series of Yogoda Satsanga Lessons is available in English, Hindi, Tamil, and Telugu. Consider how we make make parts or whole to support YSS? How would they use the teachings portal for their core audiences? Are there components, APIs, tools that would benefit from? Re-branding is good. Think beyond re-branding. They maintain their organization independently- a sister organization. How can we help serve them?
 
 Prepare to ingest Autobiography of a Yogi in Spanish
 - https://www.amazon.com/Autobiografia-Yogui-Self-Realization-Fellowship-Spanish-ebook/dp/B07G5KL5RL

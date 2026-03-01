@@ -17,13 +17,13 @@
 | PRO-005 | Neon Auth as Auth0 Alternative | Enhancement | Proposed | ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
 | PRO-007 | Logical Replication for Analytics CDC | Feature | Proposed | ADR-124, ADR-095, ADR-099 | Neon platform audit 2026-02-25 |
-| PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Adopted → ADR-124, ADR-019, 1a.2 | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
+| PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Adopted → ADR-124, ADR-019, M1a-2 | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-129, ADR-033, DES-048, DES-054, ADR-115 | Dedup 2026-02-25 (3 explorations) |
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116, ADR-049, ADR-050 | Dedup 2026-02-25 |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed (subsumed by PRO-013 if adopted) | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003, ADR-001 | Dedup 2026-02-25 (2 explorations) |
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048 | Exploration 2026-02-25 |
-| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRINCIPLES.md §1–2, CONTEXT.md § Mission | Exploration 2026-02-25 |
+| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRI-01, PRI-02, CONTEXT.md § Mission | Exploration 2026-02-25 |
 | PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement | Proposed | ADR-091, ADR-099, ADR-016 | Stack divergence analysis 2026-02-26 |
 | PRO-016 | Retool vs. Portal Admin for Staff Dashboards | Enhancement | Proposed | ADR-082, ADR-053, ADR-095 | Deep review 2026-02-26 |
 | PRO-017 | Cloudflare Re-evaluation for SRF Domain Routing | Enhancement | Proposed | ADR-023, ADR-016 | Vendor drift analysis 2026-02-26 |
@@ -42,16 +42,16 @@
 | PRO-030 | Sacred Image Management — Watermarking and Multi-Size Serving | Feature | Suspended from ADR-063, ADR-064 | ADR-063, ADR-064 | Bulk suspension 2026-03-01 |
 | PRO-031 | Study & Community Tools — Workspace, Collections, VLD | Feature | Suspended from ADR-083, ADR-086, ADR-087 | ADR-083, ADR-086, ADR-087 | Bulk suspension 2026-03-01 |
 | PRO-032 | Brand Distribution — Dashboard, Email, Social Media | Feature | Suspended from ADR-090, ADR-091, ADR-092 | ADR-090, ADR-091, ADR-092 | Bulk suspension 2026-03-01 |
-| PRO-033 | YSS Locale Branding | Enhancement | Suspended from ADR-079 | ADR-079 | Bulk suspension 2026-03-01 |
+| PRO-043 | Teachings Platform — Shared Foundation for SRF and YSS | Feature (Platform) | Proposed | ADR-075, ADR-077, ADR-078, ADR-128, ADR-011, ADR-079, PRO-034 | Strategic exploration 2026-03-01 |
 | PRO-034 | Magazine API Rationalization | Enhancement | Suspended from ADR-108 | ADR-108 | Bulk suspension 2026-03-01 |
-| PRO-035 | Release Tagging and Deployment Ceremony | Enhancement | Adopted → DES-060, 1a.11, 1c.17, 1c.18 | ADR-018, ADR-020, DES-039, ADR-105, DES-051, DES-060 | Ops exploration 2026-03-01 |
-| PRO-036 | Operational Health Surface and SLI/SLO Framework | Feature | Adopted → DES-060, ADR-095 §SLI/SLO, 1a.10, 1c.16 | ADR-095, ADR-020, DES-039, ADR-021, DES-060 | Ops exploration 2026-03-01 |
-| PRO-037 | Document Integrity Validation in CI | Enhancement | Adopted → DES-060, 1a.9 | ADR-098, ADR-094, ADR-093, DES-038, DES-060 | Ops exploration 2026-03-01 |
+| PRO-035 | Release Tagging and Deployment Ceremony | Enhancement | Adopted → DES-060, M1a-11, M1c-17, M1c-18 | ADR-018, ADR-020, DES-039, ADR-105, DES-051, DES-060 | Ops exploration 2026-03-01 |
+| PRO-036 | Operational Health Surface and SLI/SLO Framework | Feature | Adopted → DES-060, ADR-095 §SLI/SLO, M1a-10, M1c-16 | ADR-095, ADR-020, DES-039, ADR-021, DES-060 | Ops exploration 2026-03-01 |
+| PRO-037 | Document Integrity Validation in CI | Enhancement | Adopted → DES-060, M1a-9 | ADR-098, ADR-094, ADR-093, DES-038, DES-060 | Ops exploration 2026-03-01 |
 | PRO-038 | Dream a Feature — AI-Driven Prototyping Workflow | Feature | Proposed | ADR-020, ADR-124, PRO-001, DES-039 | Ops exploration 2026-03-01 |
 | PRO-039 | Design-Artifact Traceability — Spec-to-Code-to-Deploy Linkage | Enhancement | Adopted → DES-060 §Layer 4, 2a | ADR-098, ADR-094, PRO-037, PRO-035, PRO-041, DES-060 | Ops exploration 2026-03-01 |
 | PRO-040 | Living Golden Set — Seeker-Fed Search Quality | Enhancement | Proposed | DES-058, ADR-095, ADR-099, ADR-053 | Ops exploration 2026-03-01 |
 | PRO-041 | Documents as Executable Specifications | Enhancement | Proposed | ADR-098, ADR-094, PRO-037 | Ops exploration 2026-03-01 |
-| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature | Proposed | PRO-038, PRO-036, DES-060, ADR-095, ADR-099, ADR-098, PRINCIPLES.md §6 | Ops exploration 2026-03-01 |
+| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature | Proposed | PRO-038, PRO-036, DES-060, ADR-095, ADR-099, ADR-098, PRI-06 | Ops exploration 2026-03-01 |
 
 ---
 
@@ -130,12 +130,12 @@
 
 ### PRO-008: Time Travel Queries for Production Debugging
 
-**Status:** Adopted → ADR-124, ADR-019, Deliverable 1a.2
+**Status:** Adopted → ADR-124, ADR-019, M1a-2
 **Type:** Enhancement
 **Governing Refs:** ADR-019, ADR-124
 **Dependencies:** Scale tier (30-day PITR window). Already available.
 **Scheduling Notes:** Neon Time Travel Queries allow read-only SQL against any historical database state within the PITR window. Uses ephemeral 0.5 CU computes that auto-delete after 30s idle. Use cases: "what did this chunk's embedding look like before re-ingestion?", "when did this theme tag change?", "what was the search_queries table 2 hours ago?". No restore needed — just reads. Already available on Scale tier.
-**Resolution (2026-02-26):** Accepted as a Milestone 1a development tool. Zero implementation cost — already available on Scale tier. Time Travel is available via Neon MCP `run_sql` with `AT {timestamp}` syntax, or via direct SQL connection with `neon_utils.ttq()`. Referenced in ADR-019 Layer 1 (PITR) and Deliverable 1a.2. Documented in DES-039 § Three-Layer Neon Management Model as an Operations-layer capability.
+**Resolution (2026-02-26):** Accepted as a Milestone 1a development tool. Zero implementation cost — already available on Scale tier. Time Travel is available via Neon MCP `run_sql` with `AT {timestamp}` syntax, or via direct SQL connection with `neon_utils.ttq()`. Referenced in ADR-019 Layer 1 (PITR) and M1a-2. Documented in DES-039 § Three-Layer Neon Management Model as an Operations-layer capability.
 
 ### PRO-009: Scientific-Spiritual Bridge Themes
 
@@ -177,7 +177,7 @@
 **Type:** Policy
 **Governing Refs:** ADR-081, ADR-099, ADR-003, ADR-001
 **Dependencies:** None architectural. Requires SRF legal counsel review before implementation.
-**Scheduling Notes:** Milestone 1c prerequisite — the copyright communication layer must ship before public deployment. The portal's full crawlability posture (ADR-081, CONTEXT.md Resolved Question #15) requires explicit, multi-layered copyright communication so openness is paired with clear terms. Two concerns: (1) **Copyright communication** — establish multi-layered messaging (legal pages, JSON endpoints, HTTP headers, `llms.txt` copyright section, `ai.txt` permissions file) that signals SRF retains all rights while welcoming citation and reference. Treat "freely available" as a theological stance, not legal status. The library model: freely accessible for reading, reference, and citation while remaining under copyright. (2) **Legal liability audit** — 12 categories of risk identified: copyright authorization, content licensing, accessibility compliance, crisis resource liability, AI system transparency, volunteer agreements, international data handling, terms of service, and more. Pre-implementation legal review recommended for categories 1–4 (copyright, licensing, accessibility, crisis). Remaining categories can be addressed incrementally. Principle-check: the portal's generous accessibility posture aligns with SRF's mission of making teachings available worldwide — copyright retention and open access are not contradictory. Validated 2026-02-25: architectural review confirms alignment with ADR-081 full crawlability, Global-First (Principle 5), and accessibility (Principle 7). The No Content Gating policy (ADR-081 §3a) establishes that content gating is architecturally prohibited, making the copyright communication layer the correct mechanism for rights assertion — not technology walls.
+**Scheduling Notes:** Milestone 1c prerequisite — the copyright communication layer must ship before public deployment. The portal's full crawlability posture (ADR-081, CONTEXT.md Resolved Question #15) requires explicit, multi-layered copyright communication so openness is paired with clear terms. Two concerns: (1) **Copyright communication** — establish multi-layered messaging (legal pages, JSON endpoints, HTTP headers, `llms.txt` copyright section, `ai.txt` permissions file) that signals SRF retains all rights while welcoming citation and reference. Treat "freely available" as a theological stance, not legal status. The library model: freely accessible for reading, reference, and citation while remaining under copyright. (2) **Legal liability audit** — 12 categories of risk identified: copyright authorization, content licensing, accessibility compliance, crisis resource liability, AI system transparency, volunteer agreements, international data handling, terms of service, and more. Pre-implementation legal review recommended for categories 1–4 (copyright, licensing, accessibility, crisis). Remaining categories can be addressed incrementally. Principle-check: the portal's generous accessibility posture aligns with SRF's mission of making teachings available worldwide — copyright retention and open access are not contradictory. Validated 2026-02-25: architectural review confirms alignment with ADR-081 full crawlability, Global-First (PRI-05), and accessibility (PRI-07). The No Content Gating policy (ADR-081 §3a) establishes that content gating is architecturally prohibited, making the copyright communication layer the correct mechanism for rights assertion — not technology walls.
 **Re-evaluate At:** Milestone 1c (before public deployment)
 **Decision Required From:** SRF legal counsel + architecture
 **Source Explorations:** `clarify-copyright-stance-srf-makes-it-feel-available-to-all.md`, `what-are-the-legal-liabilities-if-any.md`
@@ -194,7 +194,7 @@
 
 **Core idea.** One Librarian, many modes. The 9 archetypes are *modes* of a single Corpus Librarian (ADR-089) with role-scoped access — not 9 separate systems. Architecturally: one service layer with role-based API scoping. Four trust profiles: Research (read-only), Editorial (proposes to review queues), Operational (integrity monitoring, alert/quarantine), Intelligence (aggregated analytics, proposes structural changes).
 
-**Governing principle.** Every agent is a librarian — finds, verifies, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Every agent respects the technique boundary (Principle 4, ADR-104).
+**Governing principle.** Every agent is a librarian — finds, verifies, and surfaces the Master's words. No agent generates, interprets, or teaches (ADR-001, ADR-005). AI proposes, humans approve for all editorial agents (ADR-100). Every agent respects the technique boundary (PRI-04, ADR-104).
 
 **Subsumes PRO-011** (Proactive Editorial AI Agent) as the "Editorial" trust profile.
 
@@ -211,7 +211,7 @@
 
 **Summary.** Expanded corpus scope from "Yogananda's published books" to "all SRF/YSS-published books" with a three-tier author hierarchy by role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity, no AI synthesis, no machine translation. Tiers govern search inclusion, daily passage pool, and social media pool. Both blocking stakeholder decisions resolved 2026-02-25: theological hierarchy confirmed, endowment scope confirmed. *Tier values renamed 2026-02-26 from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature. Column renamed 2026-02-28 from `content_tier` to `author_tier` — the tier classifies the author's lineage role, not the content.*
 
-**Document cascade applied to:** PRINCIPLES.md §1–2, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DES-004 books schema (`author_tier` column, `author` DEFAULT removed).
+**Document cascade applied to:** PRI-01, PRI-02, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DES-004 books schema (`author_tier` column, `author` DEFAULT removed).
 
 **Remaining for Milestone 3a:** Non-Yogananda book catalog requires SRF confirmation. Author-specific chunking parameters (ADR-048) need empirical calibration when *The Holy Science* enters the pipeline.
 
@@ -272,7 +272,7 @@ However, the cost savings are modest ($15–20/month), and the deliverability bo
 
 Two staff-facing interfaces appear in the architecture:
 
-1. **Portal `/admin`** (Milestone 3b.5a/b) — Auth0-protected Next.js route group for editorial workflows: theme tag review, daily passage curation, calendar management, queue health, ingestion QA. Built with the portal's calm design system.
+1. **Portal `/admin`** (M3b-5a/b) — Auth0-protected Next.js route group for editorial workflows: theme tag review, daily passage curation, calendar management, queue health, ingestion QA. Built with the portal's calm design system.
 
 2. **Retool** — Referenced in the production architecture diagram (DESIGN.md), Milestone 3d.4, and DES-037 standing operational metrics. Implied use: analytics dashboards, search trend visualization, operational metrics.
 
@@ -341,7 +341,7 @@ Defer the decision. Build Milestone 3b editorial portal in `/admin`. At Mileston
 
 **Inside each door:** Not immediate retrieval. The vocabulary bridge activates. "I am struggling" opens to a gentle second level of recognition ("You might be feeling... Loss and grief / Fear and anxiety / Loneliness / Doubt and confusion"). These are not filters — they are recognitions. The bridge maps each sub-state to corpus territory with retrieval intent (meet_first, console) and avoid-territory (no discipline passages for someone grieving).
 
-**"I want to practice" — the Practice Bridge door.** The most delicate. Explicitly not about reading. Acknowledges the seeker's readiness to move. Leads to Yogananda's own published words about meditation and the path, followed by the quiet signpost to SRF Lessons and local centers. Principle 4 (Signpost, Not Destination) becomes architecture.
+**"I want to practice" — the Practice Bridge door.** The most delicate. Explicitly not about reading. Acknowledges the seeker's readiness to move. Leads to Yogananda's own published words about meditation and the path, followed by the quiet signpost to SRF Lessons and local centers. PRI-04 (Signpost, Not Destination) becomes architecture.
 
 **Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
 
@@ -430,7 +430,7 @@ This is a practice many devotees already have: opening a beloved book to a rando
 **Status:** Proposed
 **Type:** Enhancement
 **Governing Refs:** ADR-014 (Model Tiering — Opus for batch), ADR-115 (Unified Enrichment), ADR-129 (Vocabulary Bridge)
-**Target:** Milestone 1c (as part of enrichment pipeline — Deliverable 1c.13)
+**Target:** Milestone 1c (as part of enrichment pipeline — M1c-13)
 **Dependencies:** Opus batch enrichment pipeline. Full corpus extracted.
 **Scheduling Notes:** Not all passages are the same kind of thing. Some are luminous and bottomless — they reward the hundredth reading. Some are informational — they answer a question. Some are catalytic — they shift something when you're ready. Some are consoling — they meet suffering.
 
@@ -549,7 +549,7 @@ Homepage renderer: `SELECT * FROM composition_slots WHERE composition_id = (best
 - Scheduling view: calendar showing active and upcoming compositions
 - No authentication before Milestone 7a — use the same lightweight auth as the editorial portal (open question, CONTEXT.md)
 
-**Non-goal: behavioral optimization.** The compositor supports editorial rotation and seasonal scheduling, not A/B testing. Composition decisions are driven by editorial judgment and qualitative feedback, not by aggregate behavioral metrics (Principle 8, ADR-095). The portal curates from the corpus, not from user behavior.
+**Non-goal: behavioral optimization.** The compositor supports editorial rotation and seasonal scheduling, not A/B testing. Composition decisions are driven by editorial judgment and qualitative feedback, not by aggregate behavioral metrics (PRI-08, ADR-095). The portal curates from the corpus, not from user behavior.
 
 **Pages beyond homepage.** The compositor pattern extends to any editorially curated page: `/guide`, `/browse`, `/themes`, the magazine landing. Start with homepage only; evaluate extension when the pattern proves itself.
 
@@ -577,7 +577,7 @@ This missing tier is the difference between a library that catalogs individual p
 
 **Design constraint: invisible but load-bearing.** Structural enrichment artifacts are internal metadata powering navigation, presentation, and aggregation. They are never displayed as AI-authored content. Seekers experience curated organization; the curation logic is invisible. This parallels the existing chunk-level enrichment pattern — Opus assigns depth levels, topic tags, and entity labels that power search ranking without seekers seeing the classification. The librarian is invisible; the library is the experience.
 
-This constraint resolves the Principle 1 boundary cleanly: structural readings are navigation metadata (same category as topic tags and depth levels), not generated content. No stakeholder ambiguity.
+This constraint resolves the PRI-01 boundary cleanly: structural readings are navigation metadata (same category as topic tags and depth levels), not generated content. No stakeholder ambiguity.
 
 **What this enables (all invisible to seekers):**
 - **Chapter resonance navigation** — "Chapters with similar arc" powered by structural similarity, not just topic overlap
@@ -739,7 +739,7 @@ During AI-led development, code is the design artifact — Claude generates comp
 **Status:** Proposed
 **Type:** Feature
 **Governing Refs:** ADR-129 (Vocabulary Bridge), ADR-130 (Recognition-First IA), ADR-050 (Related Teachings)
-**Dependencies:** Theme taxonomy, Vocabulary Bridge cross-tradition synonym pairs, Scripture-in-Dialogue (3c.5)
+**Dependencies:** Theme taxonomy, Vocabulary Bridge cross-tradition synonym pairs, Scripture-in-Dialogue (M3c-5)
 
 Yogananda's core vision: demonstrating the underlying unity of Christ's and Krishna's teachings. This is not a secondary feature — it is central to his literary output. *The Second Coming of Christ* and *God Talks With Arjuna* are full-length treatments of this concordance. The *Autobiography* weaves Bible↔Gita parallels throughout.
 
@@ -748,11 +748,11 @@ Yogananda's core vision: demonstrating the underlying unity of Christ's and Kris
 - "I don't understand Christianity/Hinduism/spirituality..." — routes to Yogananda's explanation of that tradition
 - Cross-tradition vocabulary: salvation/moksha, Holy Ghost/AUM, baptism/initiation, Christ Consciousness/Kutastha Chaitanya
 
-**Architectural touchpoints:** ADR-129 (Vocabulary Bridge) handles cross-tradition synonym pairs. ADR-130 (Recognition-First IA) includes "tradition entry" as a homepage lens. Scripture-in-Dialogue (Milestone 3c.5) handles structured verse-level Gita↔Gospel linking. Theme taxonomy should elevate "Christ-Krishna concordance" as a first-class theme.
+**Architectural touchpoints:** ADR-129 (Vocabulary Bridge) handles cross-tradition synonym pairs. ADR-130 (Recognition-First IA) includes "tradition entry" as a homepage lens. Scripture-in-Dialogue (M3c-5) handles structured verse-level Gita↔Gospel linking. Theme taxonomy should elevate "Christ-Krishna concordance" as a first-class theme.
 
-**Constraint (Principle 1):** The portal surfaces Yogananda's own concordances — it never synthesizes new ones. Every result traces back to a specific passage where he draws the parallel.
+**Constraint (PRI-01):** The portal surfaces Yogananda's own concordances — it never synthesizes new ones. Every result traces back to a specific passage where he draws the parallel.
 
-**Re-evaluate At:** Milestone 1a.8 (search quality evaluation — test cross-tradition queries), Milestone 3c planning
+**Re-evaluate At:** M1a-8 (search quality evaluation — test cross-tradition queries), Milestone 3c planning
 **Decision Required From:** Architecture + search quality evaluation
 
 ### PRO-029: Cross-Media Intelligence — Video, Audio, Chant, Content Hub
@@ -801,14 +801,14 @@ Study Workspace (personal passage collection without auth), Community Collection
 
 ### PRO-033: YSS Locale Branding
 
-**Status:** Suspended from ADR-079
+**Status:** Subsumed by PRO-043
 **Type:** Enhancement
 **Suspended:** 2026-03-01
+**Subsumed:** 2026-03-01
 
 YSS organizational branding and locale strategy for Hindi/Bengali/Thai locales. The Yogoda Satsanga Society (YSS) is SRF's Indian counterpart — branding, logos, and organizational identity differ for these locales.
 
-**Reactivation trigger:** Hindi content activation (Milestone 5b when authorized YSS source becomes available).
-**Re-evaluate At:** Milestone 5b planning
+**Subsumed by PRO-043 (Teachings Platform — Shared Foundation for SRF and YSS).** Locale branding is one component of a broader platform partnership architecture. PRO-043 § Component 4 (Organization Configuration Layer) addresses all branding concerns from PRO-033 plus organizational routing, feature selection, content contribution, and surface flexibility. See PRO-043 for the full scope.
 
 ### PRO-034: Magazine API Rationalization
 
@@ -825,7 +825,7 @@ Magazine API design — flat resources, single-segment slugs. Governs how Self-R
 
 ### PRO-035: Release Tagging and Deployment Ceremony
 
-**Status:** Adopted → DES-060, ROADMAP 1a.11, 1c.17, 1c.18
+**Status:** Adopted → DES-060, ROADMAP M1a-11, M1c-17, M1c-18
 **Type:** Enhancement
 **Governing Refs:** ADR-018 (CI-Agnostic Scripts), ADR-020 (Multi-Environment), DES-039 (Infrastructure), ADR-105 (Portal Updates), DES-051 (Updates Page), DES-060 (Operational Surface)
 **Target:** Milestone 1a (tagging) → Milestone 1c (deploy ceremony + manifests) → Arc 4 (environment promotion)
@@ -957,7 +957,7 @@ This framework makes cost a first-class citizen alongside population impact. A s
 
 ### PRO-036: Operational Health Surface and SLI/SLO Framework
 
-**Status:** Adopted → DES-060, ADR-095 §SLI/SLO, ROADMAP 1a.10, 1c.16
+**Status:** Adopted → DES-060, ADR-095 §SLI/SLO, ROADMAP M1a-10, M1c-16
 **Type:** Feature
 **Governing Refs:** ADR-095 (Observability), ADR-020 (Multi-Environment), DES-039 (Infrastructure), ADR-021 (Regional Distribution), ADR-003 (Accessibility), DES-060 (Operational Surface)
 **Target:** Milestone 1c (health endpoint + SLI targets) → Milestone 2a (ops page) → Arc 4+ (dashboard with API-driven data)
@@ -1062,7 +1062,7 @@ Mission-aligned impact storytelling. "The teachings now speak Spanish" for seeke
 
 ### PRO-037: Document Integrity Validation in CI
 
-**Status:** Adopted → DES-060, ROADMAP 1a.9
+**Status:** Adopted → DES-060, ROADMAP M1a-9
 **Type:** Enhancement
 **Governing Refs:** ADR-098 (Documentation Architecture), ADR-094 (Testing Strategy), ADR-093 (Engineering Standards), DES-038 (Testing Strategy), DES-060 (Operational Surface)
 **Target:** Milestone 1a (highest-value, lowest-cost item in the entire operational tooling exploration)
@@ -1346,7 +1346,7 @@ Over time, the golden set converges on what seekers *actually need*, not what Cl
 **Status:** Proposed
 **Type:** Enhancement
 **Governing Refs:** ADR-098 (Documentation Architecture), ADR-094 (Testing Strategy), PRO-037 (Document Integrity Validation)
-**Target:** Milestone 2a (alongside test infrastructure buildout, Deliverable 2a.21)
+**Target:** Milestone 2a (alongside test infrastructure buildout, M2a-21)
 **Dependencies:** PRO-037 (`doc-validate.sh`) operational. Test infrastructure (Vitest, Playwright) operational. Design documents contain testable assertions.
 
 **The gap.** ADRs and DES sections contain testable assertions in prose: "WCAG 2.1 AA" (ADR-003), "search p95 < 500ms" (ADR-021), "no horizontal scrolling at 320px" (ADR-006), "44x44px touch targets" (ADR-003), "< 100KB JS" (ADR-003), "FCP < 1.5s" (ADR-003). These assertions are manually translated into tests by the implementer. If the implementer (Claude) misses one, the assertion exists in the document but not in the test suite. The design→implement→verify loop has a manual, lossy step.
@@ -1385,13 +1385,13 @@ The script parses design documents for patterns that map to testable assertions:
 
 **Status:** Proposed
 **Type:** Feature
-**Governing Refs:** PRO-038 (Dream a Feature), PRO-036 (Operational Health), DES-060 (Operational Surface), ADR-095 (Observability), ADR-099 (DELTA Privacy), ADR-098 (Documentation Architecture), PRINCIPLES.md §6 (Calm Technology)
+**Governing Refs:** PRO-038 (Dream a Feature), PRO-036 (Operational Health), DES-060 (Operational Surface), ADR-095 (Observability), ADR-099 (DELTA Privacy), ADR-098 (Documentation Architecture), PRI-06 (Calm Technology)
 **Target:** Milestone 2a (lightweight: morning brief + email feedback) → Milestone 3b (full catalog UI + stakeholder circles + decision journal)
 **Dependencies:** PRO-038 (Dream a Feature) operational — provides the autonomous development engine. DES-060 operational surface deployed (Milestone 1c). Vercel preview deployments working. Features exist to manage.
 
 **The gap.** PRO-038 describes how features are autonomously developed and deployed to preview branches. DES-060 provides health monitoring and deployment ceremony. Neither addresses what happens *between* preview deployment and production merge — the review, feedback, decision, and institutional memory lifecycle. The engineering leader currently manages this lifecycle across GitHub PRs, Vercel dashboards, email threads, and mental notes. The cognitive load compounds with every concurrent feature.
 
-**The deeper gap.** Every operational tool the engineering leader has ever used was designed to maximize information density. More charts, more alerts, more knobs. This violates the portal's own Principle 6: "Technology requires the smallest possible amount of attention." The portal's operational experience should follow the same design principles as the seeker experience.
+**The deeper gap.** Every operational tool the engineering leader has ever used was designed to maximize information density. More charts, more alerts, more knobs. This violates the portal's own PRI-06: "Technology requires the smallest possible amount of attention." The portal's operational experience should follow the same design principles as the seeker experience.
 
 **Design principle: Calm Operations.** The operational surface applies the portal's 11 principles to the engineering leader's experience:
 
@@ -1536,7 +1536,7 @@ On any feature with a deployed preview, a guided narration of the seeker experie
 - The seeker's encounter path ("A seeker reading Chapter 26 encounters 'samadhi'...")
 - The interaction mechanics ("On desktop, they hover. On mobile, they tap.")
 - Accessibility behavior ("Screen readers announce: 'samadhi — a Sanskrit term meaning...'")
-- Principle adherence ("The definition comes from the canonical glossary, never AI-generated. Principle 1: Direct Quotes Only.")
+- Principle adherence ("The definition comes from the canonical glossary, never AI-generated. PRI-01: Direct Quotes Only.")
 - Performance impact ("This adds 3KB to the page. Within the 100KB JS budget.")
 
 **Value:** The engineering leader sees the *experience*, not the code. She evaluates at the right level — "Is this worthy of presenting Yogananda's words?" — not "Is this a good React component?"
@@ -1567,7 +1567,7 @@ CREATE TABLE feature_decisions (
 ```
 
 **What this enables over time:**
-- **Pattern recognition.** "You've revised 60% of features for accessibility. You've declined 3 features, all for Principle 6 reasons." The engineering leader sees her own design taste emerging.
+- **Pattern recognition.** "You've revised 60% of features for accessibility. You've declined 3 features, all for PRI-06 reasons." The engineering leader sees her own design taste emerging.
 - **Institutional memory.** When she moves on, her successor inherits not just the codebase but her judgment — encoded in hundreds of decision points with reasoning.
 - **AI calibration.** Claude's recommendations improve based on the journal. If she consistently revises for accessibility that Claude didn't flag, Claude learns to weight accessibility higher.
 - **Stakeholder transparency.** The philanthropist or SRF leadership can see: "47 features evaluated, 32 approved, 8 revised, 5 declined, 2 deferred. Average time from proposal to production: 3 days."
@@ -1588,7 +1588,7 @@ Accessible from the feature catalog as "The Archive" — a searchable collection
 - The engineering leader's decline reasoning
 - The governing principle(s) that informed the decision
 
-**The archive as immune system.** When someone asks "Why doesn't the portal have push notifications?" the archive answers: "PRO-NNN, proposed 2027-04, declined. Principle 6: Calm Technology — 'The portal waits; it does not interrupt.' Engineering leader's note: 'This would compromise the contemplative character of the portal.'"
+**The archive as immune system.** When someone asks "Why doesn't the portal have push notifications?" the archive answers: "PRO-NNN, proposed 2027-04, declined. PRI-06: Calm Technology — 'The portal waits; it does not interrupt.' Engineering leader's note: 'This would compromise the contemplative character of the portal.'"
 
 **The archive as wisdom.** Over years, the archive tells a story about what the portal *is* by documenting what it deliberately *isn't*. This is rare in software projects — most teams lose track of why features were rejected. The archive preserves that reasoning permanently.
 
@@ -1618,7 +1618,7 @@ A composite signal — not a quality metric — predicting how well a feature fi
 
 **7:30am** — Morning brief arrives by email. The portal is healthy. One feature awaits review. She reads it with her coffee. The Sanskrit hover preview looks good. Brother Ananda left a thoughtful comment about IAST transliteration. She taps "Send to Theological Review" from the email link.
 
-**10:00am** — She has an idea: "What if the Quiet Corner played different bowls for different times of day?" She types it into the feature catalog (or tells Claude via any interface). Claude creates PRO-046, runs the impact assessment — Principle 6 check: user-initiated audio, consistent. Cost: +0.2KB per audio file. Population impact: neutral. Resonance: high. She queues it for development with one click.
+**10:00am** — She has an idea: "What if the Quiet Corner played different bowls for different times of day?" She types it into the feature catalog (or tells Claude via any interface). Claude creates PRO-046, runs the impact assessment — PRI-06 check: user-initiated audio, consistent. Cost: +0.2KB per audio file. Population impact: neutral. Resonance: high. She queues it for development with one click.
 
 **12:00pm** — The Theological Review circle has responded. 2 approvals, 1 note: "Use IAST transliteration, not Harvard-Kyoto." She adds a revision note: "Use IAST." Claude re-enters development with the feedback. No context-switching needed — everything happened in the catalog.
 
@@ -1735,6 +1735,198 @@ When an existing ADR or DES section is suspended (moved to unscheduled):
 2. **Delete** the ADR/DES body from its DECISIONS/DESIGN file. No stubs — clean deletion.
 3. Annotate the DECISIONS.md index entry: `(Suspended → PRO-NNN)`.
 4. The PRO entry is the single source of truth for suspended decisions — handles reasoning, reactivation triggers, and scheduling lifecycle.
+
+---
+
+### PRO-043: Teachings Platform — Shared Foundation for SRF and YSS
+
+**Status:** Proposed
+**Type:** Feature (Platform Architecture)
+**Governing Refs:** PRO-033 (YSS Locale Branding — subsumed), ADR-075 (Multilingual Foundation), ADR-077 (Language Selection), ADR-078 (Translation Policy), ADR-128 (Reachable Population), ADR-011 (API-First), ADR-079 (suspended), PRO-034 (Magazine API)
+**Target:** Design decisions in Arc 1; content activation incremental from Milestone 5b onward (or earlier if Hindi authorization proceeds)
+**Dependencies:** Working API (Milestone 1c). Hindi authorization conversation with YSS. Content availability in Tamil, Telugu, Kannada.
+
+#### The Reframe
+
+PRO-033 frames YSS as a branding variant — different colors and logos for Hindi/Bengali locales. But YSS is not a locale. Yogoda Satsanga Society of India was founded by Paramahansa Yogananda in 1917. It is SRF's sister organization — independent governance, independent properties (yssofindia.org, WordPress + WPML), 9 supported Indian languages (English, Hindi, Bengali, Kannada, Tamil, Telugu, Gujarati, Marathi, Malayalam), a Lessons program in 4 languages (English, Hindi, Tamil, Telugu), physical ashrams across India, a bookstore with Indian payment rails (Razorpay), and a mobile Lessons app.
+
+The portal's API-first architecture (ADR-011) already means we're building a platform. We just haven't named the second consumer. Same philanthropist funding covers both organizations. The question is not "how do we skin the portal for Hindi?" but:
+
+> How does the teachings platform serve two independent organizations as equal partners — sharing what benefits both, while respecting each one's autonomy?
+
+#### Platform Architecture: Shared Engine, Independent Surfaces
+
+```
+SHARED ENGINE (one instance, both organizations benefit)
+├── Corpus database (Neon, all languages, all content types)
+├── Hybrid search (BM25 + vector + RRF, per-language indexes)
+├── Content ingestion pipeline (source-agnostic, 12 steps)
+├── AI enrichment (themes, entities, relations — deterministic)
+├── Knowledge graph (cross-language, cross-author connections)
+├── Embedding index (Voyage voyage-3-large, 26 languages)
+└── REST API (/api/v1/*, language param, org param where needed)
+
+ORGANIZATION CONFIG (per-org settings, not multi-tenancy)
+├── Brand tokens (colors, fonts, logos)
+├── Language matrix (which languages this org surfaces)
+├── Bookstore routing (SRF Bookstore vs YSS Bookstore per language)
+├── Practice Bridge routing (SRF Lessons vs YSS Lessons)
+├── Feature flags (which platform features this org has selected)
+└── Domain / URL strategy
+
+SURFACE OPTIONS (each organization selects)
+├── Full portal deployment (Next.js, org-configured)
+├── Embeddable widgets (search, passage, theme — Web Components)
+├── API integration (REST endpoints, documented, versioned)
+└── App integration (API powering mobile Lessons app)
+```
+
+The shared engine is exactly what we are building. The organization config is a lightweight configuration layer. The surface options are natural consequences of the API-first architecture.
+
+#### Component 1: Hindi Authorization Partnership
+
+YSS has the authorized Hindi *Autobiography of a Yogi*. The entire Milestone 5b deferral was based on ebook purchasing logistics, not content availability. YSS authorization of the Hindi source text for the shared corpus could unblock Hindi activation — ~425M reachable people, comparable to Spanish (~430M).
+
+If authorized, Hindi could enter the execution sequence after Spanish, potentially as a parallel workstream during Milestone 1c or as a dedicated milestone. The language readiness gate (ADR-077) still applies: text ingested + UI strings translated + human reviewer confirmed + search quality evaluation passes.
+
+**Action needed:** Conversation with YSS about authorizing the Hindi text for shared corpus use.
+
+#### Component 2: Bidirectional Content Contribution
+
+YSS-published editions of Yogananda's works carry full lineage authority — Yogananda founded YSS. These are not third-party texts. Tamil, Telugu, and Kannada editions (if they exist as YSS publications) enter the corpus through the same ingestion pipeline with the same quality gates. Languages enter the platform without expanding SRF's 10-language scope commitment — each organization determines which languages it surfaces.
+
+By ADR-128 reachable population metrics, YSS-contributed languages are significant:
+
+| Language | Speakers | Internet % | Reachable | Equivalent Tier |
+|----------|----------|------------|-----------|-----------------|
+| Tamil | ~85M | ~60% | ~51M | Tier 2 |
+| Telugu | ~96M | ~60% | ~58M | Tier 2 |
+| Kannada | ~64M | ~60% | ~38M | Tier 2–3 |
+
+Together ~147M reachable people — more than Portuguese (Tier 2, ~145M) or any individual Tier 3 language.
+
+**Content provenance** is attribution metadata, not a search signal. A Tamil passage from YSS's edition is attributed to Yogananda with publication source noted. Language matching provides natural audience curation — Hindi content serves Hindi seekers regardless of which organization contributed it. No organizational relevance bias in search ranking.
+
+#### Component 3: Magazine Content
+
+Both SRF and YSS publish magazines with teaching-relevant articles. Magazine content enters the shared corpus through the same 12-step pipeline (DES-005) with a magazine-specific source adapter. DES-053 (Unified Content Pipeline Pattern) already handles multiple content types.
+
+Magazine-specific considerations: `content_type` distinguishes from book chapters; `publication_date` enables temporal discovery; organizational source is attribution metadata. Search treats all content equally — Yogananda's words are Yogananda's words. See also PRO-034 (Magazine API Rationalization, currently suspended).
+
+#### Component 4: Organization Configuration Layer
+
+Lightweight configuration, not multi-tenancy:
+
+```
+/lib/config/organizations/srf.json   — SRF brand tokens, language matrix, routing
+/lib/config/organizations/yss.json   — YSS brand tokens, language matrix, routing
+```
+
+| Config | SRF | YSS |
+|--------|-----|-----|
+| Primary color | Navy `#1a2744` | Rust/Terracotta `#bb4f27` |
+| Accent | Gold `#dcbd23` | (TBD — from YSS design review) |
+| Heading font | Merriweather | Raleway (per yssofindia.org) or TBD |
+| Body font | Lora / Merriweather | TBD (review with YSS) |
+| Devanagari | Noto Serif/Sans Devanagari | Same (shared typography research, ADR-080) |
+| Bookstore URL | srfbookstore.org | yssofindia.org/bookstore |
+| Practice Bridge | srflessons.org | yssofindia.org/lessons |
+| Languages | EN, ES, HI, PT, BN, DE, JA, FR, IT, TH | HI, BN, TA, TE, KN, EN (+ others per YSS) |
+
+API endpoints that return bookstore links or Practice Bridge routing accept an optional `org` parameter. Search, content, themes, and knowledge graph endpoints are organization-agnostic.
+
+Defer `organization` column in content tables until the model is more fully vetted. Language matching handles audience separation for now.
+
+#### Component 5: Surface Options — Parts or Whole
+
+YSS selects their integration level:
+
+**Option A: Embeddable Widgets (lowest friction).** Web Components that drop into any WordPress page. Search widget, passage display, theme explorer. Configurable branding via attributes. YSS team needs no Next.js skills.
+
+**Option B: API Integration (medium friction).** YSS developers or their mobile Lessons app call REST endpoints directly. Full control over presentation. Documented, versioned API per ADR-011.
+
+**Option C: Full Portal Deployment (highest value).** The Next.js portal configured with YSS branding, language matrix, and routing. Separate domain (e.g., `teachings.yssofindia.org`). Shared API backend.
+
+All three can coexist — YSS might embed a search widget in yssofindia.org (A), power their Lessons app with the API (B), and later deploy a full YSS teachings portal (C).
+
+#### Component 6: Feature Select-In Model
+
+Each portal capability is independently adoptable:
+
+| Feature | SRF | YSS Priority | Notes |
+|---------|-----|-------------|-------|
+| Hybrid search | Core | Core | Same engine, per-language |
+| Reading experience | Full | Widget or portal | Shared Devanagari typography |
+| Practice Bridge | → SRF Lessons | → YSS Lessons | Same concept, different routing |
+| Presentation mode (M2b-15) | Full | **High** | Communal reading primary in India |
+| Passage sharing (WhatsApp) | Full | **High** | WhatsApp dominant in India |
+| Knowledge graph | Full | Selectable | Cross-language connections |
+| Theme browser | Full | Selectable | Theme priorities may differ |
+| Quiet Corner | Full | Selectable | Contemplative micro-sanctuary |
+| Bookstore integration | SRF Bookstore | YSS Bookstore | Per-org routing |
+| Ashram/center finder | Not planned | **YSS-developed** | New capability, could generalize |
+
+YSS can also develop new capabilities — ashram finder, Dhyana Kendra schedule, India-specific entry paths — that may flow back to the shared platform if generalized.
+
+#### Component 7: Development Empowerment
+
+YSS's technical capacity is unknown. The platform should empower regardless of capacity level:
+
+- **Platform documentation as AI development context.** The design docs (DESIGN.md, ADRs, design files) serve as context for AI-assisted development. A YSS developer using Claude Code loads platform docs and builds on the API with full architectural understanding.
+- **Custom Claude Code skills** for YSS integration tasks: widget embedding, language addition, content contribution workflows.
+- **Methodology transfer.** The AI-human collaboration model, design documentation as institutional memory, ADR-driven decisions — a practice YSS could adopt for their own properties.
+- **Technology choice.** YSS may prefer WordPress integration, a separate React app, or a framework entirely of their choosing. The API-first architecture supports all.
+
+#### Component 8: Content Governance
+
+Each organization governs its contributed source text through the ingestion process (editorial review, authorization, quality gates). The enrichment pipeline is shared and deterministic — same AI model, same theme taxonomy, same entity resolution. Content that passes the language readiness gate (ADR-077) becomes part of the shared corpus.
+
+Human editorial overrides (theme corrections, entity fixes) are per-content, not per-organization. Once a text enters the corpus, it is Yogananda's teaching — attributed to its publication source but not organizationally siloed.
+
+Governance questions to resolve: Who triggers re-ingestion when errors are found? Does each organization maintain editorial authority over contributed texts? Lightweight governance that respects both organizations' authority without creating bureaucracy.
+
+#### Component 9: The SRF/YSS App as Integration Surface
+
+The existing SRF/YSS mobile app (iOS/Android) has an eReader for the private Lessons. The portal's API could power discovery features within that app:
+- Search published teachings from the Lessons app → portal search API
+- Thematic connections between Lessons content and published books → knowledge graph API
+- "Read more about this topic" → portal reading experience or API-served content
+
+This is high-value, low-friction integration — the API exists, the app exists, the connection is an API call.
+
+#### Phased Approach
+
+| Phase | When | What |
+|-------|------|------|
+| **Design** | Arc 1 | Organization config structure. API parameter design. Widget architecture decisions. Documented in this PRO and successor ADR/DES when adopted. |
+| **Hindi activation** | When YSS authorizes | Hindi source text enters ingestion pipeline. Language readiness gate (ADR-077) determines activation timeline. Could be Arc 1 or early Arc 2. |
+| **API + Widgets** | Milestone 2a+ | Organization-aware API parameters. Embeddable search widget with configurable branding. YSS can integrate into yssofindia.org. |
+| **Content expansion** | Milestone 5b+ | Tamil, Telugu, Kannada editions enter corpus. Magazine content from both organizations. Each clears readiness gate independently. |
+| **Full deployment** | When YSS is ready | YSS-branded portal deployment if desired. Same codebase, different configuration. |
+
+#### Subsumption of PRO-033
+
+PRO-033 (YSS Locale Branding) is one facet of this broader platform proposal. Locale-specific branding (colors, logos, organizational identity for Hindi/Bengali locales) is addressed by Component 4 (Organization Configuration Layer). PRO-033 is subsumed, not invalidated — its concerns are fully covered here.
+
+#### What This Changes Architecturally
+
+| Layer | Change | Cost |
+|-------|--------|------|
+| `/lib/config/organizations/` | Per-org JSON config files | Trivial |
+| API endpoints | Optional `org` param on content responses (bookstore links, Practice Bridge routing) | Small |
+| Design tokens | Exportable per-org token sets | Medium |
+| Widget build target | Web Components build of search/passage/theme components | Medium |
+| Content pipeline | Already source-agnostic — no change needed | Zero |
+| Search engine | Already per-language — no change needed | Zero |
+| Database schema | No changes now. Defer `organization` column until model is vetted. | Zero |
+
+#### What This Does NOT Change
+
+Search engine architecture, enrichment pipeline, knowledge graph, API conventions (ADR-110), core reading experience, accessibility infrastructure, DELTA compliance, or the 11 principles. The platform's spiritual character is unchanged — only its organizational reach expands.
+
+**Re-evaluate At:** Arc 1 boundary (design decisions), Hindi authorization progress, Milestone 5b planning
+**Decision Required From:** Human principal (YSS stakeholder conversation), Architecture (config structure, API parameters, widget architecture)
+**Origin:** Strategic exploration — YSS platform partnership architecture (2026-03-01)
 
 ---
 

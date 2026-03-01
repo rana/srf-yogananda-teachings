@@ -268,7 +268,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 - All architectural decisions are evaluated against a 10-year horizon, not just immediate needs
 - The shared service layer convention (ADR-011) is treated as the project's most important structural rule
 - Component replacement is expected and planned for — it's maintenance, not failure
-- The search quality test suite (deliverable 1a.8) serves as the acceptance gate for any AI model migration
+- The search quality test suite (deliverable M1a-8) serves as the acceptance gate for any AI model migration
 - Future developers can replace any Tier 3 component without touching Tier 1 or Tier 2 components
 - `pg_dump` export capability is documented as a deliberate architectural feature
 
@@ -411,7 +411,7 @@ During ingestion QA, Claude pre-screens ingested text and flags:
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a bilingual golden set of ~81 queries (~66 English, ~15 Spanish) across seven difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Dark Night, Adversarial). The Dark Night category (~8 queries) tests fragmentary, distressed queries against the Vocabulary Bridge's state mappings and retrieval intent routing (ADR-129). Hindi queries (~15) added when Hindi activates in Milestone 5b. Full methodology, data format, metrics, and CI integration specified in DES-058.
+Automate the search quality evaluation (Deliverables M1a-8 and M1b-2) by using Claude as the evaluator. The evaluation uses a bilingual golden set of ~81 queries (~66 English, ~15 Spanish) across seven difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Dark Night, Adversarial). The Dark Night category (~8 queries) tests fragmentary, distressed queries against the Vocabulary Bridge's state mappings and retrieval intent routing (ADR-129). Hindi queries (~15) added when Hindi activates in Milestone 5b. Full methodology, data format, metrics, and CI integration specified in DES-058.
 
 **Evaluation approach:** Substring matching resolves expected passages deterministically. For results not matching expected passages, Claude Opus judges relevance (HIGH / PARTIAL / NOT_RELEVANT). Opus is used as the evaluation judge (ADR-014) because judging whether a retrieved passage meets a seeker's emotional state requires the same reasoning depth as the enrichment itself. For Dark Night queries, Opus additionally judges retrieval intent match — does the passage console rather than instruct? Does it acknowledge rather than advise?
 
@@ -1169,7 +1169,7 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 | UI translation drafting | **Opus** | Devotional register in 8+ languages requires precise tone; human review follows (ADR-078) | 5b |
 | Cross-book relationship mapping | **Opus** | Identifying thematic connections across the full library requires deep reading comprehension | 3d–Arc 4 |
 
-**Rationale for Opus as batch default.** The portal's index-time work is its most consequential AI use — it determines what seekers find when they search, how passages are classified, whether the vocabulary bridge correctly maps "I feel empty" to teachings about spiritual longing. The corpus is small (~100K chunks at full scale). Batch enrichment of the full corpus costs ~$50-100 with Opus — a one-time investment. Haiku or Sonnet cost less but lack the reasoning depth for tasks where spiritual nuance matters: distinguishing consolation from instruction, recognizing when "death" is discussed philosophically vs. in grief, mapping cross-tradition vocabulary accurately. For a portal committed to "honoring the spirit of the teachings" (Principle 3), the AI work that shapes what seekers find deserves the most capable model available. Cost sensitivity applies to per-search tasks (recurring, scales with traffic); it does not apply to batch work (one-time, small corpus).
+**Rationale for Opus as batch default.** The portal's index-time work is its most consequential AI use — it determines what seekers find when they search, how passages are classified, whether the vocabulary bridge correctly maps "I feel empty" to teachings about spiritual longing. The corpus is small (~100K chunks at full scale). Batch enrichment of the full corpus costs ~$50-100 with Opus — a one-time investment. Haiku or Sonnet cost less but lack the reasoning depth for tasks where spiritual nuance matters: distinguishing consolation from instruction, recognizing when "death" is discussed philosophically vs. in grief, mapping cross-tradition vocabulary accurately. For a portal committed to "honoring the spirit of the teachings" (PRI-03), the AI work that shapes what seekers find deserves the most capable model available. Cost sensitivity applies to per-search tasks (recurring, scales with traffic); it does not apply to batch work (one-time, small corpus).
 
 Batch tasks are configured via `CLAUDE_MODEL_BATCH` in `/lib/config.ts` (defaults to Opus). Cost is negligible: ~$50–100 per full corpus enrichment pass, run once per content change.
 
@@ -1564,7 +1564,7 @@ A developer can run `pnpm run ingest --book autobiography` locally. Production r
 - The former Lambda batch decision is superseded. Its runtime decision (Lambda for batch) is preserved; its deployment tool (SF v4) and timing (Milestone 2a) are replaced.
 - `/serverless/` directory becomes `/lambda/`. No `serverless.yml`. No SF v4 dependency.
 - Terraform gains two modules: `/terraform/modules/lambda/` and `/terraform/modules/eventbridge/`.
-- Milestone 2a deliverable 2a.22 provisions Lambda infrastructure (`enable_lambda = true` → `terraform apply`) for database backup. Milestone 3a deliverable 3a.6 deploys batch functions (ingestion, relation computation) to the already-working infrastructure.
+- Milestone 2a deliverable M2a-22 provisions Lambda infrastructure (`enable_lambda = true` → `terraform apply`) for database backup. Milestone 3a deliverable M3a-6 deploys batch functions (ingestion, relation computation) to the already-working infrastructure.
 - All downstream ADRs referencing Lambda batch infrastructure now reference ADR-017. The infrastructure is the same (Lambda + EventBridge); the deployment mechanism and timing differ.
 - Developers familiar with SF v4 should note: Lambda invocation, monitoring, and IAM are identical. Only the deployment tool changes (Terraform instead of `serverless deploy`).
 - **Extends ADR-016** (Terraform as sole IaC tool), **ADR-004** (10-year horizon — fewer tool dependencies), **ADR-018** (CI-agnostic scripts — `/scripts/` wrappers call same logic), **ADR-019** (backup timing resolved — Milestone 2a).
@@ -1681,7 +1681,7 @@ Available immediately on Scale tier. Restore to any moment within 30 days — co
 
 #### Layer 2: Neon Snapshots (API-managed, automated schedule)
 
-Configure automated snapshots on the production branch via **Neon Snapshot API** during Milestone 1a.2 project setup. The Snapshot API supports full CRUD (create, list, restore, update, delete) and backup schedule configuration — no Console interaction needed. Claude configures the schedule via Neon MCP or API call during bootstrap.
+Configure automated snapshots on the production branch via **Neon Snapshot API** during Milestone M1a-2 project setup. The Snapshot API supports full CRUD (create, list, restore, update, delete) and backup schedule configuration — no Console interaction needed. Claude configures the schedule via Neon MCP or API call during bootstrap.
 
 - **Daily snapshot** at 03:00 UTC (before nightly pg_dump for redundancy)
 - **Weekly snapshot** on Sundays
@@ -1747,7 +1747,7 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 ### Consequences
 
 - PITR and Time Travel Queries available from Milestone 1a (Scale tier). Time Travel accepted as development tool (PRO-008).
-- Snapshot schedule configured during Milestone 1a.2 Neon project setup via Neon Snapshot API (not Console)
+- Snapshot schedule configured during Milestone M1a-2 Neon project setup via Neon Snapshot API (not Console)
 - Pre-migration snapshots created by CI workflow before migration PRs
 - On-demand snapshots created by Claude via MCP before risky operations
 - `/terraform/modules/backup/` added in Milestone 2a (S3 bucket, Lambda, EventBridge)
@@ -1884,7 +1884,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - One Vercel project with branch deployments
 - One Sentry project with environment tagging
 - One Contentful space with environment aliases
-- `scripts/bootstrap.sh` created in Deliverable 1a.1 — automates all CLI-scriptable setup
+- `scripts/bootstrap.sh` created in Deliverable M1a-1 — automates all CLI-scriptable setup
 - `scripts/create-env.sh` and `scripts/destroy-env.sh` created in Arc 4 when multi-environment activates
 - `terraform/bootstrap/trust-policy.json` checked into repo — the one artifact the bootstrap script needs
 - GitHub Environments configured per environment (dev, staging, prod) with protection rules
@@ -2006,7 +2006,7 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 
 ### Alternatives Evaluated
 
-- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails Principle 11 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
+- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails PRI-11 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
 
 ### Consequences
 
@@ -4086,7 +4086,7 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 
 - `book_chunks` schema includes `embedding_model`, `embedding_dimension`, and `embedded_at` columns from Arc 1
 - The ingestion pipeline records which model it used per chunk
-- Search quality test suite (deliverable 1a.8) becomes the gate for model migration decisions
+- Search quality test suite (deliverable M1a-8) becomes the gate for model migration decisions
 - Model migration is a maintenance operation, not an architecture change
 - Budget for re-embedding costs when evaluating new models (Milestone 5b multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
@@ -4118,7 +4118,7 @@ Three dimensions of embedding quality matter for this portal:
 
 1. **Voyage voyage-3-large is the Arc 1 embedding model.** ADR-118 adopted Voyage voyage-3-large (1024 dimensions, 26 languages, 32K token input) based on its multilingual-first design, asymmetric encoding support (`input_type = 'document'` at ingestion, `input_type = 'query'` at search time), and strong performance on literary/spiritual text retrieval. Originally, OpenAI text-embedding-3-small (1536 dimensions) was selected for its simplicity and adequate multilingual support; ADR-118 superseded that choice after the RAG Architecture Proposal demonstrated that Voyage's intentional multilingual design and literary retrieval quality justified the switch before any corpus was embedded.
 
-2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestones 1a–1b bilingual evaluation (Deliverable 1a.8 English + Milestone 1b Spanish: ~58 en + ~15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
+2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestones 1a–1b bilingual evaluation (Deliverable M1a-8 English + Milestone 1b Spanish: ~58 en + ~15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
 
 3. **Domain-adapted embeddings remain a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
  - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
@@ -4150,7 +4150,7 @@ Three dimensions of embedding quality matter for this portal:
 ### Consequences
 
 - Arc 1 proceeds with Voyage voyage-3-large (1024 dimensions)
-- Deliverables 1a.8 + Milestone 1b scope note: bilingual evaluation (en/es — English in 1a.8, Spanish in 1b) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
+- Deliverables M1a-8 + Milestone 1b scope note: bilingual evaluation (en/es — English in M1a-8, Spanish in 1b) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
 - Milestone 5b benchmarks Voyage as the baseline against multilingual-optimized alternatives (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, domain-adapted fine-tunes)
 - Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
@@ -4228,7 +4228,7 @@ Do not apply a single chunking algorithm across all types. Read representative s
 
 - New "Chunking Strategy" section in DESIGN.md
 - Arc 1 ingestion script (0.8) implements default chunking per this specification
-- Milestone 3d verse-aware chunking (3d.2) implements the verse-commentary pair strategy
+- Milestone 3d verse-aware chunking (M3d-2) implements the verse-commentary pair strategy
 - Milestone 5b per-language chunk size validation uses this specification as the baseline
 - Search quality evaluation (0.17) implicitly validates the chunking strategy — poor results trigger chunking reassessment
 
@@ -4306,7 +4306,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 - New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
 - New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions — Corpus-Derived, Not Behavior-Derived"
-- ROADMAP.md updated: Deliverable 1c.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
+- ROADMAP.md updated: Deliverable M1c-9 (basic prefix matching), M3a-9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
 - Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-129 per-book lifecycle)
 - Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-003)
@@ -5495,16 +5495,16 @@ The portal offers two experience tiers:
 
 **Context:** The portal's architectural principles effectively constrain bad decisions — no AI synthesis, no gamification, no content gating, no feature gating behind connectivity. But constraints alone do not produce excellence. Brother Chidananda described the portal as "world-class." A quality aspiration was implicit across several principles (Calm Technology's "entering a library, not a marketplace," Global-First's "full claim on the beauty and depth," Accessibility's "warmth" requirement) but had no explicit governance home. Without it, "it works" could be mistaken for "it's done."
 
-**Decision:** Adopt Principle 3: Honoring the Spirit of the Teachings. Every interaction should amaze — and honor the spirit of the teachings it presents. The portal's execution quality should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?"
+**Decision:** Adopt PRI-03: Honoring the Spirit of the Teachings. Every interaction should amaze — and honor the spirit of the teachings it presents. The portal's execution quality should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?"
 
 **Consequences:**
-- Creates an aspiration gate alongside existing constraint gates — components must be both correct (per Principles 1–2, 4–11) and excellent (per Principle 3)
+- Creates an aspiration gate alongside existing constraint gates — components must be both correct (per PRI-01, PRI-02, PRI-04–11) and excellent (per PRI-03)
 - Applies to all implementation arcs from the first component
 - Aligns with Calm Technology: restraint as a form of excellence, not a limitation
 - Provides the AI architect/implementer with a self-referential evaluation standard: measure the portal's quality against the content's own character (warm, calm, profound, inviting)
 - Does not conflict with Global-First performance budgets — a slow portal is not worthy of the teachings either
 
-**Governs:** Principle 3 in PRINCIPLES.md
+**Governs:** PRI-03 in PRINCIPLES.md
 
 *Revised: 2026-02-28, principle number updated from 12 to 3 per principles restructuring.*
 
@@ -5517,7 +5517,7 @@ The portal offers two experience tiers:
 
 ### Context
 
-The portal's roadmap originally ordered milestones by feature sophistication — build the experience for English users first, then expand to other languages. This optimized for depth of experience before breadth of reach. But Principle 5 (Global-First) commits to serving "all humans of Earth equally," and the portal's philanthropic mission is to make Yogananda's teachings "available freely throughout the world."
+The portal's roadmap originally ordered milestones by feature sophistication — build the experience for English users first, then expand to other languages. This optimized for depth of experience before breadth of reach. But PRI-05 (Global-First) commits to serving "all humans of Earth equally," and the portal's philanthropic mission is to make Yogananda's teachings "available freely throughout the world."
 
 When two independent milestones compete for priority, the project lacked a quantitative framework for choosing between them. Decisions defaulted to Western software convention: polish before reach, features before languages. This resulted in non-English languages (serving ~2.6 billion reachable people) being scheduled after reader polish and study tools (serving existing English users).
 
@@ -5613,7 +5613,15 @@ ADR-077 lists Chinese, Korean, Russian, and Arabic as evaluation candidates beyo
 
 Mandarin and Russian warrant investigation when the core 10 languages are stable. Indonesian is a notable omission from the evaluation list — 252M speakers with 75% internet penetration.
 
-**Extends:** Principle 5 (Global-First), ADR-077 (Core Language Set), ADR-030 (Book Ingestion Priority)
+### YSS-Contributed Languages
+
+Tamil (~85M speakers, ~60% internet, ~51M reachable), Telugu (~96M speakers, ~60% internet, ~58M reachable), and Kannada (~64M speakers, ~60% internet, ~38M reachable) may enter the platform through YSS content partnership (PRO-043), outside SRF's 10-language scope. YSS-published editions carry full lineage authority — Yogananda founded YSS in 1917. By this framework, all three are Tier 2 equivalent (~38M–58M reachable each, comparable to Thai at ~49M or Italian at ~61M). Together they serve ~147M reachable people — more than Portuguese (Tier 2, ~145M reachable).
+
+These languages do not expand SRF's commitment. Each organization determines which languages it surfaces. The platform supports any language where either organization provides authorized content and the language readiness gate (ADR-077) is cleared. See PRO-043.
+
+**Hindi source authorization.** The Hindi deferral (Milestone 5b) was due to ebook purchasing logistics, not content unavailability. YSS has the authorized Hindi *Autobiography*. YSS authorization of the Hindi text for the shared corpus could resolve the source barrier, potentially activating Hindi (~425M reachable) earlier than Milestone 5b. See PRO-043.
+
+**Extends:** PRI-05 (Global-First), ADR-077 (Core Language Set), ADR-030 (Book Ingestion Priority)
 **Governs:** ROADMAP.md arc and milestone ordering. All future scope prioritization decisions.
 
 *Full demographic analysis: docs/reference/Prioritizing Global Language Rollout.md (53 citations: Ethnologue, ITU, UNESCO, DataReportal, GSMA, World Bank).*
@@ -5784,7 +5792,7 @@ The full multi-lens homepage is Arc 2a. At 1c, the recognition-first principle m
 
 - DES-007 updated to reference this ADR and describe the recognition-first principle
 - DES-015 (Self-Revealing Navigation) gains secondary nav specification with progressive population plan
-- Deliverable 1c.5 search prompt changes from "What are you seeking?" to "What did Yogananda say about...?"
+- Deliverable M1c-5 search prompt changes from "What are you seeking?" to "What did Yogananda say about...?"
 - The Vocabulary Bridge (ADR-129) is a prerequisite for meaningful recognition-based entry — without it, the Four Doors and emotional entry points are cosmetic
 - PRO-018 (Four Doors), PRO-019 (Multi-Lens Homepage), PRO-020 (Wanderer's Path) capture the Arc 2a+ implementation details
 

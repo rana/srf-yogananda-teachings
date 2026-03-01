@@ -12,7 +12,7 @@ Specific numeric values throughout these documents (chunk sizes, rate limits, th
 
 *What this project is. Violating these destroys the project's purpose.*
 
-### 1. Direct Quotes Only
+### PRI-01: Direct Quotes Only
 
 **The AI is a librarian, not an oracle.** It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it never generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. (ADR-001, ADR-005, ADR-015, PRO-014)
 
@@ -28,7 +28,7 @@ The consequence that matters most: chunking quality is paramount. Each chunk mus
 
 ---
 
-### 2. Full Attribution Always
+### PRI-02: Full Attribution Always
 
 **Every displayed passage carries full provenance: author, book, chapter, page.** No orphaned quotes — every search result links to its full chapter context. Full author name always displayed — "Paramahansa Yogananda", "Swami Sri Yukteswar", "Sri Daya Mata" — never shortened. When no official translation exists, the content is unavailable in that language — honest absence over synthetic substitution. (ADR-075, ADR-078, ADR-039)
 
@@ -40,11 +40,11 @@ The translation honesty commitment deserves emphasis: when an official translati
 
 When content is absent — no results match a query, no translation exists, a book isn't yet available — the portal treats this as an invitation, not a wall. Honest absence becomes an opportunity to guide: suggest related themes the seeker might explore, point toward the language the content *is* available in, or connect the seeker to SRF resources that might help. The portal never fabricates content to fill the gap, but it also never abandons the seeker at a dead end. Absence handled with care is itself a form of the librarian's service.
 
-*Section revised: 2026-02-28, sharpened from "Sacred Text Fidelity" — removed duplication with Principle 1 (AI/media prohibition), focused on the unique commitments: provenance, attribution, translation honesty.*
+*Section revised: 2026-02-28, sharpened from "Sacred Text Fidelity" — removed duplication with PRI-01 (AI/media prohibition), focused on the unique commitments: provenance, attribution, translation honesty.*
 
 ---
 
-### 3. Honoring the Spirit of the Teachings
+### PRI-03: Honoring the Spirit of the Teachings
 
 **Every interaction should amaze — and honor the spirit of the teachings it presents.** Brother Chidananda described the portal as "world-class." World-class is the minimum standard: the portal's execution quality — its typography, its search experience, its error handling, its silence — should match the spiritual depth of the content it holds. Before shipping any component, ask: "Is this worthy of presenting Yogananda's words to a seeker who needs them?" (ADR-127)
 
@@ -56,7 +56,7 @@ What is amazing: considered simplicity. Typography that honors the text's rhythm
 
 ---
 
-### 4. Signpost, Not Destination
+### PRI-04: Signpost, Not Destination
 
 **The portal leads seekers toward practice — it never substitutes for it.** Practice Bridge routes technique queries to SRF Lessons information. Crisis query detection provides safety interstitials. The AI never interprets meditation techniques or spiritual practices. (ADR-104, ADR-122, ADR-069)
 
@@ -72,7 +72,7 @@ The technique boundary is absolute: the portal never teaches Kriya Yoga, Hong-Sa
 
 *Who we serve and how. Violating these harms seekers.*
 
-### 5. Global-First
+### PRI-05: Global-First
 
 **Supports all humans of Earth equally.** Low-resourced peoples and high-resourced peoples. Low-resource phones with limited and intermittent bandwidth, high-resource phones with high bandwidth, tablets, and desktops. A seeker in rural Bihar on 2G and a seeker in Los Angeles on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Core reading and search experiences degrade gracefully with intermittent or absent connectivity. (ADR-006)
 
@@ -86,7 +86,7 @@ When a feature proposal seems to conflict with this principle, the response is n
 
 ---
 
-### 6. Calm Technology
+### PRI-06: Calm Technology
 
 **No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI.** The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
 
@@ -98,7 +98,7 @@ Personalization features are classified into three tiers (ADR-002): build (langu
 
 ---
 
-### 7. Accessibility from First Deployment
+### PRI-07: Accessibility from First Deployment
 
 **WCAG 2.1 AA from the first component. Mobile-first responsive design from the first deployable page.** Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
 
@@ -112,7 +112,7 @@ Screen reader quality goes beyond mere compliance. ADR-073 specifies that the sp
 
 ---
 
-### 8. DELTA-Compliant Analytics
+### PRI-08: DELTA-Compliant Analytics
 
 **No user identification, no session tracking, no behavioral profiling.** Amplitude event allowlist only. (ADR-095, ADR-099)
 
@@ -130,7 +130,7 @@ The consequence for code: never install analytics that track users. Never add se
 
 *How we build. Violating these creates technical debt.*
 
-### 9. 10-Year Design Horizon
+### PRI-09: 10-Year Design Horizon
 
 **Every component is designed for graceful evolution over a decade.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Every Tier 3 component is replaceable without touching Tier 1. (ADR-004)
 
@@ -142,7 +142,7 @@ The search quality test suite (bilingual golden set — DES-058) serves as the a
 
 ---
 
-### 10. API-First Architecture
+### PRI-10: API-First Architecture
 
 **All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 
@@ -152,7 +152,7 @@ The shared service layer (`/lib/services/`) is pure TypeScript with zero framewo
 
 ---
 
-### 11. Multilingual from the Foundation
+### PRI-11: Multilingual from the Foundation
 
 **Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 
@@ -160,4 +160,4 @@ The multilingual commitment shapes technical decisions made long before all tran
 
 The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
-*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with Principle 1 removed. "Honoring the Spirit" elevated from position 12 to position 3.*
+*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with PRI-01 removed. "Honoring the Spirit" elevated from position 12 to position 3. 2026-03-01, PRI-NN identifiers added — principles now have first-class identifiers consistent with ADR/DES/PRO.*

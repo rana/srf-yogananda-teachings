@@ -449,7 +449,7 @@ Adopt a **layered testing strategy** with specific tools for each layer:
 | **Unit / Integration** | **Vitest** + React Testing Library | Service functions, API route handlers, component rendering, database queries | Milestone 2a |
 | **End-to-End** | **Playwright** | Full user flows: search → read → share → navigate. Cross-browser (Chrome, Firefox, Safari). | Milestone 2a (core flows) |
 | **Accessibility** | **axe-core** (CI) + Playwright a11y assertions | Automated WCAG checks on every page. Keyboard navigation flows. | Milestone 2a (basic) / Milestone 2b (CI) |
-| **Search quality** | Custom Vitest suite | ~30 representative queries with expected passages. Precision/recall metrics. | Milestone 1a (deliverable 1a.8) |
+| **Search quality** | Custom Vitest suite | ~30 representative queries with expected passages. Precision/recall metrics. | Milestone 1a (deliverable M1a-8) |
 | **Performance** | **Lighthouse CI** | Core Web Vitals thresholds: LCP < 2.5s, CLS < 0.1, INP < 200ms. | Milestone 2a |
 | **Visual** | Browser rendering (code-first) | Design emerges through code iteration; browser is the design artifact | Arc 1+ |
 | **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes to reading UI, passage cards, Quiet Corner | dissolved (evaluate when component library stabilizes) |
@@ -548,7 +548,7 @@ This catches migration drift, unintended column changes, and missing indexes bef
 - Preview branches per PR enable database-backed Vercel preview deployments
 - Neon Schema Diff GitHub Action posts migration diff as PR comment
 - Design validation through browser rendering (code-first, no external design tool during AI-led arcs)
-- Search quality test suite is a Milestone 1a deliverable (1a.8) and grows as the corpus expands
+- Search quality test suite is a Milestone 1a deliverable (M1a-8) and grows as the corpus expands
 - Visual regression testing begins when the component library stabilizes
 
 *Revised: 2026-02-25, added preview branches per PR, branch TTL auto-expiry, and schema diff in CI leveraging Neon Scale tier capabilities (ADR-124).*
@@ -1061,7 +1061,7 @@ When an upstream workflow's output changes (e.g., an OCR correction alters passa
 
 ### Context
 
-Over a 10-year lifespan, the portal will evolve through multiple arcs — adding books, languages, features, and content types. Seekers who visited in Milestone 3a and return in Milestone 5a would not know that WhatsApp search, Sacred Places, reading journeys, or the Knowledge Graph exist unless they stumble upon them. Existing mechanisms cover content additions (deliverable 3a.8's "What's New in the Library" gold dot for new books; Milestone 5a RSS feed `/feed/new-content.xml` for new books/recordings/videos) but nothing communicates *capability* changes to seekers.
+Over a 10-year lifespan, the portal will evolve through multiple arcs — adding books, languages, features, and content types. Seekers who visited in Milestone 3a and return in Milestone 5a would not know that WhatsApp search, Sacred Places, reading journeys, or the Knowledge Graph exist unless they stumble upon them. Existing mechanisms cover content additions (deliverable M3a-8's "What's New in the Library" gold dot for new books; Milestone 5a RSS feed `/feed/new-content.xml` for new books/recordings/videos) but nothing communicates *capability* changes to seekers.
 
 The daily email (ADR-091) explicitly excludes announcements: "The email is a passage, not a newsletter. No announcements, no feature updates." This is correct — the email channel must remain pure. But the portal itself should offer a quiet, opt-in way for seekers to learn what has changed.
 
@@ -1344,7 +1344,7 @@ Webhook payloads never contain seeker data. Events describe *content* lifecycle 
 | Milestone | What Ships |
 |-----------|-----------|
 | **Milestone 5a** | Webhook schema, subscriber management, delivery engine. Initial events: `daily_passage.rotated`, `content.published`, `content.updated`, `social_asset.approved`, `portal_update.published`. Admin UI in editorial portal. |
-| **Milestone 1c+** | Contentful webhook *inbound* (deliverable 1c.8) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
+| **Milestone 1c+** | Contentful webhook *inbound* (deliverable M1c-8) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
 | **Milestone 5b+** | Additional events as channels mature: `journey.step`, `email.dispatched`. SQS fan-out if subscriber count exceeds ~20. |
 | **Milestone 7a+** | Self-service webhook registration with API key auth for external consumers. |
 
@@ -1778,7 +1778,7 @@ When search returns zero results:
 
 #### 6. Search quality evaluation integration
 
-The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 1a.8):
+The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable M1a-8):
 - Each test query has expected passages that should appear in the top 3 results.
 - Accessibility boosting is validated: for empathic queries ("dealing with grief"), consoling/accessible passages should rank higher.
 - Deduplication is validated: edition variants should not appear as separate results.
@@ -1795,7 +1795,7 @@ The presentation decisions above are validated by the search quality test suite 
 ### Consequences
 
 - DES-019 search endpoint documentation updated to reference this ADR for presentation logic.
-- The search quality test suite (deliverable 1a.8) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
+- The search quality test suite (deliverable M1a-8) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
 - Future content types entering search (video transcripts, audio transcripts, magazine articles) must follow the same ranking hierarchy and deduplication rules. Cross-media result interleaving rules will be specified when those content types are integrated (Arc 6).
 - The "5 results" default is a design decision, not a technical constraint. It may be adjusted based on Milestone 1a search quality evaluation — but the adjustment should be governed (update this ADR), not ad hoc.
 
@@ -1988,10 +1988,10 @@ Examples:
 **Parameters** — Tunable defaults. Ship with the documented value. Adjust based on evidence. Changes are configuration updates, not architectural decisions. Document the current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration).
 
 Examples:
-- RRF fusion k=60 (DES-003) — tune after Milestone 1a.8 search quality evaluation
+- RRF fusion k=60 (DES-003) — tune after Milestone M1a-8 search quality evaluation
 - Dwell debounce 1200ms (DES-009) — tune after Milestone 2b user testing
 - Chunk size 200–300 tokens (ADR-048) — tune per language after ingestion
-- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone 1a.8
+- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone M1a-8
 - Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
 - Email purge delay: 90 days (DES-030) — adjust based on legal review
 - Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
@@ -2007,7 +2007,7 @@ Examples:
 
 3. **Evaluation log:** When a parameter is tuned based on data, add a brief note to the relevant DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*`
 
-4. **Milestone gate integration:** Milestone 1a.8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone 1a.8" are reviewed during that gate.
+4. **Milestone gate integration:** Milestone M1a-8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone M1a-8" are reviewed during that gate.
 
 ### Rationale
 
@@ -2020,7 +2020,7 @@ Examples:
 
 - All existing magic numbers in DESIGN.md to be annotated with the parameter convention during Arc 1 implementation
 - `/lib/config.ts` created as the canonical location for runtime parameters
-- Milestone 1a.8 success criteria updated to include parameter validation
+- Milestone M1a-8 success criteria updated to include parameter validation
 - Future ADRs specify whether each specific value is a principle or parameter
 - CLAUDE.md updated to reference this classification in the document maintenance guidance
 
@@ -2071,7 +2071,7 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 | Unicode 16.0.0 | 1+ | Improved case mapping for Sanskrit/Hindi diacritics (ADR-080). |
 | Virtual generated columns | 1c+ | Compute values at read time without storage overhead. Evaluate for normalized search text. |
 | `casefold()` | 1c+ | Unicode-aware case-insensitive matching. Evaluate for Sanskrit term normalization. |
-| `COPY REJECT_LIMIT` | 1a.4 | Error-tolerant bulk ingestion. Evaluate for PDF import pipeline. |
+| `COPY REJECT_LIMIT` | M1a-4 | Error-tolerant bulk ingestion. Evaluate for PDF import pipeline. |
 | `WITHOUT OVERLAPS` temporal constraints | 2a+ | Evaluate for daily passage scheduling, event scheduling. |
 | `array_sort()` / `array_reverse()` | 2a+ | Tag array processing for teaching topics and entity aliases. |
 | Async I/O | Neon-gated | Neon runs `io_method = 'sync'` during preview. Benefit arrives when Neon enables it — no code changes needed. |
@@ -2080,7 +2080,7 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 
 **Terraform parameter:** Neon project specifies `postgres_version = "18"` explicitly. Never rely on Neon's default version.
 
-**Verification gate (Deliverable 1a.2):** After `terraform apply`, verify all 5 required extensions (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements) install correctly on Neon PG18. If any extension fails, fallback: recreate on PG17 with no code changes required (only Terraform `postgres_version` parameter changes).
+**Verification gate (Deliverable M1a-2):** After `terraform apply`, verify all 5 required extensions (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements) install correctly on Neon PG18. If any extension fails, fallback: recreate on PG17 with no code changes required (only Terraform `postgres_version` parameter changes).
 
 #### Tier Selection: Scale
 
@@ -2221,7 +2221,7 @@ The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** �
 - Branch naming convention and TTL policy enforced in CI scripts
 - `pg_stat_statements` data informs search query optimization from Milestone 1a
 - OpenTelemetry export configured during Milestone 2a observability setup
-- Snapshot schedule configured during Milestone 1a.2 via Neon API (ADR-019)
+- Snapshot schedule configured during Milestone M1a-2 via Neon API (ADR-019)
 - API keys scoped per context: org key for Terraform, project-scoped keys for CI and development
 - Terraform provider version pinned; upgrades reviewed via `terraform plan` in PR
 - **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
