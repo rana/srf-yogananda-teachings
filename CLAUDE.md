@@ -4,7 +4,7 @@
 
 A free, world-class online teachings portal for Self-Realization Fellowship (SRF) to make Paramahansa Yogananda's published books freely accessible worldwide, with an AI-powered intelligent search tool. Funded by a philanthropist. Launching late 2026.
 
-**Documentation as institutional memory.** The documentation volume is intentional — it serves as memory across AI context windows. See CONTEXT.md § Project Methodology for the collaboration model.
+**AI-human collaboration.** This project is architected, implemented, and maintained by AI (Claude) under human direction. The human principal directs strategy, stakeholder decisions, and editorial judgment; the AI serves as architect, implementer, and maintainer. The documentation volume is intentional — it serves as institutional memory across AI context windows. See CONTEXT.md § Project Methodology for the full collaboration model.
 
 ## Read These Files
 
