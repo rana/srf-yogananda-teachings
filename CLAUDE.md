@@ -111,7 +111,7 @@ Eleven principles define the project's identity and directly constrain code gene
 - **Suspended** — Moved to PROPOSALS.md. Reasoning preserved in ADR body. (`Suspended → PRO-NNN`)
 - **Implemented** — Validated through code. (`Implemented — see [code path]`)
 
-**DES-NNN** (Design Sections) — 57 sections (DES-001 through DES-057) split across four files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
+**DES-NNN** (Design Sections) — 58 sections (DES-001 through DES-058) split across four files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
 
 **PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Milestone refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
 

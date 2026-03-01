@@ -14,7 +14,7 @@ The first arc answers one question: **does trilingual semantic search work over 
 
 - **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries in English, Hindi, and Spanish, returning ranked verbatim passages with book, chapter, and page citations
 - **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful, with Devanagari support for Hindi
-- **Search quality evaluation** — ~80-query trilingual golden set (~50 en + ~15 hi + ~15 es) proving retrieval relevance before anything else is built
+- **Search quality evaluation** — ~88-query trilingual golden set (~58 en + ~15 hi + ~15 es) across six difficulty categories, proving retrieval relevance before anything else is built
 
 One book (*Autobiography of a Yogi*) in three languages (en/hi/es), serving ~1.25 billion reachable people from the proof-of-concept. One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
 

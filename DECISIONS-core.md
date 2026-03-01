@@ -412,15 +412,17 @@ During ingestion QA, Claude pre-screens ingested text and flags:
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverable 1a.8) by using Claude as the evaluator:
+Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a trilingual golden set of ~88 queries (~58 English, ~15 Hindi, ~15 Spanish) across six difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Adversarial). Full methodology, data format, metrics, and CI integration specified in DES-058.
 
-- Given a benchmark query and the search results, does the expected passage appear in the top 5?
-- Is the ranking reasonable? (A passage directly addressing the query should rank above a tangentially related one.)
-- Are there false positives? (Passages that match keywords but are semantically irrelevant.)
+**Evaluation approach:** Substring matching resolves expected passages deterministically. For results not matching expected passages, Claude Haiku judges relevance (HIGH / PARTIAL / NOT_RELEVANT). This avoids false negatives when a different but equally relevant passage is returned.
 
-**Implementation:** CI job that runs the 30 benchmark queries against the search API, passes results to Claude for evaluation, and reports a quality score. Threshold: ≥ 80% of queries return at least one relevant passage in the top 3. Runs on every PR that touches the search pipeline, embedding model, or chunking strategy.
+**Metrics:** Recall@3 per category (primary gate: ≥ 80% overall), MRR@10 (secondary diagnostic), adversarial routing accuracy (target: 100%).
 
-**Why this matters:** Manual evaluation of 30 queries is feasible at launch but doesn't scale. As the corpus grows (Milestone 3a through Arc 3) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade.
+**Implementation:** `/scripts/eval/search-quality.ts`. CI job runs on PRs touching search-affecting paths (`/lib/services/search/`, `/lib/prompts/`, `/lib/config.ts`, `/migrations/`, `/data/eval/`). Posts per-category summary on PR. Fails if Recall@3 drops below 80% or Technique-boundary routing drops below 100%. Golden set data in `/data/eval/golden-set-{lang}.json`.
+
+**Why this matters:** As the corpus grows (Milestone 3a through Arc 3) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade. Per-category breakdowns reveal *where* search needs improvement — enabling targeted tuning rather than blind iteration.
+
+*Revised: 2026-02-28, expanded with metrics, six categories, trilingual scope, and DES-058 cross-reference.*
 
 #### E6: Cross-Book Conceptual Threading (Milestone 3c)
 

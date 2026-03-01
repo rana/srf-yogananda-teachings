@@ -73,6 +73,7 @@
 | [DES-054: Knowledge Graph Ontology](DESIGN-arc1.md#des-054-knowledge-graph-ontology) | 1 (design), 3b+ (batch) | DESIGN-arc1.md |
 | [DES-055: Concept/Word Graph](DESIGN-arc2-3.md#des-055-conceptword-graph) | 3b+ | DESIGN-arc2-3.md |
 | [DES-056: Feature Catalog (RAG Architecture Proposal)](DESIGN-arc2-3.md#des-056-feature-catalog-rag-architecture-proposal) | 2b–6+ | DESIGN-arc2-3.md |
+| [DES-058: Search Quality Evaluation Harness](DESIGN-arc1.md#des-058-search-quality-evaluation-harness) | 1 | DESIGN-arc1.md |
 
 ---
 
@@ -1823,7 +1824,7 @@ These proportions are guidelines, not gates — the important thing is that most
 | **Unit / Integration** | Vitest + React Testing Library | Service functions, API route handlers, component rendering | Milestone 2a |
 | **End-to-End** | Playwright | Full user flows: search → read → share → navigate. Cross-browser. | Milestone 2a |
 | **Accessibility** | axe-core (CI) + Playwright a11y | Automated WCAG checks. Keyboard navigation flows. | Milestone 2a |
-| **Search quality** | Custom Vitest suite | ~30 queries with expected passages. Precision/recall. | Milestone 2a |
+| **Search quality** | Custom eval harness (`/scripts/eval/search-quality.ts`) | ~58 English + ~30 trilingual queries (golden set). Recall@3, MRR@10, routing accuracy. Six categories. CI regression on search-affecting PRs. DES-058. | Milestone 1a (en), 1b (hi/es) |
 | **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Milestone 3c |
 | **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Milestone 2a |
 | **Visual** | Storybook | Component documentation, design token consistency | Milestone 2a |
