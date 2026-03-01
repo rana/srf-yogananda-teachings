@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Arc 1 Design (Foundation)
 
-> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b/1c) — proving the AI librarian concept (1a, English), extending to bilingual (1b, Spanish), and deploying (1c). For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b/1c) — proving the AI librarian concept (1a, English), extending to bilingual (1b, Spanish), and deploying (1c). For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md).
 >
 > **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation, English only) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 

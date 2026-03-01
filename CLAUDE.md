@@ -13,23 +13,21 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 3. **DESIGN.md** — Cross-cutting architecture, API design, observability, testing, personas, editorial patterns
 4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
 5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
-6. **DESIGN-arc4-plus.md** — Cultural design, email, CMS, magazine, dashboard, study circles, image serving
-7. **DECISIONS.md** — Index and navigational summaries for 126 ADRs across 11 topical groups. ADR bodies split into three files:
+6. **DECISIONS.md** — Index and navigational summaries for 126 ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–053, 114–121, 125–128). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
-8. **ROADMAP.md** — 7 arcs from foundation through community curation at scale, with milestones, deliverables, success criteria, and arc gates
-9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
+7. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
+8. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
 **Arc-gated reading.** Do not read front-to-back. Load what the task requires:
 - **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current arc/milestone
 - **When implementing Arc 1 (Foundation — Milestones 1a/1b/1c):** DESIGN.md (root) + DESIGN-arc1.md + DECISIONS-core.md (ADRs referenced by those sections)
 - **When implementing Arc 2 (Presence — Milestones 2a/2b):** DESIGN.md (root) + DESIGN-arc2-3.md + DESIGN-arc1.md § DES-039 (Infrastructure — cross-cutting) + DECISIONS-core.md + DECISIONS-experience.md
 - **When implementing Arc 3 (Wisdom — Milestones 3a–3d):** DESIGN.md (root) + DESIGN-arc2-3.md + DECISIONS-core.md + DECISIONS-experience.md
-- **When implementing Arc 4+:** DESIGN.md (root) + DESIGN-arc4-plus.md + all DECISIONS files as needed
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
 - **When evaluating proposals or at arc boundaries:** PROPOSALS.md
-- **Not needed for Arc 1:** DESIGN-arc2-3.md, DESIGN-arc4-plus.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
+- **Not needed for Arc 1:** DESIGN-arc2-3.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
 
 ## Ignore
 
@@ -102,16 +100,16 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — 125 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-130 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment. ADR-127 establishes the **Experience Quality Standard** (Principle 3) — every interaction should honor the spirit of the teachings it presents; world-class is the minimum standard. ADR-128 establishes the **Reachable Population** quantitative prioritization framework — scope decisions ordered by `speakers × internet_penetration × content_availability`. When two features are architecturally independent, the one serving more people ships first. Governs ROADMAP.md arc ordering and all future scope tradeoffs. ADR-129 establishes the **Vocabulary Bridge** — five-layer semantic infrastructure (DES-059) mapping human states of being to Yogananda's corpus. Replaces the flat `spiritual-terms.json` terminology bridge with register awareness, retrieval intent routing, avoid-territory filtering, and Opus-generated seed passages. Operates at both index time and query time. ADR-130 establishes the **Recognition-First Information Architecture** — the portal offers before it asks. Today's Wisdom hero, multi-lens entry (search prompt, Wanderer's Path, tradition entry, great questions), Four Doors in secondary nav. Governs DES-006, DES-007, DES-015, PRO-018–020.
+**ADR-NNN** (Architecture Decision Records) — ADRs are current architectural directives, not historical records — git preserves the evolution. 125 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-130 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment. ADR-127 establishes the **Experience Quality Standard** (Principle 3) — every interaction should honor the spirit of the teachings it presents; world-class is the minimum standard. ADR-128 establishes the **Reachable Population** quantitative prioritization framework — scope decisions ordered by `speakers × internet_penetration × content_availability`. When two features are architecturally independent, the one serving more people ships first. Governs ROADMAP.md arc ordering and all future scope tradeoffs. ADR-129 establishes the **Vocabulary Bridge** — five-layer semantic infrastructure (DES-059) mapping human states of being to Yogananda's corpus. Replaces the flat `spiritual-terms.json` terminology bridge with register awareness, retrieval intent routing, avoid-territory filtering, and Opus-generated seed passages. Operates at both index time and query time. ADR-130 establishes the **Recognition-First Information Architecture** — the portal offers before it asks. Today's Wisdom hero, multi-lens entry (search prompt, Wanderer's Path, tradition entry, great questions), Four Doors in secondary nav. Governs DES-006, DES-007, DES-015, PRO-018–020.
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)
 - **Active** — Governing current or imminent implementation. (`Accepted`)
 - **Provisional** — Thorough direction for future arcs. May be revised or suspended. (`Accepted (Provisional — Arc N+)`)
-- **Suspended** — Moved to PROPOSALS.md. Reasoning preserved in ADR body. (`Suspended → PRO-NNN`)
+- **Suspended** — Moved to PROPOSALS.md. ADR body **deleted** from DECISIONS body file; DECISIONS.md index annotated `(Suspended → PRO-NNN)`. PRO entry is the single source of truth. (`Suspended → PRO-NNN`)
 - **Implemented** — Validated through code. (`Implemented — see [code path]`)
 
-**DES-NNN** (Design Sections) — 59 sections (DES-001 through DES-059) split across four files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead.
+**DES-NNN** (Design Sections) — Sections split across three files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Arc 4+ design sections were removed with the DESIGN-arc4-plus.md file — they will be recreated from PROPOSALS.md when those directions are planned.
 
 **PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Milestone refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
 
@@ -139,7 +137,7 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 2 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
@@ -158,7 +156,7 @@ Thirteen documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc file
 | Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
 | Feature idea without an arc | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
 | Feature cut from an arc during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original arc/milestone, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
-| ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). Update ADR status to `Suspended → PRO-NNN`. ADR body stays in DECISIONS file. Update ROADMAP.md § Unscheduled Features summary table. |
+| ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). **Delete** ADR body from DECISIONS body file. Annotate DECISIONS.md index `(Suspended → PRO-NNN)`. Update ROADMAP.md § Unscheduled Features summary table. |
 | README.md details change (ADR count, tech stack, arc structure, feature list) | Update README.md § Documentation list and § Architecture table |
 
 At arc boundaries, reconcile all documents for consistency — personas, roles, workflows, directories, and cross-cutting concerns.

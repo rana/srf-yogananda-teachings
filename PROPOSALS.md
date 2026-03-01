@@ -36,6 +36,14 @@
 | PRO-024 | Editorial Page Compositor — Data-Driven Layout Curation | Feature | Proposed | ADR-130, ADR-082, ADR-079, ADR-095, DES-028, DES-032 | Exploration 2026-02-28 |
 | PRO-025 | Structural Enrichment Tier — Whole-Context AI Understanding for Navigation | Enhancement | Proposed | ADR-115, ADR-117, ADR-014, ADR-129, ADR-130, PRO-020, PRO-022 | Graph navigation exploration 2026-02-28 |
 | PRO-026 | Semantic Cartography — Meaningful Spatial Navigation | Feature | Proposed | ADR-061, ADR-117, ADR-130, PRO-025 | Graph navigation exploration 2026-02-28 |
+| PRO-027 | Design Tooling (Figma + Storybook) | Enhancement | Suspended from ADR-096, DES-040 | ADR-096 | ADR-096 suspension 2026-02-28 |
+| PRO-028 | Cross-Tradition Concordance as Primary Search Lens | Feature | Proposed | ADR-129, ADR-130, ADR-050 | Stakeholder insight 2026-03-01 |
+| PRO-029 | Cross-Media Intelligence — Video, Audio, Chant, Content Hub | Feature | Suspended from ADR-055–060 | ADR-055–060 | Bulk suspension 2026-03-01 |
+| PRO-030 | Sacred Image Management — Watermarking and Multi-Size Serving | Feature | Suspended from ADR-063, ADR-064 | ADR-063, ADR-064 | Bulk suspension 2026-03-01 |
+| PRO-031 | Study & Community Tools — Workspace, Collections, VLD | Feature | Suspended from ADR-083, ADR-086, ADR-087 | ADR-083, ADR-086, ADR-087 | Bulk suspension 2026-03-01 |
+| PRO-032 | Brand Distribution — Dashboard, Email, Social Media | Feature | Suspended from ADR-090, ADR-091, ADR-092 | ADR-090, ADR-091, ADR-092 | Bulk suspension 2026-03-01 |
+| PRO-033 | YSS Locale Branding | Enhancement | Suspended from ADR-079 | ADR-079 | Bulk suspension 2026-03-01 |
+| PRO-034 | Magazine API Rationalization | Enhancement | Suspended from ADR-108 | ADR-108 | Bulk suspension 2026-03-01 |
 
 ---
 
@@ -43,9 +51,9 @@
 
 ### PRO-001: SRF Corpus MCP — Three-Tier Architecture
 
-**Status:** Validated — Awaiting Scheduling
+**Status:** Validated — Awaiting Scheduling (ADR-101 body suspended 2026-03-01)
 **Type:** Feature
-**Governing Refs:** ADR-101, DES-031, ADR-097, ADR-011
+**Governing Refs:** ADR-101 (suspended), DES-031, ADR-097, ADR-011
 **Dependencies:** Tier 1 requires `/lib/services/` operational. Tier 2 requires Milestone 3b editorial portal. Tier 3 requires corpus complete (Milestone 3d+).
 **Scheduling Notes:** Descheduled 2026-02-24 to focus on core delivery. Three tiers: Development (Claude Code corpus search), Internal (editorial AI workflows), External (third-party AI assistants with fidelity metadata). Service layer wrapping — no new business logic. Full architecture preserved in DESIGN-arc1.md § DES-031.
 **Re-evaluate At:** Arc 3 boundary
@@ -53,7 +61,7 @@
 
 ### PRO-002: SRF Lessons Integration
 
-**Status:** Validated — Awaiting Scheduling
+**Status:** Validated — Awaiting Scheduling (ADR-085 body suspended 2026-03-01)
 **Type:** Feature
 **Governing Refs:** ADR-085, ADR-121
 **Dependencies:** Auth0 custom claims, `access_level` content model
@@ -703,6 +711,110 @@ These axes map to seeker intent: someone seeking personal comfort navigates to a
 
 ---
 
+### PRO-027: Design Tooling (Figma + Storybook)
+
+**Status:** Suspended from ADR-096, DES-040
+**Type:** Enhancement
+**Governing Refs:** ADR-096 (deleted), DES-040 (deleted)
+**Suspended:** 2026-02-28
+
+During AI-led development, code is the design artifact — Claude generates components directly, the browser rendering is the design. No external design tool (Figma, Storybook) serves a function when the designer and developer are the same AI. Visual design emerges through code iteration: generate CSS/components from DESIGN.md tokens, render in browser, evaluate, refine.
+
+**Reactivation trigger:** Human designers join the project. When that happens, Figma becomes the upstream design source (Figma → tokens.json → tailwind.config.ts → components). Storybook documents the component library for the human team.
+
+**Decision context preserved:** Figma was chosen over Penpot, Sketch, and Adobe XD for industry familiarity, design token export, and SRF team compatibility. Code-first (no tool) was the alternative considered and is the current active approach. If human designers never join, this PRO remains suspended indefinitely.
+
+**Origin:** ADR-096 suspension 2026-02-28 — AI-led project has no design team; tools add overhead without consumers.
+
+### PRO-028: Cross-Tradition Concordance as Primary Search Lens
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-129 (Vocabulary Bridge), ADR-130 (Recognition-First IA), ADR-050 (Related Teachings)
+**Dependencies:** Theme taxonomy, Vocabulary Bridge cross-tradition synonym pairs, Scripture-in-Dialogue (3c.5)
+
+Yogananda's core vision: demonstrating the underlying unity of Christ's and Krishna's teachings. This is not a secondary feature — it is central to his literary output. *The Second Coming of Christ* and *God Talks With Arjuna* are full-length treatments of this concordance. The *Autobiography* weaves Bible↔Gita parallels throughout.
+
+**Search lenses this enables:**
+- "How did Christ and Krishna agree on...?" — surfaces passages where Yogananda himself draws the parallel
+- "I don't understand Christianity/Hinduism/spirituality..." — routes to Yogananda's explanation of that tradition
+- Cross-tradition vocabulary: salvation/moksha, Holy Ghost/AUM, baptism/initiation, Christ Consciousness/Kutastha Chaitanya
+
+**Architectural touchpoints:** ADR-129 (Vocabulary Bridge) handles cross-tradition synonym pairs. ADR-130 (Recognition-First IA) includes "tradition entry" as a homepage lens. Scripture-in-Dialogue (Milestone 3c.5) handles structured verse-level Gita↔Gospel linking. Theme taxonomy should elevate "Christ-Krishna concordance" as a first-class theme.
+
+**Constraint (Principle 1):** The portal surfaces Yogananda's own concordances — it never synthesizes new ones. Every result traces back to a specific passage where he draws the parallel.
+
+**Re-evaluate At:** Milestone 1a.8 (search quality evaluation — test cross-tradition queries), Milestone 3c planning
+**Decision Required From:** Architecture + search quality evaluation
+
+### PRO-029: Cross-Media Intelligence — Video, Audio, Chant, Content Hub
+
+**Status:** Suspended from ADR-055, ADR-056, ADR-057, ADR-058, ADR-059, ADR-060
+**Type:** Feature
+**Suspended:** 2026-03-01
+
+Video transcript time-syncing, platform-agnostic video model, audio ingestion and cross-media search, AI audio generation policy, chant reader with deterministic cross-media linking, and unified content hub. Basic YouTube video display (RSS + API, ADR-054) remains active for Milestone 2a. These six ADRs govern the deeper cross-media intelligence layer.
+
+**Reactivation trigger:** Arc 3 boundary, when cross-media search scope is defined.
+**Re-evaluate At:** Arc 3 boundary
+
+### PRO-030: Sacred Image Management — Watermarking and Multi-Size Serving
+
+**Status:** Suspended from ADR-063, ADR-064
+**Type:** Feature
+**Suspended:** 2026-03-01
+
+Digital watermarking (C2PA Content Credentials) for sacred images and multi-size image serving with WebP + JPEG downloads. ADR-035 (Image Content Type) and ADR-042 (Sacred Image Guidelines) remain active — they govern how images are treated, not how they're served at scale.
+
+**Reactivation trigger:** Image content pipeline built (Arc 3+).
+**Re-evaluate At:** Arc 3 boundary
+
+### PRO-031: Study & Community Tools — Workspace, Collections, VLD
+
+**Status:** Suspended from ADR-083, ADR-086, ADR-087
+**Type:** Feature
+**Suspended:** 2026-03-01
+
+Study Workspace (personal passage collection without auth), Community Collections (four-tier visibility: private → shared → published → featured), and VLD Editorial Delegation (volunteer curation pipeline). DESIGN.md § Community Collections section also removed.
+
+**Reactivation trigger:** Post-Arc 3 planning, when study tool scope is defined.
+**Re-evaluate At:** Post-Arc 3 boundary
+
+### PRO-032: Brand Distribution — Dashboard, Email, Social Media
+
+**Status:** Suspended from ADR-090, ADR-091, ADR-092
+**Type:** Feature
+**Suspended:** 2026-03-01
+
+"What Is Humanity Seeking?" anonymized search intelligence dashboard, daily email with verbatim passage delivery, and social media strategy with portal-generated assets. Distribution channels beyond the portal itself.
+
+**Reactivation trigger:** Post-Arc 3 planning, when distribution scope is defined.
+**Re-evaluate At:** Post-Arc 3 boundary
+
+### PRO-033: YSS Locale Branding
+
+**Status:** Suspended from ADR-079
+**Type:** Enhancement
+**Suspended:** 2026-03-01
+
+YSS organizational branding and locale strategy for Hindi/Bengali/Thai locales. The Yogoda Satsanga Society (YSS) is SRF's Indian counterpart — branding, logos, and organizational identity differ for these locales.
+
+**Reactivation trigger:** Hindi content activation (Milestone 5b when authorized YSS source becomes available).
+**Re-evaluate At:** Milestone 5b planning
+
+### PRO-034: Magazine API Rationalization
+
+**Status:** Suspended from ADR-108
+**Type:** Enhancement
+**Suspended:** 2026-03-01
+
+Magazine API design — flat resources, single-segment slugs. Governs how Self-Realization Magazine articles integrate into the portal's API surface.
+
+**Reactivation trigger:** Magazine integration planning (post-Arc 3).
+**Re-evaluate At:** Post-Arc 3 boundary
+
+---
+
 ## Graduation Protocol
 
 Proposals move through tiers based on evaluation and stakeholder decisions. The AI may recommend graduation or omission; the human principal decides.
@@ -718,8 +830,8 @@ Exploration (.elmer/proposals/)
 
 ADR-NNN (DECISIONS-*.md, Status: Provisional or Active)
   → suspension decision → PRO-NNN (this file, Status: Suspended from ADR-NNN)
-    → ADR body preserved in DECISIONS-*.md with Status: Suspended → PRO-NNN
-    → re-evaluation at arc boundary may restore to Active
+    → ADR body deleted from DECISIONS-*.md; index annotated (Suspended → PRO-NNN)
+    → re-evaluation at arc boundary may restore to Active (recreate ADR body from PRO)
 ```
 
 ### Tier Definitions
@@ -769,10 +881,10 @@ Raw explorations in `.elmer/proposals/` are unvetted AI ideation. They enter thi
 
 When an existing ADR or DES section is suspended (moved to unscheduled):
 
-1. Create a PRO-NNN entry with `Status: Suspended from ADR-NNN` (or DES-NNN)
-2. Update the ADR/DES status to `Suspended → PRO-NNN`
-3. The ADR/DES body stays in its original file — the reasoning is valuable. Only the status changes.
-4. The PRO entry handles the scheduling lifecycle: re-evaluation timing, dependencies, stakeholder decisions.
+1. Create a PRO-NNN entry with `Status: Suspended from ADR-NNN` (or DES-NNN). Preserve any reasoning worth keeping in the PRO body.
+2. **Delete** the ADR/DES body from its DECISIONS/DESIGN file. No stubs — clean deletion.
+3. Annotate the DECISIONS.md index entry: `(Suspended → PRO-NNN)`.
+4. The PRO entry is the single source of truth for suspended decisions — handles reasoning, reactivation triggers, and scheduling lifecycle.
 
 ---
 

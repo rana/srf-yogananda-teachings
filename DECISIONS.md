@@ -96,19 +96,19 @@ Governs how seekers find passages and how AI assists retrieval. Pure hybrid sear
 
 **Cross-Media**
 
-Decides how video, audio, image, and cross-media content integrate into the portal. YouTube videos use hybrid RSS + API ingestion; transcripts are time-synced for passage-level linking; the video model is platform-agnostic to support future migration. Audio gets its own section with cross-media search; AI-generated audio is policy-controlled. The knowledge graph evolves to treat all content types as nodes, with visualization, digital watermarking for SRF images, and multi-size image serving.
+Decides how video, audio, image, and cross-media content integrate into the portal. YouTube videos use hybrid RSS + API ingestion (ADR-054). The knowledge graph evolves to treat all content types as nodes (ADR-062), with visualization (ADR-061). Six cross-media intelligence ADRs (transcript sync, platform-agnostic video, audio search, AI audio, chant reader, unified content hub) and two sacred image ADRs (watermarking, multi-size serving) are suspended to PRO-029 and PRO-030 respectively — thorough thinking preserved for future activation.
 
 - ADR-054: YouTube Integration via Hybrid RSS + API with ISR
-- ADR-055: Video Transcript Time-Synced Architecture
-- ADR-056: Platform-Agnostic Video Model and Documentary Integration
-- ADR-057: Audio and Cross-Media Audio Search
-- ADR-058: AI Audio Generation for Portal Audio Assets
-- ADR-059: Chant Reader — Devotional Poetry with Deterministic Cross-Media Linking
-- ADR-060: Unified Content Hub — Cross-Media Relations, Search, and Theming
+- ADR-055: Video Transcript Time-Synced Architecture *(Suspended → PRO-029)*
+- ADR-056: Platform-Agnostic Video Model and Documentary Integration *(Suspended → PRO-029)*
+- ADR-057: Audio and Cross-Media Audio Search *(Suspended → PRO-029)*
+- ADR-058: AI Audio Generation for Portal Audio Assets *(Suspended → PRO-029)*
+- ADR-059: Chant Reader — Devotional Poetry with Deterministic Cross-Media Linking *(Suspended → PRO-029)*
+- ADR-060: Unified Content Hub — Cross-Media Relations, Search, and Theming *(Suspended → PRO-029)*
 - ADR-061: Knowledge Graph Visualization
 - ADR-062: Knowledge Graph Cross-Media Evolution — All Content Types as Graph Nodes
-- ADR-063: Digital Watermarking Strategy for SRF Images
-- ADR-064: Multi-Size Image Serving and Download Options
+- ADR-063: Digital Watermarking Strategy for SRF Images *(Suspended → PRO-030)*
+- ADR-064: Multi-Size Image Serving and Download Options *(Suspended → PRO-030)*
 
 **Seeker Experience**
 
@@ -129,59 +129,59 @@ Shapes how the portal feels and behaves for readers. The design system derives f
 
 **Internationalization**
 
-Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages (en, de, es, fr, it, pt, ja, th, hi, bn) ordered by reachable population (ADR-128); Hindi and Spanish are Tier 1 priorities activated alongside English from Arc 1. AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; YSS branding is locale-aware; content is machine-readable for AI citation with full crawler support. Content gating (DRM, FlipBook) is architecturally prohibited (§3a); `ai.txt` provides machine-parseable AI permissions (§3b); copyright asserted through metadata and legal layers, not technology walls.
+Architects the portal for worldwide multilingual access from the foundation up. Three-layer localization separates UI strings, content translations, and locale-specific formatting; CSS uses logical properties from Milestone 2a for RTL readiness. The core language set defines 10 languages ordered by reachable population (ADR-128); Spanish is Tier 1 (Arc 1), Hindi is Tier 1 deferred (Milestone 5b). AI-assisted translation is permitted for UI and editorial text but never for Yogananda's words — only official SRF/YSS translations. Sanskrit display is normalized for search; content is machine-readable for AI citation with full crawler support. Content gating (DRM, FlipBook) is architecturally prohibited; `ai.txt` provides machine-parseable AI permissions; copyright asserted through metadata and legal layers, not technology walls. YSS branding and locale strategy (ADR-079) is suspended to PRO-033.
 
 - ADR-075: Multi-Language Architecture — Three-Layer Localization
 - ADR-076: CSS Logical Properties
 - ADR-077: Core Language Set and Priority Ordering
 - ADR-078: AI-Assisted Translation Workflow
-- ADR-079: YSS Organizational Branding and Locale Strategy
+- ADR-079: YSS Organizational Branding and Locale Strategy *(Suspended → PRO-033)*
 - ADR-080: Sanskrit Display, Search Normalization, and Devanāgarī Typography
 - ADR-081: Machine-Readable Content and AI Citation Strategy
 
 **Staff & Community**
 
-Defines editorial tools and community participation features. Staff get a five-layer editorial system (from bulk operations to AI-assisted enrichment); seekers get a study workspace with universal teaching tools that require no authentication. Feedback is DELTA-compliant (no user profiling), lessons integration is designed for future readiness, community collections use tiered visibility for public curation, and VLD editorial delegation enables a volunteer curation pipeline.
+Defines editorial tools and community participation features. Staff get a five-layer editorial system (ADR-082); feedback is DELTA-compliant with no user profiling (ADR-084). Study workspace (ADR-083), lessons integration (ADR-085), community collections (ADR-086), and VLD editorial delegation (ADR-087) are suspended to PRO-031 and PRO-002 — preserved for future activation.
 
 - ADR-082: Staff Experience Architecture — Five-Layer Editorial System
-- ADR-083: Study Workspace — Universal Teaching Tools Without Authentication
+- ADR-083: Study Workspace — Universal Teaching Tools Without Authentication *(Suspended → PRO-031)*
 - ADR-084: DELTA-Compliant Seeker Feedback Mechanism
-- ADR-085: Lessons Integration Readiness
-- ADR-086: Community Collections — Tiered Visibility Public Curation
-- ADR-087: VLD Editorial Delegation — Volunteer Curation Pipeline
+- ADR-085: Lessons Integration Readiness *(Suspended → PRO-002)*
+- ADR-086: Community Collections — Tiered Visibility Public Curation *(Suspended → PRO-031)*
+- ADR-087: VLD Editorial Delegation — Volunteer Curation Pipeline *(Suspended → PRO-031)*
 
 **Brand & Communications**
 
-Governs the portal's public identity and outreach channels. SRF imagery follows specific usage guidelines; the AI search feature is branded as "The Librarian" to reinforce the non-oracle role; "What Is Humanity Seeking?" repurposes anonymized search intelligence as a communications asset. Distribution includes daily email with verbatim passage delivery, social media with portal-generated assets and human distribution, and a seeker-facing changelog for portal updates.
+Governs the portal's public identity and outreach channels. SRF imagery follows specific usage guidelines (ADR-088); the AI search feature is branded as "The Librarian" to reinforce the non-oracle role (ADR-089); a seeker-facing changelog communicates portal updates (ADR-105). Three distribution ADRs ("What Is Humanity Seeking?" communications, daily email, social media) are suspended to PRO-032 — preserved for future activation.
 
 - ADR-088: SRF Imagery Strategy in the Portal
 - ADR-089: "The Librarian" — AI Search Brand Identity
-- ADR-090: "What Is Humanity Seeking?" as Strategic Communications Asset
-- ADR-091: Daily Email — Verbatim Passage Delivery
-- ADR-092: Social Media Strategy — Portal-Generated Assets, Human Distribution
+- ADR-090: "What Is Humanity Seeking?" as Strategic Communications Asset *(Suspended → PRO-032)*
+- ADR-091: Daily Email — Verbatim Passage Delivery *(Suspended → PRO-032)*
+- ADR-092: Social Media Strategy — Portal-Generated Assets, Human Distribution *(Suspended → PRO-032)*
 - ADR-105: Portal Updates — Seeker-Facing Changelog
 
 **Operations & Engineering**
 
-Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end with Neon branch-per-PR isolation and schema diff in CI; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. Neon platform governance (ADR-124) covers PostgreSQL version selection (PG18), tier selection, compute configuration, branch lifecycle, extension management, UUIDv7 schema convention, and database observability. Secrets management (ADR-125) and Vercel OIDC (ADR-126) are in the Architecture group (DECISIONS-core.md). MCP servers provide three-tier corpus access (development, internal editorial, external distribution). Also covers AI editorial workflow maturity with trust graduation, outbound webhooks for push-based syndication, timestamp filtering for incremental sync, and cross-API route rationalization for consistent identifiers.
+Specifies how the portal is built, tested, and monitored. Engineering standards cover code quality and review; testing strategy spans unit through end-to-end with Neon branch-per-PR isolation and schema diff in CI; observability uses Sentry plus structured JSON logging with Amplitude for DELTA-compliant analytics. Neon platform governance (ADR-124) covers PostgreSQL version selection (PG18), tier selection, compute configuration, branch lifecycle, extension management, UUIDv7 schema convention, and database observability. Secrets management (ADR-125) and Vercel OIDC (ADR-126) are in the Architecture group (DECISIONS-core.md). MCP development tooling (ADR-097), AI editorial workflow maturity with trust graduation (ADR-100), outbound webhooks (ADR-106), timestamp filtering (ADR-107), and cross-API route rationalization (ADR-109). Three suspended ADRs: Figma tooling (PRO-027), SRF Corpus MCP (PRO-001), and magazine API rationalization (PRO-034).
 
 - ADR-093: Engineering Standards for SRF Projects
 - ADR-094: Testing Strategy
 - ADR-095: Observability Strategy
-- ADR-096: Design Tooling — Figma
+- ADR-096: Design Tooling — Figma *(Suspended → PRO-027)*
 - ADR-097: MCP Server Strategy — Development Tooling for AI Implementation
 - ADR-100: AI Editorial Workflow Maturity — Trust Graduation and Feedback Loops
-- ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External
+- ADR-101: MCP as Three-Tier Corpus Access Layer — Development, Internal, and External *(Suspended → PRO-001)*
 - ADR-106: Outbound Webhook Events — Push-Based Content Syndication
 - ADR-107: Timestamp Filtering on List Endpoints — Incremental Sync for Automation Consumers
-- ADR-108: Magazine API Rationalization — Flat Resources, Single-Segment Slugs
+- ADR-108: Magazine API Rationalization — Flat Resources, Single-Segment Slugs *(Suspended → PRO-034)*
 - ADR-109: Cross-API Route Rationalization — Consistent Identifiers, Consolidated Namespaces, Complete CRUD
 
 **Governance**
 
-Controls how the project governs its own decisions, documents, and evolution. The thirteen-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 3 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with arc-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+Controls how the project governs its own decisions, documents, and evolution. The twelve-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 2 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with arc-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Thirteen-Document System with Arc/Milestone-Gated Loading
+- ADR-098: Documentation Architecture — Twelve-Document System with Arc/Milestone-Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination

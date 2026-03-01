@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Technical Design
 
-> **Navigation guide.** The design is split across four files by arc scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives.
+> **Navigation guide.** The design is split across three files by arc scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives. Arc 4+ design sections were removed — they will be recreated from PROPOSALS.md when those directions are planned.
 >
 > **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
@@ -25,7 +25,6 @@
 | &emsp;[DES-015: Self-Revealing Navigation](DESIGN-arc2-3.md#des-015-self-revealing-navigation) | 2a+ | DESIGN-arc2-3.md |
 | &emsp;[DES-016: Lotus as Unified Visual Motif](DESIGN-arc2-3.md#des-016-lotus-as-unified-visual-motif) | 2a+ | DESIGN-arc2-3.md |
 | [DES-017: Multi-Language Strategy](DESIGN-arc2-3.md#des-017-multi-language-strategy) | 2a (infra), 5b (content) | DESIGN-arc2-3.md |
-| [DES-018: Cultural Design Considerations](DESIGN-arc4-plus.md#des-018-cultural-design-considerations) | 5b+ | DESIGN-arc4-plus.md |
 | [DES-019: API Design (Next.js API Routes)](#des-019-api-design-nextjs-api-routes) | 1+ | DESIGN.md |
 | [DES-020: Platform Parity (Mobile Readiness)](DESIGN-arc2-3.md#des-020-platform-parity-mobile-readiness) | 2a+ | DESIGN-arc2-3.md |
 | [DES-021: YouTube Video Section Architecture](DESIGN-arc2-3.md#des-021-youtube-video-section-architecture) | 2a+ | DESIGN-arc2-3.md |
@@ -40,10 +39,8 @@
 | &emsp;[Semantic Density Classification](DESIGN-arc1.md#semantic-density-classification) | 3a+ | DESIGN-arc1.md |
 | &emsp;[ADR-039 ext: Corpus Stylometric Fingerprint](DESIGN-arc1.md#adr-039-ext-corpus-stylometric-fingerprint) | 3d+ | DESIGN-arc1.md |
 | [DES-029: The Quiet Index — Browsable Contemplative Taxonomy](#des-029-the-quiet-index-browsable-contemplative-taxonomy) | 3b+ | DESIGN.md |
-| [DES-030: Daily Email: Verbatim Passage Delivery](DESIGN-arc4-plus.md#des-030-daily-email-verbatim-passage-delivery) | 5a+ | DESIGN-arc4-plus.md |
 | [ADR-084: DELTA-Compliant Seeker Feedback Mechanism](#adr-084-delta-compliant-seeker-feedback-mechanism) | 3b+ | DESIGN.md |
 | [DES-031: MCP Server Strategy](DESIGN-arc1.md#des-031-mcp-server-strategy) | 1+ | DESIGN-arc1.md |
-| [DES-032: Content Management Strategy](DESIGN-arc4-plus.md#des-032-content-management-strategy) | 4+ | DESIGN-arc4-plus.md |
 | [ADR-082: Staff Experience Architecture — Five-Layer Editorial System](DESIGN-arc2-3.md#adr-082-staff-experience-architecture--five-layer-editorial-system) | 3b+ | DESIGN-arc2-3.md |
 | [DES-033: Unified Review Queue Abstraction](#des-033-unified-review-queue-abstraction) | 3b+ | DESIGN.md |
 | [DES-034: Content Lifecycle Management](#des-034-content-lifecycle-management) | 3b+ | DESIGN.md |
@@ -54,18 +51,12 @@
 | [DES-038: Testing Strategy](#des-038-testing-strategy) | 1+ | DESIGN.md |
 | [DES-057: Error Handling and Resilience](#des-057-error-handling-and-resilience) | 1+ | DESIGN.md |
 | [DES-039: Infrastructure and Deployment](DESIGN-arc1.md#des-039-infrastructure-and-deployment) | 1 | DESIGN-arc1.md |
-| [DES-040: Design Tooling](DESIGN-arc2-3.md#des-040-design-tooling) | 2a+ | DESIGN-arc2-3.md |
-| [DES-041: Magazine Section Architecture](DESIGN-arc4-plus.md#des-041-magazine-section-architecture) | 3d+ | DESIGN-arc4-plus.md |
 | [DES-042: Glossary Architecture](DESIGN-arc2-3.md#des-042-glossary-architecture) | 3b+ | DESIGN-arc2-3.md |
-| [DES-043: "What Is Humanity Seeking?" Dashboard Architecture](DESIGN-arc4-plus.md#des-043-what-is-humanity-seeking-dashboard-architecture) | 3d+ | DESIGN-arc4-plus.md |
 | [DES-044: Additional New UI Pages](DESIGN-arc2-3.md#des-044-additional-new-ui-pages) | 2a+ | DESIGN-arc2-3.md |
 | &emsp;[DES-045: `/journeys` — Calendar Reading Journeys](DESIGN-arc2-3.md#des-045-journeys-calendar-reading-journeys) | 3b+ | DESIGN-arc2-3.md |
-| &emsp;[DES-046: Study Circle Sharing](DESIGN-arc4-plus.md#des-046-study-circle-sharing) | 7b+ | DESIGN-arc4-plus.md |
 | &emsp;[DES-047: `/browse` — The Complete Index](DESIGN-arc2-3.md#des-047-browse-the-complete-index) | 2a+ | DESIGN-arc2-3.md |
 | &emsp;[DES-048: `/guide` — The Spiritual Guide](DESIGN-arc2-3.md#des-048-guide-the-spiritual-guide) | 3b+ | DESIGN-arc2-3.md |
 | [DES-049: Responsive Design Strategy](DESIGN-arc2-3.md#des-049-responsive-design-strategy) | 2a+ | DESIGN-arc2-3.md |
-| [ADR-086, ADR-087: Community Collections — Public Curation](#adr-086-adr-087-community-collections-public-curation) | 4, 7b | DESIGN.md |
-| [ADR-035, ADR-063, ADR-064: Image Serving Architecture](DESIGN-arc4-plus.md#adr-035-adr-063-adr-064-image-serving-architecture) | 3d+ | DESIGN-arc4-plus.md |
 | [DES-050: Seeker & User Persona Index](#des-050-seeker--user-persona-index) | — | DESIGN.md |
 | [DES-051: Portal Updates Page — "The Library Notice Board"](DESIGN-arc2-3.md#des-051-portal-updates-page-the-library-notice-board) | 3b+ | DESIGN-arc2-3.md |
 | [DES-052: Outbound Webhook Event System](DESIGN-arc2-3.md#des-052-outbound-webhook-event-system) | 3b+ | DESIGN-arc2-3.md |
@@ -1828,7 +1819,7 @@ These proportions are guidelines, not gates — the important thing is that most
 | **Search quality** | Custom eval harness (`/scripts/eval/search-quality.ts`) | ~58 English + ~15 Spanish queries (golden set). Recall@3, MRR@10, routing accuracy. Six categories. CI regression on search-affecting PRs. DES-058. | Milestone 1a (en), 1b (es) |
 | **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Milestone 3c |
 | **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Milestone 2a |
-| **Visual** | Storybook | Component documentation, design token consistency | Milestone 2a |
+| **Visual** | Browser rendering (code-first) | Design emerges through code iteration; browser is the design artifact | Arc 1+ |
 | **Visual regression** | Playwright screenshot comparison | Catch unintended visual changes | Arc 5 |
 
 ### Database Test Isolation via Neon Branching
@@ -1946,114 +1937,6 @@ The ingestion pipeline (DES-005) processes chunks individually. A failure on one
 - The pipeline produces a summary report: N chunks processed, M failures, failure types
 
 *Section added: 2026-02-26, compose chain gap analysis (DES-057).*
-
----
-
-## ADR-086, ADR-087: Community Collections — Public Curation
-
-The Study Workspace (ADR-083) enables personal passage collection. Community Collections extend this with a publish path: personal → shared → reviewed → public.
-
-### Four-Tier Visibility
-
-| Tier | Audience | Review | Milestone |
-|------|----------|--------|-----------|
-| **Private** | Creator only | None | Arc 4 (existing Study Workspace) |
-| **Shared link** | Anyone with URL | None | Arc 4 |
-| **Published** | Everyone (gallery) | Staff review required | 7b |
-| **Featured** | Everyone (prominent) | Staff-promoted | 7b |
-
-**Shared link** is the workhorse for study circles: a center leader curates a reading plan in the Study Workspace, clicks "Share," and gets a URL to send via WhatsApp or email. No account required. No staff review needed — the content is already-public SRF text. The page carries a note: *"This collection was curated by a community member, not by SRF."*
-
-**Published** collections enter a staff review queue in the admin portal (extending ADR-082). Review evaluates theological coherence, citation completeness, and curation quality. The pipeline mirrors ADR-032: `submitted` → review → `published` or `rejected` with feedback.
-
-### Collection Types
-
-| Type | Description | Example |
-|------|-------------|---------|
-| `theme` | Passages around a spiritual theme | "Yogananda on Divine Friendship" |
-| `study_guide` | Structured reading plan with sections | "12-Week Autobiography Journey" |
-| `situational` | Passages for a life moment | "For When You're Grieving" |
-| `event` | Passages for an SRF calendar event | "Mahasamadhi Readings" |
-| `cross_media` | Passages paired with talks/articles | "The Gita: Book and Lecture" |
-
-### Schema Extension (extends ADR-083 tables)
-
-```sql
-ALTER TABLE study_outlines ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'
- CHECK (visibility IN ('private', 'shared_link', 'published', 'featured'));
-ALTER TABLE study_outlines ADD COLUMN share_hash TEXT UNIQUE;
-ALTER TABLE study_outlines ADD COLUMN collection_type TEXT
- CHECK (collection_type IN ('theme', 'study_guide', 'situational', 'event', 'cross_media'));
-ALTER TABLE study_outlines ADD COLUMN submitted_at TIMESTAMPTZ;
-ALTER TABLE study_outlines ADD COLUMN reviewed_by TEXT;
-ALTER TABLE study_outlines ADD COLUMN reviewed_at TIMESTAMPTZ;
-ALTER TABLE study_outlines ADD COLUMN review_notes TEXT;
-ALTER TABLE study_outlines ADD COLUMN curator_display_name TEXT;
-ALTER TABLE study_outlines ADD COLUMN language TEXT DEFAULT 'en';
-```
-
-### Routes
-
-| Route | Purpose | Auth |
-|-------|---------|------|
-| `/collections` | Gallery of published/featured collections. Filter by type, theme, language. | Public |
-| `/collections/[share-hash]` | Single collection view (shared-link, published, or featured) | Public |
-| `/study` | Study Workspace (existing). "Share" and "Submit" buttons for server-synced collections. | Public (Milestone 7a for server sync) |
-
-### Gallery Page (`/collections`)
-
-The gallery presents published community collections with filtering:
-
-- **Filter by type:** theme, study guide, situational, event, cross-media
-- **Filter by language:** follows portal's multilingual strategy
-- **Sort by:** newest, type, book (alphabetical)
-- **No engagement metrics.** No view counts, no likes, no popularity rankings. DELTA compliance (ADR-095) extends to community features. Quality is signaled through the "Featured" tier (staff-promoted), not community voting.
-
-### Admin Portal Review Queue (extends ADR-082)
-
-Community collection submissions appear in the admin portal alongside theme tag review and other editorial queues:
-
-- Display: collection title, curator name, passage count, collection type
-- Preview: full collection view with all passages and personal notes
-- Actions: Approve, Reject (with feedback), Request Revision
-- Keyboard-driven: same patterns as theme tag review (`a` approve, `r` reject, `→` next)
-
-### ADR-087: VLD Curation Pipeline
-
-VLD members access a dedicated section in the admin portal (Auth0 role: `vld`):
-
-```sql
-CREATE TABLE curation_briefs (
- id UUID PRIMARY KEY DEFAULT uuidv7(),
- title TEXT NOT NULL,
- description TEXT NOT NULL,
- collection_type TEXT NOT NULL,
- target_language TEXT DEFAULT 'en',
- created_by TEXT NOT NULL,
- claimed_by TEXT,
- claimed_at TIMESTAMPTZ,
- submitted_at TIMESTAMPTZ,
- status TEXT DEFAULT 'open'
- CHECK (status IN ('open', 'claimed', 'submitted', 'approved', 'revision_requested')),
- deadline TIMESTAMPTZ,
- created_at TIMESTAMPTZ DEFAULT now
-);
-```
-
-**Workflow:** Staff creates brief ("We need a collection on friendship for July") → VLD member claims → curates in Study Workspace → submits → staff reviews → published.
-
-**Trusted submitter status:** After a threshold of approved collections (TBD, likely 3–5), VLD members' submissions enter a lighter review queue (batch-approve). Not auto-publishing — every collection passes through staff eyes — but review effort scales sublinearly.
-
-### Content Integrity
-
-- Collections arrange existing corpus content. No new content is created.
-- Personal notes are visually distinct: smaller font, different background, prefixed with curator name. Never presented as Yogananda's words.
-- Shared and published collections retain full citations (book, chapter, page) on every passage.
-- The portal does not host user-generated prose, commentary, or interpretation. Collections are selection and sequence.
-
-### Service File
-
-`/lib/services/collections.ts` — collection queries, visibility management, share hash generation, submission pipeline, gallery filtering.
 
 ---
 

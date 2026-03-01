@@ -70,17 +70,14 @@ Business logic lives in `/lib/services/` (framework-agnostic TypeScript). A thre
 
 ## Roadmap
 
-The project is planned across 7 thematic arcs, each delivering a coherent narrative increment. Consolidated from 15 capability-themed phases for stakeholder clarity and spiritual narrative coherence.
+3 planned arcs with detailed milestones. Beyond Arc 3, aspirational directions (Service, Languages, Distribution, Media, Community) are shaped at arc boundaries — not years in advance.
 
 | Arc | Theme | Focus |
 |-----|-------|-------|
-| **1: Foundation** | Proving the Light | Ingest one book in 2 languages (en/es), prove bilingual semantic search, deploy with AI librarian (Milestones 1a/1b) |
+| **1: Foundation** | Proving the Light | Ingest one book in 2 languages (en/es), prove bilingual semantic search, deploy with AI librarian (Milestones 1a/1b/1c) |
 | **2: Presence** | The Living Library | All pages, reading experience, accessibility, design system, PWA (Milestones 2a/2b) |
 | **3: Wisdom** | Expanding Understanding | Multi-book catalog, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
-| **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |
-| **5: Reach** | Every Seeker, Everywhere | Email, social, messaging, regional distribution, 10 languages (Milestones 5a/5b) |
-| **6: Media** | All Paths to Truth | Video, audio, images, cross-media hub, Cosmic Chants |
-| **7: Community** | Shared Journey | Optional accounts, events, study circles, VLD curation (Milestones 7a/7b) |
+| **Future** | Directions | Service, Languages, Distribution, Media, Community — planned at arc boundaries |
 
 ## How This Project Works
 
@@ -90,7 +87,7 @@ This portal is designed and implemented through AI-human collaboration using [Cl
 
 - [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints
-- [DESIGN.md](DESIGN.md) — Technical architecture across four files by arc scope
-- [DECISIONS.md](DECISIONS.md) — 124 Architecture Decision Records across three files by concern
+- [DESIGN.md](DESIGN.md) — Technical architecture across three files by arc scope
+- [DECISIONS.md](DECISIONS.md) — Architecture Decision Records across three files by concern
 - [PROPOSALS.md](PROPOSALS.md) — Proposal registry for features awaiting scheduling
-- [ROADMAP.md](ROADMAP.md) — 7 arcs with milestones, deliverables, and arc gates
+- [ROADMAP.md](ROADMAP.md) — 3 planned arcs with milestones, deliverables, and arc gates

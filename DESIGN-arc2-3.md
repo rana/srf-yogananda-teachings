@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Arcs 2–3 Design (Presence + Wisdom)
 
-> **Scope.** This file contains the technical design sections relevant to **Arc 2: Presence** (Milestones 2a/2b) and **Arc 3: Wisdom** (Milestones 3a–3d) — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 2: Presence** (Milestones 2a/2b) and **Arc 3: Wisdom** (Milestones 3a–3d) — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md).
 >
 > **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
@@ -3056,70 +3056,6 @@ Business logic lives in `/lib/services/` (consistent with ADR-011). The admin ro
 | **7b** | VLD dashboard, curation briefs, trusted submitter workflow. VLD expansion to translation, theme tag, feedback, and QA tiers (as VLD capacity and SRF governance allow). |
 
 ---
-
-## DES-040: Design Tooling
-
-The portal uses a **code-first design process** during AI-led arcs, with Figma as a collaboration mirror. See ADR-096.
-
-### Arcs 1–5: Code-First (AI-Led)
-
-Design emerges through code iteration: generate CSS/components from DESIGN.md tokens, render in browser and Storybook, evaluate, refine. The browser rendering is the design artifact.
-
-```
-DESIGN.md specs (source of truth)
- │
- ▼
- Claude generates components + tokens.json
- │
- ▼
- tailwind.config.ts imports tokens
- │
- ▼
- Components rendered in browser + Storybook (Milestone 1c+)
- │
- ▼
- Figma updated from tokens.json (collaboration mirror, Milestone 2a)
-```
-
-Three Figma design files document the core screens *after* they exist in code:
-
-| File | Screens |
-|------|---------|
-| **Portal — Home & Search** | Homepage (Today's Wisdom, search bar, theme doors, videos), search results, passage share view |
-| **Portal — Reader & Content** | Book reader, chapter navigation, Sacred Places, Events, About |
-| **Portal — Quiet & Utility** | Quiet Corner, error states, email subscription flow, language selector |
-
-### Human Designers Active: Figma-First
-
-When human designers join, the pipeline inverts. Figma becomes the upstream source:
-
-```
-Figma design tokens (via Figma Tokens plugin)
- │
- ▼
- tokens.json (committed to repo)
- │
- ▼
- tailwind.config.ts imports tokens
- │
- ▼
- Components use Tailwind classes
- │
- ▼
- Storybook documents components
-```
-
-Changes to design tokens in Figma propagate to `tokens.json`, which updates `tailwind.config.ts`, which is reflected in all components. The design language stays synchronized between design and code.
-
-### Calm Technology Design System
-
-When the shared component library begins, Figma Professional ($15/editor/month) enables:
-- Shared component library with variants
-- Design system documentation alongside Storybook
-- Branching for design exploration
-- Multi-property reuse (portal, convocation site, future SRF projects)
-
-*Section revised: 2026-02-23, code-first design process for AI-led arcs (ADR-096 revision).*
 
 ---
 

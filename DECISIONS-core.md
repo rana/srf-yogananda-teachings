@@ -229,7 +229,6 @@ Design for **graceful evolution** over a 10-year horizon. The architecture prior
 | Auth0 | Acquired by Okta. Pricing trajectory. | Standard OAuth 2.0 / OIDC. Any identity provider implements the same protocols. |
 | Claude API | Anthropic's product direction. AI market evolution. | Stateless usage (query expansion, passage ranking). Prompts in service layer. Swap to any LLM. |
 | Amplitude | Analytics tool churn. | DELTA allowlist = ~5 events. Trivial to migrate to any analytics tool. |
-| Figma | Design tool competition. | Design tokens export to `tokens.json`. The tokens are the durable artifact. |
 
 #### The Five Longevity Guarantees
 
@@ -581,12 +580,12 @@ In Sub-Saharan Africa, South Asia, and Southeast Asia, mobile data is not unlimi
 
 #### 2. Device Spectrum
 
-Not all seekers have smartphones. KaiOS (JioPhone, Nokia feature phones) runs a basic browser with limited JavaScript support. Approximately 100M+ KaiOS devices are in active use, primarily in India — exactly the audience SRF/YSS serves.
+Not all seekers have smartphones. KaiOS (JioPhone, Nokia feature phones) runs a basic browser with limited JavaScript support.
 
 **Commitments:**
 - **Progressive enhancement is mandatory, not optional.** The reading experience (book text, chapter navigation, search form submission) must work with JavaScript disabled. Server-rendered HTML is the baseline. JavaScript enhances: "Show me another," infinite scroll, Quiet Corner timer, dwell mode.
-- **Milestone 2a testing adds a KaiOS emulator** to the CI matrix. Critical flows (search, read chapter, navigate) must pass.
 - **Touch targets remain 44×44px minimum** (ADR-003), but form inputs and navigation links use **48px** minimum on pages likely accessed from feature phones (homepage, search results, book index).
+- Feature phone compatibility is ensured through progressive enhancement (semantic HTML, no JS-required flows), not through dedicated CI testing. The progressive enhancement commitment covers KaiOS-class browsers by construction.
 
 #### 3. Shared Devices
 
@@ -657,7 +656,6 @@ Every commitment above costs nothing or near-nothing at implementation time if i
 - Text-only mode deployed in Milestone 1c (footer toggle); integrated into reader settings and design system in Milestone 2a
 - Minimal Service Worker deployed in Milestone 1c (app shell caching), enhanced in Milestone 2a (all pages + fonts), expanded in Milestone 2b (last-read chapter)
 - Low-bandwidth detection banner deployed in Milestone 1c (2G/slow-2G suggestion); extended adaptation in Milestone 2b
-- KaiOS emulator added to CI in Milestone 2a
 - Presentation mode added to the reader in Milestone 2b *(pulled from Arc 4)*
 - Cultural consultation budget required for Milestone 5b multilingual launch
 - RTL design review by native reader required before any RTL language goes live
