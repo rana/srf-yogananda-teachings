@@ -14,8 +14,8 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 4. **design/search/** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure (10 files)
 5. **design/experience/** — Frontend, pages, accessibility, responsive, video, events, places, multilingual (9 files)
 6. **design/editorial/** — Staff tools, editorial workflows, content intelligence, curated features (14 files)
-7. **DECISIONS.md** — Index and navigational summaries for 126 ADRs across 11 topical groups. ADR bodies split into three files:
-   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–053, 114–121, 125–128). Arc 1+.
+7. **DECISIONS.md** — Index and navigational summaries for ADRs across 11 topical groups. ADR bodies split into three files:
+   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
@@ -28,7 +28,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 - **When implementing editorial/staff/intelligence:** + `design/editorial/` files (specific ones by identifier) + DECISIONS-operations.md
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
 - **When evaluating proposals or at arc boundaries:** PROPOSALS.md
-- **Arc 1 tasks primarily use:** `design/search/` + DECISIONS-core.md
+- **Arc 1 tasks primarily use:** `design/search/` + DECISIONS-core.md + DECISIONS-operations.md §§ ADR-110, ADR-123–124 (API conventions, governance — apply from Arc 1)
 - **Arc 2 tasks primarily use:** `design/experience/` + DECISIONS-experience.md
 - **Arc 3 tasks primarily use:** `design/editorial/` + `design/search/` (data platform)
 
@@ -105,7 +105,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**ADR-NNN** (Architecture Decision Records) — ADRs are current architectural directives, not historical records — git preserves the evolution. 125 records organized into 11 topical groups. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after ADR-130 in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`. ADR-015 establishes **Verbatim Media Fidelity** — cross-modal content integrity prohibiting AI generation of voice, image, or video for sacred source material. ADR-123 establishes the **Principle vs. Parameter** classification — specific numeric values throughout the documents are tunable defaults, not architectural commitments. Implement them as named constants in `/lib/config.ts`. ADR-124 governs Neon platform decisions (tier, compute, branching, extensions, observability). ADR-125 establishes the **Two-Tier Secrets Management** model (AWS Secrets Manager for all credentials, `/lib/config.ts` facade). ADR-126 adopts **Vercel OIDC Federation** — zero long-lived AWS credentials in any environment. ADR-127 establishes the **Experience Quality Standard** (Principle 3) — every interaction should honor the spirit of the teachings it presents; world-class is the minimum standard. ADR-128 establishes the **Reachable Population** quantitative prioritization framework — scope decisions ordered by `speakers × internet_penetration × content_availability`. When two features are architecturally independent, the one serving more people ships first. Governs ROADMAP.md arc ordering and all future scope tradeoffs. ADR-129 establishes the **Vocabulary Bridge** — five-layer semantic infrastructure (DES-059) mapping human states of being to Yogananda's corpus. Replaces the flat `spiritual-terms.json` terminology bridge with register awareness, retrieval intent routing, avoid-territory filtering, and Opus-generated seed passages. Operates at both index time and query time. ADR-130 establishes the **Recognition-First Information Architecture** — the portal offers before it asks. Today's Wisdom hero, multi-lens entry (search prompt, Wanderer's Path, tradition entry, great questions), Four Doors in secondary nav. Governs DES-006, DES-007, DES-015, PRO-018–020.
+**ADR-NNN** (Architecture Decision Records) — ADRs are current architectural directives, not historical records — git preserves the evolution. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after the current highest in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`.
 
 **ADR maturity classification.** ADRs carry a maturity marker in their Status field (see ADR-098):
 - **Foundational** — Defines project identity. Change requires full deliberation. (`Accepted (Foundational)`)

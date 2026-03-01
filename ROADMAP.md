@@ -66,9 +66,11 @@ Key reordering moves: English search proof (1a) before bilingual validation (1b)
 
 **Build methodology:** Claude executes all deliverables autonomously. No human-in-the-loop gates. The human principal reviews at their discretion, not as a blocking step. This applies to the development methodology — PRINCIPLES.md § "Human Review as Mandatory Gate" governs the production portal's content governance, not the build process.
 
-### Prerequisites (conversations, not code)
+### Prerequisites
 
-These are blocking conversations that must happen before ingestion begins:
+**Tooling:** See `docs/guides/getting-started.md` for account setup and `docs/guides/bootstrap-credentials.md` for credential inventory.
+
+**Conversations (all resolved):** These were blocking conversations that happened before ingestion could begin:
 
 1. **~~Edition confirmation:~~** *(Resolved 2026-02-24.)* Use edition indicated in PDF source (spiritmaji.com). Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition.
 2. **~~PDF source confirmation:~~** *(Resolved 2026-02-24.)* spiritmaji.com PDF accepted for Arc 1 proof. Non-PDF digital text will replace before launch.

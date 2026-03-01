@@ -734,7 +734,7 @@ The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI devel
 
 ---
 
-## ADR-098: Documentation Architecture — Twelve-Document System with Arc/Milestone-Gated Loading
+## ADR-098: Documentation Architecture — Domain-Based Design Files with Gated Loading
 
 - **Status:** Accepted
 - **Date:** 2026-02-20
@@ -751,12 +751,12 @@ Key tensions:
 
 ### Decision
 
-Maintain a twelve-document system with explicit roles, a routing document (CLAUDE.md), defined conventions for the documentation-to-code transition, and a three-tier maturity model for intellectual work:
+Maintain a governance-plus-design architecture with root governance documents, individual design specifications organized by domain, a routing document (CLAUDE.md), defined conventions for the documentation-to-code transition, and a three-tier maturity model for intellectual work:
 
 | Document | Role | Primary Audience |
 |----------|------|-----------------|
 | CLAUDE.md | AI routing, compressed principles, maintenance protocol | AI collaborators |
-| PRINCIPLES.md | 12 immutable commitments with expanded rationale | All audiences |
+| PRINCIPLES.md | Immutable commitments with expanded rationale | All audiences |
 | CONTEXT.md | Project background, open questions, stakeholder context | All audiences |
 | DESIGN.md | Cross-cutting architecture index, API, observability, testing, personas | Developers, AI |
 | `design/search/` | Search, data model, ingestion, chunking, MCP, infrastructure | Developers, AI |
@@ -775,7 +775,7 @@ Maintain a twelve-document system with explicit roles, a routing document (CLAUD
 |------|------|-----------|----------|
 | Explorations | `.elmer/proposals/` | Slug filenames | Raw, unvetted AI ideation. Not project documents. |
 | Proposals | PROPOSALS.md | PRO-NNN | Curated, thoughtful. Awaiting validation, scheduling, or adoption. |
-| Decisions & Design | DECISIONS-*.md, DESIGN-*.md | ADR-NNN, DES-NNN | Validated through implementation or foundational principle. |
+| Decisions & Design | DECISIONS-*.md, `design/**/*.md` | ADR-NNN, DES-NNN | Validated through implementation or foundational principle. |
 
 **ADR maturity classification:**
 

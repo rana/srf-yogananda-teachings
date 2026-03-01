@@ -179,9 +179,9 @@ Specifies how the portal is built, tested, and monitored. Engineering standards 
 
 **Governance**
 
-Controls how the project governs its own decisions, documents, and evolution. The twelve-document system (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 2 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) is designed for AI-first navigation with arc-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
+Controls how the project governs its own decisions, documents, and evolution. Root governance documents plus individual design files organized by domain (`design/search/`, `design/experience/`, `design/editorial/`), designed for AI-first navigation with domain-gated loading and a three-tier maturity model (explorations → proposals → decisions). ADR maturity classification (Foundational, Active, Provisional, Suspended, Implemented) honestly reflects confidence levels. DELTA serves as the primary framework for global privacy. Arc 1 is split into prove-then-build stages. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123) round out the governance framework.
 
-- ADR-098: Documentation Architecture — Twelve-Document System with Arc/Milestone-Gated Loading
+- ADR-098: Documentation Architecture — Domain-Based Design Files with Gated Loading
 - ADR-099: Global Privacy Compliance — DELTA as Primary Framework
 - ADR-110: API Response Conventions — Envelope, Naming, and Identifier Standards
 - ADR-111: Search Result Presentation — Ranking, Display, and Intentional Non-Pagination
@@ -194,7 +194,7 @@ Controls how the project governs its own decisions, documents, and evolution. Th
 
 ## ADR Body Files
 
-ADR bodies are split across three files by concern group, mirroring the DESIGN file structure:
+ADR bodies are split across three files by concern group:
 
 | File | Groups | ADRs | Arc Relevance |
 |------|--------|------|---------------|
