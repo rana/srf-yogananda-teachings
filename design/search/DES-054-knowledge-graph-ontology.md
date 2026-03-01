@@ -86,6 +86,4 @@ This three-step pattern replaces the single openCypher query that Neptune Analyt
 
 **Governed by:** ADR-117 (Postgres-Native Graph Intelligence), ADR-116 (Entity Registry), ADR-050 (Related Teachings)
 
-*Section added: 2026-02-23, ADR-117. Revised: 2026-02-23, Neptune removed — Postgres-native implementation.*
-
 ---

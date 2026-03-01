@@ -374,6 +374,4 @@ The existing `/lib/data/guide-prompts/` directory is subsumed into the unified s
 
 **Arc:** 1 (directory structure created at repo setup; initial prompts for search intent classification and ingestion QA are the first entries).
 
-*Section revised: 2026-02-21, ADR-100 deep exploration — added maturity model, feedback loops, AI Observes, AI Abstains, dependency graph, unified prompt versioning*
-
 ---

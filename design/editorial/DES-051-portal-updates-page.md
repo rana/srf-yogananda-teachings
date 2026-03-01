@@ -120,6 +120,4 @@ Located at `/updates` — linked from site footer as "What's new in the portal."
 - RSS feed provides alternative access channel
 - ARIA label: "What's new in the portal — a record of how the library has grown"
 
-*Section added: 2026-02-22, ADR-105*
-
 ---

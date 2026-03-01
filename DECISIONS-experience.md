@@ -2,7 +2,7 @@
 
 > **Scope.** This file contains ADRs from the **Cross-Media**, **Seeker Experience**, and **Internationalization** groups. These shape the portal's seeker experience from Milestone 2a onward. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
-> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
+> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. Git history serves as the full audit trail.
 
 ## ADR-054: YouTube Integration via Hybrid RSS + API with ISR
 
@@ -1057,9 +1057,6 @@ The following decisions were made during a comprehensive multilingual audit to e
 - Per-language chunk size benchmarking required during Milestone 5b ingestion for non-Latin scripts
 - `books.bookstore_url` provides "Find this book" links to SRF Bookstore. Per-language bookstore routing (e.g., YSS Bookstore for Hindi/Bengali) can be added via a simple lookup table if needed at Milestone 5b.
 
-*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
-*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a. Revised: 2026-03-01, Hindi deferred from Arc 1 — bilingual content (en/es) gets bilingual chrome. Hindi UI strings move to Milestone 5b.*
-
 ---
 
 ---
@@ -1112,8 +1109,6 @@ Tailwind CSS supports logical properties via the `ms-*` (margin-start), `me-*` (
 
 - **Status:** Accepted
 - **Date:** 2026-02-17
-- *Revised: 2026-02-24, replaced Hindi/Bengali locale roadmap with a unified core language set.*
-- *Revised: 2026-02-28, replaced "no wave ordering" with reachable-population priority ordering per ADR-128. Hindi and Spanish elevated to Tier 1. Spanish activated in Arc 1; Hindi deferred to Milestone 5b (authorized source unavailable outside India). Remaining languages ordered by demographic impact.*
 
 ### Context
 
@@ -1324,8 +1319,6 @@ The glossary is a critical dependency for both the AI drafting step and the huma
 - The same workflow applies to portal-authored content (About page, theme descriptions, "Seeking..." entry points, etc.)
 - Glossary files migrate to Contentful content types when Contentful Custom Apps are activated
 
-*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a; added translation automation spec (scripts/translate-ui.ts, en.context.json, glossary bootstrap)*
-
 ---
 
 ---
@@ -1433,9 +1426,6 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 
 - **Quote images and PDF:** Devanāgarī font bundled for `@vercel/og` and PDF generation from Arc 1 (Hindi passages must render correctly in shared images and printed output)
 - **Devanāgarī typography QA:** Conjunct rendering, matra placement, halant/virama, and nukta characters verified at all font sizes as a Milestone 1b success criterion
-
-*Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
-*Revised: 2026-02-28, extended from supplemental verse rendering to full-text Hindi reading experience (ADR-128). Hindi full-text reading deferred from Arc 1 — authorized source unavailable outside India. Devanāgarī fonts still load in Arc 1 for Sanskrit verses in English Gita/Holy Science.*
 
 ---
 
@@ -1727,8 +1717,6 @@ The `llms.txt` file (§2) provides guidance and citation format. `llms-full.txt`
 The `llms-full.txt` scope is decoupled from the MCP external tier (ADR-101 Tier 3) timeline. MCP provides structured API access with rate limiting and fidelity metadata; `llms-full.txt` provides bulk discovery. Both serve the same mission of making the portal the canonical source.
 
 The file is auto-generated at build time from the database. ISR revalidation on content change. Served with `Cache-Control: public, max-age=86400`.
-
-*Section revised: 2026-02-25, clarify that llms-full.txt metadata-only mode is content readiness, not content gating. Decoupled from MCP Tier 3 timeline.*
 
 ### 3. `robots.txt`
 
@@ -2212,8 +2200,6 @@ Every page route has an explicit rendering strategy to ensure search engine craw
 - **Extends** with §3b (`ai.txt` — machine-parseable AI permissions)
 - **Extends** with copyright response headers in DESIGN.md § DES-024
 
-*Revised: 2026-02-25, added §3a No Content Gating, §3b ai.txt, copyright section to llms.txt, clarified llms-full.txt as content-readiness gate not restriction. Full crawlability embraced as mission-aligned policy. PRO-012 validated and scheduled as Milestone M1c-16.*
-
 ---
 
 ---
@@ -2306,8 +2292,6 @@ Three distinctions separate the Practice Bridge from a sales funnel:
 - New stakeholder questions added to CONTEXT.md: SRF approval of enriched Lessons description, canonical enrollment URL confirmation
 - The "Conversion to SRF Lessons" anti-metric (CONTEXT.md § Measuring Success) remains unchanged — the portal never tracks how many seekers enroll. Information availability is not the same as conversion optimization.
 - ADR-085 (Lessons Integration Readiness) is unaffected — it governs future *content-level* access control for actual Lesson materials. ADR-104 governs *public descriptions of* the Lessons path, using only published information.
-
-*Section added: 2026-02-21, Practice Bridge proposal*
 
 ---
 

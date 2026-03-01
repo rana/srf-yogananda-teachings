@@ -266,5 +266,3 @@ The bridge does not generate passages. It does not interpret Yogananda. It does 
 | Layer 5 (Spanish States) | 1b | Fresh Opus generation from Spanish Autobiography. |
 | Layer 3 (Register Bridges) | 1c | Enables meaningful Four Doors entry. |
 | Layer 4 (Tradition Bridges) | 3b+ | Needs multi-book corpus for tradition coverage. |
-
-*Section added: 2026-03-01. Governs ADR-129.*

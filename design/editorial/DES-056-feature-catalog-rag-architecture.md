@@ -46,6 +46,4 @@ These features are documented and milestone-assigned but not yet actively design
 | **Healing Architecture** | Creating a structured condition-to-practice graph risks health claims positioning. Scientific Healing Affirmations is searchable as a book; no structured healing graph. | Annotated in reference document |
 | **Inter-Tradition Bridge** (beyond corpus) | The portal surfaces Yogananda's own explicit cross-tradition mappings. Extending beyond his words is theological interpretation, violating ADR-001. | Annotated in reference document |
 
-*Section added: 2026-02-23, RAG Architecture Proposal merge*
-
 ---

@@ -47,6 +47,4 @@ Full catalog, envelope format, delivery semantics, and schema in ADR-106.
 
 Events describe content lifecycle only — never seeker behavior. No PII in any payload. The `email.dispatched` event reports `subscriber_count` (aggregate), not individual addresses.
 
-*Section added: 2026-02-22, ADR-106*
-
 ---

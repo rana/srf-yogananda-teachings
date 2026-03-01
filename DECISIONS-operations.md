@@ -2,7 +2,7 @@
 
 > **Scope.** This file contains ADRs from the **Staff & Community**, **Brand & Communications**, **Operations & Engineering**, and **Governance** groups. These govern how the portal is built, operated, and evolved. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
-> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
+> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. Git history serves as the full audit trail.
 
 ## ADR-082: Staff Experience Architecture — Five-Layer Editorial System
 
@@ -334,8 +334,6 @@ Adopt **"The Librarian"** as the external brand identity for the portal's AI sea
 - Stakeholder communications use "The Librarian" language when describing the AI search.
 - The search results page may include a subtle footer: "Every passage shown is exactly as published by SRF."
 
-*Revised: 2026-02-25, PRO-014 — expanded brand language from Yogananda-only to multi-author corpus while maintaining Yogananda-first emphasis.*
-
 ### Rationale
 
 - **Trust-building with the SRF community.** Many SRF devotees are legitimately suspicious of AI involvement with sacred texts. "The Librarian" framing immediately communicates that the AI serves the text, not the other way around.
@@ -551,8 +549,6 @@ This catches migration drift, unintended column changes, and missing indexes bef
 - Search quality test suite is a Milestone 1a deliverable (M1a-8) and grows as the corpus expands
 - Visual regression testing begins when the component library stabilizes
 
-*Revised: 2026-02-25, added preview branches per PR, branch TTL auto-expiry, and schema diff in CI leveraging Neon Scale tier capabilities (ADR-124).*
-
 ---
 
 ---
@@ -609,8 +605,6 @@ Service Level Indicators (SLIs) and Objectives (SLOs) for the production portal.
 
 **Alerting thresholds:** SLO breach triggers PagerDuty-style alert (configured in New Relic) to the human principal. Sustained degradation (>15 min below SLO) escalates. Search quality is evaluated at deployment time (golden set regression), not continuously.
 
-*Section revised: 2026-03-01, PRO-036 operational health surface graduation*
-
 #### Structured Logging
 
 Every API route logs a consistent JSON structure via `/lib/logger.ts`:
@@ -649,17 +643,52 @@ Amplitude's defaults assume user-level behavioral tracking. The portal must expl
 | Event sequencing | **Disabled** | Violates Agency — builds behavioral profiles |
 | Autocapture (clicks, page views) | **Disabled** | Violates Agency — surveillance by default |
 
+#### Telemetry Methodology
+
+Principles determine what to build. Telemetry reveals whether what we built actually serves the seekers principles say we must serve. The portal instruments for three purposes only:
+
+1. **Failure detection** — a principle-mandated feature is broken, undiscoverable, or degraded for a specific population
+2. **Discovery** — an unasked question about how seekers find the portal or which populations are underserved
+3. **Prioritization evidence** — real demand data to replace census estimates when ordering principle-mandated work (ADR-128)
+
+Telemetry does not direct development. Principle-mandated features (audio, accessibility, multilingual, Practice Bridge) exist regardless of usage. Every event in the allowlist has a documented decision framework — if a metric wouldn't change a decision, it is not collected. Infrastructure metrics (Vercel Analytics, New Relic, CDN logs) serve as free telemetry and should be read as product intelligence before adding explicit instrumentation (see DES-060 § Infrastructure-as-Intelligence).
+
 **What Amplitude tracks (allowlist):**
 
-| Event | Properties | Purpose |
-|-------|-----------|---------|
-| `page_viewed` | `{ page_type, language, requested_language, country_code }` | Countries reached, languages served, unmet language demand |
-| `passage_served` | `{ book_slug, language }` | Books/passages served count |
-| `share_link_generated` | `{ format }` | Share link generation count |
-| `center_locator_clicked` | `{}` | Did digital lead to physical? |
-| `search_performed` | `{ language, result_count, zero_results }` | Search usage, zero-result rate (not query content — that's in server logs) |
+Events are grouped by telemetry purpose. All events are aggregate counters — no user IDs, no session IDs, no sequencing.
 
-Country code derived from Vercel edge headers, not IP geolocation lookup. Anonymized at the edge. `requested_language` derived from `Accept-Language` header — measures the gap between what seekers want and what the portal serves. `zero_results` boolean flags searches returning no passages — the zero-result rate is the most actionable operational metric for search quality.
+*Reach and reporting:*
+
+| Event | Properties | Purpose | If surprisingly high | If surprisingly low |
+|-------|-----------|---------|---------------------|---------------------|
+| `page_viewed` | `page_type, language, requested_language, country_code` | Countries reached, languages served, unmet language demand | Celebrate; report to philanthropist | Investigate discoverability — SEO, link sharing, SRF cross-promotion |
+| `passage_served` | `book_slug, language` | Content delivery volume by book and language | Identify popular books for editorial curation priority | Investigate: discovery problem or content gap? |
+| `search_performed` | `language, result_count, zero_results` | Search usage, zero-result rate | Study query patterns → vocabulary bridge (DES-059) | Investigate: is search discoverable? |
+
+*Failure detection:*
+
+| Event | Properties | Purpose | If surprisingly high | If surprisingly low |
+|-------|-----------|---------|---------------------|---------------------|
+| `error_page_shown` | `error_type, route, language` | Broken experiences by population and route | Fix immediately — which populations are affected? | Normal |
+| `audio_play_started` | `book_slug, language, chapter_number` | Audio accessibility — is the feature working? | Invest in audio quality for high-demand languages | Investigate: broken on low-end devices? Undiscoverable? (Do not deprioritize — PRI-05 mandates audio for accessibility) |
+
+*Mission alignment (PRI-04):*
+
+| Event | Properties | Purpose | If surprisingly high | If surprisingly low |
+|-------|-----------|---------|---------------------|---------------------|
+| `practice_bridge_shown` | `trigger_type` | How often seekers encounter technique-sensitive queries | Study which query types trigger — inform editorial curation | Normal — not all seekers query about techniques |
+| `practice_bridge_followed` | `destination` | Digital → practice conversion (PRI-04 north star) | Editorial success — study what content bridges work and share with SRF | Investigate: is the bridge discoverable? Is it compelling? |
+| `center_locator_clicked` | — | Digital → physical bridge | Share with SRF — the portal drives physical visits | Normal — center visits are a subset of seeker intent |
+
+*Discovery and prioritization:*
+
+| Event | Properties | Purpose | If surprisingly high | If surprisingly low |
+|-------|-----------|---------|---------------------|---------------------|
+| `share_link_generated` | `format` | How seekers share teachings | Invest in share UX for popular formats | Normal — sharing is optional |
+| `cross_language_link_followed` | `from_language, to_language` | Bilingual seeker patterns | Strengthen cross-language linking UX | Normal — monolingual use is expected |
+| `reading_preference_changed` | `preference, direction` | Aggregate accessibility needs (font size, theme) | Adjust defaults for affected populations | Defaults are well-chosen |
+
+Country code derived from Vercel edge headers, not IP geolocation lookup. Anonymized at the edge. `requested_language` derived from `Accept-Language` header — measures the gap between what seekers want and what the portal serves. `zero_results` boolean flags searches returning no passages — the zero-result rate is the most actionable operational metric for search quality. `practice_bridge_followed / practice_bridge_shown` is the portal's single most mission-aligned ratio — the quantitative expression of PRI-04 "signpost, not destination." Zero-result queries feed into golden set candidate pipeline (DES-058).
 
 ### Rationale
 
@@ -675,6 +704,8 @@ Country code derived from Vercel edge headers, not IP geolocation lookup. Anonym
 - Amplitude configured with explicit allowlist — no autocapture, no user identification
 - DELTA compliance review of all observability configuration before launch
 - Vercel Analytics enabled from Arc 1 (free with Vercel deployment)
+- Practice Bridge events (`practice_bridge_shown`, `practice_bridge_followed`) included in Arc 1 structured logging — does not wait for Amplitude (M3d-5)
+- Infrastructure metrics (Vercel Analytics, New Relic, CDN logs) read as product intelligence before adding explicit Amplitude events — see DES-060 § Infrastructure-as-Intelligence
 
 ---
 
@@ -744,8 +775,6 @@ The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI devel
 - MCP server configuration documented in CLAUDE.md for all future AI sessions
 - This decision is revisited at Arc 6 (cross-media) and Milestone 7a (user accounts) when new services enter the stack
 
-*Revised: 2026-02-24, Contentful MCP confirmed for Milestone 1c. SRF Corpus MCP descheduled.*
-
 ---
 
 ---
@@ -813,10 +842,8 @@ ADRs carry a maturity marker in their Status field reflecting honest confidence 
 4. **ROADMAP.md Table of Contents.** Arc/milestone-level navigation for quick orientation.
 5. **DECISIONS.md Index by Concern.** ADRs grouped by domain (already established at ADR-009).
 6. **Implemented-section annotations.** When a DESIGN.md section is fully implemented, annotate: `**Status: Implemented** — see [code path]`. Code becomes the source of truth; DESIGN.md retains architectural rationale.
-7. **ADRs are mutable living documents.** Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. When substantially revising, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
-8. **Section-level change tracking.** When substantially revising a DESIGN.md section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
-9. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
-10. **PROPOSALS.md as proposal registry.** PRO-NNN identifiers are permanent — never renamed or reassigned. Proposals graduate to ADR/DES/milestone deliverables through the graduation protocol. ADRs may be suspended to PRO-NNN entries. Both directions preserve full cross-references.
+7. **Expanded maintenance table in CLAUDE.md.** Covers open question lifecycle, cross-cutting concern changes, content type additions, and the documentation-to-code transition.
+8. **PROPOSALS.md as proposal registry.** PRO-NNN identifiers are permanent — never renamed or reassigned. Proposals graduate to ADR/DES/milestone deliverables through the graduation protocol. ADRs may be suspended to PRO-NNN entries. Both directions preserve full cross-references.
 
 ### Rationale
 
@@ -838,10 +865,6 @@ ADRs carry a maturity marker in their Status field reflecting honest confidence 
 - ROADMAP.md § Unscheduled Features retains a compact summary table of Validated and Deferred items referencing PRO-NNN
 - Future documentation changes should follow the conventions established here
 - This ADR should be revised if the documentation system undergoes further restructuring
-
-*Revised: 2026-02-23, document architecture restructured from 5 to 12 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by arc (root + arc1 + arc2-3); DECISIONS.md split into navigational index + 3 scoped body files (core, experience, operations); CLAUDE.md updated with arc-gated reading guidance. 2026-03-01, reduced from 13 to 12 documents — DESIGN-arc4-plus.md removed (content preserved in PROPOSALS.md). 2026-03-01, design files restructured from arc-based monoliths (DESIGN-arc1.md, DESIGN-arc2-3.md) to individual files per DES/ADR section in domain directories (design/search/, design/experience/, design/editorial/). DESIGN.md retained as cross-cutting index. Guides moved from docs/ to docs/guides/.*
-
-*Revised: 2026-02-24, document architecture expanded from 12 to 13 documents — PROPOSALS.md added as proposal registry with PRO-NNN identifiers and graduation protocol. Three-tier maturity model (explorations → proposals → decisions) introduced. ADR maturity classification added (Foundational, Active, Provisional, Suspended, Implemented). Convention 7 updated from "immutable history" to "mutable living documents" to match CLAUDE.md. Graduation protocol moved from ROADMAP.md § Unscheduled Features to PROPOSALS.md.*
 
 ---
 
@@ -935,8 +958,6 @@ EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where servic
 - Minimum age statement on email subscription form (Milestone 5a)
 - Milestone 7a account signup includes age verification
 - New open questions added to CONTEXT.md: data controller identity, minimum age policy, Indian DPDPA cross-border rules, Brazilian LGPD DPO requirement
-
-*Section added: 2026-02-21, global privacy compliance exploration*
 
 ---
 
@@ -1047,8 +1068,6 @@ When an upstream workflow's output changes (e.g., an OCR correction alters passa
 - Workflow dependency graph documented in DES-035 and maintained as workflows are added
 - New open question: editorial capacity modeling — projected review hours per milestone (added to CONTEXT.md)
 - DES-035 updated with new subsections: Feedback Loop Protocol, AI Observes pattern, AI Abstains protocol, Workflow Dependency Graph, Unified Prompt Versioning
-
-*Section added: 2026-02-21, DES-035 deep exploration*
 
 ---
 
@@ -1358,8 +1377,6 @@ Webhook payloads never contain seeker data. Events describe *content* lifecycle 
 - SRF's existing Zapier workflows can subscribe to portal events from Milestone 5a launch
 - Future messaging channels (ADR-026) can subscribe to `daily_passage.rotated` instead of polling
 
-*Section added: 2026-02-22, outbound webhook event system*
-
 ---
 
 ---
@@ -1519,8 +1536,6 @@ A robust integration uses both: webhooks for real-time events, timestamp filteri
 - Zapier polling triggers become efficient from Milestone 2a
 - Combined with ADR-106, the portal supports both push (webhooks) and pull (timestamp filtering) sync strategies
 
-*Section added: 2026-02-22, timestamp filtering for incremental sync*
-
 ---
 
 ---
@@ -1607,8 +1622,6 @@ Returns title, author, description, cover image, publication year, bookstore URL
 - Cache table gains entries for all new detail endpoints
 - Service layer gains `getBook(slug)`, `getRecording(slug)`, `getVideo(slug)` functions
 - ROADMAP.md Milestone 3c deliverable updated to use consolidated chapter URLs
-
-*Section added: 2026-02-22, cross-API route rationalization*
 
 ---
 
@@ -1748,8 +1761,6 @@ Each search result displays:
 - **Citation** — author name, book title, chapter title, page number. Always present. Never omitted for brevity.
 - **"Read in context" link** — deep link to the reader at the passage's location. This link is the critical bridge between the librarian's finding and the seeker's reading (ADR-001).
 - **Relevance score** — not displayed to seekers. Used internally for debugging and search quality evaluation.
-
-*Revised: 2026-02-25, PRO-014 — added author name to citation display. Full author name on all passages, all tiers.*
 
 **Not displayed:** Themes, accessibility level, tone classification. These are infrastructure signals, not seeker-facing metadata.
 
@@ -1948,8 +1959,6 @@ Milestone 1a has two conversation prerequisites (edition confirmation, PDF sourc
 - Milestone 2a's hard prerequisite changes from "Arc 1 complete" to "Milestone 1c complete."
 - The Gates table in ROADMAP.md is updated to reflect the three-milestone split.
 - References to Arc 1 deliverable numbers in other documents (DESIGN.md, CONTEXT.md) should use the 1a/1b/1c numbering.
-
-*Revised: 2026-02-28, expanded from two milestones (1a/1b) to three (1a/1b/1c). Milestone 1b (Bilingual — originally Trilingual, Hindi deferred) inserted; old Milestone 1b (Deploy) becomes Milestone 1c. Human QA gate removed — Claude validates autonomously.*
 
 ---
 
@@ -2186,8 +2195,6 @@ Neon is the portal's database provider for the long term. The project plans to g
 - **Branch discipline.** TTL auto-expiry eliminates orphaned branches — a common operational headache. Named conventions make branches discoverable in the Neon Console.
 - **Extension discipline.** Centralizing extension governance prevents sprawl and ensures every extension has a documented purpose and governing ADR.
 
-*Revised: 2026-02-28, added Multi-Region Readiness section. Neon is the long-term database provider; activate cross-region read replicas when available.*
-
 #### API Key Scoping Policy
 
 Neon offers three API key types (Personal, Organization, Project-scoped). The portal uses scoped keys to enforce least privilege across management contexts.
@@ -2228,6 +2235,4 @@ The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** �
 - `design/search/DES-004-data-model.md` schema updated to include all 5 extensions and `uuidv7()` convention
 - `design/search/DES-039-infrastructure-and-deployment.md` updated with Three-Layer Neon Management Model (Infrastructure / Operations / Data)
 - ROADMAP.md cost model updated to reflect Scale tier pricing
-
-*Revised: 2026-02-25, added PostgreSQL 18 version selection, UUIDv7 schema convention, and PG18 feature survey. 2026-02-26, added API key scoping policy, Terraform provider governance, and three-layer management model reference.*
 

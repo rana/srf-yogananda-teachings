@@ -206,6 +206,4 @@ The golden set grows as the corpus grows:
 
 Old queries are **never removed** — they serve as regression tests. New queries are appended. The `id` field ensures stability across versions.
 
-*Section added: 2026-02-28, filling methodology gap for M1a-8 and M1b-2.*
-
 ---

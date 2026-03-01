@@ -254,6 +254,26 @@ Advisory in Arc 1 — no enforcement gate. Arc 2+ may add minimum coverage thres
 
 ---
 
+### Layer 5: Infrastructure-as-Intelligence
+
+**Available from Milestone 1c.** The portal's infrastructure stack (Vercel Analytics, New Relic APM, CDN logs, structured application logs) already captures product-relevant signals at zero marginal cost and zero DELTA risk. Read these as product intelligence before adding explicit Amplitude events.
+
+| Infrastructure Source | Signal | Product Intelligence | Available From |
+|----------------------|--------|---------------------|----------------|
+| **Vercel Analytics** | Core Web Vitals by route | FCP/LCP by page → which pages are slow for which populations? Hindi reading pages loading slowly = PRI-05 failure | Milestone 1c |
+| **Vercel Analytics** | Traffic by route | Page popularity without any analytics events. `/search` vs. `/read/[book]` vs. `/quiet` — which surfaces do seekers use most? | Milestone 1c |
+| **Vercel Analytics** | Geographic distribution | Country-level traffic heatmap. Validates `page_viewed` country data from a second source | Milestone 1c |
+| **New Relic APM** | API latency by endpoint | `/api/v1/search` call volume = search usage. `/api/v1/passages` call volume = reading usage. Latency by endpoint reveals performance bottlenecks per feature | Milestone 3d |
+| **CDN logs** | Bandwidth by asset type | Audio file bandwidth vs. font bandwidth vs. image bandwidth → audio demand volume without any explicit audio events | Milestone 1c |
+| **CDN logs** | Cache hit rate by asset | High cache hit rate = repeat visitors (without identifying individuals). Low cache hit rate on audio = streaming vs. progressive download question | Milestone 1c |
+| **Structured logs** | Search query patterns | Already logged (ADR-095). Zero-result queries → golden set candidates (DES-058). Query language distribution → real demand data for ADR-128 prioritization | Milestone 1c |
+| **Structured logs** | Request volume by locale | `language` field on every request → real language demand, more granular than Amplitude's `requested_language` | Milestone 1c |
+| **Sentry** | Error clustering by route and device | Errors concentrated on specific devices or browsers → broken experience for specific populations (PRI-05 failure detection) | Milestone 1c |
+
+**Reading cadence:** Infrastructure-as-intelligence is not a dashboard — it is a periodic reading practice. At arc boundaries and milestone reviews, the human principal and AI review infrastructure signals for patterns that explicit analytics might miss. The `/ops` page (Layer 2) may surface selected infrastructure metrics in future milestones.
+
+**Relationship to Amplitude:** Infrastructure signals answer "how much" and "how fast." Amplitude events answer "which feature" and "in what context." They are complementary. When an infrastructure signal (e.g., audio CDN bandwidth spike) raises a question, an Amplitude event (e.g., `audio_play_started` by language) provides the context. Do not duplicate: if infrastructure already answers a question, do not add an Amplitude event for the same signal.
+
 ### Accessibility
 
 - `/ops` page: semantic HTML, screen-reader accessible, keyboard navigable
@@ -269,7 +289,5 @@ Advisory in Arc 1 — no enforcement gate. Arc 2+ may add minimum coverage thres
 - **DES-037** (Observability) — DES-060's SLI/SLO targets complement DES-037's logging and error tracking
 - **DES-038** (Testing Strategy) — Design-artifact traceability (Layer 4) links tests back to governing specs
 - **PRO-041** (Docs as Executable Specs) — Extracts testable assertions from design prose; PRO-039/DES-060 links existing tests back to design identifiers. Complementary directions.
-
-*Section added: 2026-03-01, PRO-035, PRO-036, PRO-037, PRO-039*
 
 ---

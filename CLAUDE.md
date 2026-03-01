@@ -171,7 +171,7 @@ Root documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md, DECISIONS.md in
 | Proposal approved for merge | Run `/proposal-merge <PRO-NNN>` or `/theme-integrate <PRO-NNN>`. Skill handles ADR/DES creation and updates PRO status to Adopted. |
 | Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of the design file. Update governing ADR status if applicable. |
 | New design section created | Create `design/{domain}/{IDENTIFIER}-{slug}.md`. Add row to DESIGN.md navigation table. |
-| Parameter tuned (ADR-123) | Annotate the design file: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
+| Parameter tuned (ADR-123) | Update `/lib/config.ts` with new value, rationale, and evaluation trigger. |
 | Feature idea without an arc | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
 | Feature cut from an arc during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original arc/milestone, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
 | ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). **Delete** ADR body from DECISIONS body file. Annotate DECISIONS.md index `(Suspended → PRO-NNN)`. Update ROADMAP.md § Unscheduled Features summary table. |
@@ -186,6 +186,5 @@ Once implementation begins, design files transition from "authoritative spec" to
 1. **Before code exists:** The design file is the source of truth. Follow it precisely.
 2. **When a section is implemented:** Add `**Status: Implemented** — see [code path]` at the top of the file. Code becomes the source of truth for implementation details; the design file remains the architectural rationale. Stop loading the file routinely.
 3. **When implementation diverges from design:** Update the design file to reflect the actual decision. Design files are living documents, not historical artifacts.
-4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 
-ADRs (in DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md) are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
+ADRs (in DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md) are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. Git history serves as the full audit trail.

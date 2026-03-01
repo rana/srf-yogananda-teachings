@@ -387,11 +387,6 @@ Developers run the app locally without Terraform. The development environment us
 
 Terraform manages deployed environments only. Local development uses direct Neon connection strings and local config files.
 
-*Section revised: 2026-02-25, consolidated environment configuration into single source of truth. Three layers: .env.example (secrets + per-environment), /lib/config.ts (named constants per ADR-123), developer tooling (Claude Code). Region updated to us-west-2 per human directive. Naming standardized: NEON_DATABASE_URL, CONTENTFUL_ACCESS_TOKEN. Updated: CI workflow file structure (ci.yml + terraform.yml + neon-branch.yml + neon-cleanup.yml + dependabot.yml), progressive module activation via feature flags, secret rotation clarified (manual until 3d), Terraform boundary corrected (GitHub settings manual, not Terraform-managed).*
-*Section revised: 2026-02-26, expanded Local Development Environment subsection with Neon branch workflow, Contentful access, test data seeding, offline/degraded mode, and Claude Code tooling.*
-*Section revised: 2026-02-26, bootstrap automation via `scripts/bootstrap.sh` (ADR-020), environment lifecycle scripts (`create-env.sh`/`destroy-env.sh` for Arc 4+), `terraform/bootstrap/trust-policy.json` added to module layout.*
-*Section revised: 2026-02-28, secrets management architecture — AWS Secrets Manager as single source of truth (ADR-125), Vercel OIDC federation for zero long-lived AWS credentials (ADR-126), environment-scoped security, /lib/config.ts facade pattern.*
-
 **Operational surface companion:** DES-060 specifies the operational *surface* built on top of this infrastructure foundation — health endpoint, `/ops` dashboard, deployment ceremony scripts, SLI/SLO framework, and design-artifact traceability. DES-039 is the infrastructure; DES-060 is the visibility layer. See PRO-035, PRO-036, PRO-037, PRO-039.
 
 ---

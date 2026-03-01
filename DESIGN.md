@@ -252,8 +252,6 @@ The portal shares SRF's core infrastructure (AWS, Vercel, Contentful, Neon, Auth
 
 **The pattern:** Align with SRF where the use case matches. Diverge where the portal's constraints (vector search, DELTA, sacred text fidelity, AI collaboration) demand it. Document every divergence with an ADR so it reads as principled engineering, not drift, when SRF's AE team encounters the portal.
 
-*Section revised: 2026-02-26, bidirectional divergence table (portal additions and SRF divergences). Terraform Cloud → S3+DDB. Cloudflare removed (PRO-017). Retool deferred (PRO-016). New Relic rationale sharpened.*
-
 ---
 
 ## DES-019: API Design (Next.js API Routes)
@@ -733,8 +731,6 @@ When active, responses include `sync` metadata within `meta` for the consumer's 
 
 See ADR-107 for the full endpoint coverage table, schema requirements (`updated_at` columns and triggers on all content tables), and phasing.
 
-*Section revised: 2026-02-28. Terminology and API surface consistency pass: `/api/v1/chunks/` → `/api/v1/passages/`, `/api/v1/quiet` → `/api/v1/affirmations`, added `GET /api/v1/themes/{slug}` detail endpoint. Page names: "The Library" → "Books", "Audio Library" → "Audio", "Video library" → "Videos", "People Library" → "Spiritual Figures". API: `/api/v1/videos/library` → `/api/v1/videos/catalog`. Metaphorical "library" usage (the portal as library, the librarian metaphor) preserved throughout.*
-
 ---
 
 ## DES-024: Security Considerations
@@ -800,7 +796,6 @@ All services that process data on the portal's behalf, with their roles, data to
 
 EU-US data transfers rely on the EU-US Data Privacy Framework (DPF) where services are certified, with Standard Contractual Clauses (SCCs) as fallback. Review when services are added or changed.
 
-*Section added: 2026-02-21, ADR-099*
 ---
 
 ## DES-036: Migration, Evolution, and Longevity
@@ -947,8 +942,6 @@ Yogananda's verbatim words and portal-authored prose occupy **distinct visual an
 | Chant reader (ADR-059) | Chant text | Practice instructions, mood classification | Instructions in metadata panel; text in main area |
 | Community collections (ADR-086) | Curated passages | Curator's description | "Curated by [name]" label, Open Sans for description |
 
-*Section added: 2026-02-21, ADR-007*
-
 ---
 
 ## DES-037: Observability
@@ -1043,8 +1036,6 @@ Beyond the Amplitude event allowlist and APM tooling, the following derived metr
 | Content availability matrix (books × languages) | `books` + `book_chunks` tables | On content change | Impact Dashboard |
 | Editorial queue depth by type | `review_queue` tables | Real-time | Admin portal pipeline dashboard |
 | Geographic Core Web Vitals (per target region) | New Relic Synthetics | Continuous | New Relic |
-
-*Section added: 2026-02-21, analytics exploration*
 
 ---
 
@@ -1192,8 +1183,6 @@ The ingestion pipeline (DES-005) processes chunks individually. A failure on one
 - Failed enrichment produces a chunk with `enrichment_status = 'failed'` — it is still searchable via FTS, just not enriched
 - The pipeline produces a summary report: N chunks processed, M failures, failure types
 
-*Section added: 2026-02-26, compose chain gap analysis (DES-057).*
-
 ---
 
 ## DES-050: Seeker & User Persona Index
@@ -1337,8 +1326,6 @@ These questions are tracked in CONTEXT.md § Open Questions (Stakeholder) and re
 5. **"Who *shouldn't* use this portal?"** — The seeker searching for Kriya technique instructions should be redirected to SRF Lessons, not shown Autobiography excerpts that might be misinterpreted as instruction. The Practice Bridge (ADR-104) addresses this, but the persona of "the seeker who needs what we don't offer" could be more explicitly designed for.
 6. **Abuse and misuse patterns** — Automated corpus extraction, quote weaponization, SEO parasitism. (CONTEXT.md technical open question)
 
-*Section added: 2026-02-21, persona consolidation survey*
-
 ---
 
 ## DES-053: Unified Content Pipeline Pattern
@@ -1388,8 +1375,6 @@ Any new content type entering the portal in future arcs (e.g., letters, unpublis
 ### Not a premature abstraction
 
 Arcs 1–3 implement each pipeline independently — books, magazine, then video/audio/images. The unified content hub (ADR-060) arrives in Arc 6 as a deliberate migration. This section documents the *pattern* shared across independent implementations, not a shared codebase. If a shared `ContentPipeline` base class emerges naturally during Arc 6, it should be extracted from working code, not designed in advance.
-
-*Section added: 2026-02-22, ADR-060, ADR-112*
 
 ---
 

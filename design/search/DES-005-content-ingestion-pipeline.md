@@ -190,6 +190,4 @@ Step 7: Search index, relations, suggestions, and graph
  are always in sync with editorial source
 ```
 
-*Section revised: 2026-02-26, added ebook extraction path (Amazon Cloud Reader + Claude Vision OCR) alongside PDF and SRF digital text paths. Three extraction paths now documented, converging at Contentful import.*
-
 ---

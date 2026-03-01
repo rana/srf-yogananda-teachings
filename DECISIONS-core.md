@@ -2,7 +2,7 @@
 
 > **Scope.** This file contains ADRs from the **Foundational Constraints**, **Architecture & Platform**, **Content & Data Model**, and **Search & AI** groups. These govern Arcs 1–3 and require close attention during implementation. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
-> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.
+> **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. Git history serves as the full audit trail.
 
 ## ADR-001: Direct Quotes Only — No AI Synthesis
 
@@ -45,8 +45,6 @@ The AI **never**:
 - **The AI's output format is constrained.** Query expansion returns a JSON array of terms. Passage ranking returns a JSON array of IDs. No prose output.
 - **Consolidated in ADR-005:** The full Claude AI Usage Policy — permitted roles, prohibited uses, output format constraints, and expansion roadmap — is maintained in ADR-005.
 - **Multi-author scope (PRO-014).** The librarian model applies to all SRF-published authors across three author tiers: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity. Tiers govern search inclusion, daily passage eligibility, and social media pool participation — not fidelity level. See PRO-014 for the confirmed hierarchy and per-tier feature behavior.
-
-*Revised: 2026-02-25, PRO-014 multi-author expansion merged.*
 
 ---
 
@@ -421,8 +419,6 @@ Automate the search quality evaluation (Deliverables M1a-8 and M1b-2) by using C
 
 **Why this matters:** As the corpus grows (Milestone 3a through Arc 3) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade. Per-category breakdowns reveal *where* search needs improvement — enabling targeted tuning rather than blind iteration.
 
-*Revised: 2026-02-28, expanded with metrics, six categories, trilingual scope, and DES-058 cross-reference. Revised: 2026-03-01, trilingual → bilingual (Hindi deferred from Arc 1).*
-
 #### E6: Cross-Book Conceptual Threading (Milestone 3c)
 
 **Category:** Classifying | **Cost:** ~$0.50/book pair (one-time) | **Human review:** Spot-check (see ADR-100 for maturity stage definitions)
@@ -606,8 +602,6 @@ The PWA (ADR-012) is scheduled for Milestone 2b. Milestone 1c (first production 
 - **Milestone 2b: Last-read chapter cached.** When a seeker reads a chapter, the chapter HTML is cached in the Service Worker. If connectivity drops, they can re-read that chapter. Not full offline support — just graceful handling of the most common offline scenario (re-reading what you just read).
 - **Offline indicator.** When the Service Worker detects no connectivity, a subtle banner appears: *"You're reading offline. Search requires a connection."* Not an error state — a calm acknowledgment. Matches the portal's warm cream palette, not a red warning bar.
 
-*Revised: 2026-02-28, Service Worker moved from Milestone 2a to 1c — applying ADR-128 reachable population logic to device readiness. Milestone 1c is the first production deployment; seekers on intermittent connections need cached assets from day one.*
-
 #### 5. Community and Group Reading
 
 In India, Latin America, and many African communities, spiritual texts are read aloud in groups — satsang, study circles, family devotions. The portal's reader is designed for individual silent reading.
@@ -693,8 +687,6 @@ However, as the portal's feature surface has grown — editorial reading threads
  - **Context always available.** Every curated passage links to its full chapter context via "Read in context."
 
 3. **Establish the Editorial Proximity Standard.** A cross-cutting section in DESIGN.md (§ Editorial Proximity Standard) defines unified visual and structural rules for how portal-authored prose (not from any SRF-published author) behaves when it appears near sacred text. The standard governs: visual typography (Merriweather for SRF-published author text across all author tiers, Open Sans for editorial/functional prose), structural separation (`<article>`/`<section>` boundaries), attribution requirements including full author name (PRO-014), accessibility announcements, and a maximum editorial-to-sacred-text content ratio.
-
-*Revised: 2026-02-25, PRO-014 — "non-Yogananda prose" boundary redefined. Texts by other SRF-published authors (Sri Yukteswar, Daya Mata, etc.) are sacred text, not editorial prose. The editorial proximity standard governs portal-authored content only.*
 
 ### Alternatives Considered
 
@@ -904,8 +896,6 @@ Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a 
 - A Contentful → Neon sync service is needed: batch script in Milestone 1a, webhook-driven from Milestone 1c on Vercel
 - Contentful capacity sufficient for one book (~3K TextBlocks); evaluate tier needs at Milestone 3a (multi-book corpus)
 - When SRF provides non-PDF digital text prior to launch, it goes directly into Contentful — no pipeline change required
-
-*Revised: 2026-02-24, Contentful confirmed as Arc 1 requirement per stakeholder hard requirement.*
 
 ---
 
@@ -1236,10 +1226,6 @@ Claude via Bedrock is the initial implementation. The long-term direction is **m
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
 
-*Revised: 2026-02-28, added LLM Portability section. Claude is the initial provider; open-source models are the long-term direction. Index-time enrichment (not per-query search) is the primary LLM workload.*
-
-*Revised: 2026-03-01, Opus as batch default. Upgraded all index-time/batch work from mixed Sonnet/Opus to Opus-only. Added vocabulary bridge generation, passage depth signatures, and search evaluation judging to batch task table. Rationale: sacred text + small corpus + one-time cost = maximum model quality. Per-search tasks remain Haiku (cost-sensitive, recurring).*
-
 ---
 
 ## ADR-016: Infrastructure as Code (Terraform)
@@ -1442,8 +1428,6 @@ jobs:
 - `.terraform.lock.hcl` committed to version control (reproducible provider installations, like `pnpm-lock.yaml`)
 - `terraform apply` runs automatically on merge to main (dev environment). Staging and production environments (Arc 4+) require manual confirmation before apply.
 
-*Revised: 2026-02-26, S3 + DynamoDB state backend replaces Terraform Cloud (fewer vendors, ADR-004 10-year horizon). Cloudflare module removed (PRO-017). Previous revision: 2026-02-25, GitHub-first SCM, OIDC federation, Milestone 1c timing, three-environment model, provider version pinning, Lambda timing, lock file committed.*
-
 ---
 
 ---
@@ -1639,8 +1623,6 @@ Migration sequencing: Terraform apply runs *first* (in case it creates the datab
 - All scripts accept environment name as parameter, defaulting to `dev`
 - **Extends ADR-016** (Terraform) with concrete deployment orchestration
 
-*Revised: 2026-02-25, aligned with ADR-016 revision (GitHub-first, three-environment model). Added neon-branch-cleanup.sh.*
-
 **Operational surface extension:** DES-060 adds `deploy.sh` (deployment ceremony), `release-tag.sh` (semantic tagging), `doc-validate.sh` (document integrity), and `status.sh` (AI self-orientation) to the `/scripts/` directory — following the same CI-agnostic pattern. See PRO-035, PRO-036, PRO-037.
 
 ---
@@ -1756,8 +1738,6 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 - Restore procedure documented in operational playbook
 - Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
 - **Extends ADR-016** (Terraform), **ADR-004** (10-year architecture), and **ADR-124** (Neon platform governance)
-
-*Revised: 2026-02-25, expanded from pg_dump-only to three-layer recovery strategy leveraging Neon Scale tier capabilities. 2026-02-26, Layer 2 updated to use Snapshot API (not Console) for schedule configuration, added pre-migration and on-demand snapshots, referenced PRO-008 adoption.*
 
 ---
 
@@ -1890,8 +1870,6 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - GitHub Environments configured per environment (dev, staging, prod) with protection rules
 - Neon branching strategy documented in runbook (`docs/guides/manual-steps-milestone-1a.md`)
 
-*Revised: 2026-02-26, adopted branch=environment principle, single-project-per-service, bootstrap automation via scripts, single AWS account default. Previous design specified separate projects/accounts per environment — replaced with branch-based separation proportionate to the portal's public, no-auth threat model.*
-
 **Operational surface extension:** DES-060 adds an `/ops` page (Milestone 1c) with deployment history, SLI/SLO dashboard, and design-artifact coverage — consuming the deploy manifests generated by the deployment ceremony scripts that follow the branch=environment model. See PRO-035, PRO-036.
 
 ---
@@ -2018,8 +1996,6 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 - When Neon ships cross-region read replicas: activate via Terraform in `ap-south-1` and `eu-central-1`
 - Health check endpoint (`/api/v1/health`) reports database connectivity, enabling uptime monitoring
 - **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration. No edge database replacement.
-
-*Revised: 2026-02-28, added Regional Latency Targets, Multi-Region Neon plan, and Turso evaluation note. Pure hybrid search (ADR-119) achieves global latency targets without multi-region database infrastructure.*
 
 ---
 
@@ -2704,8 +2680,6 @@ Reorder book ingestion to prioritize **life-impact potential** — books that ar
 | 14 | *Only Love* / *Finding the Joy Within You* / *Enter the Quiet Heart* (Sri Daya Mata) | President tier (PRO-014). Conversational style closer to Yogananda's collected talks. Three short volumes. |
 | 15 | *The Guru and the Disciple* (Sri Mrinalini Mata) | President tier (PRO-014). Editorial/biographical work about Yogananda's posthumous publications. |
 | 16 | *Rajarsi Janakananda: A Great Western Yogi* | President tier (PRO-014). Biographical, SRF-published. |
-
-*Revised: 2026-02-25, PRO-014 — added non-Yogananda SRF-published books at positions 13–16. Catalog requires SRF confirmation.*
 
 ### Rationale
 
@@ -4091,8 +4065,6 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 - Budget for re-embedding costs when evaluating new models (Milestone 5b multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
 
-*Revised: 2026-02-24, ADR-118 coherence update*
-
 ---
 
 ---
@@ -4155,8 +4127,6 @@ Three dimensions of embedding quality matter for this portal:
 - Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
 - Future embedding model decisions should reference this ADR alongside ADR-046
-
-*Revised: 2026-02-24, ADR-118 coherence update*
 
 ---
 
@@ -4695,8 +4665,6 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
 - The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Milestone 1a pre-implementation checklist)
 - ADR-005 E3, E4, E6, E8 are folded into this pipeline; E1, E2, E5, E7 remain as separate operations
 
-*Revised: 2026-02-28, added `passage_role` field — rhetorical function within chapter (opening, culmination, turning_point, etc.). Near-zero marginal cost; seeds structural enrichment at chapter/book scale (PRO-025).*
-
 ---
 
 ---
@@ -4783,7 +4751,6 @@ CREATE TABLE sanskrit_terms (
 
 - **Status:** Accepted
 - **Date:** 2026-02-23
-- **Revised:** 2026-02-23, Neptune Analytics removed in favor of Postgres-native graph intelligence
 
 ### Context
 
@@ -4858,8 +4825,6 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 - Milestone 3b in ROADMAP.md adds graph algorithm batch pipeline (Python + NetworkX), not Neptune provisioning
 - No Terraform configuration for graph infrastructure — batch job runs as Lambda or Vercel cron
 - Graph ontology designed from Arc 1 and documented in DES-054/055
-
-*Revised: 2026-02-23, Neptune Analytics removed. Single-database architecture restored. Graph intelligence implemented via Postgres tables + Python batch computation. Motivated by bounded corpus size (~50K chunks), operational simplicity over 10-year horizon, and single-database principle (ADR-013).*
 
 ---
 
@@ -4985,8 +4950,6 @@ Full mode (M4+, if warranted):      PATH A + PATH B + PATH C + HyDE → RRF → 
 - The golden retrieval set (Milestone 1a) serves as the activation gate for AI enhancements
 - Cost per query: primary mode ~$0 (database only); enhanced mode ~$0.0015 (LLM + reranker)
 - The four-level degradation cascade (DES-003) simplifies: primary mode *is* the degraded mode — it's the baseline, not the fallback
-
-*Revised: 2026-02-28, reframed pure hybrid as primary mode with AI-enhanced as optional. Index-time enrichment bridges the vocabulary gap that previously justified query-time AI. Removes Claude and Cohere from the search hot path by default, improving global latency and operational simplicity.*
 
 ---
 
@@ -5125,9 +5088,6 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - Milestone 5b: Per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies
 - No Terraform ElastiCache configuration — Vercel KV provisioned via Vercel integration when needed
 - The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary and triggers a static JSON rebuild
-
-*Revised: 2026-02-25, rewrite from ElastiCache to three-tier progressive architecture (Static JSON → pg_trgm → Vercel KV). Rationale: ElastiCache operational overhead disproportionate for dictionary size; VPC networking adds latency with Vercel; Vercel KV provides equivalent Redis semantics with zero ops.*
-*Revised: 2026-02-28, trilingual suggestions from Arc 1. Revised: 2026-03-01, trilingual → bilingual (en/es) — Hindi deferred from Arc 1. Devanāgarī prefix files moved to Milestone 5b.*
 
 ---
 
@@ -5505,8 +5465,6 @@ The portal offers two experience tiers:
 - Does not conflict with Global-First performance budgets — a slow portal is not worthy of the teachings either
 
 **Governs:** PRI-03 in PRINCIPLES.md
-
-*Revised: 2026-02-28, principle number updated from 12 to 3 per principles restructuring.*
 
 ---
 

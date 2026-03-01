@@ -26,8 +26,6 @@ Every Claude interaction returns structured data (JSON arrays of IDs, terms, sco
 
 The consequence that matters most: chunking quality is paramount. Each chunk must be a coherent, self-contained passage suitable for display as a standalone quote, because the AI cannot fix a poorly chunked passage — it can only retrieve it.
 
-*Section revised: 2026-02-26, tier values renamed from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature. 2026-02-28, column renamed from `content_tier` to `author_tier` — the tier classifies the author's lineage role, not the content itself, completing the role-based naming alignment.*
-
 ---
 
 ### PRI-02: Full Attribution Always
@@ -41,8 +39,6 @@ Content integrity verification (ADR-039) ensures that published text has not bee
 The translation honesty commitment deserves emphasis: when an official translation doesn't exist for a language, the book is simply unavailable in that language. The portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition.
 
 When content is absent — no results match a query, no translation exists, a book isn't yet available — the portal treats this as an invitation, not a wall. Honest absence becomes an opportunity to guide: suggest related themes the seeker might explore, point toward the language the content *is* available in, or connect the seeker to SRF resources that might help. The portal never fabricates content to fill the gap, but it also never abandons the seeker at a dead end. Absence handled with care is itself a form of the librarian's service.
-
-*Section revised: 2026-02-28, sharpened from "Sacred Text Fidelity" — removed duplication with PRI-01 (AI/media prohibition), focused on the unique commitments: provenance, attribution, translation honesty.*
 
 ---
 
@@ -96,8 +92,6 @@ The multilingual commitment shapes technical decisions made long before all tran
 
 The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
-*Reclassified: 2026-03-01, moved from Engineering Foundation to Seeker Experience. The engineering framing (language columns, API parameters) describes implementation of a mission commitment, not an architecture preference. Violating PRI-06 structurally excludes the majority of Earth's seekers — that is seeker harm, not technical debt. PRI-06 is PRI-05's structural mechanism: global-first without multilingual foundations is aspiration without substance.*
-
 ---
 
 ### PRI-07: Accessibility from First Deployment
@@ -109,8 +103,6 @@ SRF's mission is to serve "all of humanity." "All" includes people with disabili
 Retrofitting accessibility is expensive and error-prone; building it in from day one is nearly free. Semantic HTML, keyboard navigation, and ARIA landmarks cost nothing if done from the start. They cost massive effort to retrofit after inaccessible patterns get baked into components and propagated. The same is true of mobile-first CSS: writing `px-4 md:px-8` costs nothing at Milestone 1a; retrofitting desktop-first layouts for mobile costs real effort. When ~70% of the Hindi and Spanish audience (ADR-128 Tier 1) accesses the portal on mobile phones, mobile-first is not polish — it is access. Later milestones handle audit and polish (professional WCAG audit, TTS, advanced reading mode, full responsive design strategy) — accessibility and mobile readiness are not late-stage additions.
 
 Screen reader quality goes beyond mere compliance. ADR-073 specifies that the spoken interface should carry the same warmth as the visual one — not just "Bookmark button" but a voice that conveys the portal's devotional register. ADR-072 addresses cognitive accessibility: consistent navigation, no autoplay, clear language, predictable behavior.
-
-*Principle revised: 2026-02-28, renamed from "Accessibility from Milestone 2a" — Milestone 1c is the first production deployment, and the majority of the Hindi/Spanish target audience (ADR-128) is mobile-first. Applying ADR-128's reachable population logic to devices: mobile readiness ships with first deployment, not after it. ADR-006 (Global-First) governs the commitments; this principle governs the timing.*
 
 ---
 
@@ -163,5 +155,3 @@ The search quality test suite (bilingual golden set — DES-058) serves as the a
 Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Arcs 1–6, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
 The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
-
-*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with PRI-01 removed. "Honoring the Spirit" elevated from position 12 to position 3. 2026-03-01, PRI-NN identifiers added — principles now have first-class identifiers consistent with ADR/DES/PRO. 2026-03-01, PRI-06 reclassified from Engineering Foundation to Seeker Experience — multilingual schema serves seekers, not architecture. 2026-03-01, PRI-NN renumbered for clean sequential ordering within each tier: PRI-11 (Multilingual) → PRI-06, PRI-06 (Calm) → PRI-08, PRI-08 (DELTA) → PRI-09, PRI-09 (10-Year) → PRI-10, PRI-10 (API-First) → PRI-11.*

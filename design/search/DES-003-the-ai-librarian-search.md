@@ -633,6 +633,4 @@ At launch, `query_frequency` is zero — the effective ranking is `corpus * 0.6 
 
 Suggestions are **tier-agnostic by design** — all author tiers (guru, president, monastic) contribute equally to the suggestion vocabulary. The suggestion system operates *before* query submission and does not filter by author tier. When `author_tier` influences results, it acts as a **sort parameter** on the search API (DES-019), not a filter on suggestions. A seeker typing "meditation" sees the same suggestions regardless of which tiers they'll search. This matches the portal's design: suggestions narrow the query; the search API's `author_tier` parameter controls which tiers appear in results.
 
-*Section revised: 2026-02-25, comprehensive rewrite: three-tier progressive architecture (ADR-120), UX walkthrough, static JSON primary path, adaptive debounce, latin_form transliteration, URL mapping, bridge hints in search results, weight coefficients as named constants, mobile UX. 2026-02-26, author_tier note clarifying tier-agnostic suggestions.*
-
 ---

@@ -763,8 +763,6 @@ When a chant has `performance_of` relations in `chunk_relations`, audio/video re
 
 **Poetry format (`content_format = 'poetry'`):** Uses the same whole-unit rendering and discrete navigation as `'chant'`, but without the inline media panel (unless `performance_of` relations exist). Suitable for *Songs of the Soul*, *Whispers from Eternity*, and similar collections.
 
-*Section added: 2026-02-21, ADR-059*
-
 ### DES-008: Reader Typography Refinements
 
 The reader's typographic details signal care and reverence for the words. These are the micro-details that distinguish a sacred text presentation from a blog post:
@@ -1655,7 +1653,5 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 ```
 
 `font-display: swap` preserves the same FOUT behavior as the previous Google Fonts `display=swap` parameter.
-
-*Section revised: 2026-02-21, ADR-099 (self-hosted fonts for GDPR compliance)*
 
 ---

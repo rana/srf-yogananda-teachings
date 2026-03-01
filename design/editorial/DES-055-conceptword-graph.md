@@ -81,6 +81,4 @@ Cross-tradition mappings are limited to Yogananda's own explicit mappings. The p
 
 **Governed by:** ADR-117 (Postgres-Native Graph Intelligence), ADR-116 (Entity Registry), ADR-001 (Librarian, Not Oracle)
 
-*Section added: 2026-02-23, ADR-117. Revised: 2026-02-23, Neptune removed — Postgres-native implementation.*
-
 ---
