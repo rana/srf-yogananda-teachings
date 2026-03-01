@@ -89,6 +89,9 @@ Key reordering moves: English search proof (1a) before bilingual validation (1b)
 | 1a.6 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What did Yogananda say about...?" (ADR-130: recognition-first — frames expectation correctly: verbatim retrieval, not AI generation) Mobile-first responsive layout: full-width stacked cards on small viewports, 44×44px minimum touch targets on all interactive elements. Usable on a 320px-wide screen — the majority of the Hindi/Spanish audience (ADR-128) is mobile-first. (ADR-006) |
 | 1a.7 | **Basic book reader** | Chapter-by-chapter reading view serving content from Contentful Delivery API. Deep-link anchors, optimal line length (English: 65–75 chars / `max-width: 38rem` on desktop, responsive fluid width on mobile), prev/next chapter navigation with 44×44px touch targets, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). Reading column must be comfortable on a 320px phone screen — not a scaled-down desktop layout. (ADR-006) |
 | 1a.8 | **Search quality evaluation (English)** | Test suite of ~58 English queries with expected passages (golden retrieval set). Seven difficulty categories: **Direct** (~10 queries, baseline ~95%), **Conceptual** (~12 queries, baseline ~85%), **Emotional** (~12 queries, baseline ~70%), **Metaphorical** (~8 queries, baseline ~65%), **Technique-boundary** (~8 queries, must correctly route to Practice Bridge, baseline 100%), **Dark Night** (~8 queries — fragmentary, pre-linguistic, distressed: "I can't stop crying," "nothing matters anymore," "why am I here" — evaluated not by Recall@3 but by "does this passage meet the seeker where they are?" per ADR-129 vocabulary bridge; Opus judges retrieval intent match), **Adversarial** (~8 queries — off-topic, misspelled, multi-intent, prompt-injection — must route to no-results or degrade gracefully). Claude drafts the query set after corpus ingestion (1a.4), evaluates results, and judges quality autonomously. Metrics: Recall@3 per category (primary gate), MRR@10 (diagnostic). Per-category breakdowns reveal WHERE search needs improvement. Threshold: ≥ 80% Recall@3 overall. Golden set data in `/data/eval/golden-set-en.json`, evaluation script in `/scripts/eval/search-quality.ts`. Full methodology: DES-058. (ADR-005 E5) |
+| 1a.9 | **Document integrity validation (`doc-validate.sh`)** | Shell script validating cross-reference integrity across all project documents. Scans markdown for ADR-NNN, DES-NNN, PRO-NNN declarations, verifies all references resolve, checks dual-homed title consistency, confirms navigation table completeness. Runs in CI on markdown changes. Advisory (non-blocking) in Arc 1. Full specification: DES-060 § Layer 3. (PRO-037, ADR-098) |
+| 1a.10 | **AI self-orientation script (`status.sh`)** | Claude's first action in any development session. Prints version, milestone progress, branch, last deploy, health, document integrity summary, pending PROs, and open questions. Sources: git tags, CI artifacts, PROPOSALS.md parsing, CONTEXT.md grep. Full specification: DES-060 § Layer 3. (PRO-036) |
+| 1a.11 | **Release tagging script (`release-tag.sh`)** | Creates annotated git tags with deployment metadata: version, milestone, commits since last tag, `design_refs` (from `@implements`/`@validates` annotations), and auto-classified blast tier (T1–T5). Tag naming: `v{arc}{milestone}.{patch}`. Full specification: DES-060 § Layer 3. (PRO-035) |
 
 ### Technology
 
@@ -116,6 +119,9 @@ Key reordering moves: English search proof (1a) before bilingual validation (1b)
 - "Find this book" links are present on every passage and link to the SRF Bookstore
 - Search quality evaluation passes: ≥ 80% of English test queries return at least one relevant passage in the top 3 results
 - Per-category evaluation breakdowns available for all six difficulty categories
+- `./scripts/doc-validate.sh` runs clean: all cross-references resolve, all dual-homed titles match
+- `./scripts/status.sh` prints a complete orientation briefing (version, milestone, health, docs integrity, pending PROs)
+- `./scripts/release-tag.sh` creates annotated tags with design refs and blast tier classification
 
 ### What If Search Quality Fails?
 
@@ -184,6 +190,9 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 | 1c.13 | **Text-only mode** | Toggle in site footer. No images, no decorative elements, no web fonts (system serif stack). Stored in `localStorage`. Milestone 2a.11 extends with reader settings integration. (ADR-006 §1) |
 | 1c.14 | **Minimal Service Worker** | Cache app shell (HTML, CSS, JS, fonts) for instant repeat visits. Offline indicator banner. ~50 lines of code. Milestone 2a.12 extends with enhanced caching strategy. (ADR-006 §4) |
 | 1c.15 | **Low-bandwidth detection** | When `navigator.connection.effectiveType` reports `2g` or `slow-2g`, display gentle banner suggesting text-only mode. Progressive enhancement — no-op on browsers without the API. (ADR-006 §1, DES-049) |
+| 1c.16 | **Operational dashboard (`/ops`)** | Next.js page displaying system health (from `/api/v1/health`), SLI/SLO status, recent deployments with design refs, document integrity summary, and design-artifact coverage. Not public-facing but not auth-gated in Arc 1. Data from health endpoint, deploy manifests, and CI artifacts. Full specification: DES-060 § Layer 2. (PRO-036) |
+| 1c.17 | **Deploy manifest + blast tier classification** | Each deployment generates a JSON manifest (`/.well-known/deploy-manifest.json`) with version, timestamp, milestone, blast tier (T1–T5 auto-classified from git diff), design refs, commit count, and health check result. Consumed by `/ops` page and `status.sh`. Full specification: DES-060 § Layer 3. (PRO-035) |
+| 1c.18 | **Deployment ceremony script (`deploy.sh`)** | Orchestrates full deployment: doc-validate → test suite → release tag → deploy manifest → Vercel deploy → health check verification → push tag. CI-agnostic per ADR-018. Full specification: DES-060 § Layer 3. (PRO-035, PRO-037) |
 
 Search intent classification + passage ranking stays **deferred to Milestone 2b** (conditional on 1a/1b evaluation, ADR-119). Pure hybrid search is the primary search mode. Crisis query detection (1c.9) uses heuristic keyword matching rather than Claude intent classification.
 
@@ -225,6 +234,9 @@ Search intent classification + passage ranking stays **deferred to Milestone 2b*
 - Service Worker caches app shell; offline indicator displays when connectivity drops
 - Low-bandwidth detection banner appears on 2G connections; one-tap enables text-only mode
 - All pages usable on a 320px mobile viewport: no horizontal scrolling, touch targets ≥ 44×44px, text readable without zooming
+- `/ops` page displays system health, SLI/SLO status, recent deployments, document integrity, and design coverage
+- Deploy manifest generated at `/.well-known/deploy-manifest.json` with version, blast tier, and design refs
+- `./scripts/deploy.sh` orchestrates full deployment ceremony: validate → test → tag → manifest → deploy → verify
 
 ### Open Questions to Resolve
 
@@ -570,6 +582,12 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature |
 | PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement |
 | PRO-028 | Cross-Tradition Concordance as Primary Search Lens | Feature |
+| PRO-038 | Dream a Feature — AI-Driven Prototyping Workflow | Feature |
+| PRO-040 | Living Golden Set — Seeker-Fed Search Quality | Enhancement |
+| PRO-041 | Documents as Executable Specifications | Enhancement |
+| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature |
+
+*PRO-035 (Release Tagging), PRO-036 (Operational Health), PRO-037 (Document Integrity CI), PRO-039 (Design-Artifact Traceability) adopted 2026-03-01 → DES-060, ROADMAP deliverables 1a.9–1a.11, 1c.16–1c.18, 2a.*
 
 *PRO-012 (Copyright and Legal Framework) has been validated and scheduled as Milestone 1c.12. See deliverable table above.*
 *PRO-014 (Multi-Author Sacred Text Expansion) has been adopted. Document cascade merged 2026-02-25.*

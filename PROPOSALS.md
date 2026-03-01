@@ -44,6 +44,14 @@
 | PRO-032 | Brand Distribution — Dashboard, Email, Social Media | Feature | Suspended from ADR-090, ADR-091, ADR-092 | ADR-090, ADR-091, ADR-092 | Bulk suspension 2026-03-01 |
 | PRO-033 | YSS Locale Branding | Enhancement | Suspended from ADR-079 | ADR-079 | Bulk suspension 2026-03-01 |
 | PRO-034 | Magazine API Rationalization | Enhancement | Suspended from ADR-108 | ADR-108 | Bulk suspension 2026-03-01 |
+| PRO-035 | Release Tagging and Deployment Ceremony | Enhancement | Adopted → DES-060, 1a.11, 1c.17, 1c.18 | ADR-018, ADR-020, DES-039, ADR-105, DES-051, DES-060 | Ops exploration 2026-03-01 |
+| PRO-036 | Operational Health Surface and SLI/SLO Framework | Feature | Adopted → DES-060, ADR-095 §SLI/SLO, 1a.10, 1c.16 | ADR-095, ADR-020, DES-039, ADR-021, DES-060 | Ops exploration 2026-03-01 |
+| PRO-037 | Document Integrity Validation in CI | Enhancement | Adopted → DES-060, 1a.9 | ADR-098, ADR-094, ADR-093, DES-038, DES-060 | Ops exploration 2026-03-01 |
+| PRO-038 | Dream a Feature — AI-Driven Prototyping Workflow | Feature | Proposed | ADR-020, ADR-124, PRO-001, DES-039 | Ops exploration 2026-03-01 |
+| PRO-039 | Design-Artifact Traceability — Spec-to-Code-to-Deploy Linkage | Enhancement | Adopted → DES-060 §Layer 4, 2a | ADR-098, ADR-094, PRO-037, PRO-035, PRO-041, DES-060 | Ops exploration 2026-03-01 |
+| PRO-040 | Living Golden Set — Seeker-Fed Search Quality | Enhancement | Proposed | DES-058, ADR-095, ADR-099, ADR-053 | Ops exploration 2026-03-01 |
+| PRO-041 | Documents as Executable Specifications | Enhancement | Proposed | ADR-098, ADR-094, PRO-037 | Ops exploration 2026-03-01 |
+| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature | Proposed | PRO-038, PRO-036, DES-060, ADR-095, ADR-099, ADR-098, PRINCIPLES.md §6 | Ops exploration 2026-03-01 |
 
 ---
 
@@ -812,6 +820,848 @@ Magazine API design — flat resources, single-segment slugs. Governs how Self-R
 
 **Reactivation trigger:** Magazine integration planning (post-Arc 3).
 **Re-evaluate At:** Post-Arc 3 boundary
+
+---
+
+### PRO-035: Release Tagging and Deployment Ceremony
+
+**Status:** Adopted → DES-060, ROADMAP 1a.11, 1c.17, 1c.18
+**Type:** Enhancement
+**Governing Refs:** ADR-018 (CI-Agnostic Scripts), ADR-020 (Multi-Environment), DES-039 (Infrastructure), ADR-105 (Portal Updates), DES-051 (Updates Page), DES-060 (Operational Surface)
+**Target:** Milestone 1a (tagging) → Milestone 1c (deploy ceremony + manifests) → Arc 4 (environment promotion)
+**Dependencies:** Git repository exists (Milestone 1a). CI pipeline exists (Milestone 1c). For promotion: `create-env.sh`/`destroy-env.sh` per ADR-020.
+
+**The gap.** DES-039 specifies CI/CD, Neon branch-per-PR, and environment lifecycle scripts — but no release tagging strategy, no deployment ceremony, and no impact analysis for deployed features. DES-051 has a `deployment_ref` field but nothing populates it. When something breaks, there's no structured way to answer: what changed, what it touched, who it affected, and how to restore the previous state.
+
+**Three phased capabilities:**
+
+**Phase 1: Release Tags (Milestone 1a, zero cost)**
+
+`scripts/release-tag.sh` creates annotated git tags at milestone boundaries:
+- Semantic tags: `v1a.1`, `v1a.2`, `v1b.0`, `v1c.0`
+- GitHub Releases with auto-generated notes from commits since last tag
+- Populates DES-051 `deployment_ref` field
+- Every tag is a rollback point, an audit artifact, and a provenance anchor
+
+**Phase 2: Deploy Manifest + Ceremony (Milestone 1c)**
+
+`scripts/deploy.sh` — an orchestrated deployment ceremony:
+1. Run `scripts/smoke-test.sh` against preview URL
+2. Generate `deploy-manifest.json` from git diff against last release tag
+3. Create Neon pre-deploy snapshot (if migrations present)
+4. Deploy via Vercel CLI (replaces git-triggered deploy for promotion scenarios)
+5. Verify `/api/v1/health` on deployed URL
+6. Create release tag + GitHub Release with manifest as artifact
+7. If DES-051 update warranted: draft update entry for review queue
+
+**Deploy manifest** — generated, not authored:
+```json
+{
+  "version": "v1c.3",
+  "commit": "abc123",
+  "changes": {
+    "migrations": ["003_add_entity_registry.sql"],
+    "services_touched": ["neon", "vercel"],
+    "api_routes_changed": ["/api/v1/search/suggest"],
+    "config_changed": [],
+    "design_refs": ["ADR-116", "ADR-120"]
+  },
+  "blast_radius": {
+    "tier": "T3",
+    "scope": "search suggestions + entity registry",
+    "rollback_requires": ["vercel_rollback", "neon_snapshot_restore"],
+    "population_affected": "~820M reachable"
+  },
+  "health_signals": {
+    "success": "/api/v1/health returns 200",
+    "alarm": "error rate > 1% for 5 min"
+  }
+}
+```
+
+**Blast radius auto-detection** — CI detects tier from the diff:
+
+| Tier | Detection Rule | Ceremony |
+|------|---------------|----------|
+| T1: Cosmetic | Only CSS, copy, layout changed | Merge freely |
+| T2: Feature | API routes or pages changed, no migrations | Merge freely |
+| T3: Data | `/migrations/` changed | Pre-deploy snapshot required |
+| T4: Infrastructure | `/terraform/` changed | `terraform plan` review |
+| T5: Cross-service | T3 + T4, or Contentful model + migrations | Explicit confirmation |
+
+Tier shows in PR title automatically via CI. Not a gate — visibility.
+
+**Phase 3: Environment Promotion (Arc 4+)**
+
+`scripts/promote.sh {source} {target}`:
+1. Run `smoke-test.sh` against source environment URL
+2. Generate promotion manifest (diff between environments)
+3. Neon: promote branch (or create target branch from source)
+4. Vercel: deploy to target environment via CLI
+5. Verify health on target
+6. Create tagged release for the promoted version
+
+`scripts/rollback.sh {environment}`:
+1. Restore Neon from pre-deploy snapshot
+2. Vercel instant rollback to previous deployment
+3. Verify health
+4. Create incident tag: `rollback-{env}-{timestamp}`
+
+**Feature Impact Analysis Framework.** Every deploy manifest and every Dream-a-Feature assessment (PRO-038) uses the same multi-dimensional impact analysis. These dimensions are generated from the diff and design references — not authored manually.
+
+| Dimension | What It Answers | Source |
+|-----------|----------------|--------|
+| **Population** | Who is served? How many? | ADR-128 data, language scope |
+| **Cost: Development** | Hours to build? | Git diff size, files touched |
+| **Cost: Infrastructure** | Monthly delta? Compute, storage, bandwidth? | Terraform diff, Neon compute changes, new API routes |
+| **Cost: AI tokens** | One-time or recurring token cost? | Bedrock/Voyage calls in changed code paths |
+| **Cost: Maintenance** | Tests added? Translations needed? Docs to keep current? | New test files, new i18n keys, new DES/ADR refs |
+| **Risk: Failure modes** | What could go wrong? | Service dependencies in changed paths |
+| **Risk: Blast radius** | Tier T1–T5, who is affected if it breaks? | Blast tier auto-detection (see above) |
+| **Risk: Rollback complexity** | How hard to undo? Single-service or orchestrated? | Migration presence, Contentful changes, cross-service deps |
+| **Risk: Dependency** | New vendor, library, or service dependency? | `package.json` diff, Terraform resource additions |
+| **Performance** | Latency impact? Bundle size delta? | New API routes, JS bundle analysis |
+| **Accessibility** | Does this improve or risk a11y? | axe-core diff, new interactive elements |
+| **Security** | Attack surface change? | New API endpoints, auth boundary changes |
+| **Reversibility** | How easy to remove completely if it doesn't work? | Schema changes = low reversibility; CSS = high |
+| **Principle alignment** | Does this honor all 11 principles? | Cross-reference against PRINCIPLES.md |
+| **Complexity** | Does this make the portal simpler or more complex? | Net lines, new abstractions, new config |
+
+**Example cost impact for a real feature:**
+
+```
+Feature: Spanish search (Milestone 1b)
+  Population:      +430M reachable speakers
+  Cost (dev):      ~8 hours (pipeline reuse from 1a)
+  Cost (infra):    +$0.30 one-time (Voyage embeddings for ~120K words)
+                   +~$2/mo (Neon storage for Spanish chunks)
+                   +$0 recurring (no new compute — shared search API)
+  Cost (tokens):   ~$0.50 one-time (enrichment via Bedrock Opus)
+  Cost (maintain): +15 Spanish golden set queries, +1 locale in i18n
+  Risk:            T3 (new data in book_chunks). Rollback: delete Spanish chunks.
+  Reversibility:   High — language column makes surgical removal trivial.
+```
+
+This framework makes cost a first-class citizen alongside population impact. A stakeholder can see: "Spanish search reaches 430M people for $3 one-time and $2/month." Mission per dollar.
+
+**Relationship to existing design:**
+- DES-039 § Environment Lifecycle Scripts: promotion scripts extend the existing `create-env.sh`/`destroy-env.sh` pair
+- ADR-018 § CI-Agnostic Scripts: all scripts live in `/scripts/`, callable from any CI system
+- DES-051 § `deployment_ref`: release tags populate this field
+- ADR-019 § Snapshots: pre-deploy snapshots are the rollback mechanism for T3+ deployments
+
+**Re-evaluate At:** Milestone 1a (implement Phase 1), Milestone 1c (implement Phase 2)
+**Decision Required From:** Architecture (self-implementing — scripts are CI-agnostic and self-contained)
+
+---
+
+### PRO-036: Operational Health Surface and SLI/SLO Framework
+
+**Status:** Adopted → DES-060, ADR-095 §SLI/SLO, ROADMAP 1a.10, 1c.16
+**Type:** Feature
+**Governing Refs:** ADR-095 (Observability), ADR-020 (Multi-Environment), DES-039 (Infrastructure), ADR-021 (Regional Distribution), ADR-003 (Accessibility), DES-060 (Operational Surface)
+**Target:** Milestone 1c (health endpoint + SLI targets) → Milestone 2a (ops page) → Arc 4+ (dashboard with API-driven data)
+**Dependencies:** `/api/v1/health` (already a Milestone 1c deliverable). Sentry project (Milestone 1c). Deployed services to monitor.
+
+**The gap.** The project has 7+ external services (Neon, Vercel, Sentry, Contentful, AWS Bedrock, Voyage, GitHub). No unified view of system state. No SLI/SLO definitions. No operational surface for stakeholders who lack vendor dashboard access. ADR-095 specifies observability tools but not health targets.
+
+**Two audiences, two surfaces, one data source:**
+
+| Surface | Audience | Content | When |
+|---------|----------|---------|------|
+| `/api/v1/health` (JSON) | Claude, CI, monitoring | Service connectivity, version, uptime, response times | Milestone 1c |
+| `/ops` (internal page) | Human principal, SRF stakeholders, future developers | Links to vendor dashboards, version, last deploy, SLI/SLO status, feature inventory, docs | Milestone 2a |
+
+**Not** a rebuilt Sentry or Vercel dashboard. Links out to vendor UIs for detail. Calls service APIs only for summary data (unresolved error count, deployment status, compute health).
+
+**SLI/SLO definitions (define now, measure from Milestone 1c):**
+
+| SLI | Target (SLO) | Source | Measurement Begins |
+|-----|-------|--------|-------------------|
+| Search p95 latency | < 500ms globally | ADR-021 | Milestone 1c (Sentry Performance) |
+| Search availability | 99.5% monthly uptime | Architecture | Milestone 1c (synthetic monitoring) |
+| First Contentful Paint | < 1.5s | ADR-003 | Milestone 1c (Lighthouse CI) |
+| Error rate (5xx) | < 0.1% of requests | Architecture | Milestone 1c (Sentry) |
+| Content freshness | Contentful → Neon sync < 5 min | DES-005 | Milestone 1c (webhook monitoring) |
+| Accessibility | Zero critical axe-core violations | ADR-003 | Milestone 1a (CI) |
+| Search quality | >= 80% Recall@3 on golden set | DES-058 | Milestone 1a |
+
+No SLA defined — the portal is free, no contractual obligations. SLOs are internal quality targets.
+
+**`/ops` page design (Milestone 2a):**
+```
+Portal Operations                            v1c.3 · deployed 2026-09-15
+─────────────────────────────────────────────
+Services
+  Neon       ● healthy    Sentry     ● healthy
+  Vercel     ● healthy    Contentful ● healthy
+  [each links to vendor dashboard]
+
+SLI/SLO Status (last 30 days)
+  Search p95:    340ms / 500ms target    ✓
+  Availability:  99.8% / 99.5% target   ✓
+  FCP:           1.2s  / 1.5s target    ✓
+  Error rate:    0.02% / 0.1% target    ✓
+  Quality:       84%   / 80% target     ✓
+
+Current Milestone: 2a Build
+  [link to ROADMAP.md rendered section]
+
+Recent Deploys
+  v1c.3  2026-09-15  T2: search suggestion improvement
+  v1c.2  2026-09-10  T1: typography refinement
+  [links to GitHub Releases with deploy manifests]
+
+Architecture Docs  →  [link to docs site or GitHub]
+Feature Inventory  →  /updates?view=features
+```
+
+**`/ops` as MCP tool (also Milestone 1c).** The same health data should be queryable by Claude at session start. A `scripts/status.sh` that outputs structured status:
+```bash
+./scripts/status.sh
+# Version: v1c.3
+# Milestone: 2a Build
+# Health: all services green
+# Last deploy: 2026-09-15 (T2: search suggestions)
+# Sentry: 0 unresolved issues
+# Pending PROs: 12 proposed, 3 validated
+```
+
+Claude runs this at session start for self-orientation. The human sees the same data at `/ops`. Design for Claude first (structured), render for humans second (visual).
+
+**`scripts/status.sh` is the highest-priority deliverable in this PRO.** It should exist from Milestone 1a — even before the health endpoint, even before deployed services. Initially it reports: git version, current branch, doc-validate results, pending PRO count, open question count. As infrastructure comes online, it adds: health check, Sentry status, deploy history. The script grows with the project. It is the AI operator's self-orientation tool.
+
+**The philanthropist's number.** One metric deserves permanent prominence on `/ops`:
+
+> **Reaching the world at $0.05 per million people per month.**
+
+Computed: `monthly_infrastructure_cost / (reachable_population / 1_000_000)`. At Arc 1 (~$66/month, ~820M reachable): $0.08/M/month. At Arc 3 with all languages (~$150/month, ~3B reachable): $0.05/M/month. This single number answers the philanthropist's question: "Is my money reaching people?" It also answers SRF's question: "Is this sustainable?" Display it prominently on `/ops`, in quarterly stakeholder reports, and in the deploy manifest's summary section. The number gets better with every language activation — each language reduces cost-per-person-reached.
+
+**The `/ops` page is NOT the seeker-facing `/updates` page.** DES-051 serves seekers with contemplative voice. `/ops` serves operators and stakeholders with structured data. Two pages, two audiences, shared data sources (deploy manifests, health checks).
+
+**Extension: `/updates?view=features` — population impact overlay:**
+
+DES-051 `portal_updates` table extended with two optional columns:
+- `population_served TEXT` — e.g., "~430M Spanish speakers"
+- `governing_refs TEXT[]` — e.g., ["ADR-128", "ADR-077"]
+
+The seeker view (`/updates`) omits these. The feature view (`/updates?view=features`) renders them as a stakeholder-facing inventory:
+
+| Feature | Milestone | Population Served | Status | Refs |
+|---------|-----------|-------------------|--------|------|
+| English search | 1a | ~390M | Deployed | ADR-044, ADR-029 |
+| Spanish search | 1b | ~430M additional | Deployed | ADR-128, ADR-077 |
+| Read-to-me (monastic narration) | TBD | ~771M illiterate adults | PRO-003 | PRO-003, ADR-015 |
+
+Mission-aligned impact storytelling. "The teachings now speak Spanish" for seekers; "Spanish search: ~430M additional reachable" for stakeholders. Same event, two framings.
+
+**Re-evaluate At:** Milestone 1c (health endpoint + SLI targets), Milestone 2a (ops page)
+**Decision Required From:** Architecture (self-implementing for health endpoint; stakeholder access for `/ops` — who should see it?)
+
+---
+
+### PRO-037: Document Integrity Validation in CI
+
+**Status:** Adopted → DES-060, ROADMAP 1a.9
+**Type:** Enhancement
+**Governing Refs:** ADR-098 (Documentation Architecture), ADR-094 (Testing Strategy), ADR-093 (Engineering Standards), DES-038 (Testing Strategy), DES-060 (Operational Surface)
+**Target:** Milestone 1a (highest-value, lowest-cost item in the entire operational tooling exploration)
+**Dependencies:** None. Runs against markdown files in the repo. Zero infrastructure.
+
+**The gap.** The project has ~130 ADR identifiers, ~60 DES identifiers, ~39 PRO identifiers, cross-references throughout, a navigation table in DESIGN.md, an index in DECISIONS.md, and naming conventions for files. No automated validation. Document drift compounds silently across sessions — a broken cross-reference from session 5 is invisible until session 15 when someone follows it.
+
+**`scripts/doc-validate.sh` — deterministic, fast, zero dependencies:**
+
+1. **Identifier uniqueness.** Scan all markdown files for `ADR-NNN`, `DES-NNN`, `PRO-NNN` definitions (header format: `## ADR-NNN:` or `### PRO-NNN:`). Flag duplicates.
+2. **Cross-reference resolution.** Scan all prose for identifier mentions. Verify each resolves to a definition somewhere in the corpus.
+3. **DESIGN.md navigation table.** Every DES-NNN and ADR-NNN in the nav table has a corresponding file or section. Every file in `design/` appears in the nav table.
+4. **DECISIONS.md index.** Every ADR-NNN in the index exists in a body file (DECISIONS-core.md, DECISIONS-experience.md, or DECISIONS-operations.md). Every ADR in a body file appears in the index.
+5. **File naming convention.** Files in `design/` match `{IDENTIFIER}-{slug}.md` pattern. Identifiers in filenames match the section header inside.
+6. **Dual-homed title match.** ADRs that appear in both DECISIONS-*.md and `design/` files have matching titles.
+7. **PROPOSALS.md index.** Every PRO-NNN in the index has a body. Every body has an index entry.
+8. **Suspension integrity.** ADRs marked `(Suspended → PRO-NNN)` in DECISIONS.md have no body in DECISIONS-*.md. The corresponding PRO-NNN exists in PROPOSALS.md.
+
+**Output:** Zero-exit-code on success, non-zero on failure. Human-readable report listing each violation with file path and line number. CI blocks merge on failure.
+
+**Added to `ci.yml`:**
+```yaml
+- name: Document integrity
+  run: ./scripts/doc-validate.sh
+```
+
+**Why Milestone 1a, not later:** This script validates the existing ~40 design documents. It should run before the first line of application code is written. Document integrity is a prerequisite for confident implementation — Claude reads these specs and implements from them. If the specs are inconsistent, the implementation will be inconsistent.
+
+**Potential Claude Code skill companion (advisory, not blocking):**
+
+A `/verify` skill that runs post-implementation to compare code against governing design specs. "DES-003 says search returns passages with citations — does the implementation satisfy that?" This requires semantic understanding (Claude), not pattern matching (bash). Advisory PR comment, not merge-blocking.
+
+**Relationship to existing testing:**
+- DES-038 specifies test layers: unit, integration, E2E, accessibility, performance, search quality. Document validation is a missing layer — it tests the *specification* not the *implementation*.
+- ADR-094 mentions "Neon branch-per-test-run isolation" — document validation needs no database. It's pure markdown parsing.
+
+**Re-evaluate At:** Implement at Milestone 1a start (before any application code)
+**Decision Required From:** None — this is a deterministic CI script with clear value
+
+---
+
+### PRO-038: Dream a Feature — AI-Driven Prototyping Workflow
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-020 (Multi-Environment — branch=environment), ADR-124 (Neon Platform — branching), PRO-001 (MCP Strategy), DES-039 (Infrastructure), PRO-042 (Feature Lifecycle Portal — the human surface that consumes this engine's output)
+**Target:** Milestone 2a (skill definition) — requires working portal to prototype against
+**Dependencies:** Working portal (at least Milestone 1c deployed). Neon branch-per-PR operational. Vercel preview deploys active. PRO-NNN lifecycle in PROPOSALS.md.
+
+**The vision.** Someone — the human principal, an SRF stakeholder, a future team member — describes a feature they imagine. Claude orchestrates the full lifecycle: proposal creation, isolated environment, implementation, preview deployment, and impact assessment. If accepted, the feature merges. If not, the branch is cleaned up and the PRO entry records what was learned.
+
+**Relationship to PRO-042:** PRO-038 is the autonomous development *engine* — it creates branches, implements features, and deploys previews. PRO-042 is the human *surface* — it presents the engineering leader with a morning brief, stakeholder feedback, decision journal, and "Show Me" walkthroughs. PRO-038 can function without PRO-042 (GitHub PRs + Vercel previews are sufficient). PRO-042 requires PRO-038 as the engine that populates the feature catalog.
+
+This is not a platform. It is not Gemini AppSheet. It is a Claude Code skill that orchestrates tools that already exist.
+
+**Named: "Dream a Feature."** The name invites non-technical participation. It says: you bring the vision, the system handles the engineering. This empowers everyone in the organization — a monastic editor can dream a feature just as readily as a developer.
+
+**The `/dream` skill (`.claude/skills/dream/SKILL.md`):**
+
+```
+1. Parse the feature description (natural language)
+2. /dedup-proposals — check if a related PRO already exists
+3. If no existing PRO: create PRO-NNN entry in PROPOSALS.md
+4. Create feature branch: git checkout -b dream/PRO-NNN-{slug}
+5. Create Neon branch from dev: neonctl branches create --name dream/PRO-NNN
+6. Implement the feature on the branch
+7. Push branch → Vercel auto-deploys preview
+8. Run smoke-test.sh against preview URL
+9. Generate impact assessment (see below)
+10. Present: preview URL + PRO reference + impact assessment
+11. Await human decision: promote, iterate, or discard
+```
+
+**Impact assessment (generated, not authored):**
+
+Every prototype includes an honest multi-dimensional assessment using the Feature Impact Analysis Framework (PRO-035). The human decides with full visibility — not just "does it work?" but "what does it cost, who does it serve, what could go wrong, and is it reversible?"
+
+Example for a hypothetical "reading progress indicator" dream:
+
+```
+Dream: "Show readers how far they are in a chapter"
+PRO: PRO-040 (auto-created)
+Preview: https://dream-pro-040.vercel.app
+
+Impact Assessment:
+  Population:      ~820M (all seekers who read)
+  Cost (dev):      ~2 hours
+  Cost (infra):    $0 (localStorage only, no server)
+  Cost (tokens):   $0 (no AI involvement)
+  Cost (maintain): 1 new component, 1 test, 0 translations needed
+  Risk (failure):  T1 cosmetic — if it breaks, reading still works
+  Risk (go wrong): Could feel like a progress tracker (violates
+                   Calm Technology). Mitigated: scroll position
+                   indicator, not percentage or completion metric.
+  Reversibility:   High — 1 component removal, no schema change
+  Dependency:      None new
+  Performance:     +0 KB (CSS only, no JS bundle impact)
+  Accessibility:   Neutral (decorative, ARIA-hidden)
+  Security:        No change
+  Principles:      ✓ all 11 — no tracking, no gamification,
+                   position awareness ≠ completion tracking
+  Complexity:      Low — 1 CSS rule, 1 component, 0 abstractions
+  Calm Technology: Visible only while reading, 2px subtle gold line,
+                   disappears on pause — it waits, it does not push
+  Maintenance:     Low half-life — CSS-only, unlikely to need updates
+```
+
+The assessment answers the question every stakeholder cares about: **"Is this worth it?"** — not in abstract terms, but in concrete population served, dollars spent, risk accepted, and principles honored.
+
+**Prototype lifecycle:**
+
+| State | TTL | Action |
+|-------|-----|--------|
+| Active preview | 14 days | Auto-delete Neon branch + Vercel preview after 14 days of inactivity |
+| Promoted | — | Merged to main via standard PR flow; PRO status → Adopted |
+| Discarded | — | Branch deleted, Neon branch deleted, PRO status updated with learnings |
+| Iterated | Resets 14-day TTL | Human requests changes, Claude modifies on the same branch |
+
+**Nightly cleanup:** `scripts/dream-cleanup.sh` deletes dream branches older than 14 days with no activity. Added to `neon-cleanup.yml` cron.
+
+**Who can dream?** Anyone with access to Claude Code in this repository. The skill is in `.claude/skills/dream/SKILL.md` — available to all operators. The human principal retains promotion authority (only they merge PRs to main). Non-technical stakeholders can dream features; they see preview URLs, not code.
+
+**Relationship to existing workflow:**
+- This formalizes what already happens in Claude Code conversations, adding: Neon branch isolation, Vercel preview deployment, structured impact assessment, and PRO lifecycle integration.
+- ADR-020 says branch=environment. Dream branches are disposable environments.
+- ADR-124 Neon branching is instant and zero-cost. Each dream gets its own database state.
+
+**What this is NOT:**
+- Not a code generator that outputs unreviewed code to production
+- Not a general-purpose app builder (domain-specific to this portal)
+- Not autonomous — human decides promotion, not Claude
+- Not expensive at scale — Neon branches are free (copy-on-write), Vercel previews are free (included in Pro tier)
+
+**Re-evaluate At:** Milestone 1c (working portal provides a meaningful base for prototyping)
+**Decision Required From:** Architecture (skill design), human principal (governance — who can dream?)
+
+---
+
+### PRO-039: Design-Artifact Traceability — Spec-to-Code-to-Deploy Linkage
+
+**Status:** Adopted → DES-060 §Layer 4, ROADMAP 2a
+**Type:** Enhancement
+**Governing Refs:** ADR-098 (Documentation Architecture), ADR-094 (Testing Strategy), PRO-037 (Document Integrity CI), PRO-035 (Release Tagging), PRO-041 (Docs as Executable Specs), DES-060 (Operational Surface)
+**Target:** Milestone 1c (conventions), Milestone 2a (CI roll-up)
+**Dependencies:** Identifier conventions established (they are — ADR-NNN, DES-NNN, PRO-NNN). GitHub Actions operational (Milestone 1c). Code exists to trace (Milestone 1a+).
+
+**The gap.** The project has ~130 ADRs, ~60 DES sections, and ~41 proposals governing what the code should do. Once code exists, there is no systematic way to answer: *Which specs are implemented? Which are tested? Which shipped in the last release?* Traceability is manual — grep the codebase, hope comments exist, check git history. This gap widens with every milestone.
+
+**What this is.** A lightweight convention — not a tool, not a site — that links design identifiers (ADR-NNN, DES-NNN, PRO-NNN) through the code → test → deploy lifecycle. Every artifact carries its governing references. CI aggregates them into a traceability roll-up.
+
+**Layer 1: Code references governing specs.**
+
+Source files include a `@governs` or `@implements` comment linking to the design identifier:
+
+```typescript
+// @implements DES-004 (Data Model), ADR-048 (Chunking Strategy)
+export async function chunkChapter(chapter: Chapter): Promise<Chunk[]> { ... }
+```
+
+```sql
+-- @implements DES-004, ADR-075 (Multilingual Foundation)
+CREATE TABLE chapters (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  language TEXT NOT NULL DEFAULT 'en',
+  ...
+);
+```
+
+Convention is freeform — a comment with `@implements` or `@governs` followed by identifiers. No special tooling required to add. Grep-parseable.
+
+**Layer 2: Tests reference what they validate.**
+
+Test files carry `@validates` comments linking to the spec they verify:
+
+```typescript
+// @validates DES-058 (Search Quality), ADR-041 (Hybrid Search)
+describe('search quality golden set', () => { ... });
+```
+
+```typescript
+// @validates ADR-003 (Accessibility), DES-006 §Responsive
+describe('reader responsive breakpoints', () => { ... });
+```
+
+**Layer 3: Deploy manifests carry `design_refs`.**
+
+Release tags (PRO-035) include a `design_refs` field listing all identifiers touched in the release:
+
+```json
+{
+  "tag": "v1a.3",
+  "design_refs": ["DES-004", "ADR-048", "DES-058", "ADR-041"],
+  "blast_tier": "T3",
+  "health_signals": { ... }
+}
+```
+
+Generated automatically by `scripts/release-tag.sh` scanning commits since last tag for `@implements`/`@validates` annotations.
+
+**Layer 4: CI roll-up.**
+
+A CI step (Milestone 2a) produces a traceability report:
+
+```
+Identifier Coverage Report (v1a.3)
+─────────────────────────────────
+DES-004  Data Model           ██████████ implemented ✓  tested ✓  deployed v1a.1
+DES-058  Search Quality       ████████░░ implemented ✓  tested ✓  deployed v1a.3
+ADR-048  Chunking Strategy    ██████░░░░ implemented ✓  tested ○  not deployed
+DES-017  Homepage             ░░░░░░░░░░ not started
+```
+
+This answers the stakeholder question "what's done?" without a documentation site — the report is a CI artifact, available in GitHub Actions, linked from the `/ops` page (PRO-036), and included in deploy manifests.
+
+**What this is NOT:**
+- Not a documentation rendering site (GitHub already renders markdown; stakeholders who need prettier access are served by GitHub's native UI or future consideration)
+- Not a coverage enforcement gate in Arc 1 (advisory only — enforcement in Arc 2+)
+- Not heavyweight tooling — grep + conventions + a shell script
+- Not a replacement for reading the specs — it answers "is it done?" not "what does it say?"
+
+**Relationship to PRO-037 (Document Integrity CI):** PRO-037 validates that *documents are internally consistent*. PRO-039 validates that *code is traceable to documents*. Complementary, not overlapping.
+
+**Relationship to PRO-041 (Docs as Executable Specs):** PRO-041 extracts *testable assertions* from design prose. PRO-039 links *existing code and tests* back to their governing specs. PRO-041 answers "what should we test?"; PRO-039 answers "have we tested it?"
+
+**Re-evaluate At:** Milestone 1a (establish conventions), Milestone 2a (CI roll-up automation)
+**Decision Required From:** Architecture (annotation convention), human principal (enforcement timeline)
+
+---
+
+### PRO-040: Living Golden Set — Seeker-Fed Search Quality
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** DES-058 (Search Quality Evaluation), ADR-095 (Observability/DELTA), ADR-099 (Privacy), ADR-053 (Search Analytics)
+**Target:** Milestone 2b (requires deployed search with real seekers)
+**Dependencies:** Golden retrieval set operational (Milestone 1a). Search deployed (Milestone 1c). Real seekers using the portal.
+
+**The gap.** DES-058 specifies ~58 English and ~15 Spanish test queries crafted by Claude. This captures what Claude *predicts* seekers will ask. It cannot capture what seekers *actually* ask and fail to find. The golden set is a snapshot — it improves only when a developer manually adds queries. The search quality loop is open.
+
+**Close the loop: one bit of seeker feedback, DELTA-compliant.**
+
+After search results, a single quiet line: *"Did this help you find what you were looking for?"* Two responses: a subtle checkmark (yes) and a subtle X mark (no). Nothing else. No text field, no rating, no user identification, no session association.
+
+What gets recorded:
+```sql
+-- DELTA-compliant search feedback (no user identification)
+INSERT INTO search_feedback (query_text, language, helpful, created_at)
+VALUES ('how do I find inner peace', 'en', false, now());
+```
+
+No user ID. No session ID. No IP. No behavioral profile. The query is already anonymized in `search_queries` (ADR-053); this adds one bit: helpful or not.
+
+**How it feeds the golden set:**
+
+Queries with repeated "not helpful" signals (e.g., 3+ negative signals on the same query text within 30 days) are automatically added to the golden set as regression candidates. A weekly batch job:
+1. Extracts queries with ≥ 3 negative signals
+2. De-duplicates against existing golden set entries
+3. Generates candidate entries (query + expected relevant passages, determined by Claude reviewing the corpus)
+4. Queues for human review before golden set inclusion
+
+Over time, the golden set converges on what seekers *actually need*, not what Claude *predicted* they'd need. The search quality metric's denominator becomes grounded in reality.
+
+**DELTA compliance analysis:**
+- **Dignity:** No user identification. The feedback is about the query, not the person.
+- **Embodiment:** Minimal interaction — two buttons, one click, optional. The portal doesn't demand evaluation.
+- **Love:** The signal is used solely to improve search for future seekers. Not sold, not profiled, not correlated.
+- **Transcendence:** The portal learns from aggregate patterns, not individual behavior.
+- **Agency:** Feedback is optional. No prompt, no reminder, no "you haven't rated" nudge. Present once, quietly.
+
+**Design constraint (Calm Technology):** The feedback line appears below all search results, not between them. It is text, not a modal. It does not animate, pulse, or demand attention. It is present, and it waits.
+
+**Estimated value:** If 1% of searches receive feedback and 10% of negative-signal queries reveal genuine search gaps, the golden set could grow from ~73 queries to ~200+ queries within the first year — each one grounded in a real seeker's failed search.
+
+**Re-evaluate At:** Milestone 1c (when search quality metrics from 1a/1b are available — if the golden set already covers 95% of real query patterns, this is unnecessary)
+**Decision Required From:** Architecture + DELTA review (privacy analysis)
+
+---
+
+### PRO-041: Documents as Executable Specifications
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-098 (Documentation Architecture), ADR-094 (Testing Strategy), PRO-037 (Document Integrity Validation)
+**Target:** Milestone 2a (alongside test infrastructure buildout, Deliverable 2a.21)
+**Dependencies:** PRO-037 (`doc-validate.sh`) operational. Test infrastructure (Vitest, Playwright) operational. Design documents contain testable assertions.
+
+**The gap.** ADRs and DES sections contain testable assertions in prose: "WCAG 2.1 AA" (ADR-003), "search p95 < 500ms" (ADR-021), "no horizontal scrolling at 320px" (ADR-006), "44x44px touch targets" (ADR-003), "< 100KB JS" (ADR-003), "FCP < 1.5s" (ADR-003). These assertions are manually translated into tests by the implementer. If the implementer (Claude) misses one, the assertion exists in the document but not in the test suite. The design→implement→verify loop has a manual, lossy step.
+
+**Close the loop: `scripts/doc-to-test.sh` generates test stubs from design documents.**
+
+The script parses design documents for patterns that map to testable assertions:
+
+| Document Pattern | Generated Test |
+|-----------------|---------------|
+| "WCAG 2.1 AA" / "axe-core" | `expect(axeResults).toHaveNoViolations()` |
+| "p95 < Nms" / "latency < Nms" | Performance assertion: `expect(p95).toBeLessThan(N)` |
+| "< NKB JS" | Bundle size assertion: `expect(jsSize).toBeLessThan(N * 1024)` |
+| "FCP < Ns" | Lighthouse assertion: `expect(fcp).toBeLessThan(N * 1000)` |
+| "NxNpx touch targets" | Computed style assertion: `expect(minDimension).toBeGreaterThanOrEqual(N)` |
+| "no horizontal scrolling at Npx" | Playwright viewport test at N width |
+| "cursor-based pagination" | API contract test: response has `cursor` field |
+
+**Output:** `tests/generated/spec-assertions.test.ts` — regenerated on every CI run. If a design document changes its assertion, the generated test changes. If a new document adds an assertion, a new test appears. The loop closes automatically.
+
+**What this is NOT:**
+- Not a replacement for handwritten tests. Generated tests verify *documented assertions*. Handwritten tests verify *implementation behavior*.
+- Not AI-generated. The parsing is deterministic regex/pattern matching against known assertion formats. No LLM in the loop.
+- Not comprehensive. Covers quantitative assertions (numbers, thresholds, standards). Does not cover qualitative assertions ("the reading experience should feel curated"). Those require `/verify` skill review.
+
+**Estimated coverage:** ~30-40 testable assertions exist across current design documents. Each takes ~5 lines to parse and ~3 lines to generate. The script is ~200 lines of TypeScript or bash.
+
+**The deeper value:** When a design document is the source of truth for a test, changing the document changes the test. The spec and the verification are the same artifact viewed from two angles. A stakeholder reads "search p95 < 500ms" in ADR-021; CI enforces `expect(p95).toBeLessThan(500)`. Same commitment, same number, one source.
+
+**Re-evaluate At:** Milestone 2a (alongside test infrastructure buildout)
+**Decision Required From:** Architecture (parsing patterns, test framework integration)
+
+---
+
+### PRO-042: Feature Lifecycle Portal — Calm Operations for Engineering Leadership
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** PRO-038 (Dream a Feature), PRO-036 (Operational Health), DES-060 (Operational Surface), ADR-095 (Observability), ADR-099 (DELTA Privacy), ADR-098 (Documentation Architecture), PRINCIPLES.md §6 (Calm Technology)
+**Target:** Milestone 2a (lightweight: morning brief + email feedback) → Milestone 3b (full catalog UI + stakeholder circles + decision journal)
+**Dependencies:** PRO-038 (Dream a Feature) operational — provides the autonomous development engine. DES-060 operational surface deployed (Milestone 1c). Vercel preview deployments working. Features exist to manage.
+
+**The gap.** PRO-038 describes how features are autonomously developed and deployed to preview branches. DES-060 provides health monitoring and deployment ceremony. Neither addresses what happens *between* preview deployment and production merge — the review, feedback, decision, and institutional memory lifecycle. The engineering leader currently manages this lifecycle across GitHub PRs, Vercel dashboards, email threads, and mental notes. The cognitive load compounds with every concurrent feature.
+
+**The deeper gap.** Every operational tool the engineering leader has ever used was designed to maximize information density. More charts, more alerts, more knobs. This violates the portal's own Principle 6: "Technology requires the smallest possible amount of attention." The portal's operational experience should follow the same design principles as the seeker experience.
+
+**Design principle: Calm Operations.** The operational surface applies the portal's 11 principles to the engineering leader's experience:
+
+| Portal Principle | Seeker Application | Operations Application |
+|------------------|--------------------|----------------------|
+| Calm Technology (§6) | No push notifications, no autoplay | Morning brief, not real-time alerts. Nothing flashes. |
+| Direct quotes only (§1) | Verbatim Yogananda | Verbatim metrics. No AI spin. "87% Recall@3" not "Great quality!" |
+| Signpost, not destination (§4) | Guide toward practice | Guide toward decision. Present options, don't persuade. |
+| Global-first (§5) | Works on 2G in Bihar | Works in email, on mobile, low-bandwidth. No heavy SPA. |
+| Accessibility (§7) | Screen readers, keyboard nav | Multiple consumption modes — visual catalog, text brief, email digest |
+| Full attribution (§2) | Every quote carries provenance | Every AI recommendation cites the governing principle or spec. |
+| Honoring the spirit (§3) | Technology disappears, teachings shine | Technology disappears, *the work* shines. |
+
+---
+
+#### Layer 1: The Morning Brief
+
+A daily digest delivered by email (or Slack, or however she consumes information). Written in the project's own contemplative voice. Not a dashboard — a letter.
+
+```
+Good morning.
+
+The portal is well. All systems healthy.
+Search quality: 87% Recall@3 (stable).
+Serving 2 languages to ~820M reachable people.
+
+Two features await your attention:
+
+  ◈ Sanskrit Hover Definitions
+    Preview: https://dream-044.portal.vercel.app
+    Theological Review: 2 of 3 responded.
+    AI assessment: Aligns with DES-042. Principle-clean.
+    One note worth reading (Brother Ananda's comment).
+
+  ◈ Reading Progress Indicator
+    Preview: https://dream-045.portal.vercel.app
+    AI assessment: Adds 12KB JS — within budget but notable.
+    Two implementation options prepared for your review.
+
+Nothing else needs you today.
+
+Cost this month: $87 · $0.04 per million people reached.
+
+                    ─── ◊ ───
+```
+
+**Implementation:** A scheduled job (GitHub Actions cron or Lambda) aggregates: `/api/v1/health` status, open feature branches with Vercel previews, pending stakeholder comments, cost metrics from billing APIs. Renders to email via a template that uses the portal's design tokens (Merriweather, warm cream, gold accents). Sends via AWS SES (or SendGrid per SRF stack).
+
+**When nothing needs attention**, the brief says so explicitly: "The portal is well. No features awaiting review. No pending decisions. The teachings are being served." This is not the absence of information — it is positive information. Permission to rest.
+
+**Frequency:** Daily on weekdays. Configurable. Can be set to "weekly digest" or "only when something needs me." Calm Technology means the engineering leader controls the cadence, not the system.
+
+---
+
+#### Layer 2: The Feature Catalog
+
+A page within the portal (not a separate app) at `/ops/features` — extending the `/ops` page from DES-060. Lists all features in the lifecycle: proposed, in development, preview deployed, awaiting review, approved, declined.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ The Garden                                                       │
+│                                                                  │
+│ Awaiting Your Review                                             │
+│ ────────────────────                                             │
+│                                                                  │
+│ ◈ Sanskrit Hover Definitions                PRO-044 · DES-062   │
+│   Preview ready · Theological Review: 2/3 · Resonance: high     │
+│   [Show Me]  [Review]  [Assign Circle]                           │
+│                                                                  │
+│ ◈ Reading Progress Indicator                PRO-045              │
+│   Preview ready · No circle assigned · Resonance: moderate       │
+│   AI note: performance budget consideration                      │
+│   [Show Me]  [Review]  [Assign Circle]                           │
+│                                                                  │
+│ Growing                                                          │
+│ ────────────────────                                             │
+│                                                                  │
+│ ○ Quiet Corner Circadian Bowls              PRO-046              │
+│   Development: 60% · Est. preview: tomorrow                      │
+│   [Watch]                                                        │
+│                                                                  │
+│ Planted for Later                                                │
+│ ────────────────────                                             │
+│                                                                  │
+│ ◌ Cross-Book Connection Graph               PRO-025 · Arc 3     │
+│   Planted 2027-01 · Blooms: Milestone 3c                         │
+│                                                                  │
+│ Recently Harvested                                               │
+│ ────────────────────                                             │
+│                                                                  │
+│ ✓ Daily Passage Seasonality                 PRO-043              │
+│   Approved 2027-03-12 · Merged v2a.4 · Decision: "Beautiful."   │
+│                                                                  │
+│                     ─── ◊ ───                                    │
+│                                                                  │
+│ [+ Plant a New Feature]    [The Archive]    [Decision Journal]   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**The garden metaphor.** Features are *planted*, not filed. They *grow*, not "progress through stages." They're *harvested* when merged, not "closed." Some are *planted for later* — seeded now, blooming in a future arc. The language matters — it shapes how the engineering leader thinks about her work. Not as project management, but as cultivation.
+
+**Typography and layout:** Same design language as the seeker experience. Merriweather headings, Lora body, warm cream background, gold accents. Max-width 42rem (slightly wider than the reader's 38rem — this is a working page, not a reading page). Generous whitespace. Lotus dividers.
+
+---
+
+#### Layer 3: Stakeholder Circles
+
+Pre-defined groups for feedback routing. The engineering leader defines circles once; assigns features to circles with one gesture.
+
+| Circle | Members | Cadence | Access Level |
+|--------|---------|---------|-------------|
+| Theological Review | SRF theological advisor(s) | Per-feature | Preview + comment |
+| Seeker Experience | 2–3 SRF staff | Per-feature | Preview + comment |
+| Philanthropist | Funder | Monthly digest | Digest + preview on request |
+| Engineering | Future team members | Per-feature | Full access |
+
+**How feedback works.** Circle members receive a clean email: preview link, feature description (AI-drafted, engineering leader-approved), and a reply-to-comment mechanism. No login required — responses via email reply are captured. Alternatively, a simple feedback page at `/ops/feedback/{token}` with:
+
+- Preview iframe (live Vercel branch deployment)
+- Comment box (plain text, no formatting needed)
+- Three response options: "Looks good" / "I have a suggestion" / "I have a concern"
+- Optional name (not required — anonymous feedback is valid)
+
+**DELTA compliance (ADR-099).** Stakeholder feedback is operational data, not seeker behavioral data. Circle membership is explicit opt-in. No tracking of when they view previews or how long they spend. Comments are stored with attribution (operational record, not surveillance).
+
+**The engineering leader's gesture:** On any feature card, she clicks "Assign Circle" → selects one or more circles → optional personal note → send. The system generates the email, creates the feedback page, and tracks responses. When all circle members have responded (or the deadline passes), the feature surfaces in the morning brief.
+
+---
+
+#### Layer 4: The "Show Me" Walkthrough
+
+On any feature with a deployed preview, a guided narration of the seeker experience.
+
+**Implementation approach.** Not a recorded video — a live, AI-narrated tour. Claude Code generates a walkthrough script from the feature's governing DES/ADR specs and the actual deployed preview:
+
+1. Claude reads the feature's PRO description and governing specs
+2. Claude visits the Vercel preview via Playwright
+3. Claude generates a narrated walkthrough: screenshots + contextual commentary
+4. The walkthrough is stored as a series of annotated screenshots with voice-over text
+
+**What the narration covers:**
+- The seeker's encounter path ("A seeker reading Chapter 26 encounters 'samadhi'...")
+- The interaction mechanics ("On desktop, they hover. On mobile, they tap.")
+- Accessibility behavior ("Screen readers announce: 'samadhi — a Sanskrit term meaning...'")
+- Principle adherence ("The definition comes from the canonical glossary, never AI-generated. Principle 1: Direct Quotes Only.")
+- Performance impact ("This adds 3KB to the page. Within the 100KB JS budget.")
+
+**Value:** The engineering leader sees the *experience*, not the code. She evaluates at the right level — "Is this worthy of presenting Yogananda's words?" — not "Is this a good React component?"
+
+---
+
+#### Layer 5: The Decision Journal
+
+Every feature decision — approve, revise, decline — is captured with timestamp, reasoning, and context.
+
+**Data model:**
+
+```sql
+CREATE TABLE feature_decisions (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  pro_ref TEXT NOT NULL,                    -- PRO-NNN identifier
+  decision TEXT NOT NULL CHECK (decision IN (
+    'approve', 'revise', 'decline', 'defer'
+  )),
+  reasoning TEXT,                           -- engineering leader's note (optional)
+  ai_recommendation TEXT,                   -- what Claude recommended
+  ai_reasoning TEXT,                        -- why Claude recommended it
+  principle_refs TEXT[],                    -- principles most relevant to this decision
+  stakeholder_feedback_summary TEXT,        -- aggregated circle feedback
+  decided_by TEXT NOT NULL,                 -- who made the decision
+  decided_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+**What this enables over time:**
+- **Pattern recognition.** "You've revised 60% of features for accessibility. You've declined 3 features, all for Principle 6 reasons." The engineering leader sees her own design taste emerging.
+- **Institutional memory.** When she moves on, her successor inherits not just the codebase but her judgment — encoded in hundreds of decision points with reasoning.
+- **AI calibration.** Claude's recommendations improve based on the journal. If she consistently revises for accessibility that Claude didn't flag, Claude learns to weight accessibility higher.
+- **Stakeholder transparency.** The philanthropist or SRF leadership can see: "47 features evaluated, 32 approved, 8 revised, 5 declined, 2 deferred. Average time from proposal to production: 3 days."
+
+**Privacy:** The journal is operational metadata about the engineering process, not seeker data. It lives in the portal's Neon database, accessible from the `/ops` surface. It does not track seekers, does not contain personal data beyond the decision-maker's name.
+
+---
+
+#### Layer 6: The "Why Not?" Archive
+
+Every declined or deferred feature enters the archive with full context.
+
+Accessible from the feature catalog as "The Archive" — a searchable collection of features the portal deliberately chose not to build, each with:
+
+- The original PRO description
+- The AI impact assessment
+- Stakeholder feedback (if any)
+- The engineering leader's decline reasoning
+- The governing principle(s) that informed the decision
+
+**The archive as immune system.** When someone asks "Why doesn't the portal have push notifications?" the archive answers: "PRO-NNN, proposed 2027-04, declined. Principle 6: Calm Technology — 'The portal waits; it does not interrupt.' Engineering leader's note: 'This would compromise the contemplative character of the portal.'"
+
+**The archive as wisdom.** Over years, the archive tells a story about what the portal *is* by documenting what it deliberately *isn't*. This is rare in software projects — most teams lose track of why features were rejected. The archive preserves that reasoning permanently.
+
+---
+
+#### Layer 7: The Resonance Score
+
+A composite signal — not a quality metric — predicting how well a feature fits the portal's character.
+
+**Components:**
+
+| Signal | Weight | Source |
+|--------|--------|--------|
+| Principle alignment | 30% | AI analysis against 11 principles |
+| Design language consistency | 20% | Does it follow established DES patterns? |
+| Accessibility score | 15% | axe-core results on preview |
+| Performance budget impact | 15% | JS size, FCP delta, network requests |
+| Engineering leader's historical pattern | 20% | Decision journal — what she approves vs. revises |
+
+**Not a gate.** The resonance score is advisory, never blocking. A feature with low resonance may be exactly right — it may be breaking new ground. The score is a mirror, not a judge: "Here's how this fits with everything you've built and decided so far."
+
+**The historical pattern component** is the most interesting. It learns from the decision journal. If the engineering leader consistently approves features with generous whitespace and declines features with dense UI, the resonance score weights whitespace higher. The system learns her taste — not to replace her judgment, but to reflect it back.
+
+---
+
+#### A Day in Her Life (Fully Realized)
+
+**7:30am** — Morning brief arrives by email. The portal is healthy. One feature awaits review. She reads it with her coffee. The Sanskrit hover preview looks good. Brother Ananda left a thoughtful comment about IAST transliteration. She taps "Send to Theological Review" from the email link.
+
+**10:00am** — She has an idea: "What if the Quiet Corner played different bowls for different times of day?" She types it into the feature catalog (or tells Claude via any interface). Claude creates PRO-046, runs the impact assessment — Principle 6 check: user-initiated audio, consistent. Cost: +0.2KB per audio file. Population impact: neutral. Resonance: high. She queues it for development with one click.
+
+**12:00pm** — The Theological Review circle has responded. 2 approvals, 1 note: "Use IAST transliteration, not Harvard-Kyoto." She adds a revision note: "Use IAST." Claude re-enters development with the feedback. No context-switching needed — everything happened in the catalog.
+
+**2:00pm** — She opens "Show Me" on a feature she approved yesterday. Watches the 30-second walkthrough. The daily passage seasonality feature shows winter passages with subtle cool undertones. She smiles. This is beautiful. She clicks Approve, adds a note: "Beautiful." Claude merges to main, deploys to production. The portal grows.
+
+**4:30pm** — She checks the catalog. Nothing else needs her. The Quiet Corner audio feature is growing — Claude is 60% through, estimated preview tomorrow. She can click "Watch" to see Claude working if she's curious, but she doesn't need to.
+
+**5:00pm** — The portal tells her: "The portal is well. The Sanskrit hover revision will be ready for review tomorrow morning. The teachings are being served." She closes her laptop.
+
+---
+
+#### Implementation Phasing
+
+| Phase | Milestone | What Ships | Effort |
+|-------|-----------|-----------|--------|
+| **Lightweight** | 2a | Morning brief (email), PRO-038 dream engine, Vercel preview links, email-based circle feedback | Days |
+| **Catalog** | 3b | `/ops/features` garden UI, circle management, "Show Me" walkthrough, decision journal data model | Weeks |
+| **Full** | 3b+ | Resonance score, historical pattern learning, "Why Not?" archive, stakeholder digest customization | Iterative |
+
+**Phase 1 (Lightweight)** can function with zero custom UI — the morning brief is an email, feature management uses GitHub PRs and Vercel previews, stakeholder feedback uses email reply. This validates the workflow before building the surface.
+
+**Phase 2 (Catalog)** builds the garden UI within the existing `/ops` page structure from DES-060. The feature catalog is a Next.js page consuming GitHub API (branches, PRs), Vercel API (previews), and the portal's own database (decisions, comments).
+
+**Phase 3 (Full)** adds the intelligence layers — resonance scoring, pattern learning from the decision journal, and the archive as a navigable collection.
+
+---
+
+#### What This Is NOT
+
+- **Not a project management tool.** No Gantt charts, no velocity tracking, no story points, no sprint boards. Features grow at their own pace. The engineering leader tends, not tracks.
+- **Not a CI/CD dashboard.** DES-060 handles deployment health. PRO-042 handles the *human* lifecycle around features — decisions, feedback, institutional memory.
+- **Not required for the portal to function.** Seekers never see this. If PRO-042 is never built, the portal still serves Yogananda's teachings. This serves the *people building* the portal.
+- **Not surveillance of the engineering leader.** The decision journal is hers. She controls what reasoning she captures. The resonance score reflects her patterns back to her — it doesn't report them to anyone.
+
+#### Relationship to Other Proposals
+
+- **PRO-038 (Dream a Feature)** is the engine — autonomous development, Neon branching, Vercel preview deployment. PRO-042 is the surface — the human experience around that engine.
+- **PRO-036 (Operational Health)** provides the health monitoring that feeds the morning brief's "is everything okay?" answer. PRO-042 extends that health surface with the feature lifecycle.
+- **DES-060 (Operational Surface)** provides the infrastructure (`/ops` page, deploy manifests, health endpoint). PRO-042 adds feature-specific pages to that surface.
+- **PRO-039 (Design-Artifact Traceability)** provides the `@implements`/`@validates` annotation convention that PRO-042's catalog uses to show which specs a feature implements.
+
+**Re-evaluate At:** Milestone 2a (lightweight: morning brief + email circles), Milestone 3b (full catalog UI)
+**Decision Required From:** Architecture (data model, integration points), human principal (stakeholder circle membership, feedback governance — who can comment on features?)
 
 ---
 

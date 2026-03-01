@@ -392,4 +392,6 @@ Terraform manages deployed environments only. Local development uses direct Neon
 *Section revised: 2026-02-26, bootstrap automation via `scripts/bootstrap.sh` (ADR-020), environment lifecycle scripts (`create-env.sh`/`destroy-env.sh` for Arc 4+), `terraform/bootstrap/trust-policy.json` added to module layout.*
 *Section revised: 2026-02-28, secrets management architecture — AWS Secrets Manager as single source of truth (ADR-125), Vercel OIDC federation for zero long-lived AWS credentials (ADR-126), environment-scoped security, /lib/config.ts facade pattern.*
 
+**Operational surface companion:** DES-060 specifies the operational *surface* built on top of this infrastructure foundation — health endpoint, `/ops` dashboard, deployment ceremony scripts, SLI/SLO framework, and design-artifact traceability. DES-039 is the infrastructure; DES-060 is the visibility layer. See PRO-035, PRO-036, PRO-037, PRO-039.
+
 ---

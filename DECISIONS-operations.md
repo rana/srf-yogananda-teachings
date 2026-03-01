@@ -595,6 +595,22 @@ Response:
 
 New Relic Synthetics pings this endpoint at regular intervals. Alert if non-200 for > 2 minutes.
 
+#### SLI/SLO Numeric Targets
+
+Service Level Indicators (SLIs) and Objectives (SLOs) for the production portal. These are tunable parameters per ADR-123 — initial values based on pre-production estimates. Revisit after first month of production traffic. Full operational surface specification: DES-060 (PRO-036).
+
+| SLI | Target (SLO) | Measurement Source |
+|-----|-------------|-------------------|
+| Search p95 latency | < 500ms | New Relic APM / Vercel Analytics |
+| Availability | 99.5% uptime (monthly) | New Relic Synthetics (2-min check interval) |
+| First Contentful Paint (FCP) | < 1.5s | Vercel Analytics Core Web Vitals |
+| Error rate | < 0.1% of requests | Sentry error count / Vercel request count |
+| Search quality (Recall@3) | >= 80% | Golden set evaluation (DES-058) |
+
+**Alerting thresholds:** SLO breach triggers PagerDuty-style alert (configured in New Relic) to the human principal. Sustained degradation (>15 min below SLO) escalates. Search quality is evaluated at deployment time (golden set regression), not continuously.
+
+*Section revised: 2026-03-01, PRO-036 operational health surface graduation*
+
 #### Structured Logging
 
 Every API route logs a consistent JSON structure via `/lib/logger.ts`:

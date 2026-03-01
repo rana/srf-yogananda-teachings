@@ -66,6 +66,7 @@
 | [DES-057: Error Handling and Resilience](#des-057-error-handling-and-resilience) | 1+ | DESIGN.md |
 | [DES-058: Search Quality Evaluation Harness](design/search/DES-058-search-quality-evaluation-harness.md) | 1 | design/search/ |
 | [DES-059: Vocabulary Bridge](design/search/DES-059-vocabulary-bridge.md) | 1+ | design/search/ |
+| [DES-060: Operational Surface — Health, Deployment, and Traceability](design/search/DES-060-operational-surface.md) | 1a, 1c, 2a | design/search/ |
 
 ---
 
