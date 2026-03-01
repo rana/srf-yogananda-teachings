@@ -19,8 +19,10 @@ What would make it smooth and graceful for a human?
 ---
 /compose garden greenfield, gaps, coherence, crystallize
 
-/compose garden greenfield, gaps, coherence, docs-quality, crystallize
+Think slowly and carefully.
 
+/compose deep-review, garden greenfield, gaps, coherence, docs-quality, crystallize
+/deep-review
 
 ---
 What questions would I benefit from asking to clean up the project?
