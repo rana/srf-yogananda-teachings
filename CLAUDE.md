@@ -10,24 +10,27 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 1. **PRINCIPLES.md** — The 11 immutable commitments that define the project, with rationale. Always load this.
 2. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
-3. **DESIGN.md** — Cross-cutting architecture, API design, observability, testing, personas, editorial patterns
-4. **DESIGN-arc1.md** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure
-5. **DESIGN-arc2-3.md** — Frontend, accessibility, video, events, places, multilingual infra, glossary, staff tools
-6. **DECISIONS.md** — Index and navigational summaries for 126 ADRs across 11 topical groups. ADR bodies split into three files:
+3. **DESIGN.md** — Navigation index + cross-cutting sections (architecture, API, security, observability, testing, personas, content pipeline). The index maps every DES/ADR section to its individual file in `design/`.
+4. **design/search/** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure (10 files)
+5. **design/experience/** — Frontend, pages, accessibility, responsive, video, events, places, multilingual (9 files)
+6. **design/editorial/** — Staff tools, editorial workflows, content intelligence, curated features (14 files)
+7. **DECISIONS.md** — Index and navigational summaries for 126 ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–053, 114–121, 125–128). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
    - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
-7. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
-8. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
+8. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
+9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
-**Arc-gated reading.** Do not read front-to-back. Load what the task requires:
-- **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current arc/milestone
-- **When implementing Arc 1 (Foundation — Milestones 1a/1b/1c):** DESIGN.md (root) + DESIGN-arc1.md + DECISIONS-core.md (ADRs referenced by those sections)
-- **When implementing Arc 2 (Presence — Milestones 2a/2b):** DESIGN.md (root) + DESIGN-arc2-3.md + DESIGN-arc1.md § DES-039 (Infrastructure — cross-cutting) + DECISIONS-core.md + DECISIONS-experience.md
-- **When implementing Arc 3 (Wisdom — Milestones 3a–3d):** DESIGN.md (root) + DESIGN-arc2-3.md + DECISIONS-core.md + DECISIONS-experience.md
+**Domain-gated reading.** Do not read front-to-back. Load what the task requires:
+- **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current arc/milestone + DESIGN.md (index + cross-cutting)
+- **When implementing search/data/ingestion:** + `design/search/` files (or specific ones by identifier)
+- **When implementing frontend/pages/UX:** + `design/experience/` files (specific ones by identifier) + DECISIONS-experience.md
+- **When implementing editorial/staff/intelligence:** + `design/editorial/` files (specific ones by identifier) + DECISIONS-operations.md
 - **When making decisions:** DECISIONS.md index to locate the relevant group, then load the appropriate body file
 - **When evaluating proposals or at arc boundaries:** PROPOSALS.md
-- **Not needed for Arc 1:** DESIGN-arc2-3.md, DECISIONS-experience.md, DECISIONS-operations.md, PROPOSALS.md (unless a PRO-NNN is cross-referenced)
+- **Arc 1 tasks primarily use:** `design/search/` + DECISIONS-core.md
+- **Arc 2 tasks primarily use:** `design/experience/` + DECISIONS-experience.md
+- **Arc 3 tasks primarily use:** `design/editorial/` + `design/search/` (data platform)
 
 ## Ignore
 
@@ -86,8 +89,10 @@ Eleven principles define the project's identity and directly constrain code gene
 /messages/ — Locale JSON files (next-intl)
 /scripts/ — Bootstrap, CI-agnostic deployment, and environment lifecycle scripts (ADR-018, ADR-020)
 /.github/workflows/ — CI/CD pipelines (ci.yml, terraform.yml, neon-branch.yml)
+/design/ — Individual design specifications (search/, experience/, editorial/)
+/docs/guides/ — Human onboarding and setup (getting-started, credentials, manual steps)
+/docs/operations/ — Operational runbooks and procedures (Milestone 3b+)
 /docs/reference/ — Background research (not active project docs)
-/docs/operational/ — Operational playbook (Milestone 3b+: procedures for editorial, ingestion, VLD)
 ```
 
 **Design tokens:** Merriweather + Lora + Open Sans (Latin); Noto Serif Devanagari (Hindi reading) + Noto Sans Devanagari (Hindi UI/verses). Hindi body text at 20px / 1.9 line height (ADR-080). SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
@@ -109,13 +114,15 @@ Eleven principles define the project's identity and directly constrain code gene
 - **Suspended** — Moved to PROPOSALS.md. ADR body **deleted** from DECISIONS body file; DECISIONS.md index annotated `(Suspended → PRO-NNN)`. PRO entry is the single source of truth. (`Suspended → PRO-NNN`)
 - **Implemented** — Validated through code. (`Implemented — see [code path]`)
 
-**DES-NNN** (Design Sections) — Sections split across three files: DESIGN.md (cross-cutting), DESIGN-arc1.md, DESIGN-arc2-3.md. The navigation table in DESIGN.md shows which file contains each section. Sections without an ADR governance reference get DES identifiers. Sections governed by active ADRs use `## ADR-NNN: Title` headers instead. Arc 4+ design sections were removed with the DESIGN-arc4-plus.md file — they will be recreated from PROPOSALS.md when those directions are planned.
+**DES-NNN** (Design Sections) — Individual files organized by domain in `design/`: `search/` (search and data platform), `experience/` (seeker-facing pages and UX), `editorial/` (staff tools and content intelligence). Cross-cutting sections remain in DESIGN.md root. The navigation table in DESIGN.md maps every section to its file. File naming: `{IDENTIFIER}-{slug}.md` (e.g., `DES-004-data-model.md`). Subsections stay with their parent file (DES-007–016 are within DES-006; DES-045/047/048 are within DES-044). New sections: create the file in the appropriate domain directory, add a row to the DESIGN.md navigation table.
 
 **PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Milestone refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
 
 When referencing identifiers in prose, use the prefix form: `ADR-017`, `DES-003`, `PRO-001`. Always zero-pad to three digits.
 
-**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a DESIGN file (e.g., ADR-048 appears in both DECISIONS-core.md and DESIGN-arc1.md). Rule: DECISIONS carries the decision rationale and alternatives analysis; the DESIGN file carries the implementation specification. When implementing, follow the DESIGN file; when understanding *why*, read DECISIONS. Titles must match between locations — use the full DECISIONS title in both. When editing a dual-homed ADR, update both locations and verify titles match.
+**Dual-homed sections.** Some ADRs have sections in both DECISIONS.md and a `design/` file (e.g., ADR-048 appears in both DECISIONS-core.md and `design/search/ADR-048-chunking-strategy-specification.md`). Rule: DECISIONS carries the decision rationale and alternatives analysis; the design file carries the implementation specification. When implementing, follow the design file; when understanding *why*, read DECISIONS. Titles must match between locations — use the full DECISIONS title in both. When editing a dual-homed ADR, update both locations and verify titles match.
+
+**Cross-reference convention.** In prose, use bare identifiers: "See ADR-048", "per DES-003". No file paths in prose — identifiers are stable across restructuring. Clickable links with file paths belong only in navigation indexes (DESIGN.md nav table, DECISIONS.md index). File naming (`{IDENTIFIER}-{slug}.md`) makes identifiers discoverable via glob: `**/ADR-048*` finds the file without consulting an index.
 
 ## Project Skills
 
@@ -137,7 +144,7 @@ Six custom skills in `.claude/skills/`:
 
 ## Document Maintenance
 
-Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 2 arc files, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
+Root documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md, DECISIONS.md index + 3 body files, PROPOSALS.md, ROADMAP.md) plus ~33 individual design files in `design/` (search/, experience/, editorial/). Keep them accurate as you work — drift compounds across sessions. (ADR-098)
 
 | When this happens... | ...update these documents |
 |----------------------|--------------------------|
@@ -152,8 +159,9 @@ Twelve documents (CLAUDE.md, PRINCIPLES.md, CONTEXT.md, DESIGN.md + 2 arc files,
 | New API endpoint added | Follow DES-019 § API Conventions (ADR-110). Paginated lists: `data`/`pagination`/`meta`; complete collections: `data`/`meta`; single resources: object directly. |
 | Exploration ready for curation | Run `/dedup-proposals` to consolidate `.elmer/proposals/` explorations into PRO-NNN entries in PROPOSALS.md. |
 | Proposal approved for merge | Run `/proposal-merge <PRO-NNN>` or `/theme-integrate <PRO-NNN>`. Skill handles ADR/DES creation and updates PRO status to Adopted. |
-| Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of DESIGN.md section. Update governing ADR status if applicable. |
-| Parameter tuned (ADR-123) | Annotate DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
+| Design section fully implemented | Add `**Status: Implemented** — see [code path]` at top of the design file. Update governing ADR status if applicable. |
+| New design section created | Create `design/{domain}/{IDENTIFIER}-{slug}.md`. Add row to DESIGN.md navigation table. |
+| Parameter tuned (ADR-123) | Annotate the design file: `*Parameter tuned: [date], [old] → [new], [evidence].*` Update `/lib/config.ts`. |
 | Feature idea without an arc | Add PRO-NNN entry to PROPOSALS.md (Status: Proposed). Cross-reference governing ADRs if known. |
 | Feature cut from an arc during development | Create PRO-NNN entry in PROPOSALS.md (Status: Suspended or Deferred) with original arc/milestone, cut reason, and re-evaluation target. Update ROADMAP.md § Unscheduled Features summary table. |
 | ADR suspended (moved to unscheduled) | Create PRO-NNN in PROPOSALS.md (Status: Suspended from ADR-NNN). **Delete** ADR body from DECISIONS body file. Annotate DECISIONS.md index `(Suspended → PRO-NNN)`. Update ROADMAP.md § Unscheduled Features summary table. |
@@ -163,11 +171,11 @@ At arc boundaries, reconcile all documents for consistency — personas, roles, 
 
 ## Documentation–Code Transition
 
-Once implementation begins, DESIGN.md sections transition from "authoritative spec" to "architectural reference":
+Once implementation begins, design files transition from "authoritative spec" to "architectural reference":
 
-1. **Before code exists:** DESIGN.md is the source of truth. Follow it precisely.
-2. **When a section is implemented:** Add `**Status: Implemented** — see [code path]` at the top. Code becomes the source of truth for implementation details; DESIGN.md remains the architectural rationale.
-3. **When implementation diverges from design:** Update DESIGN.md to reflect the actual decision. DESIGN.md is a living document, not a historical artifact.
+1. **Before code exists:** The design file is the source of truth. Follow it precisely.
+2. **When a section is implemented:** Add `**Status: Implemented** — see [code path]` at the top of the file. Code becomes the source of truth for implementation details; the design file remains the architectural rationale. Stop loading the file routinely.
+3. **When implementation diverges from design:** Update the design file to reflect the actual decision. Design files are living documents, not historical artifacts.
 4. **Section-level change tracking:** When substantially revising a section, add `*Section revised: [date], [reason or ADR]*` at the section's end.
 
 ADRs (in DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md) are mutable living documents. Update them directly — add, revise, or replace content in place. Do not create superseding ADRs or use withdrawal ceremony. ADR numbers and ordering may be restructured for readability. When substantially revising an ADR, add `*Revised: [date], [reason]*` at the section's end. Git history serves as the full audit trail.

@@ -26,7 +26,7 @@ Break the proposal into discrete integration targets. For each proposed change, 
 | New arc or milestone | ROADMAP.md | Insert new arc section |
 | New open question | CONTEXT.md | Add to appropriate tier |
 | Resolved open question | CONTEXT.md | Move from open to resolved |
-| Schema change | DESIGN-arc1.md § DES-004 | Amend data model section |
+| Schema change | `design/search/DES-004-data-model.md` | Amend data model section |
 | New API surface | DESIGN.md § DES-019 | Amend API section |
 
 For each item, record:

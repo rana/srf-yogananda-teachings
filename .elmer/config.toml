@@ -67,9 +67,9 @@ model = "sonnet"
 max_turns = 5
 rules = [
   "ADR count in DECISIONS.md index table matches total ADRs across DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md",
-  "DES-NNN identifiers in DESIGN.md index are contiguous and match sections in DESIGN-arc*.md files",
+  "DES-NNN identifiers in DESIGN.md index are contiguous and match individual files in design/search/, design/experience/, design/editorial/",
   "PRO-NNN identifiers in PROPOSALS.md are contiguous with no gaps",
-  "Every ADR-NNN cross-reference in DESIGN*.md files points to an ADR that exists in DECISIONS*.md",
+  "Every ADR-NNN cross-reference in design/**/*.md files points to an ADR that exists in DECISIONS*.md",
   "ROADMAP.md milestone deliverable counts match the actual deliverable lists",
   "CLAUDE.md Quick Reference tech stack matches DESIGN.md tech stack section",
 ]

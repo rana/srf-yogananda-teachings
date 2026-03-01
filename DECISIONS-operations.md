@@ -716,7 +716,7 @@ Three tiers of MCP server adoption, phased with the project:
 
 **Custom MCP server (unscheduled):**
 
-The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI development-time access to the book corpus — "find all passages about meditation in Autobiography." All three tiers were moved to Unscheduled Features (2026-02-24) to focus on core delivery. The architecture is preserved in DESIGN-arc1.md § DES-031.
+The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI development-time access to the book corpus — "find all passages about meditation in Autobiography." All three tiers were moved to Unscheduled Features (2026-02-24) to focus on core delivery. The architecture is preserved in `design/search/DES-031-mcp-server-strategy.md`.
 
 ### Consequences
 
@@ -758,9 +758,10 @@ Maintain a twelve-document system with explicit roles, a routing document (CLAUD
 | CLAUDE.md | AI routing, compressed principles, maintenance protocol | AI collaborators |
 | PRINCIPLES.md | 12 immutable commitments with expanded rationale | All audiences |
 | CONTEXT.md | Project background, open questions, stakeholder context | All audiences |
-| DESIGN.md | Cross-cutting architecture, API, observability, testing, personas | Developers, AI |
-| DESIGN-arc1.md | Search, data model, ingestion, chunking, MCP, infrastructure (Arc 1) | Developers, AI |
-| DESIGN-arc2-3.md | Frontend, accessibility, video, events, staff tools (Arcs 2–3) | Developers, AI |
+| DESIGN.md | Cross-cutting architecture index, API, observability, testing, personas | Developers, AI |
+| `design/search/` | Search, data model, ingestion, chunking, MCP, infrastructure | Developers, AI |
+| `design/experience/` | Frontend, accessibility, video, events, places | Developers, AI |
+| `design/editorial/` | Staff tools, content intelligence, editorial workflows | Developers, AI |
 | DECISIONS.md | ADR navigational index with group summaries | Developers, AI |
 | DECISIONS-core.md | ADR bodies: Foundational, Architecture, Content, Search | Developers, AI |
 | DECISIONS-experience.md | ADR bodies: Cross-Media, Seeker Experience, Internationalization | Developers, AI |
@@ -822,7 +823,7 @@ ADRs carry a maturity marker in their Status field reflecting honest confidence 
 - Future documentation changes should follow the conventions established here
 - This ADR should be revised if the documentation system undergoes further restructuring
 
-*Revised: 2026-02-23, document architecture restructured from 5 to 12 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by arc (root + arc1 + arc2-3); DECISIONS.md split into navigational index + 3 scoped body files (core, experience, operations); CLAUDE.md updated with arc-gated reading guidance. 2026-03-01, reduced from 13 to 12 documents — DESIGN-arc4-plus.md removed (content preserved in PROPOSALS.md).*
+*Revised: 2026-02-23, document architecture restructured from 5 to 12 documents — PRINCIPLES.md extracted as always-loaded identity layer; DESIGN.md split by arc (root + arc1 + arc2-3); DECISIONS.md split into navigational index + 3 scoped body files (core, experience, operations); CLAUDE.md updated with arc-gated reading guidance. 2026-03-01, reduced from 13 to 12 documents — DESIGN-arc4-plus.md removed (content preserved in PROPOSALS.md). 2026-03-01, design files restructured from arc-based monoliths (DESIGN-arc1.md, DESIGN-arc2-3.md) to individual files per DES/ADR section in domain directories (design/search/, design/experience/, design/editorial/). DESIGN.md retained as cross-cutting index. Guides moved from docs/ to docs/guides/.*
 
 *Revised: 2026-02-24, document architecture expanded from 12 to 13 documents — PROPOSALS.md added as proposal registry with PRO-NNN identifiers and graduation protocol. Three-tier maturity model (explorations → proposals → decisions) introduced. ADR maturity classification added (Foundational, Active, Provisional, Suspended, Implemented). Convention 7 updated from "immutable history" to "mutable living documents" to match CLAUDE.md. Graduation protocol moved from ROADMAP.md § Unscheduled Features to PROPOSALS.md.*
 
@@ -2018,7 +2019,7 @@ Examples:
 
 ### Context
 
-The portal uses Neon Serverless Postgres as its single database (ADR-013). Prior to this decision, Neon-specific platform capabilities were referenced throughout the documentation without a central governance ADR. Compute configuration, tier selection, branching strategy, extension management, and database observability were implicit or distributed across ADR-009, ADR-019, ADR-094, and DESIGN-arc1.md.
+The portal uses Neon Serverless Postgres as its single database (ADR-013). Prior to this decision, Neon-specific platform capabilities were referenced throughout the documentation without a central governance ADR. Compute configuration, tier selection, branching strategy, extension management, and database observability were implicit or distributed across ADR-009, ADR-019, ADR-094, and design files (DES-004, DES-039, etc.).
 
 A comprehensive audit of Neon's feature catalog against our design documents revealed:
 
@@ -2208,8 +2209,8 @@ The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** �
 - API keys scoped per context: org key for Terraform, project-scoped keys for CI and development
 - Terraform provider version pinned; upgrades reviewed via `terraform plan` in PR
 - **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
-- DESIGN-arc1.md § DES-004 schema updated to include all 5 extensions and `uuidv7()` convention
-- DESIGN-arc1.md § DES-039 updated with Three-Layer Neon Management Model (Infrastructure / Operations / Data)
+- `design/search/DES-004-data-model.md` schema updated to include all 5 extensions and `uuidv7()` convention
+- `design/search/DES-039-infrastructure-and-deployment.md` updated with Three-Layer Neon Management Model (Infrastructure / Operations / Data)
 - ROADMAP.md cost model updated to reflect Scale tier pricing
 
 *Revised: 2026-02-25, added PostgreSQL 18 version selection, UUIDv7 schema convention, and PG18 feature survey. 2026-02-26, added API key scoping policy, Terraform provider governance, and three-layer management model reference.*

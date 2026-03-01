@@ -10,10 +10,10 @@ Read CONTEXT.md and the following DESIGN.md sections to ground in current theme 
 - ADR-129 in DECISIONS.md (Vocabulary Bridge)
 - ADR-115 in DECISIONS.md (Unified Enrichment Pipeline)
 - ADR-122 in DECISIONS.md (Crisis Query Detection)
-- DES-048 in DESIGN.md (Worldview Pathways)
-- DES-054 in DESIGN.md (Knowledge Graph Ontology)
+- DES-048 in `design/experience/DES-044-additional-new-ui-pages.md` (Worldview Pathways, nested under DES-044)
+- DES-054 in `design/search/DES-054-knowledge-graph-ontology.md` (Knowledge Graph Ontology)
 
-Also read DES-059 in DESIGN-arc1.md (Vocabulary Bridge specification).
+Also read `design/search/DES-059-vocabulary-bridge.md` (Vocabulary Bridge specification).
 
 ## Theme Integration
 

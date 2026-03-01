@@ -1886,7 +1886,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - `scripts/create-env.sh` and `scripts/destroy-env.sh` created in Arc 4 when multi-environment activates
 - `terraform/bootstrap/trust-policy.json` checked into repo — the one artifact the bootstrap script needs
 - GitHub Environments configured per environment (dev, staging, prod) with protection rules
-- Neon branching strategy documented in runbook (`docs/manual-steps-milestone-1a.md`)
+- Neon branching strategy documented in runbook (`docs/guides/manual-steps-milestone-1a.md`)
 
 *Revised: 2026-02-26, adopted branch=environment principle, single-project-per-service, bootstrap automation via scripts, single AWS account default. Previous design specified separate projects/accounts per environment — replaced with branch-based separation proportionate to the portal's public, no-auth threat model.*
 
@@ -3715,7 +3715,7 @@ The portal's architecture is thoroughly documented across four design documents 
 
 ### Decision
 
-Document the bootstrap sequence as a reproducible, ordered ceremony in DESIGN-arc1.md § Arc 1 Bootstrap. The ceremony covers:
+Document the bootstrap sequence as a reproducible, ordered ceremony in `design/search/ADR-041-arc-1-bootstrap.md`. The ceremony covers:
 
 1. **Repository creation** — Next.js + TypeScript + Tailwind + pnpm
 2. **Neon project provisioning** — PostgreSQL with pgvector, dev branch for local work
@@ -3736,7 +3736,7 @@ The `.env.example` file documents all required environment variables with commen
 
 ### Consequences
 
-- DESIGN-arc1.md gains an "Arc 1 Bootstrap" section with the step-by-step ceremony and `.env.example` contents
+- `design/search/ADR-041-arc-1-bootstrap.md` captures the step-by-step ceremony and `.env.example` contents
 - First-time setup is documented and reproducible
 - Onboarding new developers or AI assistants requires reading CLAUDE.md (for context) and following the bootstrap ceremony (for setup)
 
@@ -5251,7 +5251,7 @@ This means Vercel env vars are *derived from* Secrets Manager via Terraform, not
 
 - All `[secret]`-tagged env vars in `.env.example` have a corresponding `aws_secretsmanager_secret` Terraform resource
 - DES-039 § Environment Configuration updated with secrets management architecture and `/lib/config.ts` facade specification
-- `docs/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Terraform
+- `docs/guides/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Terraform
 - `.env.example` uses `[secrets-manager]` tag: Secrets Manager in deployed environments; env var in `.env.local` for local dev
 - Rotation is single-point: update Secrets Manager, run `terraform apply`, done. No multi-platform coordination.
 - CloudTrail logs all `GetSecretValue` calls — audit trail for secret access from Milestone 1c
