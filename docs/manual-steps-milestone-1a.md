@@ -45,7 +45,7 @@ The details below document what `bootstrap.sh` automates. Read this if the scrip
 ### Phase 2 — Claude runs Terraform
 
 You wait. Claude handles:
-1. `terraform apply` — creates Neon project, Sentry project, AWS core resources (OIDC providers, IAM roles, KMS key, Secrets Manager secrets, S3, Budget alarm), Vercel OIDC role (`portal-vercel-runtime`). Vercel activates in Milestone 1b.
+1. `terraform apply` — creates Neon project, Sentry project, AWS core resources (OIDC providers, IAM roles, KMS key, Secrets Manager secrets, S3, Budget alarm), Vercel OIDC role (`portal-vercel-runtime`). Vercel activates in Milestone 1c.
 2. MCP verification: `list_projects`, `run_sql` (confirms PG18, Scale tier, extensions)
 3. Retrieves connection strings, DSN from Terraform output and MCP
 4. Populates Secrets Manager with Neon connection strings
@@ -60,11 +60,11 @@ You wait. Claude handles:
 | 14 | Neon project-scoped API key | Project Settings → API Keys → Create (or `neonctl api-keys create`) | Yes |
 | 15 | Store Neon project key in Secrets Manager | `aws secretsmanager put-secret-value` | Claude |
 | 16 | Verify MCP connection | Ask Claude to run `list_projects` | Claude |
-| 17 | Voyage AI API key *(Milestone 1b)* | dash.voyageai.com → API Keys | Yes |
+| 17 | Voyage AI API key *(Milestone 1a)* | dash.voyageai.com → API Keys | Yes |
 | 18 | Store Voyage key in Secrets Manager | `aws secretsmanager put-secret-value` | Claude |
-| 19 | Contentful tokens *(Milestone 1b)* | app.contentful.com → Settings → API Keys | Yes |
+| 19 | Contentful tokens *(Milestone 1a)* | app.contentful.com → Settings → API Keys | Yes |
 | 20 | Store Contentful tokens in Secrets Manager | `aws secretsmanager put-secret-value` | Claude |
-| 21 | Bedrock model access *(Milestone 1b)* | AWS Console → Bedrock → Model Access → `us-west-2` | Yes |
+| 21 | Bedrock model access *(Milestone 1c)* | AWS Console → Bedrock → Model Access → `us-west-2` | Yes |
 
 **Where post-Terraform keys go:**
 
@@ -91,10 +91,10 @@ You wait. Claude handles:
 | `AWS_REGION` | Claude | Static `us-west-2` |
 | `AWS_ACCESS_KEY_ID` | Claude | From your `srf-dev` IAM user (local dev only) |
 | `AWS_SECRET_ACCESS_KEY` | Claude | Paired with above (local dev only) |
-| `VOYAGE_API_KEY` | **You** | Milestone 1b — Voyage dashboard |
+| `VOYAGE_API_KEY` | **You** | Milestone 1a — Voyage dashboard |
 | `CONTENTFUL_SPACE_ID` | Claude | Terraform output |
-| `CONTENTFUL_ACCESS_TOKEN` | **You** | Milestone 1b — Contentful dashboard |
-| `CONTENTFUL_MANAGEMENT_TOKEN` | **You** | Milestone 1b — Contentful dashboard |
+| `CONTENTFUL_ACCESS_TOKEN` | **You** | Milestone 1a — Contentful dashboard |
+| `CONTENTFUL_MANAGEMENT_TOKEN` | **You** | Milestone 1a — Contentful dashboard |
 | `NEXT_PUBLIC_SENTRY_DSN` | Claude | Terraform output |
 | `SENTRY_AUTH_TOKEN` | Claude | Captured by `bootstrap.sh` |
 

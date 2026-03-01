@@ -4,7 +4,7 @@
 >
 > **Scope by milestone.** This file covers Milestone 3c, Milestone 3d, Arc 4, Milestone 5a, Milestone 5b, Arc 6, and Milestone 7b.
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -75,7 +75,7 @@ Each supported locale carries cultural, typographic, and platform expectations t
 ### Hindi (hi) — Core
 
 - **Primary platforms:** WhatsApp (dominant), Google, YouTube, JioPhone/KaiOS
-- **Script:** Devanagari (LTR). **Typography now Arc 1 scope** (ADR-080, ADR-128): Noto Serif Devanagari (reading) + Noto Sans Devanagari (UI). Body text at 20px (`--text-base-hi`, ~11% larger than Latin). Line height 1.9. Optimal line length 40–50 aksharas. Drop capitals omitted. Conjunct/matra/halant QA in Milestone 1a.
+- **Script:** Devanagari (LTR). **Typography now Arc 1 scope** (ADR-080, ADR-128): Noto Serif Devanagari (reading) + Noto Sans Devanagari (UI). Body text at 20px (`--text-base-hi`, ~11% larger than Latin). Line height 1.9. Optimal line length 40–50 aksharas. Drop capitals omitted. Conjunct/matra/halant QA in Milestone 1b.
 - **Cultural notes:** Hindi-speaking seekers know Yogananda through YSS, not SRF. Portal branding must feature YSS prominently for `/hi/` locale (ADR-079). The warm cream aesthetic works but may feel understated compared to Hindi spiritual print traditions (which tend toward more ornate visual treatment). India's device landscape is mobile-first and low-bandwidth — ADR-006 equity features (KaiOS, text-only mode, 2G optimization) are essential, not optional. Test performance specifically on JioPhone with Jio 4G in Uttar Pradesh/Bihar/Bengal network conditions.
 - **Visual design open question:** Should the Hindi locale carry more visual warmth — deeper gold, more ornamental dividers, more generous use of Devanāgarī calligraphy — to align with Indian spiritual aesthetics? The current "understated" framing should not assume Western minimalism is the universal expression of reverence. YSS-connected Indian designers should participate in this decision, not just review it. (Cross-cultural principle 6)
 - **Typography conventions:** Drop capitals omitted for Devanāgarī (implemented in Arc 1). Decorative opening quotation marks need script-appropriate glyphs. The 40–50 akshara optimal line length is implemented in Arc 1; validate with Hindi readers during Milestone 2a usability testing.
@@ -259,7 +259,7 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 
 | Content Type | Arc 1 | Milestones 2a–3a | Milestone 3b+ (Editorial Portal) | Why |
 |---|---|---|---|---|
-| **Book text, chapters** | PDF → Contentful (import) → batch sync → Neon | Contentful → webhook sync → Neon | Same + Contentful Custom Apps sidebar | Editorial source of truth from Arc 1 (ADR-010). Webhook sync replaces batch in Milestone 1b. |
+| **Book text, chapters** | PDF → Contentful (import) → batch sync → Neon | Contentful → webhook sync → Neon | Same + Contentful Custom Apps sidebar | Editorial source of truth from Arc 1 (ADR-010). Webhook sync replaces batch in Milestone 1c. |
 | **Theme tag review** | — | — | Admin portal review queue (bridged via Contentful sidebar) | AI proposes, humans approve — needs focused review UI |
 | **Daily passage curation** | Script-populated in Neon | Same | Admin portal curation view + Contentful entries | Content editors curate via the tool that best fits the task |
 | **Calendar events** | — | — | Contentful entries + admin portal for passage associations | Event definitions in Contentful; passage associations in admin portal |
@@ -272,7 +272,7 @@ Content flows through a five-layer staff experience architecture (ADR-082). Each
 
 ### Contentful → Neon Sync
 
-The sync service is the primary coupling point between Contentful and Neon. Milestone 1a uses a batch sync script; Milestone 1b+ uses webhook-driven sync on Vercel. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
+The sync service is the primary coupling point between Contentful and Neon. Milestone 1a uses a batch sync script; Milestone 1c+ uses webhook-driven sync on Vercel. When Contentful's content model evolves, the sync function must be updated. This is the main maintenance surface in production.
 
 ```
 Contentful (editorial) ──webhook──→ Serverless function ──→ Neon (search index)

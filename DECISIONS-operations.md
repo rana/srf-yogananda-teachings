@@ -1242,7 +1242,7 @@ DESIGN.md specs (source of truth)
 Visual design emerges through code iteration: generate CSS/components, render in browser, evaluate, refine. The browser rendering — not a Figma file — is the design artifact. Figma files are maintained as a communication surface for SRF stakeholders and future designers, not as the authoritative design spec.
 
 - No Figma files required for Milestone 1a (search validation)
-- Milestone 1b / 2a: Figma documents core screens *after* they exist in code
+- Milestone 1c / 2a: Figma documents core screens *after* they exist in code
 - Storybook is the primary component reference during AI-led arcs
 
 #### When Human Designers Join: Figma-First Design
@@ -1297,12 +1297,12 @@ This ensures the design language stays synchronized between Figma and the codeba
 ### Consequences
 
 - Milestone 1a: No Figma files. Design validation happens through search functionality, not visual design.
-- Milestone 1b / 2a: Figma documents core screens after they are built in code. Code → Figma direction.
+- Milestone 1c / 2a: Figma documents core screens after they are built in code. Code → Figma direction.
 - When human designers are active, Figma becomes upstream. Figma → code direction.
 - Upgrade to Professional when Calm Technology design system requires shared libraries.
 - Figma Tokens plugin configured for bidirectional synchronization with `tokens.json`.
 - `tailwind.config.ts` imports from `tokens.json` for design token synchronization.
-- Storybook (Milestone 1b+) is the primary component reference during AI-led arcs.
+- Storybook (Milestone 1c+) is the primary component reference during AI-led arcs.
 
 *Revised: 2026-02-23, dual-direction token flow for AI-led vs. designer-led phases.*
 
@@ -1355,7 +1355,7 @@ Three tiers of MCP server adoption, phased with the project:
 
 | MCP Server | Milestone | Purpose | Why Valuable |
 |------------|-----------|---------|-------------|
-| **Contentful** | Milestone 1b+ | Content model queries, entry management, webhook debugging | Contentful is the editorial source of truth from Arc 1 (ADR-010). The content model is tightly coupled to code from the start. Prevents drift between what code expects and what CMS provides. |
+| **Contentful** | Milestone 1c+ | Content model queries, entry management, webhook debugging | Contentful is the editorial source of truth from Arc 1 (ADR-010). The content model is tightly coupled to code from the start. Prevents drift between what code expects and what CMS provides. |
 
 **Evaluate (try, keep if useful):**
 
@@ -1382,14 +1382,14 @@ The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI devel
 ### Consequences
 
 - Sentry MCP added to project configuration at Arc 1 alongside existing Neon MCP
-- Contentful MCP evaluated and added at Milestone 1b when Contentful webhook sync activates
+- Contentful MCP evaluated and added at Milestone 1c when Contentful webhook sync activates
 - GitHub MCP evaluated during Arc 1; kept or dropped based on actual utility versus `gh` CLI
 - SRF Corpus MCP server moved to Unscheduled Features (2026-02-24). Architecture preserved in DES-031.
 - AWS MCP explicitly not adopted — Terraform + Sentry + `aws` CLI is sufficient
 - MCP server configuration documented in CLAUDE.md for all future AI sessions
 - This decision is revisited at Arc 6 (cross-media) and Milestone 7a (user accounts) when new services enter the stack
 
-*Revised: 2026-02-24, Contentful MCP confirmed for Milestone 1b. SRF Corpus MCP descheduled.*
+*Revised: 2026-02-24, Contentful MCP confirmed for Milestone 1c. SRF Corpus MCP descheduled.*
 
 ---
 
@@ -2158,7 +2158,7 @@ Webhook payloads never contain seeker data. Events describe *content* lifecycle 
 | Milestone | What Ships |
 |-----------|-----------|
 | **Milestone 5a** | Webhook schema, subscriber management, delivery engine. Initial events: `daily_passage.rotated`, `content.published`, `content.updated`, `social_asset.approved`, `portal_update.published`. Admin UI in editorial portal. |
-| **Milestone 1b+** | Contentful webhook *inbound* (deliverable 1b.8) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
+| **Milestone 1c+** | Contentful webhook *inbound* (deliverable 1c.8) triggers portal webhook *outbound* events (`content.published`, `content.updated`). |
 | **Milestone 5b+** | Additional events as channels mature: `journey.step`, `email.dispatched`. SQS fan-out if subscriber count exceeds ~20. |
 | **Milestone 7a+** | Self-service webhook registration with API key auth for external consumers. |
 
@@ -2671,7 +2671,7 @@ When search returns zero results:
 
 #### 6. Search quality evaluation integration
 
-The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 1a.9):
+The presentation decisions above are validated by the search quality test suite (ROADMAP deliverable 1a.8):
 - Each test query has expected passages that should appear in the top 3 results.
 - Accessibility boosting is validated: for empathic queries ("dealing with grief"), consoling/accessible passages should rank higher.
 - Deduplication is validated: edition variants should not appear as separate results.
@@ -2688,7 +2688,7 @@ The presentation decisions above are validated by the search quality test suite 
 ### Consequences
 
 - DES-019 search endpoint documentation updated to reference this ADR for presentation logic.
-- The search quality test suite (deliverable 1a.9) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
+- The search quality test suite (deliverable 1a.8) must validate ranking, deduplication, accessibility boosting, and empty-result behavior.
 - Future content types entering search (video transcripts, audio transcripts, magazine articles) must follow the same ranking hierarchy and deduplication rules. Cross-media result interleaving rules will be specified when those content types are integrated (Arc 6).
 - The "5 results" default is a design decision, not a technical constraint. It may be adjusted based on Milestone 1a search quality evaluation — but the adjustment should be governed (update this ADR), not ad hoc.
 
@@ -2802,38 +2802,47 @@ Additionally, 120+ ADRs and 57 design sections existed with zero lines of code. 
 
 ### Decision
 
-Split Arc 1 into two milestones:
+Split Arc 1 into three milestones:
 
-**Milestone 1a: Prove** (9 deliverables)
-Answer one question: does semantic search over Yogananda's text return relevant, accurately cited, verbatim passages? Minimal vertical slice: repo → Contentful content model → schema → ingest → search → read → evaluate. No deployment, no AI enhancements, no homepage, no observability beyond what's needed locally.
+**Milestone 1a: Prove** (8 deliverables)
+Answer one question: does semantic search over Yogananda's text return relevant, accurately cited, verbatim passages? English only. Minimal vertical slice: repo → Contentful content model → schema → ingest → search → read → evaluate. No deployment, no AI enhancements, no homepage, no observability beyond what's needed locally. Claude validates autonomously — no human QA gate.
 
-**Milestone 1b: Deploy** (15 deliverables)
-Deploy to Vercel, add Claude-based query expansion and intent classification, build the homepage, establish observability, add rate limiting and search suggestions, seed the entity registry and enrichment pipeline, and establish the query intent taxonomy. This milestone transforms the proven local prototype into a deployed, AI-enhanced portal.
+**Milestone 1b: Trilingual** (4 deliverables)
+Extend the proven English pipeline to Hindi and Spanish. Hindi/Spanish ingestion, cross-language search validation, Devanagari typography QA, and trilingual search evaluation. Proves the multilingual architecture before production deployment.
 
-Milestone 1a has two conversation prerequisites (edition confirmation, PDF source) but no engineering dependencies. Milestone 1b is gated on Milestone 1a's search quality evaluation passing (≥ 80% threshold).
+**Milestone 1c: Deploy** (16 deliverables)
+Deploy to Vercel, add Claude-based query expansion and intent classification, build the homepage, establish observability, add rate limiting and search suggestions, seed the entity registry and enrichment pipeline, and establish the query intent taxonomy. This milestone transforms the proven trilingual prototype into a deployed, AI-enhanced portal.
+
+Milestone 1a has two conversation prerequisites (edition confirmation, PDF source) but no engineering dependencies. Milestone 1b is gated on Milestone 1a's search quality evaluation passing (≥ 80% threshold). Milestone 1c is gated on Milestone 1b's trilingual search evaluation.
 
 ### Rationale
 
 - **Empirical contact first.** The design is ready. The highest-value action is contact with the actual corpus — Yogananda's long-form, metaphor-dense, sometimes archaic spiritual prose. No amount of design iteration substitutes for running embeddings against real text.
 - **Fail fast on the existential question.** If chunking, embedding, or hybrid search produce poor results on this specific corpus, the project needs to know immediately — not after building a homepage and observability stack.
-- **Reduce Arc 1 scope creep.** 21 deliverables labeled "Prove" set an implicit expectation that all 21 must complete before declaring Arc 1 done. The split makes the proof explicit and small.
+- **Prove multilingual before deploying.** Hindi and Spanish are Tier 1 languages (ADR-128). Validating trilingual search quality before production deployment avoids shipping a monolingual portal that requires re-architecture for multilingual support.
+- **Reduce Arc 1 scope creep.** 21 deliverables labeled "Prove" set an implicit expectation that all 21 must complete before declaring Arc 1 done. The three-milestone split makes each proof explicit and small.
 - **Contingency planning.** Milestone 1a includes a "What If Search Quality Fails?" section with four concrete fallbacks (chunking adjustment, embedding model swap, manual curation bridge, hybrid weighting tuning). This contingency was absent from the original single-milestone structure.
 
 ### Alternatives Considered
 
 1. **Keep Arc 1 as a single milestone, just start building.** Viable but risks building the homepage and observability before knowing if search works. The split costs nothing — it's a reframing, not a structural change.
 
-2. **Move Milestone 1b deliverables into Milestone 2a.** Considered, but Milestone 2a ("Build") already has its own scope (all pages, engineering infrastructure, accessibility). Milestone 1b is genuinely "foundation" work that should precede Milestone 2a.
+2. **Move Milestone 1c deliverables into Milestone 2a.** Considered, but Milestone 2a ("Build") already has its own scope (all pages, engineering infrastructure, accessibility). Milestone 1c is genuinely "foundation" work that should precede Milestone 2a.
 
 3. **Even smaller Milestone 1a (5 deliverables — no reader, no eval).** The reader and evaluation are both essential to declaring search "proven." Without the reader, "Read in context" links can't be tested. Without the evaluation, the quality threshold is subjective.
+
+4. **Two milestones (Prove + Deploy) without a separate Trilingual milestone.** Would either delay Hindi/Spanish to post-deploy (violating Global-First) or bundle trilingual validation into the proof milestone (blurring the English-only existential question).
 
 ### Consequences
 
 - Milestone 1a can begin immediately once edition and PDF source are confirmed — no SRF AE team availability needed.
 - Milestone 1b is gated on Milestone 1a's search quality evaluation. If the evaluation fails, Milestone 1b is deferred until contingency measures resolve the quality gap.
-- Milestone 2a's hard prerequisite changes from "Arc 1 complete" to "Milestone 1b complete."
-- The Gates table in ROADMAP.md is updated to reflect the split.
-- References to Arc 1 deliverable numbers in other documents (DESIGN.md, CONTEXT.md) should use the 1a/1b numbering.
+- Milestone 1c is gated on Milestone 1b's trilingual search evaluation.
+- Milestone 2a's hard prerequisite changes from "Arc 1 complete" to "Milestone 1c complete."
+- The Gates table in ROADMAP.md is updated to reflect the three-milestone split.
+- References to Arc 1 deliverable numbers in other documents (DESIGN.md, CONTEXT.md) should use the 1a/1b/1c numbering.
+
+*Revised: 2026-02-28, expanded from two milestones (1a/1b) to three (1a/1b/1c). Milestone 1b (Trilingual) inserted; old Milestone 1b (Deploy) becomes Milestone 1c. Human QA gate removed — Claude validates autonomously.*
 
 ---
 
@@ -2872,10 +2881,10 @@ Examples:
 **Parameters** — Tunable defaults. Ship with the documented value. Adjust based on evidence. Changes are configuration updates, not architectural decisions. Document the current value, the rationale for the default, and the evaluation trigger (what data would prompt reconsideration).
 
 Examples:
-- RRF fusion k=60 (DES-003) — tune after Milestone 1a.9 search quality evaluation
+- RRF fusion k=60 (DES-003) — tune after Milestone 1a.8 search quality evaluation
 - Dwell debounce 1200ms (DES-009) — tune after Milestone 2b user testing
 - Chunk size 200–300 tokens (ADR-048) — tune per language after ingestion
-- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone 1a.9
+- Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone 1a.8
 - Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
 - Email purge delay: 90 days (DES-030) — adjust based on legal review
 - Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
@@ -2891,7 +2900,7 @@ Examples:
 
 3. **Evaluation log:** When a parameter is tuned based on data, add a brief note to the relevant DESIGN.md section: `*Parameter tuned: [date], [old] → [new], [evidence].*`
 
-4. **Milestone gate integration:** Milestone 1a.9 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone 1a.9" are reviewed during that gate.
+4. **Milestone gate integration:** Milestone 1a.8 (search quality evaluation) and Milestone 2b success criteria explicitly include parameter validation as deliverables. Parameters marked "evaluate: Milestone 1a.8" are reviewed during that gate.
 
 ### Rationale
 
@@ -2904,7 +2913,7 @@ Examples:
 
 - All existing magic numbers in DESIGN.md to be annotated with the parameter convention during Arc 1 implementation
 - `/lib/config.ts` created as the canonical location for runtime parameters
-- Milestone 1a.9 success criteria updated to include parameter validation
+- Milestone 1a.8 success criteria updated to include parameter validation
 - Future ADRs specify whether each specific value is a principle or parameter
 - CLAUDE.md updated to reference this classification in the document maintenance guidance
 
@@ -2953,8 +2962,8 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 | `EXPLAIN ANALYZE` with BUFFERS | 1+ | Included by default, complementing pg_stat_statements observability (this ADR). |
 | Data checksums by default | 1+ | Enabled automatically for new Neon projects. |
 | Unicode 16.0.0 | 1+ | Improved case mapping for Sanskrit/Hindi diacritics (ADR-080). |
-| Virtual generated columns | 1b+ | Compute values at read time without storage overhead. Evaluate for normalized search text. |
-| `casefold()` | 1b+ | Unicode-aware case-insensitive matching. Evaluate for Sanskrit term normalization. |
+| Virtual generated columns | 1c+ | Compute values at read time without storage overhead. Evaluate for normalized search text. |
+| `casefold()` | 1c+ | Unicode-aware case-insensitive matching. Evaluate for Sanskrit term normalization. |
 | `COPY REJECT_LIMIT` | 1a.4 | Error-tolerant bulk ingestion. Evaluate for PDF import pipeline. |
 | `WITHOUT OVERLAPS` temporal constraints | 2a+ | Evaluate for daily passage scheduling, event scheduling. |
 | `array_sort()` / `array_reverse()` | 2a+ | Tag array processing for teaching topics and entity aliases. |
@@ -2994,7 +3003,7 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 | **CI test branches** | 0.25 | 1 | 0s | No | Ephemeral; auto-deleted via TTL |
 | **PR preview branches** | 0.25 | 1 | 60s | No | Persists for PR lifetime; TTL: 7 days |
 
-*Parameter — default values above, evaluate: Milestone 1b traffic patterns (ADR-123).*
+*Parameter — default values above, evaluate: Milestone 1c traffic patterns (ADR-123).*
 
 #### Branch Lifecycle Policy
 
@@ -3026,9 +3035,9 @@ Extensions enabled in the first migration (`001_initial_schema.sql`):
 
 | Extension | Purpose | Evaluate At | Notes |
 |-----------|---------|-------------|-------|
-| `pg_tiktoken` | Token counting for chunk pipeline | Milestone 1b | Deferred — uses OpenAI tokenizer (cl100k_base), not Voyage/Claude tokenizers. Evaluate when Anthropic/Bedrock provides accurate token counting. |
+| `pg_tiktoken` | Token counting for chunk pipeline | Milestone 1c | Deferred — uses OpenAI tokenizer (cl100k_base), not Voyage/Claude tokenizers. Evaluate when Anthropic/Bedrock provides accurate token counting. |
 | `pg_cron` | In-database scheduled jobs | Milestone 2a | Only useful with always-on compute; may replace some Lambda cron jobs |
-| `pgrag` | RAG utilities | Milestone 1b | Evaluate whether it simplifies the retrieval pipeline |
+| `pgrag` | RAG utilities | Milestone 1c | Evaluate whether it simplifies the retrieval pipeline |
 
 **Extension addition policy:** New extensions require an ADR amendment or new ADR referencing this governance section. Extensions must be tested on a migration branch before production.
 

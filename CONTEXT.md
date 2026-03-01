@@ -4,9 +4,11 @@
 
 **Arc:** Design complete. Ready to begin Milestone 1a (Prove) in Arc 1: Foundation.
 
-**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 124 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 17 proposals registered in PROPOSALS.md (PRO-001 through PRO-017; 2 adopted, 3 validated, 12 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. No code yet.
+**What exists:** Comprehensive design documentation across thirteen files — PRINCIPLES.md (11 immutable commitments with rationale), CONTEXT.md (this file), DESIGN.md (cross-cutting architecture) + three arc-scoped design files (DESIGN-arc1.md, DESIGN-arc2-3.md, DESIGN-arc4-plus.md — 57 sections total, DES-001 through DES-057), DECISIONS.md (navigational index with group summaries) + three concern-scoped ADR files (DECISIONS-core.md, DECISIONS-experience.md, DECISIONS-operations.md — 124 ADRs total), PROPOSALS.md (proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle), ROADMAP.md (7 arcs with milestones). PRINCIPLES.md is the always-loaded identity layer; DESIGN.md and DECISIONS.md are split by scope for context-window efficiency. PROPOSALS.md manages the three-tier maturity model (explorations → proposals → decisions), ADR maturity classification, and PRO-NNN identifier namespace. 17 proposals registered in PROPOSALS.md (PRO-001 through PRO-017; 2 adopted, 3 validated, 12 proposed). 22 archived explorations in `.elmer/proposals/archived/` — curated into PRO entries or absorbed into main documents (2026-02-25). Proposal management skills (`proposal-merge`, `dedup-proposals`, `theme-integrate`) support the PRO-NNN workflow. **Book ingestion pipeline built and executed:** `scripts/book-ingest/` extracts ebook text via Playwright + Claude Vision OCR. English Autobiography extracted: 522 pages, 49 chapters, 94,584 words, `book.json` ready for Contentful import. No application code yet.
 
-**What's next:** Milestone 1a — Prove. No remaining Tier 1 blockers (reclassified 2026-02-25). Edition and PDF source resolved (2026-02-24). Deliverables: repo setup, Contentful space + content model (ADR-010, Contentful from Arc 1), Neon + schema (pgvector + pg_search), book text extraction (ebook or PDF) into Contentful + batch sync to Neon, human QA, hybrid search API (vector + BM25 via RRF), search UI, book reader (served from Contentful), search quality evaluation (50-query golden set). Nine deliverables answering one question: does semantic search work over Yogananda's text? Milestone 1b (Deploy) adds webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, Vercel deployment, AI librarian enhancements, homepage, and observability. Milestone 2a (Build) delivers trilingual UI chrome alongside trilingual content — Hindi and Spanish UI strings translated via Claude draft → human review (ADR-078), with spiritual terminology glossaries and Playwright visual verification. See ROADMAP.md for deliverables. (ADR-113)
+**What's next:** Milestone 1a — Prove (English only). No remaining Tier 1 blockers. Edition and PDF source resolved (2026-02-24); English ebook extraction complete (2026-02-26). Deliverables: repo setup, Contentful space + content model (ADR-010), Neon + schema (pgvector + pg_search), English Contentful import + Neon sync (text already extracted), hybrid search API (vector + BM25 via RRF), search UI, book reader (from Contentful), English search quality evaluation (50-query golden set with five difficulty categories). Eight deliverables answering one question: does semantic search work over Yogananda's English text? Milestone 1b (Trilingual) adds Hindi/Spanish ingestion via the same pipeline, trilingual search evaluation, and Devanagari typography QA. Milestone 1c (Deploy) adds Terraform, CI/CD, Vercel deployment, webhook sync service, entity registry, enrichment prompt design, query intent taxonomy, golden suggestion set, homepage, and observability. Milestone 2a (Build) delivers trilingual UI chrome alongside trilingual content — Hindi and Spanish UI strings translated via Claude draft → human review (ADR-078), with spiritual terminology glossaries and Playwright visual verification. See ROADMAP.md for deliverables. (ADR-113)
+
+**Build methodology:** Claude executes all Arc 1 deliverables autonomously. No human-in-the-loop gates in the development process. The human principal reviews at their discretion, not as a blocking step. This applies to development methodology — PRINCIPLES.md § "Human Review as Mandatory Gate" governs the production portal's content governance, not the build process.
 
 ---
 
@@ -22,15 +24,15 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 
 ### Tier 1: No remaining blockers — Milestone 1a can begin
 
-*Reclassified 2026-02-25. These questions are real but discoverable through implementation, not prerequisites for starting. Chunk size is evaluated in Deliverable 1a.9. Enrichment prompt is Deliverable 1b.13. Edition variance resolved for Arc 1 (spiritmaji.com English edition; Amazon Hindi/Spanish editions); multi-edition is Arc 3+. Parameter validation already governed by ADR-123. Devanāgarī typeface selection is now Arc 1 relevant (trilingual launch — ADR-128).*
+*Reclassified 2026-02-25. These questions are real but discoverable through implementation, not prerequisites for starting. Chunk size is evaluated in Deliverable 1a.8. Enrichment prompt is Deliverable 1c.13. Edition variance resolved for Arc 1 (ebook extraction for English via `scripts/book-ingest/`; Amazon Hindi/Spanish editions for 1b); multi-edition is Arc 3+. Parameter validation already governed by ADR-123. Devanāgarī typeface selection is now Arc 1 relevant (trilingual — ADR-128).*
 
 ### Tier 2: Resolve During Arc 1 (not 1a-specific)
 
 **Technical (reclassified from Tier 1 — resolved through deliverable assignments)**
-- [x] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). *Resolved: evaluated empirically in Deliverable 1a.9.* (ADR-048)
-- [x] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages. *Resolved: Deliverable 1b.13 addresses this directly.* (ADR-115)
+- [x] Optimal chunk size for Yogananda's prose style (test 200, 300, 500 token chunks). *Resolved: evaluated empirically in Deliverable 1a.8.* (ADR-048)
+- [x] Optimal enrichment prompt structure: test unified enrichment prompt (ADR-115) against 30 actual passages. *Resolved: Deliverable 1c.13 addresses this directly.* (ADR-115)
 - [x] Edition variance policy: when multiple editions exist with textual variants, which edition is canonical? *Resolved: Arc 1 uses spiritmaji.com edition (ADR-123 parameter). Multi-edition policy is Arc 3+.* (ADR-001, ADR-034, ADR-039, ADR-007)
-- [x] Milestone 1a parameter validation. *Resolved: governed by ADR-123. Success criteria in ROADMAP.md include search quality evaluation (Deliverable 1a.9).*
+- [x] Milestone 1a parameter validation. *Resolved: governed by ADR-123. Success criteria in ROADMAP.md include search quality evaluation (Deliverable 1a.8).*
 
 **Stakeholder (reclassified from Tier 1 — now Arc 1 relevant for Hindi/Spanish)**
 - [ ] Which books have official translations in which languages? **Critical for Tier 1 (Hindi, Spanish) in Arc 1.** Content availability matrix needed: Language × Book × Format (print/ebook/digital text/audio). Arc 1 uses Amazon-purchased editions as temporary sources; full matrix needed before Tier 2 activation. (ADR-075, ADR-077, ADR-128)
@@ -57,10 +59,10 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] Portal updates page posture: visible evolution (`/updates` page) or timeless atmosphere? (ADR-105, ADR-074)
 - [ ] Visual design language: should the portal feel timeless or contemporary? The spiritual eye symbolism (navy=infinite blue, gold=divine ring, cream=star-white) is already latent in the palette — how explicitly should it be acknowledged in design documentation and token naming? (DES-006, DES-011)
 
-### Tier 3: Resolve During Milestones 1b–2b
+### Tier 3: Resolve During Milestones 1c–2b
 
 **Technical**
-- [ ] Query expansion prompt engineering (test with diverse query types). (Milestone 1b)
+- [ ] Query expansion prompt engineering (test with diverse query types). (Milestone 1c)
 - [ ] AWS Bedrock abstraction: thin `/lib/services/claude.ts` supporting both Bedrock and direct Anthropic API for 10-year optionality? (ADR-014, ADR-004)
 - [ ] Content-addressable passage deep links: should resolution chain include a semantic/normalized hash tier between exact match and fuzzy search? (ADR-022, ADR-034)
 - [ ] IAST diacritics rendering verification: Merriweather and Lora at all font sizes, particularly 15px. Include in Milestone 2a design QA. (ADR-080, ADR-003)
@@ -495,7 +497,7 @@ The teaching portal should use these technologies wherever possible, introducing
 
 ## Bootstrap Credentials Checklist
 
-Extracted to [docs/bootstrap-credentials.md](docs/bootstrap-credentials.md) for operational reference. Covers Milestone 1a (infrastructure), Milestone 1b (content + AI), and later milestones. See ADR-016 for architecture, DES-039 for deployment spec.
+Extracted to [docs/bootstrap-credentials.md](docs/bootstrap-credentials.md) for operational reference. Covers Milestone 1a (infrastructure + content), Milestone 1c (deploy + AI enrichment), and later milestones. See ADR-016 for architecture, DES-039 for deployment spec.
 
 ---
 

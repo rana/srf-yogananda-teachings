@@ -4,7 +4,7 @@
 
 | Arc | Theme | Milestones | Focus |
 |-----|-------|------------|-------|
-| [1: Foundation](#arc-1-foundation--proving-the-light) | Proving the Light | [1a: Prove](#milestone-1a-prove), [1b: Deploy](#milestone-1b-deploy) | Ingest one book in **3 languages (en/hi/es)**, prove multilingual semantic search, deploy with AI librarian |
+| [1: Foundation](#arc-1-foundation--proving-the-light) | Proving the Light | [1a: Prove](#milestone-1a-prove), [1b: Trilingual](#milestone-1b-trilingual), [1c: Deploy](#milestone-1c-deploy) | Prove English search, validate Hindi/Spanish multilingual search, deploy with observability |
 | [2: Presence](#arc-2-presence--the-living-library) | The Living Library | [2a: Build](#milestone-2a-build), [2b: Refine](#milestone-2b-refine) | All pages, reading experience, accessibility, design system, PWA |
 | [3: Wisdom](#arc-3-wisdom--expanding-understanding) | Expanding Understanding | [3a: Corpus](#milestone-3a-corpus), [3b: Editorial](#milestone-3b-editorial), [3c: Intelligence](#milestone-3c-intelligence), [3d: Complete](#milestone-3d-complete) | Multi-book catalog, editorial operations, cross-book intelligence, full corpus |
 | [4: Service](#arc-4-service--tools-for-devotion) | Tools for Devotion | — | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |
@@ -23,29 +23,30 @@
 
 Each arc delivers a working, demonstrable increment organized around a spiritual narrative theme. 7 arcs total, with internal milestones. **Arc ordering follows the reachable population metric (ADR-128): when milestones are architecturally independent, the one serving more people ships first.** This produces a breadth-first roadmap — languages and content before polish and tools.
 
-Arc 1 (Foundation) proves that multilingual semantic search works across English, Hindi, and Spanish — serving ~1.25 billion reachable people from the proof-of-concept — and deploys the AI-enhanced portal. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and activates multi-environment promotion (dev/staging/prod). Arc 5 (Reach) extends distribution channels and activates remaining multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
+Arc 1 (Foundation) proves that search works on English text first (1a: Prove), validates multilingual search across Hindi and Spanish (1b: Trilingual), then deploys the observable portal with infrastructure, suggestions, and enrichment pipeline (1c: Deploy) — serving ~1.25 billion reachable people. Arc 2 (Presence) builds every page and refines the contemplative reader, including the Calm Technology design system and PWA. Arc 3 (Wisdom) is the largest arc — it decomposes the multi-book expansion across four milestones: Corpus expands the library independently of organizational decisions, Editorial establishes operations once SRF staffing is confirmed, Intelligence builds cross-book connections, and Complete finishes the full corpus. The editorial staffing gate within Arc 3 makes the most critical organizational dependency visible without hiding it behind an arc boundary. Arc 4 (Service) delivers study tools, staff infrastructure, and activates multi-environment promotion (dev/staging/prod). Arc 5 (Reach) extends distribution channels and activates remaining multilingual support. Arc 6 (Media) delivers cross-media intelligence. Arc 7 (Community) adds optional accounts and bridges solitary study with the global SRF community.
 
-**Roadmap reordering (ADR-128).** The original roadmap ordered milestones depth-first: perfect the English experience, then expand to other languages. ADR-128 reorders breadth-first: languages move before reader polish, corpus expansion moves before reader refinement. The detailed reordering of milestones within arcs is governed by the reachable population metric — see ADR-128 for the application protocol and worked examples. Key changes: Hindi and Spanish ingestion in Arc 1; corpus expansion (more books) before reader refinement (dwell mode, bookmarks); remaining languages before study tools. See the milestone-level details within each arc for the current execution sequence.
+**Roadmap reordering (ADR-128).** The original roadmap ordered milestones depth-first: perfect the English experience, then expand to other languages. ADR-128 reorders breadth-first: languages move before reader polish, corpus expansion moves before reader refinement. Within Arc 1, this produces a three-milestone sequence: prove search in English first (1a), validate multilingual search in Hindi/Spanish (1b), then deploy infrastructure (1c). The detailed reordering is governed by the reachable population metric — see ADR-128 for the application protocol and worked examples. Key changes: Hindi and Spanish ingestion in Arc 1; corpus expansion (more books) before reader refinement (dwell mode, bookmarks); remaining languages before study tools. See the milestone-level details within each arc for the current execution sequence.
 
 **Execution reordering (ADR-128).** The arc numbering below reflects *narrative themes*, but the **execution sequence** is reordered by reachable population. Architecturally independent milestones ship in this order:
 
 | Execution Order | Milestone | What | People Served |
 |----------------|-----------|------|---------------|
-| 1 | **1a: Prove** | Ingest Autobiography in en/hi/es, prove trilingual search | ~1.25B |
-| 2 | **1b: Deploy** | Homepage, search, reader — trilingual | ~1.25B |
-| 3 | **2a: Build** | All pages, i18n infrastructure, accessibility | ~1.25B |
-| 4 | **3a: Corpus** | Ingest high-impact books (en + hi/es translations as available) | ~1.25B × more content |
-| 5 | **5b: Languages** | Activate remaining 7 languages (Tiers 2–3) | **~3B** |
-| 6 | **2b: Refine** | Reader polish (dwell, bookmarks, typography) — now benefits all 10 languages | ~3B |
-| 7 | **3b: Editorial** | Theme tagging, editorial portal, guide | ~3B |
-| 8 | **3c: Intelligence** | Related Teachings, cross-book connections | ~3B |
-| 9 | **3d: Complete** | Remaining books, verse-aware chunking, observability | ~3B |
-| 10 | **5a: Distribution** | Email, WhatsApp, RSS, social media | ~3B+ |
-| 11 | **4: Service** | Study tools, PDF, magazine, Contentful Custom Apps | ~3B |
-| 12 | **6: Media** | Video, audio, images, cross-media search | ~3B |
-| 13 | **7: Community** | Accounts, events, study circles | ~3B |
+| 1 | **1a: Prove** | English search proof — ingest, search, read | ~390M |
+| 2 | **1b: Trilingual** | Hindi + Spanish search proof | ~1.25B |
+| 3 | **1c: Deploy** | Infrastructure, Vercel, homepage, observability, enrichment | ~1.25B |
+| 4 | **2a: Build** | All pages, i18n infrastructure, accessibility | ~1.25B |
+| 5 | **3a: Corpus** | Ingest high-impact books (en + hi/es translations as available) | ~1.25B × more content |
+| 6 | **5b: Languages** | Activate remaining 7 languages (Tiers 2–3) | **~3B** |
+| 7 | **2b: Refine** | Reader polish (dwell, bookmarks, typography) — now benefits all 10 languages | ~3B |
+| 8 | **3b: Editorial** | Theme tagging, editorial portal, guide | ~3B |
+| 9 | **3c: Intelligence** | Related Teachings, cross-book connections | ~3B |
+| 10 | **3d: Complete** | Remaining books, verse-aware chunking, observability | ~3B |
+| 11 | **5a: Distribution** | Email, WhatsApp, RSS, social media | ~3B+ |
+| 12 | **4: Service** | Study tools, PDF, magazine, Contentful Custom Apps | ~3B |
+| 13 | **6: Media** | Video, audio, images, cross-media search | ~3B |
+| 14 | **7: Community** | Accounts, events, study circles | ~3B |
 
-Key reordering moves: corpus expansion (3a) before reader polish (2b); remaining languages (5b) before reader polish (2b) and study tools (4). Every polish and tool investment after 5b benefits all 10 languages instead of just English. Arc numbers are thematic groups (what kind of work), not temporal sequences (when it ships) — the execution order table above is the definitive schedule.
+Key reordering moves: English search proof (1a) before trilingual validation (1b) before infrastructure deployment (1c); corpus expansion (3a) before reader polish (2b); remaining languages (5b) before reader polish (2b) and study tools (4). Every polish and tool investment after 5b benefits all 10 languages instead of just English. Arc numbers are thematic groups (what kind of work), not temporal sequences (when it ships) — the execution order table above is the definitive schedule. Note: 1b and parts of 1c can proceed in parallel — Terraform/Contentful webhooks don't depend on the trilingual proof.
 
 **Parallel workstreams and feature-flag activation (ADR-123):** Arcs are *narrative themes*, not strictly sequential gates. Where deliverables within an arc have no technical dependency on another arc's organizational prerequisites, they proceed in parallel. Specifically: Milestone 3c algorithmic computation proceeds alongside Milestone 3b editorial tooling; Arc 4 multi-environment activation proceeds independently of other Arc 4 deliverables; Milestone 5b language waves run in parallel where resources permit; Milestone 7a localStorage features proceed independently of the SRF account decision. Organizational dependencies (editorial staffing, account policy) gate *feature activation*, not *infrastructure build*. The pattern: build on schedule, activate via feature flags when the organization is ready.
 
@@ -63,11 +64,13 @@ Key reordering moves: corpus expansion (3a) before reader polish (2b); remaining
 
 ### Milestone 1a: Prove
 
-**Goal:** Answer the existential question: does pure hybrid search (vector + BM25 + RRF) across Yogananda's text return high-quality, relevant, verbatim passages with accurate citations — **in English, Hindi, and Spanish**? Deliver the minimum vertical slice: ingest → search → read, across three languages serving ~1.25 billion reachable people. Everything else waits until this works. Pure hybrid search — with no AI services in the search path — is the **primary search mode** for the portal, not a stepping stone to AI-enhanced search. (ADR-119, ADR-128)
+**Goal:** Answer the existential question: does pure hybrid search (vector + BM25 + RRF) across Yogananda's English text return high-quality, relevant, verbatim passages with accurate citations? Deliver the minimum vertical slice: ingest → search → read, in English only. Everything else waits until this works. Pure hybrid search — with no AI services in the search path — is the **primary search mode** for the portal, not a stepping stone to AI-enhanced search. (ADR-119)
 
-*Milestone 1a is deliberately small but deliberately trilingual. The design is 120+ ADRs deep — the risk is no longer under-design but over-design without empirical contact. Hindi and Spanish prove that the multilingual architecture works from day one, not as a deferred afterthought. Ship this, learn from it, then build the foundation.* (ADR-113, ADR-128)
+*Milestone 1a is deliberately small — English only, no Terraform, no trilingual. The design is 120+ ADRs deep — the risk is no longer under-design but over-design without empirical contact. Prove that search works on one language first, then validate multilingual in 1b and deploy in 1c.* (ADR-113)
 
-**Focus book:** Autobiography of a Yogi — in **English, Hindi, and Spanish** (ADR-128 Tier 1)
+**Focus book:** Autobiography of a Yogi — **English** only (Hindi and Spanish in Milestone 1b)
+
+**Build methodology:** Claude executes all deliverables autonomously. No human-in-the-loop gates. The human principal reviews at their discretion, not as a blocking step. This applies to the development methodology — PRINCIPLES.md § "Human Review as Mandatory Gate" governs the production portal's content governance, not the build process.
 
 ### Prerequisites (conversations, not code)
 
@@ -75,63 +78,47 @@ These are blocking conversations that must happen before ingestion begins:
 
 1. **~~Edition confirmation:~~** *(Resolved 2026-02-24.)* Use edition indicated in PDF source (spiritmaji.com). Configure as parameter per ADR-123 for later adjustment when SRF confirms canonical edition.
 2. **~~PDF source confirmation:~~** *(Resolved 2026-02-24.)* spiritmaji.com PDF accepted for Arc 1 proof. Non-PDF digital text will replace before launch.
-3. **~~Hindi and Spanish source confirmation:~~** *(Resolved 2026-02-28.)* Purchase from Amazon for Arc 1 proof (same temporary-source approach as spiritmaji.com for English). Hindi: [YSS Hindi edition](https://www.amazon.com/Autobiography-HINDI-Hindi-Paramahansa-Yogananda/dp/9389432472). Spanish: [SRF Spanish edition](https://www.amazon.com/Autobiografia-Autobiography-Self-Realization-Fellowship-Spanish/dp/0876120982). SRF/YSS-provided digital text will replace before launch.
+3. **~~English ebook extraction:~~** *(Resolved 2026-02-26.)* Amazon Cloud Reader ebook (ASIN B00JW44IAI) extracted via `scripts/book-ingest/` pipeline — Playwright capture + Claude Vision OCR. 522 pages, 49 chapters, 94,584 words at 5.0/5.0 confidence. Ready for Contentful import. See `scripts/book-ingest/DESIGN.md`.
+4. **~~Hindi and Spanish source confirmation:~~** *(Resolved 2026-02-28.)* Purchase from Amazon for Arc 1 proof. Hindi: [YSS Hindi edition](https://www.amazon.com/Autobiography-HINDI-Hindi-Paramahansa-Yogananda/dp/9389432472). Spanish: [SRF Spanish edition](https://www.amazon.com/Autobiografia-Autobiography-Self-Realization-Fellowship-Spanish/dp/0876120982). SRF/YSS-provided digital text will replace before launch.
 
 ### Deliverables
 
 | # | Deliverable | Description |
 |---|-------------|-------------|
-| 1a.1 | **Repository + development environment + infrastructure** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/terraform/`, `/scripts/`, `/messages/`, `.github/workflows/` directory structure. Create `scripts/bootstrap.sh` — idempotent bootstrap script that automates S3 bucket, DynamoDB table, OIDC provider, IAM role creation via AWS CLI, prompts for Neon org key and Sentry token, configures Vercel CLI, and sets all GitHub secrets via `gh secret set` (ADR-020). Create `terraform/bootstrap/trust-policy.json` for IAM OIDC trust policy. Write Terraform modules and run first `terraform apply` — creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Vercel and Lambda modules exist as code but are disabled until Milestone 1b and 2a respectively (see DES-039 § Progressive Module Activation). CI pipeline (`ci.yml` + `terraform.yml`) operational. (ADR-016, ADR-020, ADR-041) |
-| 1a.2 | **Neon project + initial schema** | Neon project created by `terraform apply` (Deliverable 1a.1) with **PostgreSQL 18** (`postgres_version = "18"` in Terraform). **MCP-driven verification:** After `terraform apply`, Claude verifies via Neon MCP: project exists with correct PG version and Scale tier (`list_projects`), all 5 extensions install on PG18 (`run_sql` → `SELECT extname FROM pg_extension`), schema is correct (`run_sql` → `information_schema.tables`), and retrieves connection strings for `.env.local` (`get_connection_string`). Fallback: PG17, no code changes. Enable branch protection on production branch. Create dev branch for local development. Create project-scoped API key for CI and development use (ADR-124 § API Key Scoping). Configure automated Neon snapshots: daily at 03:00 UTC, weekly Sunday, monthly 1st — via Neon API (ADR-019 Layer 2). Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All primary keys use `DEFAULT uuidv7()` for time-ordered UUIDs (ADR-124 § UUIDv7 convention). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry via MCP `run_sql`. Time Travel queries available immediately for development debugging (PRO-008). (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116, ADR-124) |
-| 1a.3 | **Contentful space + content model** | Create Contentful space. Configure content types: Book → Chapter → Section → TextBlock per DESIGN-arc1.md § Contentful Content Model. Enable English, Hindi, and Spanish locales (ADR-128 Tier 1). Configure Contentful Personal Access Token in `.env`. Verify content model by creating a test Book entry. Contentful is the editorial source of truth from Arc 1 (ADR-010). |
-| 1a.4 | **Book text extraction + Contentful import** | Extract Autobiography text via ebook capture pipeline (Playwright + Claude Vision OCR from Amazon Cloud Reader — see `scripts/book-ingest/DESIGN.md` and DESIGN-arc1.md § DES-005) or PDF fallback (marker). Human QA → import into Contentful via Management API (Book → Chapter → Section → TextBlock entries). Typographic normalization applied during extraction (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter and store in `chapters.content_hash` (ADR-039). **Branch-isolated Neon ingestion:** Create `ingest-{timestamp}` branch from dev via Neon MCP (`create_branch`). Batch sync from Contentful to the ingestion branch: read TextBlocks from Delivery API → chunk by paragraphs (ADR-048: paragraph-based, 100–500 token range, special handling for epigraphs and poetry) → generate embeddings → insert with `contentful_id` linkage. Verify chunk counts, embedding dimensions, and citation integrity on the branch (`run_sql`). If verification passes, apply to dev branch. If not, delete branch, iterate. This provides rollback safety before production has data. Note: 1a ingestion produces plain chunks without entity resolution or enrichment metadata — those are Milestone 1b concerns (1b.12 entity registry, 1b.13 enrichment prompts). Re-enrichment of 1a chunks happens after 1b.12/1b.13 are complete. |
-| 1a.5 | **Human QA of ingested text** | Claude pre-screens ingested text flagging probable OCR errors, formatting inconsistencies, truncated passages, and mangled Sanskrit diacritics (ADR-005 E4). Human reviewers make all decisions — Claude reduces the review surface area. QA happens on Contentful entries (editors can review in the Contentful web UI). The full editorial review portal ships in Milestone 3b. |
-| 1a.6 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. Claude-based enhancements added in Milestone 1b. (ADR-011, ADR-044) |
-| 1a.7 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
-| 1a.8 | **Basic book reader** | Chapter-by-chapter reading view serving content from Contentful Delivery API. Deep-link anchors, optimal line length (English/Spanish: 65–75 chars / `max-width: 38rem`; Hindi: 40–50 aksharas, adjusted `max-width`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). Hindi reader uses Noto Serif Devanagari at 20px / 1.9 line height (ADR-080). |
-| 1a.9 | **Search quality evaluation (trilingual)** | Test suite of ~50 English queries + ~15 Hindi queries + ~15 Spanish queries with expected passages (golden retrieval set). Claude drafts the query set spanning all intent types (topical, emotional, definitional, situational, empty-result); human validates that queries represent real seeker needs and verifies expected passages against the Autobiography text. Claude serves as automated evaluation judge — given a query and results, assesses whether expected passages appear and ranking is reasonable. Threshold: ≥ 80% of queries return at least one relevant passage in top 3, per language. Hindi and Spanish evaluation validates that multilingual search works from day one — the portal proves it can serve 1.25 billion reachable people, not just 390 million. (ADR-005 E5, ADR-128, ADR-077) |
-| 1a.10 | **Hindi and Spanish Autobiography ingestion** | Same pipeline as English (1a.4). Purchase Hindi (YSS) and Spanish (SRF) editions from Amazon as temporary PoC sources. Extract text via same ebook capture / PDF pipeline. Ingest with `language: 'hi'` and `language: 'es'` — the `language` column exists on all content tables from the first migration (Principle 11). Generate embeddings via Voyage voyage-3-large (natively multilingual). Create `canonical_book_id` cross-language link between the three editions. Validate: Hindi queries return Hindi passages, Spanish queries return Spanish passages, cross-language fallback works (English results shown when target language has no match, clearly marked `[EN]`). Font loading: Noto Serif Devanagari (reading) + Noto Sans Devanagari (UI) for Hindi, eagerly preloaded on `/hi/` locale (ADR-080). (ADR-077, ADR-128) |
-| 1a.11 | **Devanagari typography QA** | Verify faithful Devanagari rendering across the Hindi *Autobiography*. Conjunct characters (jodakshar: क्ष, त्र, ज्ञ, श्र) render correctly at all font sizes. Matras (vowel signs: ि, ी, ु, ू, े, ै, ो, ौ) do not collide with consonants. Halant/virama (्) renders correctly for consonant clusters. Nukta characters (फ़, ज़, ख़) preserved from source. Hindi body text at 20px (`--text-base-hi`) with 1.9 line height. Optimal line length: 40–50 aksharas. Drop capitals omitted. Print stylesheet renders Noto Serif Devanagari at 12pt. `@vercel/og` quote images render Hindi passages with bundled Noto Serif Devanagari font. (ADR-080) |
+| 1a.1 | **Repository + development environment** | Create Next.js + TypeScript + Tailwind + pnpm repository. Configure ESLint, Prettier, `.env.example`. Establish `/lib/services/`, `/app/api/v1/`, `/migrations/`, `/scripts/`, `/messages/` directory structure. No Terraform, no `bootstrap.sh`, no CI pipeline yet — those are Milestone 1c concerns. (ADR-041) |
+| 1a.2 | **Neon project + initial schema** | Neon project created via Neon MCP (not Terraform — Terraform formalization in 1c.1). **PostgreSQL 18**. **MCP-driven verification:** Claude verifies via Neon MCP: project exists with correct PG version and Scale tier (`list_projects`), all 5 extensions install on PG18 (`run_sql` → `SELECT extname FROM pg_extension`), retrieves connection strings for `.env.local` (`get_connection_string`). Fallback: PG17, no code changes. Create dev branch for local development. Write `001_initial_schema.sql` covering all search tables (books, chapters, book_chunks, entity_registry, sanskrit_terms, suggestion_dictionary, teaching_topics, chunk_topics, daily_passages, affirmations, chunk_relations, extracted_relationships, search_queries, search_theme_aggregates, chapter_study_notes, book_chunks_archive). All primary keys use `DEFAULT uuidv7()` for time-ordered UUIDs (ADR-124 § UUIDv7 convention). All content tables include `updated_at` column with auto-set trigger and composite `(updated_at, id)` index for timestamp-filtered pagination (ADR-107). Tables include full column specification: books (with `bookstore_url`, `edition`, `edition_year` per ADR-034), book_chunks (with `embedding_model` versioning per ADR-046, `content_hash` for stable deep links per ADR-022, enrichment columns per ADR-115), teaching_topics (with `category` and `description_embedding` per ADR-032), chunk_topics (three-state `tagged_by` per ADR-032). BM25 index via pg_search (ADR-114). Run via dbmate. Verify tables, indexes, BM25 index, and entity_registry via MCP `run_sql`. Time Travel queries available immediately for development debugging (PRO-008). (ADR-093, ADR-050, ADR-032, ADR-022, ADR-053, ADR-034, ADR-114, ADR-115, ADR-116, ADR-124) |
+| 1a.3 | **Contentful space + content model** | Create Contentful space. Configure content types: Book → Chapter → Section → TextBlock per DESIGN-arc1.md § Contentful Content Model. Enable **English locale only** (Hindi/Spanish locales added in Milestone 1b). Configure Contentful Personal Access Token in `.env`. Verify content model by creating a test Book entry. Contentful is the editorial source of truth from Arc 1 (ADR-010). |
+| 1a.4 | **English Contentful import + Neon sync** | English text already extracted via `scripts/book-ingest/` pipeline (522 pages, 49 chapters, `book.json` ready — see `scripts/book-ingest/DESIGN.md`). Remaining work: build Contentful import script (`book.json` → Contentful Management API: Book → Chapter → Section → TextBlock entries). Typographic normalization applied during extraction (smart quotes, proper dashes, ellipsis glyphs). Compute SHA-256 per chapter and store in `chapters.content_hash` (ADR-039). Resolve 2 critical text gaps (pages 188, 216) via physical book. **Branch-isolated Neon ingestion:** Create `ingest-{timestamp}` branch from dev via Neon MCP (`create_branch`). Batch sync from Contentful to the ingestion branch: read TextBlocks from Delivery API → chunk by paragraphs (ADR-048: paragraph-based, 100–500 token range, special handling for epigraphs and poetry) → generate embeddings via Voyage voyage-3-large → insert with `contentful_id` linkage. Verify chunk counts, embedding dimensions, and citation integrity on the branch (`run_sql`). If verification passes, apply to dev branch. If not, delete branch, iterate. Note: 1a ingestion produces plain chunks without entity resolution or enrichment metadata — those are Milestone 1c concerns (1c.12 entity registry, 1c.13 enrichment prompts). Re-enrichment of 1a chunks happens after 1c.12/1c.13 are complete. |
+| 1a.5 | **Search API** | Next.js API route (`/api/v1/search`) implementing hybrid search (vector + FTS + RRF). Returns ranked verbatim passages with citations. No query expansion or intent classification yet — pure hybrid search. (ADR-011, ADR-044) |
+| 1a.6 | **Search UI** | Search results page: ranked verbatim quoted passages with book/chapter/page citations. "Read in context" deep links. Search bar with prompt "What are you seeking?" |
+| 1a.7 | **Basic book reader** | Chapter-by-chapter reading view serving content from Contentful Delivery API. Deep-link anchors, optimal line length (English: 65–75 chars / `max-width: 38rem`), prev/next chapter navigation, "Find this book" SRF Bookstore links, basic reader accessibility (skip links, semantic HTML). |
+| 1a.8 | **Search quality evaluation (English)** | Test suite of ~50 English queries with expected passages (golden retrieval set). Five difficulty categories: **Direct** (~10 queries, baseline ~95%), **Conceptual** (~12 queries, baseline ~85%), **Emotional** (~12 queries, baseline ~70%), **Metaphorical** (~8 queries, baseline ~65%), **Technique-boundary** (~8 queries, must correctly route to Practice Bridge, baseline 100%). Claude drafts the query set, evaluates results, and judges quality autonomously. Per-category breakdowns reveal WHERE search needs improvement. Threshold: ≥ 80% of queries return at least one relevant passage in top 3 overall. (ADR-005 E5) |
 
 ### Technology
 
 | Component | Service | Cost |
 |-----------|---------|------|
-| Frontend | Next.js (local dev; Vercel in 1b) | $0 |
+| Frontend | Next.js (local dev; Vercel in 1c) | $0 |
 | CMS | Contentful | $0 |
 | Database | Neon PostgreSQL 18 + pgvector + pg_search (Scale tier) | ~$20/mo |
 | Embeddings | Voyage voyage-3-large (1024d, ADR-118) | ~$0.30 one-time |
-| Enrichment | Claude via AWS Bedrock (batch, ADR-115) | ~$5-10 one-time |
-| PDF processing | marker (open-source Python) | $0 |
-| Language detection | fastText (open-source) | $0 |
 | Migrations | dbmate (open-source) | $0 |
 | SCM | GitHub | $0 |
 
 ### Success Criteria
 
-- `terraform apply` completes successfully (Neon project, Sentry project, AWS core resources)
-- `terraform plan` shows no drift after apply
-- CI pipeline (`ci.yml` + `terraform.yml`) runs green on a test PR
 - `pnpm dev` starts a working Next.js application locally
 - `dbmate status` shows migration 001 applied
-- Contentful space contains Autobiography content (Book, Chapters, Sections, TextBlocks)
-- A seeker can type "How do I overcome fear?" (English), "भय कैसे दूर करें?" (Hindi), or "¿Cómo superar el miedo?" (Spanish) and receive relevant, verbatim Yogananda quotes with accurate book/chapter/page citations in the queried language
+- Contentful space contains English Autobiography content (Book, Chapters, Sections, TextBlocks)
+- A seeker can type "How do I overcome fear?" and receive relevant, verbatim Yogananda quotes with accurate book/chapter/page citations
 - "Read in context" links navigate to the correct passage in the reader
 - Simple keyword searches ("divine mother") work without any LLM involvement
 - Search latency < 2 seconds for hybrid queries
 - Zero AI-generated content appears in any user-facing result
 - The book reader enforces 65–75 character line length
 - "Find this book" links are present on every passage and link to the SRF Bookstore
-- Search quality evaluation passes: ≥ 80% of test queries return at least one relevant passage in the top 3 results, per language (en, hi, es)
-- Hindi *Autobiography* ingested with correct citations and `language: 'hi'`
-- Spanish *Autobiography* ingested with correct citations and `language: 'es'`
-- Hindi search queries return Hindi passages; Spanish queries return Spanish passages
-- Cross-language fallback: English results shown (marked `[EN]`) when target language has no match
-- Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI) load correctly for Hindi content
-- Hindi body text renders at 20px with 1.9 line height; optimal line length 40–50 aksharas
-- Devanagari conjuncts, matras, halant, and nukta characters render correctly at all font sizes
-- Hindi passage quote images (`@vercel/og`) render Devanagari without empty boxes
-- Hindi print stylesheet uses Noto Serif Devanagari at 12pt
+- Search quality evaluation passes: ≥ 80% of English test queries return at least one relevant passage in the top 3 results
+- Per-category evaluation breakdowns available for all five difficulty categories
 
 ### What If Search Quality Fails?
 
@@ -141,16 +128,50 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 2. **Embedding model swap.** Benchmark against Cohere embed-v3, BGE-M3, or multilingual-e5-large-instruct using the same test suite. The `embedding_model` column on `book_chunks` supports migration (ADR-046).
 3. **Manual curation bridge.** Tag the 30 test queries with expected passages manually. Use these as a curated fallback while improving automated retrieval. The portal can launch with curated results for common queries and automated results for long-tail.
 4. **Hybrid weighting tuning.** Adjust the RRF k-constant and the relative weight of vector vs. FTS results.
+5. **Per-category analysis.** Use the five difficulty categories to target improvements: if Emotional queries fail but Direct queries pass, the terminology bridge (1c.4) may be the fix rather than embedding model changes.
 
 ---
 
-### Milestone 1b: Deploy
+### Milestone 1b: Trilingual
 
-**Goal:** Deploy to Vercel, build the homepage, establish observability, activate Contentful webhook sync, seed the entity registry, and design the enrichment pipeline. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI services in the search hot path. Milestone 1b transforms the working local proof into a deployed, observable portal.
+**Goal:** Does multilingual search work in Hindi and Spanish? Validate ADR-128's breadth-first bet. Contentful already exists from 1a — add Hindi/Spanish locales and content.
 
-*Milestone 1b depends on Milestone 1a's search quality evaluation passing — in all three languages. If the core search doesn't work, everything built here is premature.* (ADR-113)
+*Milestone 1b depends on Milestone 1a's English search quality evaluation passing. If search doesn't work in English, multilingual search is premature.* (ADR-113)
 
-*AI-enhanced search (query expansion, Claude passage ranking, Cohere reranking) is deferred to Milestone 2b, conditional on Milestone 1a evaluation. If pure hybrid search meets quality targets comfortably (≥ 90% of test queries return relevant passages in top 3), AI enhancements may not be needed. See ADR-119.*
+**Focus book:** Autobiography of a Yogi — **Hindi and Spanish** editions (ADR-128 Tier 1)
+
+### Deliverables
+
+| # | Deliverable | Description |
+|---|-------------|-------------|
+| 1b.1 | **Hindi and Spanish Autobiography ingestion** | Reuses existing `scripts/book-ingest/` pipeline: add BookConfig entries for Hindi/Spanish editions, purchase ebooks, run capture → extract → assemble → validate. Hindi tests Devanagari OCR accuracy (Claude Vision on Devanagari text). Import to Contentful Hindi/Spanish locales (add locales to existing Contentful space from 1a.3) → Neon sync → chunk → embed with Voyage voyage-3-large (natively multilingual). Create `canonical_book_id` cross-language link between the three editions. Validate: Hindi queries return Hindi passages, Spanish queries return Spanish passages, cross-language fallback works (English results shown when target language has no match, clearly marked `[EN]`). Font loading: Noto Serif Devanagari (reading) + Noto Sans Devanagari (UI) for Hindi, eagerly preloaded on `/hi/` locale (ADR-080). (ADR-077, ADR-128) |
+| 1b.2 | **Trilingual search quality evaluation** | ~15 Hindi + ~15 Spanish queries with expected passages. Same five difficulty categories as 1a.8: Direct, Conceptual, Emotional, Metaphorical, Technique-boundary. Claude drafts the query set, evaluates results, and judges quality autonomously. Per-category breakdowns per language. Threshold: ≥ 80% per language. (ADR-005 E5, ADR-128, ADR-077) |
+| 1b.3 | **Devanagari typography QA** | Verify faithful Devanagari rendering across the Hindi *Autobiography*. Conjunct characters (jodakshar: क्ष, त्र, ज्ञ, श्र) render correctly at all font sizes. Matras (vowel signs: ि, ी, ु, ू, े, ै, ो, ौ) do not collide with consonants. Halant/virama (्) renders correctly for consonant clusters. Nukta characters (फ़, ज़, ख़) preserved from source. Hindi body text at 20px (`--text-base-hi`) with 1.9 line height. Optimal line length: 40–50 aksharas. Drop capitals omitted. Print stylesheet renders Noto Serif Devanagari at 12pt. `@vercel/og` quote images render Hindi passages with bundled Noto Serif Devanagari font. (ADR-080) |
+| 1b.4 | **Cross-language fallback verification** | English `[EN]` marking when target language has no match. Hindi/Spanish font loading verified. `canonical_book_id` linking between editions. Spanish line length (65–75 chars, same as English). Hindi line length (40–50 aksharas, adjusted `max-width`). Reader view works for all three languages. |
+
+### Success Criteria
+
+- Hindi *Autobiography* ingested with correct citations and `language: 'hi'`
+- Spanish *Autobiography* ingested with correct citations and `language: 'es'`
+- Hindi search queries return Hindi passages; Spanish queries return Spanish passages
+- Trilingual search quality evaluation passes: ≥ 80% per language (hi, es)
+- Per-category evaluation breakdowns available for Hindi and Spanish
+- Cross-language fallback: English results shown (marked `[EN]`) when target language has no match
+- Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI) load correctly for Hindi content
+- Hindi body text renders at 20px with 1.9 line height; optimal line length 40–50 aksharas
+- Devanagari conjuncts, matras, halant, and nukta characters render correctly at all font sizes
+- Hindi passage quote images (`@vercel/og`) render Devanagari without empty boxes
+- Hindi print stylesheet uses Noto Serif Devanagari at 12pt
+
+---
+
+### Milestone 1c: Deploy
+
+**Goal:** Build proper infrastructure (Terraform, CI/CD), deploy to Vercel, add homepage, observability, and all enhancement features. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI services in the search hot path. Milestone 1c transforms the working local proof into a deployed, observable portal.
+
+*Milestone 1c depends on Milestone 1b's trilingual search quality evaluation passing. If multilingual search doesn't work, deploying is premature.* (ADR-113)
+
+*AI-enhanced search (query expansion, Claude passage ranking, Cohere reranking) is deferred to Milestone 2b, conditional on 1a/1b evaluation. If pure hybrid search meets quality targets comfortably (≥ 90% of test queries return relevant passages in top 3), AI enhancements may not be needed. See ADR-119.*
 
 **Focus book:** Autobiography of a Yogi (English, Hindi, Spanish)
 
@@ -158,22 +179,24 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 | # | Deliverable | Description |
 |---|-------------|-------------|
-| 1b.1 | **Vercel project + Sentry project** | Link repository to Vercel. Configure environment variables. Deploy stub `/api/v1/health` endpoint. Create Sentry project, configure DSN, verify error capture. (ADR-095) |
-| 1b.2 | **Shared service layer + API conventions** | All business logic in `/lib/services/` (not in Server Components). API routes use `/api/v1/` prefix, accept both cookie and Bearer token auth, return cursor-based pagination on list endpoints, include Cache-Control headers. (ADR-011) |
-| 1b.3 | **Spiritual terminology bridge (index-time)** | Tradition-aware vocabulary mapping (`/lib/data/spiritual-terms.json`) that bridges modern/cross-tradition terms to Yogananda's vocabulary. Applied at index time during enrichment (ADR-115) — maps "mindfulness" → "concentration" in the BM25 index so seekers find passages without query-time AI. Per-book evolution lifecycle: each book ingestion triggers vocabulary extraction → diff → human review → merge (ADR-051). **Query-time expansion via Claude deferred to Milestone 2b** (conditional on 1a evaluation, ADR-119). (ADR-051) |
-| 1b.4 | **~~Search intent classification + passage ranking~~** | **Deferred to Milestone 2b** (conditional on 1a evaluation, ADR-119). Pure hybrid search (vector + BM25 + RRF) is the primary search mode. If Milestone 1a evaluation shows quality gaps that intent classification or passage ranking would address, activate in 2b. Crisis query detection (1b.11) uses heuristic keyword matching rather than Claude intent classification. |
-| 1b.5 | **Minimal homepage** | Today's Wisdom (random passage on each visit), "Show me another" link (new random passage, no page reload). Search bar with prompt "What are you seeking?" Styled with SRF design tokens. Cross-fade animation added in Milestone 2a. |
-| 1b.6 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-095) |
-| 1b.7 | **Search API rate limiting** | Two-layer rate limiting: Vercel Firewall rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-081). Pure hybrid search is the primary mode — no AI services in the hot path, no degradation cascade needed. `/scripts/` directory with CI-agnostic deployment scripts. Permissive `robots.txt` (allow all, block `/admin/`). (ADR-023, ADR-018, ADR-081) |
-| 1b.8 | **Contentful webhook sync service** | Event-driven sync replacing Milestone 1a batch script: Contentful publish → Vercel Function → extract plain text from Rich Text AST → chunk → enrich → embed → upsert Neon (matched by `contentful_id`). Handles create, update, and unpublish events. Logs sync events for monitoring. (ADR-010, DES-005) |
-| 1b.9 | **Search suggestions — static JSON + pg_trgm fuzzy fallback** | Three-tier suggestion architecture (ADR-120). **Tier A (Milestone 1a):** Pre-computed static JSON prefix files at Vercel CDN edge — trilingual vocabulary (en/hi/es) from the Autobiography, chapter titles, zero-state chips per language. Client-side prefix filtering. < 10ms globally. Hindi Devanāgarī suggestions served via Unicode first-character prefix files (`/public/suggestions/hi/स.json`) alongside Latin two-character files for Romanized input (`/public/suggestions/hi/sa.json`). **Tier B (Milestone 1b):** `GET /api/v1/search/suggest` pg_trgm fuzzy fallback endpoint for misspellings and transliterated input (queries both `suggestion` and `latin_form` columns). Async merge into dropdown when prefix results are sparse. Edge-cached. **Debounce:** Adaptive — fire immediately on first keystroke, 100ms debounce on subsequent, 200ms on 2G. ARIA combobox pattern. Mobile: max 5 suggestions, 44×44px touch targets. No Claude API call in suggestion path. (ADR-049, ADR-120) |
-| 1b.10 | **Cultural design consultation** | Identify at least one YSS-connected consultant (designer, devotee, or monastic) who participates in design reviews from Arc 1. Cultural consultation is a posture maintained throughout all arcs, not a Milestone 5b deliverable. This consultant reviews visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways for cultural sensitivity. Does not require full-time commitment — periodic review sessions. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
-| 1b.11 | **Crisis query detection and interstitial** | Heuristic keyword-based crisis detection against a curated keyword list (`/lib/data/crisis-terms.json`). When a query matches crisis patterns, display a calm, non-alarmist interstitial above search results with locale-appropriate crisis helpline information. Search results are not suppressed — the interstitial is additive. Conservative threshold: false positives are acceptable, false negatives are the failure mode to minimize. Crisis resource list (helplines, language, presentation) requires SRF review before going live. Sentry event `search.crisis_intent` for monitoring. If Claude intent classification is activated in Milestone 2b, it replaces or augments the heuristic. (ADR-122, ADR-071) |
-| 1b.12 | **Entity registry seed** | Claude generates initial canonical vocabulary for `entity_registry` and `sanskrit_terms` tables from domain knowledge. Covers teachers, divine names, techniques, Sanskrit terms, and key concepts appearing in the Autobiography. Human review validates all entries before ingestion begins. Entity registry must be populated BEFORE first book ingestion so enrichment can resolve against it. (ADR-116) |
-| 1b.13 | **Enrichment prompt design sprint** | Design and test the unified enrichment prompt (ADR-115) against 20–30 actual passages spanning all document types present in the Autobiography (narrative, poetry, dialogue, technical meditation instruction). Validate that enrichment output is consistent and useful. Iterate prompt until enrichment quality meets editorial expectations. |
-| 1b.14 | **Query intent taxonomy** | Define 5 example queries per intent category (topical, specific, emotional, definitional, situational, browsing, search). Validate that intent classification routes correctly for all 35+ test queries. Forms the basis of the search quality evaluation golden set. |
-| 1b.15 | **Golden suggestion set** | Hand-write 300 high-quality suggestions spanning all six tiers (ADR-049): scoped queries ("Yogananda on meditation"), named entities, domain concept phrases, Sanskrit terms with definitions, potential learned queries, and single terms. Used to seed `suggestion_dictionary` and evaluate suggestion quality. |
-| 1b.16 | **Copyright communication layer** | Multi-layered copyright assertion for the fully crawlable portal. `/llms.txt` with copyright section. `/ai.txt` machine-parseable AI permissions file (`Allow-Training: yes`, `Attribution-Required: yes`, `Allow-Derivative-Works: no`). `X-Copyright` and `X-Attribution-Required` response headers on all content routes (middleware in `/lib/middleware/copyright-headers.ts`). JSON-LD `copyrightHolder` field on all content pages. Stub `/legal` page with copyright notice (full legal page in Milestone 2a.20). `/api/v1/copyright` machine-readable endpoint. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) deferred to SRF legal counsel review. Ships before public deployment. (ADR-081 §3a, §3b; PRO-012) |
+| 1c.1 | **Infrastructure bootstrap + Terraform** | Create `scripts/bootstrap.sh` — idempotent bootstrap script that automates S3 bucket, DynamoDB table, OIDC provider, IAM role creation via AWS CLI, prompts for Neon org key and Sentry token, configures Vercel CLI, and sets all GitHub secrets via `gh secret set` (ADR-020). Create `terraform/bootstrap/trust-policy.json` for IAM OIDC trust policy. Establish `/terraform/`, `.github/workflows/` directory structure. Write Terraform modules and run first `terraform apply` — formalizes existing Neon project, creates Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Vercel module enabled. Lambda module disabled until Milestone 2a (DES-039 § Progressive Module Activation). CI pipeline (`ci.yml` + `terraform.yml`) operational. Enable Neon branch protection on production branch. Create project-scoped API key for CI (ADR-124 § API Key Scoping). Configure automated Neon snapshots: daily at 03:00 UTC, weekly Sunday, monthly 1st — via Neon API (ADR-019 Layer 2). (ADR-016, ADR-020, ADR-041) |
+| 1c.2 | **Vercel project + Sentry project** | Link repository to Vercel. Configure environment variables. Deploy stub `/api/v1/health` endpoint. Create Sentry project, configure DSN, verify error capture. (ADR-095) |
+| 1c.3 | **Shared service layer + API conventions** | All business logic in `/lib/services/` (not in Server Components). API routes use `/api/v1/` prefix, accept both cookie and Bearer token auth, return cursor-based pagination on list endpoints, include Cache-Control headers. (ADR-011) |
+| 1c.4 | **Spiritual terminology bridge (index-time)** | Tradition-aware vocabulary mapping (`/lib/data/spiritual-terms.json`) that bridges modern/cross-tradition terms to Yogananda's vocabulary. Applied at index time during enrichment (ADR-115) — maps "mindfulness" → "concentration" in the BM25 index so seekers find passages without query-time AI. Per-book evolution lifecycle: each book ingestion triggers vocabulary extraction → diff → merge. Claude performs extraction and diffing autonomously (ADR-051). **Query-time expansion via Claude deferred to Milestone 2b** (conditional on 1a evaluation, ADR-119). (ADR-051) |
+| 1c.5 | **Minimal homepage** | Today's Wisdom (random passage on each visit), "Show me another" link (new random passage, no page reload). Search bar with prompt "What are you seeking?" Styled with SRF design tokens. Cross-fade animation added in Milestone 2a. |
+| 1c.6 | **Observability foundation** | Sentry error tracking with Next.js source maps. Structured logging via `/lib/logger.ts` (JSON, request ID correlation). Health check endpoint (`/api/v1/health`). Vercel Analytics for Core Web Vitals. (ADR-095) |
+| 1c.7 | **Search API rate limiting** | Two-layer rate limiting: Vercel Firewall rules (15 searches/min per IP) + application-level limiter. Crawler-tier rate limits: known bots (Googlebot, GPTBot, PerplexityBot, ClaudeBot) get 120 req/min vs. 30 req/min anonymous (ADR-081). Pure hybrid search is the primary mode — no AI services in the hot path, no degradation cascade needed. CI-agnostic deployment scripts in `/scripts/` (ADR-018). Permissive `robots.txt` (allow all, block `/admin/`). (ADR-023, ADR-018, ADR-081) |
+| 1c.8 | **Contentful webhook sync service** | Event-driven sync replacing Milestone 1a batch script: Contentful publish → Vercel Function → extract plain text from Rich Text AST → chunk → enrich → embed → upsert Neon (matched by `contentful_id`). Handles create, update, and unpublish events. Logs sync events for monitoring. (ADR-010, DES-005) |
+| 1c.9 | **Search suggestions — static JSON + pg_trgm fuzzy fallback** | Three-tier suggestion architecture (ADR-120). **Tier A:** Pre-computed static JSON prefix files at Vercel CDN edge — trilingual vocabulary (en/hi/es) from the Autobiography, chapter titles, zero-state chips per language. Client-side prefix filtering. < 10ms globally. Hindi Devanāgarī suggestions served via Unicode first-character prefix files (`/public/suggestions/hi/स.json`) alongside Latin two-character files for Romanized input (`/public/suggestions/hi/sa.json`). **Tier B:** `GET /api/v1/search/suggest` pg_trgm fuzzy fallback endpoint for misspellings and transliterated input (queries both `suggestion` and `latin_form` columns). Async merge into dropdown when prefix results are sparse. Edge-cached. **Debounce:** Adaptive — fire immediately on first keystroke, 100ms debounce on subsequent, 200ms on 2G. ARIA combobox pattern. Mobile: max 5 suggestions, 44×44px touch targets. No Claude API call in suggestion path. (ADR-049, ADR-120) |
+| 1c.10 | **Cultural design consultation** | Claude performs cultural sensitivity review using cultural-lens skill — evaluating visual design tokens, editorial voice, "Seeking..." entry points, and the `/guide` worldview pathways. Identifies culturally sensitive areas (Hindu devotional imagery, Sanskrit terminology, meditation instruction framing) and proposes adjustments. YSS-connected consultation (designer, devotee, or monastic) is invited but not a blocking gate. Cultural consultation is a posture maintained throughout all arcs. (See CONTEXT.md § Spiritual Design Principles, ADR-006, ADR-077) |
+| 1c.11 | **Crisis query detection and interstitial** | Heuristic keyword-based crisis detection against a curated keyword list (`/lib/data/crisis-terms.json`). When a query matches crisis patterns, display a calm, non-alarmist interstitial above search results with locale-appropriate crisis helpline information. Search results are not suppressed — the interstitial is additive. Conservative threshold: false positives are acceptable, false negatives are the failure mode to minimize. Sentry event `search.crisis_intent` for monitoring. If Claude intent classification is activated in Milestone 2b, it replaces or augments the heuristic. (ADR-122, ADR-071) |
+| 1c.12 | **Entity registry seed** | Claude generates initial canonical vocabulary for `entity_registry` and `sanskrit_terms` tables from domain knowledge. Covers teachers, divine names, techniques, Sanskrit terms, and key concepts appearing in the Autobiography. Claude self-validates all entries against the extracted Autobiography text. Entity registry must be populated BEFORE re-enrichment of 1a chunks. (ADR-116) |
+| 1c.13 | **Enrichment prompt design sprint** | Design and test the unified enrichment prompt (ADR-115) against 20–30 actual passages spanning all document types present in the Autobiography (narrative, poetry, dialogue, technical meditation instruction). Validate that enrichment output is consistent and useful. Claude designs, tests against passages, and iterates autonomously. |
+| 1c.14 | **Query intent taxonomy** | Define 5 example queries per intent category (topical, specific, emotional, definitional, situational, browsing, search). Validate that intent classification routes correctly for all 35+ test queries. Forms the basis of the search quality evaluation golden set. |
+| 1c.15 | **Golden suggestion set** | Hand-write 300 high-quality suggestions spanning all six tiers (ADR-049): scoped queries ("Yogananda on meditation"), named entities, domain concept phrases, Sanskrit terms with definitions, potential learned queries, and single terms. Used to seed `suggestion_dictionary` and evaluate suggestion quality. |
+| 1c.16 | **Copyright communication layer** | Multi-layered copyright assertion for the fully crawlable portal. `/llms.txt` with copyright section. `/ai.txt` machine-parseable AI permissions file (`Allow-Training: yes`, `Attribution-Required: yes`, `Allow-Derivative-Works: no`). `X-Copyright` and `X-Attribution-Required` response headers on all content routes (middleware in `/lib/middleware/copyright-headers.ts`). JSON-LD `copyrightHolder` field on all content pages. Stub `/legal` page with copyright notice (full legal page in Milestone 2a.20). `/api/v1/copyright` machine-readable endpoint. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) deferred to SRF legal counsel review. Ships before public deployment. (ADR-081 §3a, §3b; PRO-012) |
+
+Search intent classification + passage ranking stays **deferred to Milestone 2b** (conditional on 1a/1b evaluation, ADR-119). Pure hybrid search is the primary search mode. Crisis query detection (1c.11) uses heuristic keyword matching rather than Claude intent classification.
 
 ### Technology
 
@@ -181,9 +204,8 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 |-----------|---------|------|
 | Frontend | Next.js on Vercel (Pro tier) | ~$20/mo |
 | Database | Neon PostgreSQL 18 + pgvector + pg_search (Scale tier, ADR-124) | ~$20/mo |
-| AI | Claude API (index-time enrichment, ingestion QA, search eval — not in search hot path, ADR-119) | ~$5-10/mo |
+| AI | Claude API (index-time enrichment, search eval — not in search hot path, ADR-119) | ~$5-10/mo |
 | Embeddings | Voyage voyage-3-large (ADR-118) | ~$0.30 one-time |
-| PDF processing | marker (open-source Python) | $0 |
 | Language detection | fastText (open-source) | $0 |
 | Fonts | Google Fonts (Merriweather, Lora, Open Sans) | $0 |
 | Error tracking | Sentry (Team tier) | ~$26/mo |
@@ -195,7 +217,9 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 ### Success Criteria
 
-- `terraform apply` with `enable_vercel = true` completes (Vercel project created by Terraform)
+- `terraform apply` completes successfully (Neon project formalized, Sentry project, AWS core resources, Vercel project)
+- `terraform plan` shows no drift after apply
+- CI pipeline (`ci.yml` + `terraform.yml`) runs green on a test PR
 - `/api/v1/health` returns `200 OK` on both local and Vercel
 - Sentry test error appears in dashboard
 - `.env.example` documents all required environment variables
@@ -672,7 +696,7 @@ Events, center discovery, and messaging channels (SMS, Telegram) bring the porta
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature |
 | PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement |
 
-*PRO-012 (Copyright and Legal Framework) has been validated and scheduled as Milestone 1b.16. See deliverable table above.*
+*PRO-012 (Copyright and Legal Framework) has been validated and scheduled as Milestone 1c.16. See deliverable table above.*
 *PRO-014 (Multi-Author Sacred Text Expansion) has been adopted. Document cascade merged 2026-02-25.*
 
 ---
@@ -696,9 +720,10 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 
 | Milestone | Hard Prerequisites | Soft Prerequisites |
 |-----------|---|---|
-| **1a (Prove)** | ~~Edition confirmed, PDF source confirmed~~ *(Resolved 2026-02-24)* | — |
-| **1b (Deploy)** | Milestone 1a search quality evaluation passes | SRF AE team availability for kickoff |
-| **2a (Build)** | Milestone 1b complete | Embedding model benchmarks started |
+| **1a (Prove)** | ~~Edition confirmed, PDF source confirmed~~ *(Resolved 2026-02-24)*. ~~English ebook extraction~~ *(Resolved 2026-02-26)* | — |
+| **1b (Trilingual)** | Milestone 1a English search quality evaluation passes (≥ 80%) | Hindi/Spanish ebooks purchased |
+| **1c (Deploy)** | Milestone 1b trilingual search quality evaluation passes (≥ 80% per language) | SRF AE team availability for kickoff |
+| **2a (Build)** | Milestone 1c complete | Embedding model benchmarks started |
 | **2b (Refine)** | Milestone 2a complete | — |
 | **3a (Corpus)** | Milestone 2b complete | — |
 | **3b (Editorial)** | Milestone 3a complete | Theme taxonomy reviewed by theological advisor. Editorial governance decided and portal coordinator identified are *activation* prerequisites (feature-flag pattern, ADR-123), not *build* prerequisites. Infrastructure ships on schedule; queues activate when staffed. |
@@ -714,7 +739,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 **Critical decision gates** (require SRF input before the arc/milestone begins):
 - **Milestone 3b (Editorial):** Who owns editorial governance? Who is the portal coordinator? (See CONTEXT.md § Operational Staffing)
 - **Arc 4 (Service):** Multi-environment AWS account structure (multi-account vs. IAM isolation)
-- **Milestone 5b (Languages):** YSS branding strategy for Bengali/Thai locales, digital text availability for the remaining 7 non-English core languages (Hindi and Spanish already ingested in Arc 1)
+- **Milestone 5b (Languages):** YSS branding strategy for Bengali/Thai locales, digital text availability for the remaining 7 non-English core languages (Hindi and Spanish already ingested in Milestones 1b–1c)
 - **Milestone 7a (Personal):** Whether to implement user accounts at all
 - **Milestone 7b (Together):** VLD role assignment process, VLD coordinator identified, community curation governance model
 
@@ -726,8 +751,8 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 
 | Arc / Milestone | Estimated Monthly Cost | Notes |
 |-----------------|----------------------|-------|
-| Milestone 1a (Prove) | ~$20-30 | Neon Scale tier (~$20/mo baseline), local dev only, one-time embedding cost (~$0.30). |
-| Milestones 1b–2b (Deploy through Refine) | ~$80-100 | Neon Scale (~$20), Vercel Pro (~$20), Sentry Team (~$26), Claude API (~$15-25). S3 backup < $1/mo. |
+| Milestones 1a–1b (Prove + Trilingual) | ~$20-30 | Neon Scale tier (~$20/mo baseline), local dev only, one-time embedding cost (~$0.30 en, ~$0.60 hi+es). |
+| Milestones 1c–2b (Deploy through Refine) | ~$80-100 | Neon Scale (~$20), Vercel Pro (~$20), Sentry Team (~$26), Claude API (~$15-25). S3 backup < $1/mo. |
 | Arc 3 (Wisdom) | ~$80-120 (base) + ~$10-20 (incremental) | Base infrastructure continues from Milestones 1b–2b. Incremental: more embedding generation for multi-book corpus and chunk relations. Lambda for batch ingestion (pennies per invocation). |
 | Arc 4 + Milestone 5a (Service + Distribution) | ~$20-50 | Full library embedded, daily email service (SendGrid ~$20/mo Essentials tier; pending PRO-015 SES evaluation), S3 for PDFs and images, Lambda for scheduled jobs. WhatsApp Business API: +$150-300/mo at scale. Multi-environment promotion (staging + prod), regional Neon read replicas. Contentful paid tier may be needed by Milestone 3a (multi-book) — evaluate then. |
 | Milestone 5b+ (Languages) | Requires evaluation | Multi-language embeddings, increased storage, higher API traffic. |
@@ -740,7 +765,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| **PDF OCR quality** | Corrupted text → bad search results | Human QA step (1a.5) is mandatory. Budget review time. SRF provides non-PDF digital text before launch. |
+| **OCR quality** | Corrupted text → bad search results | Claude validates autonomously during ingestion (5.0/5.0 confidence achieved for English). Physical book recovery for edge cases (2 pages). SRF provides non-PDF digital text before launch. |
 | **Contentful capacity** | Full corpus at paragraph level may require tier evaluation | One book (~3K TextBlocks) fits comfortably. Evaluate capacity needs at Milestone 3a (multi-book). Hybrid option: section-level in Contentful, paragraph-level in Neon only. |
 | **Embedding model quality** | Poor retrieval for Yogananda's vocabulary | Benchmark multiple models (Arc 1 task). Yogananda uses precise, sometimes archaic spiritual terminology. |
 | **Chunk size sensitivity** | Too small = orphaned fragments. Too large = imprecise retrieval. | Empirical testing in Arc 1 with diverse query types. |
@@ -748,7 +773,7 @@ Each milestone has prerequisites that must be satisfied before work begins. Hard
 | **SEO discoverability** | Portal serves only people who already know it exists | Deliberate SEO strategy from Milestone 2a: structured data, theme pages as entry points, meta tags, sitemap. |
 | **Portal/app overlap** | Building a duplicate reader alongside the SRF/YSS app | Clarify relationship with SRF AE team early. Portal may complement (search + public reading) rather than replace (private Lessons reading) the app. |
 | **Editorial governance** | No defined process for theme tagging, daily passage curation, content QA | Establish editorial roles and workflows before Milestone 3b. Determine whether monastic order, AE team, or dedicated editor owns this. The editorial review portal (ADR-082, deliverables 3b.5a/3b.5b) provides the tooling; the organizational question of *who* uses it requires SRF input. |
-| **Copyright/licensing ambiguity** | Unclear terms for free access (read-only vs. downloadable vs. printable) | Resolved: full crawlability with copyright retention. Content gating architecturally prohibited (ADR-081 §3a). Copyright communicated via multi-layered metadata: `llms.txt` copyright section, `ai.txt` permissions file, `X-Copyright` headers, JSON-LD, `/legal` page. Copyright communication layer ships as Milestone 1b.16. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) require SRF legal counsel review before Milestone 1b deployment (PRO-012). |
+| **Copyright/licensing ambiguity** | Unclear terms for free access (read-only vs. downloadable vs. printable) | Resolved: full crawlability with copyright retention. Content gating architecturally prohibited (ADR-081 §3a). Copyright communicated via multi-layered metadata: `llms.txt` copyright section, `ai.txt` permissions file, `X-Copyright` headers, JSON-LD, `/legal` page. Copyright communication layer ships as Milestone 1c.16. Final licensing terms (CC-BY-NC vs. all-rights-reserved with permissions) require SRF legal counsel review before Milestone 1c deployment (PRO-012). |
 | **Global South accessibility** | Many seekers access via mobile on limited bandwidth (India, Africa, Latin America) | Mobile-first design. Performance budgets (< 100KB initial load). Low-bandwidth text-only mode. Consider PWA for offline access of bookmarked passages. |
 | **"What next" gap** | Seeker is moved by a passage but portal offers no path to practice | "Go Deeper" section in About, footer ecosystem links, and Quiet Corner all point toward SRF Lessons, local centers, and online meditation. Not a sales funnel — a signpost. |
 | **Search API abuse** | Public, unauthenticated search API with Claude API cost per query | Two-layer rate limiting (Vercel Firewall + application) from Arc 1. Claude API monthly budget cap. Graceful degradation to database-only search when rate-limited. (ADR-023) |

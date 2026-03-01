@@ -23,15 +23,20 @@ One-time credential provisioning required before the first `terraform apply`. Th
 | **Neon spend alert** | console.neon.tech → Billing → Alerts | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
 | **Vercel spend alert** | vercel.com → Settings → Billing → Spend Management | Cost protection ($50/mo threshold) | Dashboard setting (manual) |
 
-## Milestone 1b (content + AI)
+## Milestone 1a (content + embeddings)
 
 | Credential | Where to create | What it enables | Store as |
 |---|---|---|---|
-| **AWS Bedrock model access** | AWS Console → Bedrock → Model Access (`us-west-2`) | Claude Haiku inference | Enabled for the `portal-vercel-runtime` IAM role |
 | **Voyage AI API key** | dash.voyageai.com → API Keys | Embedding generation (ADR-118) | AWS Secrets Manager `/portal/production/voyage/api-key` → Terraform distributes to Vercel |
 | **Contentful Management Token** | app.contentful.com → Settings → API Keys | Content ingestion pipeline | AWS Secrets Manager `/portal/production/contentful/management-token` |
 | **Contentful Access Token** | app.contentful.com → Settings → API Keys | Delivery API (read-only) | AWS Secrets Manager `/portal/production/contentful/access-token` → Terraform distributes to Vercel |
 | **Contentful Space ID** | app.contentful.com → Settings → General | API scoping | GitHub secret `CONTENTFUL_SPACE_ID` (non-secret config) |
+
+## Milestone 1c (deploy + AI enrichment)
+
+| Credential | Where to create | What it enables | Store as |
+|---|---|---|---|
+| **AWS Bedrock model access** | AWS Console → Bedrock → Model Access (`us-west-2`) | Claude Haiku inference | Enabled for the `portal-vercel-runtime` IAM role |
 
 ## Later milestones (not needed for Arc 1)
 

@@ -23,7 +23,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 
 **Arc-gated reading.** Do not read front-to-back. Load what the task requires:
 - **Always:** This file (CLAUDE.md) + PRINCIPLES.md + CONTEXT.md § Current State + ROADMAP.md § current arc/milestone
-- **When implementing Arc 1 (Foundation — Milestones 1a/1b):** DESIGN.md (root) + DESIGN-arc1.md + DECISIONS-core.md (ADRs referenced by those sections)
+- **When implementing Arc 1 (Foundation — Milestones 1a/1b/1c):** DESIGN.md (root) + DESIGN-arc1.md + DECISIONS-core.md (ADRs referenced by those sections)
 - **When implementing Arc 2 (Presence — Milestones 2a/2b):** DESIGN.md (root) + DESIGN-arc2-3.md + DESIGN-arc1.md § DES-039 (Infrastructure — cross-cutting) + DECISIONS-core.md + DECISIONS-experience.md
 - **When implementing Arc 3 (Wisdom — Milestones 3a–3d):** DESIGN.md (root) + DESIGN-arc2-3.md + DECISIONS-core.md + DECISIONS-experience.md
 - **When implementing Arc 4+:** DESIGN.md (root) + DESIGN-arc4-plus.md + all DECISIONS files as needed
@@ -97,7 +97,7 @@ Eleven principles define the project's identity and directly constrain code gene
 **MCP servers:**
 - **Neon Management** (now) — Claude's operations interface for Neon. Branch creation, SQL execution, schema diffs, connection strings, migration safety (`prepare_database_migration`/`complete_database_migration`). Used throughout development. See DES-039 § Three-Layer Neon Management Model.
 - **Sentry** (Arc 1) — Error tracking and monitoring.
-- **Contentful** (Milestone 1b+) — CMS content management.
+- **Contentful** (Milestone 1a+) — CMS content management.
 - **SRF Corpus** (unscheduled) — AI consumer access to search, themes, graph. Three-tier architecture for external AI systems. See DES-031, ROADMAP.md § Unscheduled Features; ADR-101. Fundamentally different from Neon Management MCP — this serves AI consumers, not the AI operator.
 
 ## Identifier Conventions

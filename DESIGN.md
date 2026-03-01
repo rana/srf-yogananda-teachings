@@ -2,7 +2,7 @@
 
 > **Navigation guide.** The design is split across four files by arc scope. This root file contains cross-cutting principles and patterns. The **File** column shows where each section lives.
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 | Section | Arc/Milestone | File |
 |---------|---------------|------|
@@ -84,9 +84,9 @@ This portal is a **digital library with an AI librarian**, not a chatbot or cont
 
 ## DES-002: Architecture Overview
 
-### Milestone 1a Architecture (Prove — Pure Hybrid Search + Contentful)
+### Milestone 1a Architecture (Prove — English, Pure Hybrid Search + Contentful)
 
-Two content stores. No AI in the search path — pure hybrid retrieval. Contentful is the editorial source of truth from Arc 1 (ADR-010). (ADR-113)
+Two content stores. No AI in the search path — pure hybrid retrieval. English only. Contentful is the editorial source of truth from Arc 1 (ADR-010). (ADR-113)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -112,7 +112,7 @@ Two content stores. No AI in the search path — pure hybrid retrieval. Contentf
 │ │ (text + embeddings)│ │ → Section → TextBlock │ │
 │ │ • BM25 (pg_search) │ │ │ │
 │ │ • HNSW vector index │ │ Rich Text AST │ │
-│ │ • RRF fusion │ │ per locale │ │
+│ │ • RRF fusion │ │ Locale: en │ │
 │ │ • search_queries │ │ │ │
 │ └────────────────────┘ └────────────────────────┘ │
 │ ▲ │ │
@@ -120,24 +120,23 @@ Two content stores. No AI in the search path — pure hybrid retrieval. Contentf
 │ (chunk + embed + insert) │
 └──────────────────────────────────────────────────────────────────┘
 
-One-time ingestion:
+One-time ingestion (English text already extracted — see scripts/book-ingest/):
 
- PDF ──► marker (PDF→Markdown) ──► Human QA ──► Contentful (import)
+ book.json ──► Contentful import script ──► Contentful (entries)
                                                     │
                                           Batch sync script
                                                     │
                                           Chunk ──► Embed ──► Neon
 
 Milestone 1a has NO Claude API calls in the search path.
-Claude is used only offline: ingestion QA (ADR-005 E4),
-enrichment (ADR-115), and search quality evaluation (ADR-005 E5).
+Claude is used only offline: search quality evaluation (ADR-005 E5).
 ```
 
-### Milestone 1b Architecture (Foundation — AI-Enhanced Search + Contentful Webhooks)
+### Milestone 1c Architecture (Deploy — Pure Hybrid Search + Contentful Webhooks)
 
-Milestone 1b adds Claude Haiku to the search path: query expansion,
-intent classification, and passage ranking. Deployed to Vercel.
-Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
+No AI services in the search path — pure hybrid search is the primary mode.
+Deployed to Vercel. Contentful webhook sync replaces batch sync.
+Trilingual (en, hi, es). (ADR-113, ADR-010, ADR-119)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -156,7 +155,7 @@ Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
 │ │ │ │
 │ /api/v1/search Book reader │
 │ /api/v1/suggest (Contentful) │
-│ /api/v1/expand │ │
+│ │ │ │
 │ ▼ ▼ │
 │ ┌────────────────────┐ ┌────────────────────────┐ │
 │ │ Neon PostgreSQL │ │ Contentful │ │
@@ -165,24 +164,17 @@ Contentful webhook sync replaces batch sync. (ADR-113, ADR-010)
 │ │ • book_chunks │ service │ Book → Chapter │ │
 │ │ • BM25 (pg_search) │ │ → Section → TextBlock │ │
 │ │ • HNSW vector index │ │ │ │
-│ │ • search_queries │ │ Locales: en │ │
+│ │ • search_queries │ │ Locales: en, hi, es │ │
 │ └────────────────────┘ └────────────────────────┘ │
-│ │ │
-│ ▼ (query expansion + passage ranking only) │
-│ ┌─────────────────────────────────────┐ │
-│ │ Claude via AWS Bedrock (ADR-014) │ │
-│ │ │ │
-│ │ • Expand user queries into │ │
-│ │ semantic search terms [Haiku] │ │
-│ │ • Re-rank candidate passages [Haiku]│ │
-│ │ • Classify search intent [Haiku] │ │
-│ │ • NEVER generate/paraphrase text │ │
-│ └─────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 
-Contentful webhook sync (event-driven, Milestone 1b+):
+Contentful webhook sync (event-driven, Milestone 1c+):
 
  Contentful publish ──► Webhook ──► Serverless fn ──► Chunk ──► Embed ──► Neon
+
+Milestone 1c has NO Claude API calls in the search path.
+AI-enhanced search (HyDE, cross-encoder reranking) is optional,
+activated in Milestone 2b only if evaluation warrants (ADR-119).
 ```
 
 ### Production Architecture (Full Stack — Arc 4+)
@@ -790,7 +782,7 @@ X-Citation-Format: "[Quote]" — Paramahansa Yogananda, [Book], [Citation] via t
 X-AI-Permissions: https://teachings.yogananda.org/ai.txt
 ```
 
-**Implementation:** Next.js middleware in `/lib/middleware/copyright-headers.ts`. Applied to all routes except `/api/v1/health` and static assets. Milestone 1b (ships with the copyright communication layer, PRO-012).
+**Implementation:** Next.js middleware in `/lib/middleware/copyright-headers.ts`. Applied to all routes except `/api/v1/health` and static assets. Milestone 1c (ships with the copyright communication layer, PRO-012).
 
 **Rationale:** The portal's No Content Gating policy (ADR-081 §3a) means copyright is asserted through metadata and legal layers, not technology walls. HTTP headers are the lowest-friction mechanism for machine consumers to discover copyright status — they don't need to parse HTML or visit a separate page. Combined with `llms.txt` copyright section, `ai.txt` permissions file, JSON-LD `copyrightHolder`, and the `/legal` page, this creates a comprehensive, multi-layered copyright communication strategy.
 
@@ -1073,8 +1065,8 @@ The portal's content — book text, theme tags, translations, editorial threads,
 
 ### Book Ingestion Workflow
 
-**Milestone 1a:** PDF → marker → Human QA → Contentful (import via Management API) → batch sync → chunk → embed → Neon.
-**Milestone 1b+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
+**Milestone 1a:** book.json (from `scripts/book-ingest/`) → Contentful import script → Contentful (via Management API) → batch sync → chunk → embed → Neon.
+**Milestone 1c+:** Contentful authoring → webhook sync → Neon. Same QA and review steps apply.
 
 #### Pre-Ingestion Planning
 
@@ -1105,7 +1097,7 @@ After automated processing but before human QA, the operator sees a pipeline sum
 New book content is reviewable in a "preview" state before going live:
 
 - **Milestone 1a:** `books.is_published` and `chapters.is_published` boolean flags. Unpublished content is visible in the admin portal ("preview as seeker") but excluded from public search and reader routes.
-- **Milestone 1b+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries. The Neon `is_published` flags remain as a cache of Contentful state.
+- **Milestone 1c+:** Contentful draft/published workflow provides this natively. The webhook sync only processes published entries. The Neon `is_published` flags remain as a cache of Contentful state.
 
 The operator publishes chapter-by-chapter or the whole book at once. Publication triggers chunk relation computation for the new content.
 
@@ -1888,7 +1880,7 @@ All must pass before merge.
 
 ### Related Content Quality Evaluation (Milestone 3c+)
 
-Mirrors the search quality evaluation (deliverable 1a.9) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
+Mirrors the search quality evaluation (deliverable 1a.8) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
 
 **Test suite:**
 

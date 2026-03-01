@@ -1,8 +1,8 @@
 # SRF Online Teachings Portal — Arc 1 Design (Foundation)
 
-> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b) — proving the AI librarian concept and establishing the data foundation. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b/1c) — proving the AI librarian concept (1a, English), extending to trilingual (1b, Hindi/Spanish), and deploying (1c). For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation, English only) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -85,7 +85,7 @@ The search pipeline has evolved through three arc tiers. Milestones 1a–2a use 
 
  RECIPROCAL RANK FUSION (RRF):
  - Merge results from all active paths (A+B in Milestones 1a–3a; A+B+C in Milestone 3b+)
- - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Milestone 1a.9 golden set at k=40/60/80]*
+ - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Milestone 1a.8 golden set at k=40/60/80]*
  - Deduplicate, producing top 20 candidates
  │
  ▼
@@ -193,10 +193,10 @@ Book ingestion pipeline (new step after chunking, before embedding):
  → Identify new synonyms for existing modern-term mappings
  → Identify book-specific usages of existing terms
 
- 3. HUMAN REVIEW
- The diff is presented to an SRF-aware editor
- → Editor approves, modifies, or rejects each proposed addition
- → Consistent with "AI proposes, humans approve" constraint
+ 3. AUTONOMOUS REVIEW (Claude validates)
+ Claude reviews the diff against existing bridge entries
+ → Approves, modifies, or rejects each proposed addition
+ → Consistent with autonomous validation workflow
 
  4. MERGE AND VERSION
  Approved additions merge into spiritual-terms.json
@@ -242,7 +242,7 @@ interface SpiritualTerm {
 }
 ```
 
-Arc 1 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-051) triggers: vocabulary extraction → diff against existing terms → human review → merge. The file grows with the corpus.
+Arc 1 seeds this file with ~50 core terms from the Autobiography. Each subsequent book ingestion (ADR-051) triggers: vocabulary extraction → diff against existing terms → Claude validates autonomously → merge. The file grows with the corpus.
 
 ### Claude System Prompts (Draft — Refine During Arc 1)
 
@@ -327,7 +327,7 @@ Candidate passages:
 {passages_json}
 ```
 
-*These prompts are starting points. Milestone 1a empirical testing (deliverable 1a.9, search quality evaluation) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+*These prompts are starting points. Milestone 1a empirical testing (deliverable 1a.8, search quality evaluation — English only) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
 
 ### Search Without AI (Fallback / Simple Queries)
 
@@ -391,7 +391,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
  New embeddings produce different similarity scores.
 
 5. VALIDATE (on branch)
- Run the search quality evaluation test suite (deliverable 1a.9).
+ Run the search quality evaluation test suite (deliverable 1a.8).
  Compare results against production baseline.
  Threshold: new model must match or exceed current ≥ 80% pass rate.
 
@@ -477,7 +477,7 @@ BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
 
 **1. Term completion.** Client-side prefix matching against pre-computed, CDN-served suggestion files partitioned by two-character prefix. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: static JSON files at Vercel CDN edge (Tier A, ADR-120) with pg_trgm async fuzzy fallback (Tier B). Latency target: < 10ms for prefix match (CDN hit + client filter), < 80ms for fuzzy fallback.
 
-**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 1a.9) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: same human-review gate as all user-facing content.
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation test suite (~30 queries, Deliverable 1a.8) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: Claude validates autonomously against all user-facing content standards.
 
 **3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain. Bridge hints continue into search results: when a bridge-expanded query produces results, the results page shows "Showing results for 'concentration' and 'one-pointed attention' (Yogananda's terms for mindfulness)."
 
@@ -502,22 +502,22 @@ If prefix.length >= 2:
 Select suggestion → intent classification (ADR-005 E1) → route
 ```
 
-**Tier A: Static JSON at CDN edge (Milestone 1a+).** Pre-computed suggestion files, trilingual from Arc 1:
+**Tier A: Static JSON at CDN edge (Milestone 1a+ English, Milestone 1b+ trilingual).** Pre-computed suggestion files — English from Milestone 1a, Hindi/Spanish added in Milestone 1b:
 
 ```
 /public/suggestions/en/_zero.json    — English zero-state (theme chips, curated questions)
 /public/suggestions/en/me.json       — all English entries starting with "me"
 /public/suggestions/en/_bridge.json  — terminology bridge mappings
-/public/suggestions/hi/_zero.json    — Hindi zero-state (Devanāgarī theme chips)
-/public/suggestions/hi/स.json        — Devanāgarī native-script prefix (Unicode first-character)
-/public/suggestions/hi/sa.json       — Hindi entries for Romanized "sa" prefix (latin_form match)
-/public/suggestions/es/_zero.json    — Spanish zero-state
-/public/suggestions/es/me.json       — all Spanish entries starting with "me"
+/public/suggestions/hi/_zero.json    — Hindi zero-state (Devanāgarī theme chips) [Milestone 1b]
+/public/suggestions/hi/स.json        — Devanāgarī native-script prefix (Unicode first-character) [Milestone 1b]
+/public/suggestions/hi/sa.json       — Hindi entries for Romanized "sa" prefix (latin_form match) [Milestone 1b]
+/public/suggestions/es/_zero.json    — Spanish zero-state [Milestone 1b]
+/public/suggestions/es/me.json       — all Spanish entries starting with "me" [Milestone 1b]
 ```
 
 < 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB. Hindi and Spanish sets are smaller (single-book vocabulary). **Devanāgarī native-script prefix files** use Unicode first-character partitioning — a Hindi seeker typing "सम" hits `स.json` for the same < 10ms experience as a Latin-script seeker.
 
-**Tier B: pg_trgm fuzzy fallback (Milestone 1b+, always-on).** Async endpoint for misspellings and transliterated input. Queries both `suggestion` and `latin_form` columns — a Hindi seeker typing Romanized "samadhi" matches against `latin_form`. Latency: 40–80ms. Edge-cached: `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+**Tier B: pg_trgm fuzzy fallback (Milestone 1c+, always-on).** Async endpoint for misspellings and transliterated input. Queries both `suggestion` and `latin_form` columns — a Hindi seeker typing Romanized "samadhi" matches against `latin_form`. Latency: 40–80ms. Edge-cached: `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
 
 **Tier C: Vercel KV (Milestone 2b+, if needed).** Upstash Redis via Vercel integration. Sub-10ms sorted-set prefix lookup. Activated when p95 > 30ms sustained, or dictionary > 50K entries, or learned queries need real-time freshness. ~$20/mo at 1M requests. Global replication, zero VPC, zero Terraform.
 
@@ -594,9 +594,9 @@ When the search bar receives focus but the seeker has typed nothing, display cur
 
 - Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
 - One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
-- The search placeholder remains "What are you seeking?" (Deliverable 1a.7)
+- The search placeholder remains "What are you seeking?" (Deliverable 1a.6)
 
-Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Human review required (ADR-078). Editorial governance of curated suggestions uses the same review process as theme tagging (resolve before Milestone 1b — see CONTEXT.md).
+Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Claude validates autonomously (ADR-078). Editorial governance of curated suggestions uses the same review process as theme tagging (resolve before Milestone 1c — see CONTEXT.md).
 
 The zero-state and the typing-state are served from separate static files (`_zero.json` vs. prefix files), enabling independent caching and editorial update cycles.
 
@@ -637,7 +637,7 @@ URLs are shareable and bookmarkable. Intent classification still runs server-sid
 
 #### Multilingual Suggestions
 
-**Trilingual from Arc 1 (en/hi/es).** Suggestion indices are generated for all languages with ingested content. Arc 1 ingests the Autobiography in English, Hindi, and Spanish (ADR-128 Tier 1) — all three languages get full suggestion infrastructure from Milestone 1a. Per-language suggestion indices for the remaining 7 languages activate in Milestone 5b.
+**Trilingual from Arc 1 (en/hi/es).** Suggestion indices are generated for all languages with ingested content. Arc 1 ingests the Autobiography in English (Milestone 1a), then Hindi and Spanish (Milestone 1b, ADR-128 Tier 1) — all three languages get full suggestion infrastructure by end of Milestone 1b. Per-language suggestion indices for the remaining 7 languages activate in Milestone 5b.
 
 Each language gets:
 - Its own extracted corpus vocabulary (from language-specific chunks)
@@ -675,8 +675,9 @@ The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
 
 | Milestone | Suggestion Capability | Infrastructure |
 |-----------|----------------------|----------------|
-| 1a | Trilingual (en/hi/es) static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips. Hindi: Devanāgarī native-script prefix files + Latin prefix files for Romanized input. `latin_form` populated during ingestion. | Tier A: CDN-served static JSON |
-| 1b | + pg_trgm fuzzy fallback endpoint + golden suggestion set (300 entries, 6 tiers) | Tier A + B |
+| 1a | English-only static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips. | Tier A: CDN-served static JSON (English) |
+| 1b | + Hindi/Spanish static JSON prefix files. Hindi: Devanāgarī native-script prefix files + Latin prefix files for Romanized input. `latin_form` populated during ingestion. | Tier A: CDN-served static JSON (trilingual) |
+| 1c | + pg_trgm fuzzy fallback endpoint + golden suggestion set (300 entries, 6 tiers) | Tier A + B |
 | 2b | + Vercel KV if migration trigger thresholds reached | Tier A + B + C (conditional) |
 | 3a | + multi-book vocabulary + bridge-powered suggestions + curated queries | Expanded corpus, same tiers |
 | 5b | + per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies | Per-language static JSON + pg_trgm (hi/es already live from Arc 1) |
@@ -1458,7 +1459,7 @@ Batch sync script (run locally or via CI)
  └── Log sync event
 ```
 
-**Milestone 1b+ sync (webhook-driven):**
+**Milestone 1c+ sync (webhook-driven):**
 ```
 Contentful publish event
  │
@@ -1493,7 +1494,11 @@ Three extraction paths feed the pipeline, converging at the Contentful import st
 
 The ebook extraction pipeline (`scripts/book-ingest/`) uses Playwright to capture page renders from Amazon Cloud Reader and Claude Vision to OCR structured text from the born-digital images. See `scripts/book-ingest/DESIGN.md` for the complete pipeline specification. This produces significantly cleaner output than PDF OCR, particularly for Sanskrit diacritics (IAST).
 
+**Alternative: Amazon Cloud Reader Ingestion.** When the ebook edition is available, use the Reader ingestion pipeline (`/scripts/book-ingest/`). See `scripts/book-ingest/DESIGN.md`. Produces the same structured output, feeding into Contentful import.
+
 All paths converge at Step 3.5 (Contentful import). The extraction tooling remains valuable for validation even after SRF provides authoritative text.
+
+**Status: English Autobiography extracted.** The `scripts/book-ingest/` pipeline has completed extraction of the English *Autobiography of a Yogi* (522 pages, 49 chapters). Output is structured as per-chapter Markdown files with a `book.json` manifest. This replaces the PDF/marker extraction path for this book. Remaining work for Milestone 1a: Contentful import (Step 3.5), Neon sync + chunking + embedding (Steps 4-9).
 
 ```
 Step 1: Acquire source text
@@ -1523,7 +1528,7 @@ Step 2.5: Unicode NFC Normalization (ADR-080)
  in God Talks with Arjuna — flag for display preservation
  but exclude from embedding input
 
-Step 3: Human Review / QA
+Step 3: Autonomous QA (Claude validates)
  └── Verify OCR accuracy
  └── Correct spiritual terminology
  └── Ensure chapter/page boundaries are correct
@@ -1571,7 +1576,7 @@ Step 6: Entity Resolution (ADR-116)
  └── Resolve names, places, Sanskrit terms against entity_registry
  └── Match aliases: "Master" = "Guruji" = "Paramahansa Yogananda"
  └── Sanskrit normalization: "samadhi" = "Samaadhi" = "samahdi"
- └── Unknown entities flagged for human review queue
+ └── Unknown entities flagged for review (Claude validates autonomously)
  └── Entity registry must be seeded BEFORE first book ingestion
 
 Step 7: Unified Enrichment (single Claude pass per chunk, ADR-115)
@@ -1580,7 +1585,7 @@ Step 7: Unified Enrichment (single Claude pass per chunk, ADR-115)
      experiential_depth (1–7), emotional_quality, voice_register,
      cross_references, extracted_relationships
  └── Entities validated against entity_registry (Step 6)
- └── Confidence < 0.7 flagged for human review queue
+ └── Confidence < 0.7 flagged for review (Claude validates autonomously)
  └── Enrichment output stored as structured Postgres columns
  └── Replaces separate classification passes (E3–E8)
 
@@ -1627,7 +1632,7 @@ Step 12: Graph Metrics (Milestone 3b+, ADR-117 — nightly batch, not per-ingest
  └── extracted_relationships (Step 7) feed graph structure automatically
 ```
 
-### Webhook Sync Pipeline (Contentful → Neon, Milestone 1b+)
+### Webhook Sync Pipeline (Contentful → Neon, Milestone 1c+)
 
 ```
 Step 1: Content editors enter/import book text into Contentful
@@ -1839,7 +1844,7 @@ These are Claude's operational interface during development. They are the Operat
 |------------|----------|-------------|------|
 | **Neon MCP** (`@neondatabase/mcp-server-neon`) | Branch creation, SQL execution, schema diffs, migration safety (`prepare_database_migration`/`complete_database_migration`/`compare_database_schema`), connection string retrieval, Time Travel queries | Available now | **Primary operations interface** — replaces Console for verification, experimentation, and development workflows. See DES-039 § Three-Layer Neon Management Model. |
 | **Sentry MCP** | Error investigation — stack traces, breadcrumbs, affected routes | Arc 1 | Debugging and incident response |
-| **Contentful MCP** | Content model design, entry management during development | Milestone 1b (evaluate) | CMS operations |
+| **Contentful MCP** | Content model design, entry management during development | Milestone 1c (evaluate) | CMS operations |
 
 See ADR-097 for the full evaluation framework (essential, high-value, evaluate, not recommended).
 
@@ -2074,16 +2079,16 @@ The branch=environment principle (ADR-020) means environments are disposable. Ne
 
 Modules are activated via feature-flag variables in `dev.tfvars`. This avoids commenting out modules or maintaining separate Terraform configurations per milestone.
 
-| Variable | 1a | 1b | 2a | 3a+ |
-|----------|----|----|----|----|
-| `enable_neon` | `true` | `true` | `true` | `true` |
-| `enable_sentry` | `true` | `true` | `true` | `true` |
-| `enable_aws_core` | `true` | `true` | `true` | `true` |
-| `enable_vercel` | `false` | `true` | `true` | `true` |
-| `enable_lambda` | `false` | `false` | `true` | `true` |
-| `enable_newrelic` | `false` | `false` | `false` | 3d |
+| Variable | 1a | 1b | 1c | 2a | 3a+ |
+|----------|----|----|----|----|-----|
+| `enable_neon` | `true` | `true` | `true` | `true` | `true` |
+| `enable_sentry` | `true` | `true` | `true` | `true` | `true` |
+| `enable_aws_core` | `true` | `true` | `true` | `true` | `true` |
+| `enable_vercel` | `false` | `false` | `true` | `true` | `true` |
+| `enable_lambda` | `false` | `false` | `false` | `true` | `true` |
+| `enable_newrelic` | `false` | `false` | `false` | `false` | 3d |
 
-Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
+Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Hindi/Spanish content (no new infrastructure modules). Milestone 1c adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
 
 ### Three-Layer Neon Management Model
 
@@ -2171,12 +2176,12 @@ Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraf
  workflows/
    ci.yml              — [1a] App CI: lint, type check, test, build, a11y, Lighthouse, search quality
    terraform.yml        — [1a] Infra CI: fmt, validate, plan (PR), apply (merge to main)
-   neon-branch.yml      — [1b] Neon branch lifecycle: create on PR open, delete on PR close
-   neon-cleanup.yml     — [1b] Nightly: delete orphaned Neon preview branches
+   neon-branch.yml      — [1c] Neon branch lifecycle: create on PR open, delete on PR close
+   neon-cleanup.yml     — [1c] Nightly: delete orphaned Neon preview branches
  dependabot.yml         — [1a] Automated provider + dependency update PRs
 ```
 
-Milestone 1a creates `ci.yml`, `terraform.yml`, and `dependabot.yml`. The Neon branch workflows (`neon-branch.yml`, `neon-cleanup.yml`) are added in 1b when preview deployments become active (Vercel enabled).
+Milestone 1a creates `ci.yml`, `terraform.yml`, and `dependabot.yml`. The Neon branch workflows (`neon-branch.yml`, `neon-cleanup.yml`) are added in 1c when preview deployments become active (Vercel enabled).
 
 **`ci.yml`** runs on all PRs and pushes to main. No AWS credentials needed — pure app testing.
 

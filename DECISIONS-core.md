@@ -269,7 +269,7 @@ This is inherent in using PostgreSQL — not a feature to build, but a capabilit
 - All architectural decisions are evaluated against a 10-year horizon, not just immediate needs
 - The shared service layer convention (ADR-011) is treated as the project's most important structural rule
 - Component replacement is expected and planned for — it's maintenance, not failure
-- The search quality test suite (deliverable 1a.9) serves as the acceptance gate for any AI model migration
+- The search quality test suite (deliverable 1a.8) serves as the acceptance gate for any AI model migration
 - Future developers can replace any Tier 3 component without touching Tier 1 or Tier 2 components
 - `pg_dump` export capability is documented as a deliberate architectural feature
 
@@ -394,9 +394,9 @@ Rate each passage during ingestion on a newcomer-friendliness scale:
 
 #### E4: Ingestion QA Assistant (Arc 1)
 
-**Category:** Classifying | **Cost:** ~$0.05/book (one-time) | **Human review:** Yes — every flag reviewed
+**Category:** Classifying | **Cost:** ~$0.05/book (one-time) | **Human review:** No — Claude validates autonomously
 
-During the human QA step (Deliverable 1a.5), Claude pre-screens ingested text and flags:
+During ingestion QA, Claude pre-screens ingested text and flags:
 
 - Probable OCR errors ("Ood" → likely "God," "mediiation" → "meditation")
 - Inconsistent formatting (straight quotes mixed with smart quotes, inconsistent dashes)
@@ -404,7 +404,7 @@ During the human QA step (Deliverable 1a.5), Claude pre-screens ingested text an
 - Sanskrit diacritics that may have been mangled by PDF extraction
 - Passages that appear to be headers, footnotes, or page artifacts rather than body text
 
-**Implementation:** Batch job that processes all chunks for a book and outputs a QA report (JSON) with flagged chunks and suggested corrections. Humans make every decision — Claude reduces the review surface area.
+**Implementation:** Batch job that processes all chunks for a book and outputs a QA report (JSON) with flagged chunks and suggested corrections. Claude validates autonomously — applying corrections within confidence thresholds and flagging edge cases for human review only when confidence is low.
 
 **Why this matters:** The entire portal rests on text quality. OCR errors in spiritual terminology (e.g., "Kriya" misread as "Krlya") silently degrade search retrieval. Catching these before publication protects the foundation everything else is built on.
 
@@ -412,7 +412,7 @@ During the human QA step (Deliverable 1a.5), Claude pre-screens ingested text an
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverable 1a.9) by using Claude as the evaluator:
+Automate the search quality evaluation (Deliverable 1a.8) by using Claude as the evaluator:
 
 - Given a benchmark query and the search results, does the expected passage appear in the top 5?
 - Is the ranking reasonable? (A passage directly addressing the query should rank above a tangentially related one.)
@@ -880,7 +880,7 @@ Book text needs to live somewhere with editorial management: version control, re
 
 ### Decision
 
-Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a hard requirement — the portal adopts it from the first arc, not as a later migration. Book text is imported into Contentful during ingestion and synced to Neon (via batch script in Milestone 1a, webhook-driven from Milestone 1b) for search indexing. The book reader serves content from Contentful; search queries Neon.
+Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a hard requirement — the portal adopts it from the first arc, not as a later migration. Book text is imported into Contentful during ingestion and synced to Neon (via batch script in Milestone 1a, webhook-driven from Milestone 1c) for search indexing. The book reader serves content from Contentful; search queries Neon.
 
 ### Rationale
 
@@ -897,7 +897,7 @@ Use **Contentful** as the editorial source of truth from Arc 1. Contentful is a 
 - Milestone 1a requires Contentful space setup and content model creation (Book → Chapter → Section → TextBlock)
 - Ingestion pipeline imports processed text into Contentful via Management API, then syncs to Neon for search
 - The Neon schema includes `contentful_id` columns for linkage — populated from Arc 1, not deferred
-- A Contentful → Neon sync service is needed: batch script in Milestone 1a, webhook-driven from Milestone 1b on Vercel
+- A Contentful → Neon sync service is needed: batch script in Milestone 1a, webhook-driven from Milestone 1c on Vercel
 - Contentful capacity sufficient for one book (~3K TextBlocks); evaluate tier needs at Milestone 3a (multi-book corpus)
 - When SRF provides non-PDF digital text prior to launch, it goes directly into Contentful — no pipeline change required
 
@@ -1246,7 +1246,7 @@ AI-assisted development (Claude Code) makes Terraform authoring and maintenance 
 
 ### Decision
 
-Use **Terraform** for all infrastructure provisioning from Milestone 1a. The portal repo includes a `/terraform` directory with modules for each service.
+Use **Terraform** for all infrastructure provisioning from Milestone 1c. The portal repo includes a `/terraform` directory with modules for each service.
 
 #### Source Control and CI/CD
 
@@ -1343,7 +1343,7 @@ The `~>` (pessimistic) operator allows patch updates but locks major/minor versi
  /auth0/ — Added at Milestone 7a+ (if needed)
 
  /environments/
- dev.tfvars — Milestone 1a (only active environment)
+ dev.tfvars — Milestone 1c (only active environment)
  staging.tfvars — Arc 4+
  prod.tfvars — Arc 4+
 ```
@@ -1407,7 +1407,7 @@ jobs:
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Terraform from Milestone 1a (chosen)** | SRF-aligned; reproducible from day one; aligns with ADR-017 Lambda timing | Upfront setup time; state backend needed |
+| **Terraform from Milestone 1c (chosen)** | SRF-aligned; reproducible from day one; aligns with ADR-017 Lambda timing | Upfront setup time; state backend needed |
 | **Terraform deferred to Milestone 2a** | Slightly simpler Arc 1 start | Manual infrastructure creates undocumented state; ADR-017 needs Lambda in Arc 1; import-or-recreate friction |
 | **Terraform Cloud (free tier)** | Zero bootstrap; built-in plan review UI; state locking without DynamoDB | External vendor dependency (HashiCorp/IBM); additional credential (TF_API_TOKEN); 500-resource limit; plan review UI not available in local execution mode |
 | **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; smaller provider ecosystem |
@@ -1415,7 +1415,7 @@ jobs:
 
 ### Consequences
 
-- Milestone 1a includes `/terraform` directory with modules for Neon, Vercel, Sentry, and AWS
+- Milestone 1c includes `/terraform` directory with modules for Neon, Vercel, Sentry, and AWS
 - GitHub is the primary SCM with GitHub Actions CI/CD. GitLab migration architecturally supported but not planned.
 - Terraform state stored in S3 with DynamoDB locking (zero vendor dependency)
 - GitHub Actions authenticates to AWS via OIDC federation — no long-lived AWS credentials
@@ -1428,7 +1428,7 @@ jobs:
 - `.terraform.lock.hcl` committed to version control (reproducible provider installations, like `pnpm-lock.yaml`)
 - `terraform apply` runs automatically on merge to main (dev environment). Staging and production environments (Arc 4+) require manual confirmation before apply.
 
-*Revised: 2026-02-26, S3 + DynamoDB state backend replaces Terraform Cloud (fewer vendors, ADR-004 10-year horizon). Cloudflare module removed (PRO-017). Previous revision: 2026-02-25, GitHub-first SCM, OIDC federation, Milestone 1a timing, three-environment model, provider version pinning, Lambda timing, lock file committed.*
+*Revised: 2026-02-26, S3 + DynamoDB state backend replaces Terraform Cloud (fewer vendors, ADR-004 10-year horizon). Cloudflare module removed (PRO-017). Previous revision: 2026-02-25, GitHub-first SCM, OIDC federation, Milestone 1c timing, three-environment model, provider version pinning, Lambda timing, lock file committed.*
 
 ---
 
@@ -1460,7 +1460,7 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 
 3. **Use EventBridge Scheduler (not EventBridge Rules) for cron tasks.** EventBridge Scheduler is the purpose-built service for scheduled invocations, with built-in retry with exponential backoff, dead-letter queues, and one-time scheduling. All nightly/daily cron tasks use Scheduler.
 
-4. **Provision Lambda infrastructure when first needed (Milestone 3a), not at a fixed gate (former Milestone 2a).** Terraform module *code* for Lambda (`/terraform/modules/lambda/`, `/terraform/modules/eventbridge/`) exists in the repo from Milestone 1a — it's code like any other. Lambda *infrastructure* (IAM roles, functions, EventBridge schedules) is provisioned in Milestone 3a when the first function (backup, ADR-019) deploys. Subsequent milestones add functions to already-provisioned infrastructure.
+4. **Provision Lambda infrastructure when first needed (Milestone 3a), not at a fixed gate (former Milestone 2a).** Terraform module *code* for Lambda (`/terraform/modules/lambda/`, `/terraform/modules/eventbridge/`) exists in the repo from Milestone 1c — it's code like any other. Lambda *infrastructure* (IAM roles, functions, EventBridge schedules) is provisioned in Milestone 3a when the first function (backup, ADR-019) deploys. Subsequent milestones add functions to already-provisioned infrastructure.
 
 5. **Replace `/serverless/` directory with `/lambda/`.** The directory name reflects the runtime, not a vendor tool.
 
@@ -1475,7 +1475,7 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
  aggregate-themes.ts — Nightly search theme aggregation (Milestone 3d)
  send-email.ts — Daily passage email dispatch (Milestone 5a)
  generate-social.ts — Quote image generation (Milestone 5a)
- webhook-contentful.ts — Contentful sync (Milestone 1b+)
+ webhook-contentful.ts — Contentful sync (Milestone 1c+)
  ingest-transcript.ts — YouTube transcript ingestion (Arc 6)
  compute-graph.ts — Knowledge graph positions (Arc 6)
  process-image.ts — Image tier generation (Arc 6)
@@ -1954,7 +1954,7 @@ With pure hybrid search as the primary search mode (ADR-119 — no external AI s
 
 **Target: search p95 < 500ms from any continent.** This is competitive with general-purpose search engines and appropriate for a contemplative portal. The target is achievable today with pure hybrid search against a single-region Neon instance. No edge caching, multi-region database, or architectural changes required.
 
-*Parameter — latency targets above, evaluate: Milestone 1b real-world traffic patterns (ADR-123).*
+*Parameter — latency targets above, evaluate: Milestone 1c real-world traffic patterns (ADR-123).*
 
 **What is already globally distributed (day one):**
 - Book chapters and reading pages (ISR, cached at Vercel's 70+ edge PoPs)
@@ -4068,7 +4068,7 @@ If a candidate model has better English retrieval but weaker multilingual mappin
 
 - `book_chunks` schema includes `embedding_model`, `embedding_dimension`, and `embedded_at` columns from Arc 1
 - The ingestion pipeline records which model it used per chunk
-- Search quality test suite (deliverable 1a.9) becomes the gate for model migration decisions
+- Search quality test suite (deliverable 1a.8) becomes the gate for model migration decisions
 - Model migration is a maintenance operation, not an architecture change
 - Budget for re-embedding costs when evaluating new models (Milestone 5b multilingual benchmarking is a natural trigger)
 - Any model migration must preserve multilingual vector space quality — single-language improvements that degrade per-language retrieval or English fallback quality are not acceptable
@@ -4100,7 +4100,7 @@ Three dimensions of embedding quality matter for this portal:
 
 1. **Voyage voyage-3-large is the Arc 1 embedding model.** ADR-118 adopted Voyage voyage-3-large (1024 dimensions, 26 languages, 32K token input) based on its multilingual-first design, asymmetric encoding support (`input_type = 'document'` at ingestion, `input_type = 'query'` at search time), and strong performance on literary/spiritual text retrieval. Originally, OpenAI text-embedding-3-small (1536 dimensions) was selected for its simplicity and adequate multilingual support; ADR-118 superseded that choice after the RAG Architecture Proposal demonstrated that Voyage's intentional multilingual design and literary retrieval quality justified the switch before any corpus was embedded.
 
-2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestone 1a trilingual evaluation (Deliverable 1a.9: 50 en + 15 hi + 15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
+2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestones 1a–1b trilingual evaluation (Deliverable 1a.8 English + Milestone 1b Hindi/Spanish: 50 en + 15 hi + 15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
 
 3. **Domain-adapted embeddings remain a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
  - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
@@ -4132,7 +4132,7 @@ Three dimensions of embedding quality matter for this portal:
 ### Consequences
 
 - Arc 1 proceeds with Voyage voyage-3-large (1024 dimensions)
-- Deliverable 1a.9 scope note: trilingual evaluation (en/hi/es) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
+- Deliverables 1a.8 + Milestone 1b scope note: trilingual evaluation (en/hi/es — English in 1a.8, Hindi/Spanish in 1b) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
 - Milestone 5b benchmarks Voyage as the baseline against multilingual-optimized alternatives (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, domain-adapted fine-tunes)
 - Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
@@ -4288,7 +4288,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 - New API endpoint (`/api/v1/search/suggest`) added to DESIGN.md § API Design
 - New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions — Corpus-Derived, Not Behavior-Derived"
-- ROADMAP.md updated: Deliverable 1b.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
+- ROADMAP.md updated: Deliverable 1c.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
 - Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-051 lifecycle)
 - Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-003)
@@ -4883,7 +4883,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 2. **Two-system data synchronization is a permanent operational tax.** Every entity must be synced between Postgres and Neptune. Every migration, debugging session, and monitoring pipeline doubles in surface area. This tax compounds over the project's 10-year horizon.
 3. **The single-query unification advantage is narrow.** The combined traversal + vector query is elegant but adds only ~10-20ms latency when decomposed into multi-step SQL. In a search pipeline already at 200-400ms, this is negligible.
 4. **ADR-013's single-database rationale applies to Neptune as strongly as to DynamoDB.** The original arguments — one backup strategy, one connection string, one migration tool, one monitoring target — are just as valid for a graph database as for a key-value store.
-5. **The terminology bridge (ADR-051) and query expansion (Milestone 1b) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
+5. **The terminology bridge (ADR-051) and query expansion (Milestone 1c) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
 
 **Apache AGE (PostgreSQL extension):** Adds openCypher support to PostgreSQL — attractive in principle, but not available on Neon (the project's database provider). Would require self-hosting Postgres, contradicting the managed-infrastructure strategy.
 
@@ -5088,7 +5088,7 @@ Pre-computed suggestion files partitioned by two-character prefix, served as sta
 
 **Why this works for the portal's scale:** At full corpus (~6,300 entries), each two-character prefix file is 2–8KB. The entire English suggestion set is ~150KB. This is smaller than a single hero image. The browser caches prefix files after first fetch — subsequent keystrokes with the same two-character prefix are instant (0ms network).
 
-#### Tier B: pg_trgm Fuzzy Fallback (Milestone 1b+, always-on)
+#### Tier B: pg_trgm Fuzzy Fallback (Milestone 1c+, always-on)
 
 When client-side prefix filtering returns fewer than 3 results (misspelling, mid-word match, novel prefix), the frontend fires an async request to the fuzzy fallback endpoint:
 
@@ -5165,8 +5165,9 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - Weight coefficients (`corpus_frequency * 0.3 + query_frequency * 0.5 + editorial_boost * 0.2`) implemented as named constants in `/lib/config.ts` (ADR-123), not as a generated column — allows tuning without migration
 - ADR-049 updated with six-tier hierarchy
 - Build step in ingestion pipeline: export `suggestion_dictionary` → partitioned static JSON files per language
-- Milestone 1a: Trilingual static JSON suggestion files (en/hi/es) + client-side prefix filtering. Hindi includes Devanāgarī native-script prefix files (`स.json`) alongside Latin prefix files for Romanized input (`sa.json`). `latin_form` populated during Hindi/Spanish ingestion for transliteration support.
-- Milestone 1b: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`) — queries both `suggestion` and `latin_form` columns for transliteration
+- Milestone 1a: English static JSON suggestion files + client-side prefix filtering
+- Milestone 1b: Hindi/Spanish static JSON suggestion files (trilingual). Hindi includes Devanāgarī native-script prefix files (`स.json`) alongside Latin prefix files for Romanized input (`sa.json`). `latin_form` populated during Hindi/Spanish ingestion for transliteration support.
+- Milestone 1c: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`) — queries both `suggestion` and `latin_form` columns for transliteration
 - Milestone 2b+: Vercel KV activated if migration trigger thresholds are sustained
 - Milestone 5b: Per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies
 - No Terraform ElastiCache configuration — Vercel KV provisioned via Vercel integration when needed
@@ -5304,7 +5305,7 @@ This means Vercel env vars are *derived from* Secrets Manager via Terraform, not
 - `docs/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Terraform
 - `.env.example` uses `[secrets-manager]` tag: Secrets Manager in deployed environments; env var in `.env.local` for local dev
 - Rotation is single-point: update Secrets Manager, run `terraform apply`, done. No multi-platform coordination.
-- CloudTrail logs all `GetSecretValue` calls — audit trail for secret access from Milestone 1a
+- CloudTrail logs all `GetSecretValue` calls — audit trail for secret access from Milestone 1c
 - KMS customer-managed key encrypts all portal secrets (cost: ~$1/month per key)
 - **Extends:** ADR-016 (Terraform), ADR-020 (environment lifecycle), ADR-124 (Neon keys)
 - **Enables:** ADR-126 (Vercel OIDC — secrets accessed via role, not stored keys)

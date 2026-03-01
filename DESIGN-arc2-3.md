@@ -2,7 +2,7 @@
 
 > **Scope.** This file contains the technical design sections relevant to **Arc 2: Presence** (Milestones 2a/2b) and **Arc 3: Wisdom** (Milestones 3a–3d) — building the frontend, adding content types, multilingual infrastructure, and operational tooling. For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arc 1, see [DESIGN-arc1.md](DESIGN-arc1.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.9 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 ---
 
@@ -1976,14 +1976,14 @@ export { sql };
 
 | Trigger | Mechanism | Scope |
 |---------|-----------|-------|
-| Content correction (Milestone 1b+) | Contentful webhook → sync service → Vercel revalidation API | Revalidate by path or tag (e.g., `book:autobiography`, `chapter:autobiography-1`) |
+| Content correction (Milestone 1c+) | Contentful webhook → sync service → Vercel revalidation API | Revalidate by path or tag (e.g., `book:autobiography`, `chapter:autobiography-1`) |
 | Daily passage rotation | TTL-based (`max-age=3600`) | No explicit invalidation — 1-hour cache is acceptable for daily content |
 | Theme tag changes | On-demand revalidation via Vercel API | Theme pages and related API responses |
 | New book ingestion | Automated revalidation of `/books` catalog and search index | Book catalog, search results |
 | Static assets (JS/CSS) | Content-hashed filenames (`main.abc123.js`) | Infinite cache, new deploy = new hash |
 | Emergency content fix | Vercel `revalidatePath('/', 'layout')` or redeploy | Last resort — clears all cached pages |
 
-**Implementation:** Next.js ISR with on-demand revalidation (`revalidatePath` / `revalidateTag`). The webhook sync service (Milestone 1b+) calls the Vercel revalidation endpoint with matching tags after each Contentful publish event. For Milestone 1a (batch sync, no webhooks), cache invalidation is handled by redeployment — acceptable given the low frequency of content changes during initial ingestion.
+**Implementation:** Next.js ISR with on-demand revalidation (`revalidatePath` / `revalidateTag`). The webhook sync service (Milestone 1c+) calls the Vercel revalidation endpoint with matching tags after each Contentful publish event. For Milestone 1a (batch sync, no webhooks), cache invalidation is handled by redeployment — acceptable given the low frequency of content changes during initial ingestion.
 
 ### Deep Link Readiness
 
@@ -3064,7 +3064,7 @@ DESIGN.md specs (source of truth)
  tailwind.config.ts imports tokens
  │
  ▼
- Components rendered in browser + Storybook (Milestone 1b+)
+ Components rendered in browser + Storybook (Milestone 1c+)
  │
  ▼
  Figma updated from tokens.json (collaboration mirror, Milestone 2a)
@@ -3738,7 +3738,7 @@ Response:
 
 **Caching.** Exploration responses are deterministic for a given query + language (same pre-computed enrichment, same groupings). This makes them highly cacheable. The API route sets `Cache-Control: public, s-maxage=300, stale-while-revalidate=600` — a 5-minute edge cache with 10-minute stale-while-revalidate. When the enrichment pipeline re-processes passages (e.g., after a new book ingestion), a cache-busting revalidation is triggered via the existing Contentful webhook → cache purge flow. Suggested starting points (editorially curated) are cached at ISR build time with 24-hour revalidation. At global scale, this means the first seeker exploring "peace" generates the database queries; the next 1,000 seekers in the same 5-minute window are served from edge cache. No AI API cost at any point.
 
-**Milestone:** 3b (requires enrichment pipeline operational, theme taxonomy populated, chunk relations computed). The exploration degrades gracefully before full enrichment: with only search and basic theme tags (Milestone 1b), the exploration returns a flat list grouped by book — still useful, just less structured. Full sub-theme grouping arrives when the enrichment pipeline (ADR-115) is operational.
+**Milestone:** 3b (requires enrichment pipeline operational, theme taxonomy populated, chunk relations computed). The exploration degrades gracefully before full enrichment: with only search and basic theme tags (Milestone 1c), the exploration returns a flat list grouped by book — still useful, just less structured. Full sub-theme grouping arrives when the enrichment pipeline (ADR-115) is operational.
 
 ---
 
