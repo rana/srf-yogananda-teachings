@@ -1,5 +1,7 @@
 # Human Setup Runbook — Milestone 1a
 
+> **Start here instead:** [getting-started.md](getting-started.md) is the simple walkthrough. This document is the detailed reference for what `bootstrap.sh` automates — read it if the script fails, if you want to understand what's happening, or if you prefer to do it manually.
+
 *Governing refs: ADR-016, ADR-020, ADR-124, ADR-125, ADR-126, DES-039. Full credential inventory: [bootstrap-credentials.md](bootstrap-credentials.md).*
 
 ## The fast path

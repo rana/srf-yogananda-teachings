@@ -34,6 +34,8 @@
 | PRO-022 | Passage Depth Signatures — Opus-Classified Contemplative Quality | Enhancement | Proposed | ADR-014, ADR-115, ADR-129 | External design review 2026-03-01 |
 | PRO-023 | Human Review Gate — Production Content Governance | Policy | Proposed | ADR-005, ADR-032, ADR-078, ADR-092, ADR-082 | Principle analysis 2026-02-28 |
 | PRO-024 | Editorial Page Compositor — Data-Driven Layout Curation | Feature | Proposed | ADR-130, ADR-082, ADR-079, ADR-095, DES-028, DES-032 | Exploration 2026-02-28 |
+| PRO-025 | Structural Enrichment Tier — Whole-Context AI Understanding for Navigation | Enhancement | Proposed | ADR-115, ADR-117, ADR-014, ADR-129, ADR-130, PRO-020, PRO-022 | Graph navigation exploration 2026-02-28 |
+| PRO-026 | Semantic Cartography — Meaningful Spatial Navigation | Feature | Proposed | ADR-061, ADR-117, ADR-130, PRO-025 | Graph navigation exploration 2026-02-28 |
 
 ---
 
@@ -542,6 +544,162 @@ Homepage renderer: `SELECT * FROM composition_slots WHERE composition_id = (best
 **Re-evaluate At:** Milestone 3b scoping (when admin portal architecture is finalized)
 **Decision Required From:** Architecture (data model, admin UI), SRF editorial (governance: does theological reviewer approve compositions, or just content within them?)
 **Origin:** Exploration — editorial surface gap analysis (2026-02-28)
+
+---
+
+### PRO-025: Structural Enrichment Tier — Whole-Context AI Understanding for Navigation
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-115 (Unified Enrichment), ADR-117 (Graph Intelligence), ADR-014 (Model Tiering — Opus for batch), ADR-129 (Vocabulary Bridge), ADR-130 (Recognition-First IA), PRO-020 (Wanderer's Path), PRO-022 (Passage Depth Signatures)
+**Target:** Milestone 3b (alongside graph intelligence activation)
+**Dependencies:** Assembled book text (available for AoY en/es). Opus batch access (Bedrock). Chunk enrichment pipeline operational (Milestone 1c).
+
+**The gap.** The enrichment pipeline (ADR-115) analyzes chunks independently — each ~500-word passage is enriched in isolation. The knowledge graph (ADR-117, DES-054) builds bottom-up from these chunk-level entities and relationships. But structural understanding at chapter, book, and author scale is absent. No artifact captures what Opus sees when it reads an entire chapter as a coherent arc, an entire book as an argument structure, or an author's complete output as a distinctive voice.
+
+This missing tier is the difference between a library that catalogs individual pages and one that understands how books work.
+
+**Design constraint: invisible but load-bearing.** Structural enrichment artifacts are internal metadata powering navigation, presentation, and aggregation. They are never displayed as AI-authored content. Seekers experience curated organization; the curation logic is invisible. This parallels the existing chunk-level enrichment pattern — Opus assigns depth levels, topic tags, and entity labels that power search ranking without seekers seeing the classification. The librarian is invisible; the library is the experience.
+
+This constraint resolves the Principle 1 boundary cleanly: structural readings are navigation metadata (same category as topic tags and depth levels), not generated content. No stakeholder ambiguity.
+
+**What this enables (all invisible to seekers):**
+- **Chapter resonance navigation** — "Chapters with similar arc" powered by structural similarity, not just topic overlap
+- **Richer Wanderer's Path** (PRO-020) — emotional trajectory and structural type inform passage selection beyond topic and depth
+- **Journey mode** — "Walk through how Yogananda builds the case for [concept]" ordered by the book's argument architecture, not chapter sequence
+- **Author-informed grouping** — passages clustered by voice characteristics (metaphor patterns, emotional register), not just `WHERE author_id = ?`
+- **Semantic positioning** (PRO-026) — chapter coordinates on meaningful axes for spatial navigation
+
+**Three enrichment scales:**
+
+1. **Chapter Perspective.** Opus reads an entire chapter in context. Produces: thematic arc (how the chapter moves), emotional trajectory (sequence of registers), turning points (pivots in the chapter's direction), metaphor patterns (recurring imagery), structural type (spiral, linear build, frame narrative, progressive revelation, etc.), and connections to other chapters in the same work. ~49 Opus calls per book.
+
+2. **Book Perspective.** Opus reads chapter perspectives for an entire book — or the full book in a single context window for works that fit (~150K words). Produces: argument architecture (how the book builds its case), movement (the book's emotional/intellectual trajectory), structural pattern (the work's organizing principle), key chapters by role in the architecture, and the book's distinctive contribution (what this work does that no other does). ~1 Opus call per book.
+
+3. **Author Voice Profile.** Opus reads across all works by an author. Produces: voice characteristics, metaphor preferences, emotional range, characteristic pedagogical moves, distinctive emphasis, and contrast dimensions with other authors. ~1 Opus call per author.
+
+**Cross-structural artifact:**
+
+4. **Chapter Resonances.** Structural parallels across chapters in different works — same arc pattern, same thematic movement, same emotional trajectory deployed for a different teaching. Generated during book perspective enrichment. These are "this chapter does the same structural work as that chapter" — a relationship invisible to passage-level similarity but load-bearing for navigation.
+
+**Storage architecture:** Enrichment tables parallel to the knowledge graph, not graph nodes. The graph represents *what exists* (entities, passages, relationships). Structural enrichment represents *how to navigate* (arcs, trajectories, voices). Mixing them muddies both.
+
+```sql
+-- Chapter-level structural understanding
+CREATE TABLE structural_chapters (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  chapter_id UUID NOT NULL REFERENCES book_chapters(id),
+  work_id UUID NOT NULL REFERENCES works(id),
+  language TEXT NOT NULL,
+  thematic_arc TEXT NOT NULL,            -- Opus's structural reading of the chapter
+  emotional_trajectory TEXT[] NOT NULL,  -- sequence of emotional registers
+  turning_points JSONB NOT NULL,         -- [{chunk_id, description}]
+  metaphor_patterns TEXT[],
+  structural_type TEXT NOT NULL,         -- spiral, linear_build, frame_narrative, progressive_revelation, etc.
+  semantic_coordinates JSONB,            -- for PRO-026 cartography
+  enrichment_model TEXT NOT NULL,        -- model ID per ADR-123
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Book-level structural understanding
+CREATE TABLE structural_works (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  work_id UUID NOT NULL REFERENCES works(id),
+  language TEXT NOT NULL,
+  architecture TEXT NOT NULL,            -- how the book builds its argument
+  movement TEXT NOT NULL,                -- emotional/intellectual trajectory
+  structural_pattern TEXT NOT NULL,      -- spiral, progressive_revelation, biographical_arc, etc.
+  key_chapters JSONB NOT NULL,           -- [{chapter_id, role_in_architecture}]
+  distinctive_contribution TEXT NOT NULL, -- what this book does that no other does
+  enrichment_model TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Author voice profiles
+CREATE TABLE structural_authors (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  author_id UUID NOT NULL REFERENCES persons(id),
+  voice_characteristics TEXT NOT NULL,
+  metaphor_preferences TEXT[],
+  emotional_range TEXT NOT NULL,
+  characteristic_moves TEXT[],           -- pedagogical patterns
+  distinctive_emphasis TEXT NOT NULL,
+  contrast_dimensions JSONB,             -- [{author_id, dimension, description}]
+  enrichment_model TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Cross-work structural parallels
+CREATE TABLE chapter_resonances (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  source_chapter_id UUID NOT NULL REFERENCES book_chapters(id),
+  target_chapter_id UUID NOT NULL REFERENCES book_chapters(id),
+  resonance_type TEXT NOT NULL,          -- structural_parallel, thematic_echo, progressive_deepening
+  description TEXT NOT NULL,
+  confidence FLOAT NOT NULL,
+  enrichment_model TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+**Relationship to existing proposals and architecture:**
+- **PRO-022 (Passage Depth Signatures):** Chunk-level contemplative quality classification. Structural enrichment operates at chapter/book/author scale. Complementary, not overlapping. Chapter perspectives may calibrate depth signature assignment.
+- **PRO-020 (Wanderer's Path):** Consumes structural enrichment to weight passage selection — emotional trajectory and book architecture make "surprise the seeker" richer than topic + depth alone.
+- **PRO-010 (Word-Level Graph Navigation):** Vocabulary-level graph traversal. Structural enrichment provides the larger-scale context that vocabulary navigation operates within.
+- **ADR-117 (Graph Intelligence):** Graph is bottom-up from chunks. Structural enrichment is top-down from whole works. They meet in the middle — graph edges connect entities, structural artifacts explain how those connections serve the book's architecture.
+- **ADR-115 (Unified Enrichment):** The `passage_role` field (added to ADR-115) is the breadcrumb — each chunk self-reports its rhetorical function. Structural enrichment provides the chapter-level context that validates and enriches those per-chunk roles.
+
+**Cost model:** One-time per book at ingestion. ~50 Opus calls per book (chapters + book-level). For the full corpus (~25 books): ~1,250 Opus calls total. At current Opus batch pricing, modest and comparable to the existing chunk enrichment pipeline cost.
+
+**Validation step:** Prototype on Autobiography of a Yogi (English). Feed the full book (~164K words) to Opus in a single context window. Request all 49 chapter perspectives + 1 book perspective. Evaluate: (1) Do structural readings distinguish chapters in ways topic tags don't? (2) Can they power "chapters like this" recommendations? (3) Can they inform spatial positioning (PRO-026)? (4) When used to power navigation UX, does the result feel like "curated library" rather than "AI commentary"? Assembled text is available now — prototype can run before Milestone 3b.
+
+**Re-evaluate At:** After prototype validation (can run anytime — assembled text available now)
+**Decision Required From:** Architecture (prototype results determine scheduling)
+**Origin:** Graph navigation exploration — invisible-librarian enrichment pattern at chapter/book/author scale (2026-02-28)
+
+---
+
+### PRO-026: Semantic Cartography — Meaningful Spatial Navigation
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-061 (Knowledge Graph Visualization), ADR-117 (Graph Intelligence), ADR-130 (Recognition-First IA), PRO-025 (Structural Enrichment Tier)
+**Target:** Milestone 3d (alongside knowledge graph visualization) or earlier if static rendering proves viable
+**Dependencies:** PRO-025 (structural enrichment provides semantic understanding for coordinate assignment). Minimal frontend: static SVG at CDN edge works on 2G mobile.
+
+**The gap.** The Passage Constellation (ADR-061, Arc 6+) uses UMAP/t-SNE to project embeddings into 2D/3D space. This is a mathematical projection — it captures embedding similarity but the axes have no semantic meaning. A seeker navigating the constellation sees clusters but can't reason about *why* passages are near each other without reading them.
+
+Semantic Cartography inverts this: Opus assigns coordinates on axes that carry meaning. The resulting map is a navigable territory seekers can reason about spatially — like a library's floor plan where the organization itself communicates.
+
+**Proposed axes (require validation through prototype):**
+
+| Axis | Low end | High end |
+|------|---------|----------|
+| Horizontal | Inner practice / contemplative | Outer life / applied |
+| Vertical | Personal / experiential | Universal / doctrinal |
+| Size | Introductory / accessible | Advanced / presupposes practice |
+| Hue | Devotional — Intellectual — Experiential — Narrative |
+
+These axes map to seeker intent: someone seeking personal comfort navigates to a different region than someone seeking philosophical understanding. The map's organization matches how seekers approach the teachings, not how embeddings cluster mathematically.
+
+**How coordinates are assigned:**
+- **Chapter-level:** During structural enrichment (PRO-025), Opus assigns semantic coordinates as part of the chapter perspective artifact. One output, no separate pipeline.
+- **Passage-level:** Derived from chapter coordinates + chunk enrichment fields (`domain`, `voice_register`, `experiential_depth`, `passage_role`). Computed, not a separate Opus call — leverages existing metadata.
+
+**Design constraint: invisible cartographer.** Same principle as PRO-025. Seekers see a beautiful map of the teachings. They explore territory. The cartographer who positioned everything is invisible — like a library's shelf organization, the arrangement *is* the experience. No "Opus positioned this chapter here because..." attribution.
+
+**Progressive enhancement rendering:**
+1. **Baseline (static SVG at CDN edge).** Pre-rendered 2D map of chapters/books. Works on 2G mobile. No JavaScript required. Navigation via standard `<a>` elements linking to chapter pages. Accessible: each point has an `<title>` element with chapter name and position description for screen readers.
+2. **Enhanced (client-side JS).** Zoom, pan, hover details with passage previews, smooth transitions between book-level and chapter-level views. Loads on capable devices.
+3. **Full (future, Arc 6+).** Interactive exploration with passage-level drill-down when knowledge graph visualization infrastructure exists. Integrates with the Passage Constellation — semantic cartography provides the meaningful axes, embedding projection provides the passage-level detail.
+
+**Minimum viable version:** A single 2D scatter of 49 chapters from Autobiography of a Yogi, positioned by Opus on the practice/life and personal/universal axes, rendered as static SVG. Chapter names as labels. Tap/click navigates to the chapter reading page. Testable, shippable, mobile-friendly, accessible. Can be generated from the PRO-025 prototype output.
+
+**Relationship to ADR-061 (Knowledge Graph Visualization):** The Passage Constellation uses mathematical projection (UMAP/t-SNE) — valuable for showing embedding clusters but semantically opaque. Semantic Cartography uses curated coordinates — semantically transparent but coarser. They complement: cartography provides the meaningful overview map; constellation provides the detail view. Both could coexist at `/explore` as different zoom levels.
+
+**Re-evaluate At:** After PRO-025 prototype (semantic coordinates are a natural byproduct of chapter perspective generation)
+**Decision Required From:** Architecture + UX review (axis selection, visual design, progressive enhancement thresholds)
+**Origin:** Graph navigation exploration — spatial representation of Opus structural understanding (2026-02-28)
 
 ---
 

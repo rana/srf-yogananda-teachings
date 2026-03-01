@@ -4640,6 +4640,7 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
   "cross_references": [
     {"type": "scripture", "ref": "Bhagavad Gita IV:35", "explicit": true}
   ],
+  "passage_role": "culmination",
   "relationships": [
     {
       "subject": "Paramahansa Yogananda",
@@ -4664,6 +4665,7 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
 | `voice_register` | TEXT | intimate / cosmic / instructional / devotional / philosophical / humorous |
 | `accessibility_level` | INT (1–5) | Language/concept accessibility (from ADR-005 E3) |
 | `semantic_density` | TEXT | high / medium / low (from ADR-048) |
+| `passage_role` | TEXT | Rhetorical function within chapter: opening / exposition / narrative / turning_point / deepening / illustration / culmination / resolution / transition / aside. Inferred from content + chapter title + sequential position. Seeds structural enrichment (PRO-025). |
 | `cross_references` | JSONB | Explicit references to other works, teachers, scriptures |
 | `relationships` | JSONB[] | Extracted entity-relationship triples for graph construction |
 
@@ -4690,6 +4692,8 @@ Consolidate all index-time Claude enrichment into a single prompt per chunk. The
 - An `extracted_relationships` table logs all relationship triples for graph intelligence (ADR-117)
 - The enrichment prompt itself requires a dedicated design sprint — test against 20–30 actual passages spanning all document types before committing the pipeline (Milestone 1a pre-implementation checklist)
 - ADR-005 E3, E4, E6, E8 are folded into this pipeline; E1, E2, E5, E7 remain as separate operations
+
+*Revised: 2026-02-28, added `passage_role` field — rhetorical function within chapter (opening, culmination, turning_point, etc.). Near-zero marginal cost; seeds structural enrichment at chapter/book scale (PRO-025).*
 
 ---
 
