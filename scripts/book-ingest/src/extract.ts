@@ -56,15 +56,25 @@ function resolveModelId(model: string, client: Anthropic | AnthropicBedrock): st
   return model;
 }
 
-/** The system prompt for OCR extraction */
-const SYSTEM_PROMPT = `You are extracting text from a high-resolution page image of a published book (Autobiography of a Yogi by Paramahansa Yogananda, published by Self-Realization Fellowship).
+/** Language-specific OCR guidance */
+const LANGUAGE_GUIDANCE: Record<string, string> = {
+  en: 'Preserve ALL diacritical marks exactly (ā, ī, ū, ṛ, ṣ, ṇ, ṭ, ḍ, ś, ñ, etc.).',
+  es: 'This book is in Spanish. Preserve ALL Spanish diacritical marks (á, é, í, ó, ú, ñ, ü) and inverted punctuation (¿, ¡) exactly. Sanskrit terms (guru, yoga, swami, samādhi, etc.) appear untranslated — preserve their diacritics too (ā, ī, ū, ṛ, ṣ, ṇ, ṭ, ḍ, ś).',
+  hi: 'This book is in Hindi (Devanāgarī script). Transcribe all Devanāgarī text exactly as rendered. Preserve conjunct characters, nukta marks, and chandrabindu. Any romanized terms should preserve their diacritics.',
+};
+
+/** Build the system prompt for a specific book */
+function buildSystemPrompt(bookTitle: string, bookAuthor: string, language: string): string {
+  const langGuide = LANGUAGE_GUIDANCE[language] || LANGUAGE_GUIDANCE['en'];
+
+  return `You are extracting text from a high-resolution page image of a published book (${bookTitle} by ${bookAuthor}).
 
 Your job is to produce a perfectly faithful transcription with structural markup as a JSON object.
 
 CRITICAL RULES:
 1. Transcribe EXACTLY what you see. Do not correct, improve, or modernize any text.
 2. Preserve ALL formatting: italics, bold, small caps.
-3. Preserve ALL diacritical marks exactly (ā, ī, ū, ṛ, ṣ, ṇ, ṭ, ḍ, ś, ñ, etc.).
+3. ${langGuide}
 4. Preserve line breaks in poetry/verse. Prose paragraphs are single text blocks.
 5. Identify the page type accurately.
 6. Detect chapter boundaries (chapter label + title = isChapterStart: true).
@@ -163,6 +173,7 @@ OUTPUT: Return a single JSON object matching this schema. Do NOT wrap in markdow
     "needsHumanReview": <boolean>
   }
 }`;
+}
 
 /** Parse CLI arguments */
 function parseArgs() {
@@ -192,7 +203,8 @@ async function extractPage(
   client: Anthropic | AnthropicBedrock,
   imagePath: string,
   pageNumber: number,
-  model: string
+  model: string,
+  systemPrompt: string
 ): Promise<PageExtraction> {
   const imageData = await fs.readFile(imagePath);
   const base64 = imageData.toString('base64');
@@ -203,10 +215,11 @@ Physical page number (from reader footer): ${pageNumber}
 
 Respond with a JSON object matching the PageExtraction schema described in the system prompt.`;
 
-  const response = await client.messages.create({
+  // Cast to Anthropic to satisfy TS — AnthropicBedrock has the same messages.create() API
+  const response = await (client as Anthropic).messages.create({
     model,
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [
       {
         role: 'user',
@@ -229,7 +242,7 @@ Respond with a JSON object matching the PageExtraction schema described in the s
   });
 
   // Parse the response
-  const textContent = response.content.find(c => c.type === 'text');
+  const textContent = response.content.find((c: { type: string }) => c.type === 'text');
   if (!textContent || textContent.type !== 'text') {
     throw new Error(`No text response for page ${pageNumber}`);
   }
@@ -252,6 +265,9 @@ Respond with a JSON object matching the PageExtraction schema described in the s
       extraction = JSON.parse(repaired) as PageExtraction;
       log.warn(`Page ${pageNumber}: JSON required repair (unescaped quotes)`);
     } catch {
+      // Save raw response for debugging
+      const debugPath = imagePath.replace('/pages/', '/extracted/debug-').replace('.png', '.txt');
+      await fs.writeFile(debugPath, jsonText);
       throw new Error(`Failed to parse JSON for page ${pageNumber}: ${firstErr}\nResponse: ${jsonText.substring(0, 500)}`);
     }
   }
@@ -263,8 +279,39 @@ Respond with a JSON object matching the PageExtraction schema described in the s
 
 /** Repair common JSON issues from LLM output (unescaped quotes in string values) */
 function repairJsonText(text: string): string {
-  // Replace curly/smart quotes with escaped regular quotes where they appear inside strings
-  // This handles the common case where Claude outputs "text": "...sovereign "dear"..."
+  // Strategy: try progressively more aggressive repairs until one works
+
+  // Pass 1: Replace smart/curly quotes with escaped regular quotes
+  let attempt = text.replace(/[\u201C\u201D]/g, '\\"');
+  try { JSON.parse(attempt); return attempt; } catch {}
+
+  // Pass 2: Character-by-character repair of unescaped interior quotes
+  attempt = repairInteriorQuotes(text);
+  try { JSON.parse(attempt); return attempt; } catch {}
+
+  // Pass 3: Regex-based repair — find "text": "..." patterns and escape interior quotes
+  // This handles cases where the look-ahead heuristic fails
+  attempt = text.replace(
+    /("text"\s*:\s*")((?:[^"\\]|\\.)*)(")/g,
+    (match, prefix, content, suffix) => {
+      // Already properly escaped — return as-is
+      return match;
+    }
+  );
+  // Actually, let's use a more robust approach: extract all string values and re-escape them
+  attempt = repairAllStringValues(text);
+  try { JSON.parse(attempt); return attempt; } catch {}
+
+  // Pass 4: Nuclear option — strip all content between matched braces, rebuild
+  // Try removing trailing commas (another common LLM issue)
+  attempt = repairAllStringValues(text).replace(/,\s*([}\]])/g, '$1');
+  try { JSON.parse(attempt); return attempt; } catch {}
+
+  // Give up — return the best attempt
+  return attempt;
+}
+
+function repairInteriorQuotes(text: string): string {
   let result = '';
   let inString = false;
   let escaped = false;
@@ -313,6 +360,69 @@ function repairJsonText(text: string): string {
   return result;
 }
 
+/** More robust string value repair: find JSON string boundaries using structural analysis */
+function repairAllStringValues(text: string): string {
+  // Strategy: parse the JSON structure char-by-char, tracking depth.
+  // When we enter a string value (after : or [ or ,), find its true end by looking
+  // for the closing " that's followed by a structural character.
+  // Escape all interior quotes.
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (ch === '"') {
+      // Find the true end of this string by scanning for a " followed by structural char
+      result.push('"');
+      i++;
+
+      // Scan for the end of the string value
+      let stringContent = '';
+      while (i < text.length) {
+        const c = text[i];
+
+        if (c === '\\' && i + 1 < text.length) {
+          // Already-escaped character — keep it
+          stringContent += c + text[i + 1];
+          i += 2;
+          continue;
+        }
+
+        if (c === '"') {
+          // Is this the real end of the string?
+          const rest = text.slice(i + 1).trimStart();
+          if (rest.length === 0 || /^[,:}\]\n\r]/.test(rest)) {
+            // Real end
+            result.push(stringContent);
+            result.push('"');
+            i++;
+            break;
+          } else {
+            // Interior quote — escape it
+            stringContent += '\\"';
+            i++;
+            continue;
+          }
+        }
+
+        // Replace smart quotes inside strings
+        if (c === '\u201C' || c === '\u201D') {
+          stringContent += '\\"';
+        } else {
+          stringContent += c;
+        }
+        i++;
+      }
+    } else {
+      result.push(ch);
+      i++;
+    }
+  }
+
+  return result.join('');
+}
+
 /** Process pages with concurrency control */
 async function processWithConcurrency<T>(
   items: T[],
@@ -356,6 +466,14 @@ async function runExtraction(bookSlug: string, resumeFrom?: number, concurrency 
   const client = createClient();
   const modelId = resolveModelId(config.extraction.model, client);
 
+  // Build language-aware system prompt
+  const systemPrompt = buildSystemPrompt(
+    config.book.title,
+    config.book.author,
+    config.book.language
+  );
+  log.info(`Language: ${config.book.language}, System prompt: ${systemPrompt.length} chars`);
+
   // Find pages to extract
   const pagesToExtract: number[] = [];
   for (let p = resumeFrom ?? 1; p <= totalPages; p++) {
@@ -386,7 +504,7 @@ async function runExtraction(bookSlug: string, resumeFrom?: number, concurrency 
     const extractedPath = path.join(paths.extracted, `page-${padPage(pageNum)}.json`);
 
     try {
-      const extraction = await extractPage(client, imagePath, pageNum, modelId);
+      const extraction = await extractPage(client, imagePath, pageNum, modelId, systemPrompt);
       await writeJson(extractedPath, extraction);
       extracted++;
       log.progress(extracted, pagesToExtract.length,

@@ -8,7 +8,7 @@ import path from 'path';
 /** Root data directory for all book ingestions */
 const DATA_ROOT = path.resolve(import.meta.dirname, '../../..', 'data/book-ingest');
 
-/** Golden passages for Autobiography of a Yogi validation */
+/** Golden passages for Autobiography of a Yogi (English) validation */
 const AOY_GOLDEN_PASSAGES: GoldenPassage[] = [
   {
     text: 'The characteristic features of Indian culture have long been a search for ultimate verities',
@@ -29,7 +29,26 @@ const AOY_GOLDEN_PASSAGES: GoldenPassage[] = [
   }
 ];
 
-/** Autobiography of a Yogi book configuration */
+/** Golden passages for Autobiografía de un yogui (Spanish) validation */
+const AOY_ES_GOLDEN_PASSAGES: GoldenPassage[] = [
+  {
+    text: 'Paramahansa Yogananda',
+    chapter: null,
+    source: 'Author name — should appear on title page and throughout'
+  },
+  {
+    text: 'Sri Yukteswar',
+    chapter: null,
+    source: 'Guru name — should appear in chapters 10, 12, 42, 43'
+  },
+  {
+    text: 'Kriya Yoga',
+    chapter: 26,
+    source: 'Chapter 26 title: "La ciencia del Kriya Yoga" — term appears untranslated'
+  }
+];
+
+/** Autobiography of a Yogi — English (SRF edition, ASIN B00JW44IAI) */
 export const AUTOBIOGRAPHY_OF_A_YOGI: BookConfig = {
   title: 'Autobiography of a Yogi',
   author: 'Paramahansa Yogananda',
@@ -42,9 +61,32 @@ export const AUTOBIOGRAPHY_OF_A_YOGI: BookConfig = {
   goldenPassages: AOY_GOLDEN_PASSAGES
 };
 
+/**
+ * Autobiografía de un yogui — Spanish (SRF edition, ASIN B07G5KL5RL)
+ *
+ * Self-Realization Fellowship Kindle edition. ISBN 978-0876128213.
+ * 811 Kindle pages, 49 chapters (matches English SRF edition structure).
+ * This is the canonical SRF translation — same publisher as the English ebook.
+ *
+ * Note: ASIN B0FDKZ2FLN is a third-party "Editorial Recién Traducido, 2025"
+ * translation — do NOT use. It has only 48 chapters and different translation.
+ */
+export const AUTOBIOGRAFIA_DE_UN_YOGUI: BookConfig = {
+  title: 'Autobiografía de un yogui',
+  author: 'Paramahansa Yogananda',
+  slug: 'autobiografia-de-un-yogui',
+  asin: 'B07G5KL5RL',
+  readerUrl: 'https://read.amazon.com/?asin=B07G5KL5RL',
+  authorTier: 'guru',
+  language: 'es',
+  expectedChapters: 49,
+  goldenPassages: AOY_ES_GOLDEN_PASSAGES
+};
+
 /** Registry of all book configs */
 export const BOOK_CONFIGS: Record<string, BookConfig> = {
-  'autobiography-of-a-yogi': AUTOBIOGRAPHY_OF_A_YOGI
+  'autobiography-of-a-yogi': AUTOBIOGRAPHY_OF_A_YOGI,
+  'autobiografia-de-un-yogui': AUTOBIOGRAFIA_DE_UN_YOGUI
 };
 
 /** Build pipeline config for a book */

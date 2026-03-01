@@ -5,16 +5,13 @@
  * Captures all pages of a book as high-resolution PNG images using Playwright.
  * Connects to an existing browser session (cloud reader must be open and authenticated).
  *
+ * Two page-tracking modes (auto-detected):
+ * - Footer-based: Reader shows "Page N of M ● X%" in footer (e.g. Spanish edition)
+ * - Sequential: No footer text — captures pages by counting forward with hash-based
+ *   page-change detection (e.g. English fixed-layout edition)
+ *
  * Usage:
  *   npx tsx src/capture.ts --book autobiography-of-a-yogi [--resume-from 100] [--cdp-url ws://...]
- *
- * The script:
- * 1. Connects to an existing Chromium browser via CDP
- * 2. Navigates to page 1 (or resume page)
- * 3. For each page: captures screenshot at device scale (2x), records metadata
- * 4. Advances to next page by clicking right side of viewport
- * 5. Handles virtual page vs physical page mismatch (multiple clicks per physical page)
- * 6. Saves capture log for resume capability
  */
 
 import { chromium, type Browser, type Page } from 'playwright';
@@ -53,7 +50,6 @@ function parseArgs(): { bookSlug: string; resumeFrom?: number; cdpUrl: string } 
 /** Read footer text from the reader */
 async function getFooterText(page: Page): Promise<string> {
   return page.evaluate(() => {
-    // Try multiple selectors for the footer
     const ionFooter = document.querySelector('ion-footer');
     if (ionFooter?.textContent?.trim()) return ionFooter.textContent.trim();
 
@@ -67,9 +63,36 @@ async function getFooterText(page: Page): Promise<string> {
   });
 }
 
+/** Get the current page image hash without saving to disk */
+async function getCurrentImageHash(page: Page): Promise<string> {
+  const img = page.locator('.kg-full-page-img img');
+  await img.waitFor({ state: 'visible', timeout: 10000 });
+  const buffer = await img.screenshot({ scale: 'device' });
+  return bufferHash(buffer);
+}
+
+/** Get viewport dimensions */
+async function getViewportDims(page: Page): Promise<{ width: number; height: number }> {
+  return page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight
+  }));
+}
+
+/** Click to advance one page view (single right-click) */
+async function clickRight(page: Page, dims: { width: number; height: number }): Promise<void> {
+  await page.mouse.click(dims.width - 50, dims.height / 2);
+  await sleep(350);
+}
+
+/** Click to go back one page view (single left-click) */
+async function clickLeft(page: Page, dims: { width: number; height: number }): Promise<void> {
+  await page.mouse.click(50, dims.height / 2);
+  await sleep(350);
+}
+
 /** Navigate to a specific page using TOC */
 async function navigateToPage(page: Page, targetPage: number, captureMeta: CaptureMeta): Promise<void> {
-  // Find the closest TOC entry before the target page
   const tocEntries = captureMeta.toc.filter(e => e.pageNumber !== null && e.pageNumber <= targetPage);
   const closest = tocEntries[tocEntries.length - 1];
 
@@ -88,7 +111,7 @@ async function navigateToPage(page: Page, targetPage: number, captureMeta: Captu
   await tocButton.click({ force: true });
   await sleep(2000);
 
-  // Click the TOC entry using JavaScript (handles viewport issues)
+  // Click the TOC entry
   const clicked = await page.evaluate((title: string) => {
     const buttons = document.querySelectorAll('button[aria-label]');
     for (const btn of buttons) {
@@ -109,63 +132,18 @@ async function navigateToPage(page: Page, targetPage: number, captureMeta: Captu
   // Close TOC
   await page.keyboard.press('Escape');
   await sleep(800);
-
-  // Now advance page by page to the target
-  let currentFooter = await getFooterText(page);
-  let currentPage = parseFooterPageNumber(currentFooter);
-
-  while (currentPage !== null && currentPage < targetPage) {
-    await advanceOnePage(page);
-    currentFooter = await getFooterText(page);
-    currentPage = parseFooterPageNumber(currentFooter);
-  }
 }
 
-/** Advance one physical page forward */
-async function advanceOnePage(page: Page): Promise<string> {
-  const startFooter = await getFooterText(page);
-  const startPage = parseFooterPageNumber(startFooter);
-
-  // Click right side of viewport to advance
-  const dims = await page.evaluate(() => ({
-    width: window.innerWidth,
-    height: window.innerHeight
-  }));
-
-  // Multiple clicks may be needed for multi-screen physical pages
-  for (let click = 0; click < 15; click++) {
-    await page.mouse.click(dims.width - 50, dims.height / 2);
-    await sleep(300);
-
-    const footer = await getFooterText(page);
-    const currentPage = parseFooterPageNumber(footer);
-
-    // If page number changed, we've advanced one physical page
-    if (currentPage !== null && startPage !== null && currentPage !== startPage) {
-      return footer;
-    }
-
-    // If we're in location mode (front matter) and location changed significantly
-    if (!footerHasPageNumber(footer) && !footerHasPageNumber(startFooter)) {
-      // For location-based pages, any advancement counts
-      if (footer !== startFooter) {
-        return footer;
-      }
-    }
-  }
-
-  // Return whatever footer we have after max clicks
-  return await getFooterText(page);
-}
-
-/** Go back one physical page */
-async function goBackOnePage(page: Page): Promise<string> {
+/**
+ * Advance one physical page forward (footer-based mode).
+ * Clicks until the footer page number changes.
+ */
+async function advanceOnePageFooter(page: Page, dims: { width: number; height: number }): Promise<string> {
   const startFooter = await getFooterText(page);
   const startPage = parseFooterPageNumber(startFooter);
 
   for (let click = 0; click < 15; click++) {
-    await page.mouse.click(50, 425);
-    await sleep(300);
+    await clickRight(page, dims);
 
     const footer = await getFooterText(page);
     const currentPage = parseFooterPageNumber(footer);
@@ -174,6 +152,7 @@ async function goBackOnePage(page: Page): Promise<string> {
       return footer;
     }
 
+    // Location-based pages (front matter): any change counts
     if (!footerHasPageNumber(footer) && !footerHasPageNumber(startFooter)) {
       if (footer !== startFooter) {
         return footer;
@@ -182,6 +161,32 @@ async function goBackOnePage(page: Page): Promise<string> {
   }
 
   return await getFooterText(page);
+}
+
+/**
+ * Advance one page forward (hash-based mode).
+ * Clicks right and verifies the page image actually changed.
+ * Returns the new image hash, or null if the page didn't change (end of book).
+ */
+async function advanceOnePageHash(page: Page, dims: { width: number; height: number }, currentHash: string): Promise<string | null> {
+  await clickRight(page, dims);
+
+  // Check if page actually changed
+  for (let retry = 0; retry < 5; retry++) {
+    const newHash = await getCurrentImageHash(page);
+    if (newHash !== currentHash) {
+      return newHash;
+    }
+    // Page might still be rendering — wait a bit more
+    await sleep(200);
+  }
+
+  // One more click in case the first was absorbed by UI chrome
+  await clickRight(page, dims);
+  await sleep(400);
+
+  const finalHash = await getCurrentImageHash(page);
+  return finalHash !== currentHash ? finalHash : null;
 }
 
 /** Capture screenshot of the current page at device scale */
@@ -198,15 +203,24 @@ async function capturePageImage(page: Page, outputPath: string): Promise<{ size:
   };
 }
 
+/** Detect whether the reader provides footer page numbers */
+async function detectTrackingMode(page: Page): Promise<'footer' | 'sequential'> {
+  const footer = await getFooterText(page);
+  if (footerHasPageNumber(footer) || footer.includes('Location')) {
+    log.info(`Tracking mode: footer-based (footer text: "${footer}")`);
+    return 'footer';
+  }
+  log.info('Tracking mode: sequential (no footer text detected)');
+  return 'sequential';
+}
+
 /** Main capture loop */
 async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string): Promise<void> {
   const config = getPipelineConfig(bookSlug);
   const paths = getBookPaths(bookSlug);
 
-  // Ensure directories exist
   await ensureDir(paths.pages);
 
-  // Read capture metadata
   if (!await fileExists(paths.captureMeta)) {
     throw new Error(`capture-meta.json not found at ${paths.captureMeta}. Run Phase 0 first.`);
   }
@@ -223,7 +237,6 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
     log.info(`Loaded existing capture log with ${captureLog.length} entries`);
   }
 
-  // Determine start page
   const startPage = resumeFrom ?? 1;
   const capturedPages = new Set(captureLog.map(e => e.pageNumber));
 
@@ -239,7 +252,7 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
     log.info('Connected to browser via CDP');
   } catch (err) {
     log.error('Failed to connect to browser. Make sure Chromium is running with --remote-debugging-port=9222');
-    log.error('Or run: chromium --remote-debugging-port=9222');
+    log.error('  chromium --remote-debugging-port=9222');
     throw err;
   }
 
@@ -249,65 +262,77 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
   }
 
   const context = contexts[0];
-  const pages = context.pages();
+  const browserPages = context.pages();
 
-  // Find the reader page
-  let readerPage = pages.find(p => p.url().includes('read.amazon.com'));
+  const readerPage = browserPages.find(p => p.url().includes('read.amazon.com'));
   if (!readerPage) {
     throw new Error('No cloud reader page found. Navigate to the book first.');
   }
 
   log.info(`Found reader page: ${readerPage.url()}`);
 
-  // Navigate to start page
-  if (startPage > 1) {
-    await navigateToPage(readerPage, startPage, captureMeta);
-  } else {
-    // Navigate to beginning (Title Page)
-    await navigateToPage(readerPage, 1, captureMeta);
-  }
-
-  // Wait for page to render
+  // Navigate to start
+  await navigateToPage(readerPage, startPage, captureMeta);
   await sleep(1000);
+
+  // Auto-detect tracking mode
+  const trackingMode = await detectTrackingMode(readerPage);
+  const dims = await getViewportDims(readerPage);
+
+  // For sequential mode with resume, we need to advance from the TOC entry to the exact page
+  if (trackingMode === 'sequential' && startPage > 1) {
+    // TOC navigation got us close; advance to exact start page by counting clicks
+    const closestToc = captureMeta.toc
+      .filter(e => e.pageNumber !== null && e.pageNumber <= startPage)
+      .pop();
+    const tocPage = closestToc?.pageNumber ?? 1;
+    const clicksNeeded = startPage - tocPage;
+    if (clicksNeeded > 0) {
+      log.info(`Sequential resume: advancing ${clicksNeeded} pages from TOC entry (page ${tocPage}) to page ${startPage}`);
+      let hash = await getCurrentImageHash(readerPage);
+      for (let i = 0; i < clicksNeeded; i++) {
+        const newHash = await advanceOnePageHash(readerPage, dims, hash);
+        if (newHash) hash = newHash;
+      }
+    }
+  }
 
   // Capture loop
   let consecutiveErrors = 0;
-  let lastCapturedPage = 0;
   let previousHash = '';
 
   for (let targetPage = startPage; targetPage <= totalPages; targetPage++) {
-    // Skip already captured pages
     if (capturedPages.has(targetPage)) {
       log.info(`Skipping page ${targetPage} (already captured)`);
+      // In sequential mode, we still need to advance past skipped pages
+      if (trackingMode === 'sequential' && targetPage < totalPages) {
+        const hash = await getCurrentImageHash(readerPage);
+        await advanceOnePageHash(readerPage, dims, hash);
+      }
       continue;
     }
 
     try {
-      // Verify we're on the right page
-      const footer = await getFooterText(readerPage);
-      const currentPage = parseFooterPageNumber(footer);
+      // Footer-based mode: verify we're on the right page and navigate if not
+      if (trackingMode === 'footer') {
+        const footer = await getFooterText(readerPage);
+        const currentPage = parseFooterPageNumber(footer);
 
-      // If we're not on the target page, navigate there
-      if (currentPage !== null && currentPage !== targetPage) {
-        if (currentPage < targetPage) {
-          // Need to advance
-          while (true) {
-            const newFooter = await advanceOnePage(readerPage);
-            const newPage = parseFooterPageNumber(newFooter);
-            if (newPage !== null && newPage >= targetPage) break;
-            // Safety: if we're not making progress, navigate via TOC
-            if (newPage === currentPage) {
-              log.warn(`Stuck on page ${currentPage}, navigating via TOC`);
-              await navigateToPage(readerPage, targetPage, captureMeta);
-              break;
+        if (currentPage !== null && currentPage !== targetPage) {
+          if (currentPage < targetPage) {
+            while (true) {
+              const newFooter = await advanceOnePageFooter(readerPage, dims);
+              const newPage = parseFooterPageNumber(newFooter);
+              if (newPage !== null && newPage >= targetPage) break;
+              if (newPage === currentPage) {
+                log.warn(`Stuck on page ${currentPage}, navigating via TOC`);
+                await navigateToPage(readerPage, targetPage, captureMeta);
+                break;
+              }
             }
-          }
-        } else if (currentPage > targetPage) {
-          // Need to go back
-          while (true) {
-            const newFooter = await goBackOnePage(readerPage);
-            const newPage = parseFooterPageNumber(newFooter);
-            if (newPage !== null && newPage <= targetPage) break;
+          } else {
+            // Go back via TOC (simpler than clicking left many times)
+            await navigateToPage(readerPage, targetPage, captureMeta);
           }
         }
       }
@@ -325,7 +350,6 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
       }
       previousHash = hash;
 
-      // Validate capture
       if (size < 5000) {
         log.warn(`Page ${targetPage}: suspiciously small file (${size} bytes)`);
       }
@@ -342,7 +366,6 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
       captureLog.push(logEntry);
       capturedPages.add(targetPage);
 
-      // Save capture log every 10 pages
       if (targetPage % 10 === 0 || targetPage === totalPages) {
         await writeJson(captureLogPath, captureLog);
       }
@@ -351,11 +374,22 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
 
       // Advance to next page
       if (targetPage < totalPages) {
-        await advanceOnePage(readerPage);
+        if (trackingMode === 'footer') {
+          await advanceOnePageFooter(readerPage, dims);
+        } else {
+          // Sequential mode: single click + hash verification
+          const newHash = await advanceOnePageHash(readerPage, dims, hash);
+          if (newHash === null && targetPage < totalPages - 1) {
+            log.warn(`Page ${targetPage}: advance click didn't change page — retrying with extra click`);
+            // Additional retry with longer wait
+            await sleep(500);
+            await clickRight(readerPage, dims);
+            await sleep(500);
+          }
+        }
       }
 
       consecutiveErrors = 0;
-      lastCapturedPage = targetPage;
 
     } catch (err) {
       consecutiveErrors++;
@@ -367,10 +401,16 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
         throw err;
       }
 
-      // Try to recover by navigating via TOC
+      // Try to recover via TOC
       log.info('Attempting recovery via TOC navigation');
       try {
         await navigateToPage(readerPage, targetPage, captureMeta);
+        await sleep(1000);
+
+        // In sequential mode, we can't verify position via footer, so just continue
+        if (trackingMode === 'sequential') {
+          log.info(`Recovery: re-navigated via TOC, continuing from page ${targetPage}`);
+        }
       } catch {
         log.error('Recovery failed');
       }
@@ -380,8 +420,6 @@ async function runCapture(bookSlug: string, resumeFrom?: number, cdpUrl?: string
   // Final save
   await writeJson(captureLogPath, captureLog);
   log.info(`Capture complete! ${captureLog.length} pages captured.`);
-
-  // Don't disconnect — leave browser open for user
 }
 
 // Run if called directly
