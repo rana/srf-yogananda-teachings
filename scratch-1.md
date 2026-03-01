@@ -196,3 +196,36 @@ What are novel learning experiences, exploration experiences, organization exper
 Consider WebGL, https://spline.design, and others. What would be of service, if anything? Maybe nothing?
 
 For "Knowledge graph — interactive visual map of the teaching corpus showing cross-book connections, themes, persons, and scriptures" Ensure all medias included (book, articles, videos, audio, etc).
+
+---
+
+### AWS MCP Server for Claude Code
+
+Yes! There is an official **AWS MCP server** (actually a suite of them). The main ones relevant here:
+
+**`awslabs/aws-documentation-mcp-server`** — searches AWS docs
+**`awslabs/cdk-mcp-server`** — helps write AWS CDK infrastructure code
+**`awslabs/core-mcp-server`** — orchestrates the other AWS MCP servers
+
+The AWS MCP servers are maintained by AWS Labs on GitHub: `github.com/awslabs/mcp`
+
+**To set up in Claude Code**, add to your `~/.claude/claude_desktop_config.json` (or `.claude.json` for Claude Code):
+
+```json
+{
+  "mcpServers": {
+    "awslabs.cdk-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.cdk-mcp-server@latest"],
+      "env": {
+        "AWS_PROFILE": "your-profile",
+        "AWS_REGION": "us-east-1"
+      }
+    },
+    "awslabs.core-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.core-mcp-server@latest"]
+    }
+  }
+}
+```

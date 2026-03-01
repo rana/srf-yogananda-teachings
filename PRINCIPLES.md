@@ -14,7 +14,7 @@ Specific numeric values throughout these documents (chunk sizes, rate limits, th
 
 *What this project is. Violating these destroys the project's purpose.*
 
-### PRI-01: Direct Quotes Only
+### PRI-01: Verbatim Fidelity
 
 **The AI is a librarian, not an oracle.** It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it never generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. (ADR-001, ADR-005, ADR-015, PRO-014)
 

@@ -1572,7 +1572,7 @@ On any feature with a deployed preview, a guided narration of the seeker experie
 - The seeker's encounter path ("A seeker reading Chapter 26 encounters 'samadhi'...")
 - The interaction mechanics ("On desktop, they hover. On mobile, they tap.")
 - Accessibility behavior ("Screen readers announce: 'samadhi — a Sanskrit term meaning...'")
-- Principle adherence ("The definition comes from the canonical glossary, never AI-generated. PRI-01: Direct Quotes Only.")
+- Principle adherence ("The definition comes from the canonical glossary, never AI-generated. PRI-01: Verbatim Fidelity.")
 - Performance impact ("This adds 3KB to the page. Within the 100KB JS budget.")
 
 **Value:** The engineering leader sees the *experience*, not the code. She evaluates at the right level — "Is this worthy of presenting Yogananda's words?" — not "Is this a good React component?"
