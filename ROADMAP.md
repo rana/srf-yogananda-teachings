@@ -143,6 +143,8 @@ If the ≥ 80% threshold is not met, the following contingencies apply before pr
 
 **Focus book:** Autobiography of a Yogi — **Spanish** edition (ADR-128 Tier 1). Hindi deferred — authorized YSS ebook only purchasable from India/Nepal/Sri Lanka; Amazon Kindle edition is third-party (Fingerprint! Publishing). Hindi activates in Milestone 5b when authorized source becomes available.
 
+**Conditional Hindi path.** If YSS authorizes the Hindi source text during Arc 1 development (see PRO-043 § YSS Value Proposition), Hindi could enter alongside or shortly after Spanish — converting Milestone 1b from bilingual to trilingual. Additional scope: Romanized Hindi transliteration pipeline, Hindi golden-set queries (~15), Hindi UI strings, human reviewer. The language readiness gate (ADR-077) applies regardless of timing.
+
 ### Deliverables
 
 | # | Deliverable | Description |

@@ -1790,6 +1790,17 @@ The portal's API-first architecture (ADR-011) already means we're building a pla
 
 > How does the teachings platform serve two independent organizations as equal partners — sharing what benefits both, while respecting each one's autonomy?
 
+#### YSS Value Proposition — Conversation Sequencing
+
+The authorization conversation is extractive if it leads with "we need your Hindi text." It becomes reciprocal when it leads with value:
+
+1. **Deliver first.** English search widget for yssofindia.org — a Web Component that drops into any WordPress page, branded YSS, zero maintenance. YSS sees the platform working before being asked to contribute.
+2. **Name the platform neutrally.** "Yogananda Teachings Platform" — not "SRF Online Teachings Portal." Language matters in organizational conversations.
+3. **Ask second.** With the widget demonstrating value, the Hindi authorization conversation becomes "shall we extend this to Hindi seekers?" rather than "can we have your text?"
+4. **Empower, don't extract.** Offer methodology transfer (AI-human collaboration, design documentation as institutional memory), development tooling (Claude Code skills for YSS integration), and technology choice (WordPress, React, or anything that calls REST).
+
+The timeline also matters. If the authorization conversation happens *after* the English portal launches (late 2026), Hindi activation could be 2027+. If it happens *during* Arc 1 development, Hindi could ship months earlier — potentially alongside or shortly after Spanish.
+
 #### Platform Architecture: Shared Engine, Independent Surfaces
 
 ```
@@ -1826,6 +1837,8 @@ YSS has the authorized Hindi *Autobiography of a Yogi*. The entire Milestone 5b 
 If authorized, Hindi could enter the execution sequence after Spanish, potentially as a parallel workstream during Milestone 1c or as a dedicated milestone. The language readiness gate (ADR-077) still applies: text ingested + UI strings translated + human reviewer confirmed + search quality evaluation passes.
 
 **Action needed:** Conversation with YSS about authorizing the Hindi text for shared corpus use.
+
+**Hindi Vocabulary Bridge.** The Vocabulary Bridge (ADR-129) for Hindi is a separate artifact, not a translation of the English bridge. Hindi spiritual vocabulary carries distinct cultural weight — *dhyan* (ध्यान), *sadhana* (साधना), *kriya* (क्रिया) map differently than their English approximations. The Hindi bridge should be co-created with YSS editorial input to ensure cultural fidelity. Additionally, Hindi seekers commonly type in Roman script ("yogananda dhyan"); the search pipeline needs a Romanized-to-Devanagari transliteration step using fastText (already in stack for language detection) + `indic-transliteration`. This is genuinely new technical scope not present in any Latin-script language workstream.
 
 #### Component 2: Bidirectional Content Contribution
 
@@ -1871,7 +1884,7 @@ Lightweight configuration, not multi-tenancy:
 
 API endpoints that return bookstore links or Practice Bridge routing accept an optional `org` parameter. Search, content, themes, and knowledge graph endpoints are organization-agnostic.
 
-Defer `organization` column in content tables until the model is more fully vetted. Language matching handles audience separation for now.
+**Organizational provenance via source edition.** The deferred `organization` column may be unnecessary. Each book edition already carries a publisher in its metadata — "Self-Realization Fellowship" or "Yogoda Satsanga Society of India." Source edition → publisher provides organizational provenance without adding an explicit column. Language matching handles audience separation naturally. If a future use case genuinely requires an `organization` column, it can be added as a simple migration — but the burden of proof is on demonstrating that edition-based provenance is insufficient.
 
 #### Component 5: Surface Options — Parts or Whole
 
@@ -1901,6 +1914,8 @@ Each portal capability is independently adoptable:
 | Quiet Corner | Full | Selectable | Contemplative micro-sanctuary |
 | Bookstore integration | SRF Bookstore | YSS Bookstore | Per-org routing |
 | Ashram/center finder | Not planned | **YSS-developed** | New capability, could generalize |
+
+**Minimal Presentation Mode.** Communal reading (satsang, group study) is primary in Indian devotional culture, not secondary. A CSS toggle (~50–100 lines) that strips navigation chrome for projected/shared reading could ship in Milestone 2a — high value for YSS at minimal technical cost. This is a design decision, not a feature — "display the same content with less chrome."
 
 YSS can also develop new capabilities — ashram finder, Dhyana Kendra schedule, India-specific entry paths — that may flow back to the shared platform if generalized.
 

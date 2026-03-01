@@ -1,5 +1,5 @@
 ---
-name: elmer-retrospective-brief
+name: stakeholder-brief
 description: Stakeholder-facing arc brief. Synthesizes existing design into SRF-readable proposal with seeker stories, decision points, and tradeoff summaries.
 tools: Read, Grep, Glob, Bash, Write
 ---

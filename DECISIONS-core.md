@@ -5555,21 +5555,23 @@ This metric does **not** override:
 
 UNESCO 2024 data reports 739 million adults globally lack basic literacy, with 347 million in Central and Southern Asia — the YSS heartland. For these populations, text-only content provides **no access**, not limited access. YSS currently offers Hindi, Bengali, and other Indic-language *Autobiography of a Yogi* audiobooks.
 
-This ADR recommends that when a language is activated, existing audio content ships alongside text where available — not deferred to a separate media arc. Audio is an **access modality**, not an enhancement. The availability of existing SRF/YSS audio recordings for each language is a stakeholder question that should be raised at language activation time.
+This ADR recommends that when a language is activated, existing audio content ships alongside text where available — not deferred to a separate media arc. Audio is an **access modality**, not an enhancement. The availability of existing SRF/YSS audio recordings for each language is a stakeholder question that should be raised at language activation time. For Hindi specifically: if YSS has digital audio files of the Hindi *Autobiography*, basic audio delivery (streaming, chapter-level navigation) should activate with Hindi text — the technical cost is trivial compared to the access equity gained for 347M adults in Central/Southern Asia who lack basic literacy.
 
 ### Evaluation Candidates
 
 ADR-077 lists Chinese, Korean, Russian, and Arabic as evaluation candidates beyond the core 10. Applying this framework:
 
-| Language | Speakers | Reachable | Barrier |
-|----------|----------|-----------|---------|
-| Mandarin Chinese | 1,184M | ~950M* | *Great Firewall may require specialized CDN. Translation availability unconfirmed. |
-| Russian | 253M | ~200M | Translation availability unconfirmed. |
-| Indonesian | 252M | ~185M | Not in current evaluation list. Translation availability unconfirmed. |
-| Arabic (Standard) | 335M | ~200M | Zero L1 speakers (Modern Standard). Translation availability unconfirmed. Complex script. |
-| Korean | ~80M | ~76M | Translation availability unconfirmed. |
+| Language | Speakers | Internet % | Reachable | Barrier |
+|----------|----------|------------|-----------|---------|
+| Mandarin Chinese | 1,184M | ~78% | ~924M* | *Great Firewall: ICP license + China CDN required. Foreign services blocked/throttled. Freedom House 9/100. Translation availability unconfirmed. |
+| Arabic (Standard) | 335M | ~70% (weighted) | ~235M | Zero L1 speakers (Modern Standard). Internet varies: Saudi 99%, Egypt 82%. Complex script. Translation availability unconfirmed. |
+| Russian | 253M | ~92% | ~200M | Content restrictions: Freedom House 17/100. Translation availability unconfirmed. |
+| Indonesian | 252M | ~75% | ~188M | Not in current evaluation list. Notable omission. Translation availability unconfirmed. |
+| Korean | ~80M | ~97% | ~78M | South Korea only. Translation availability unconfirmed. |
 
-Mandarin and Russian warrant investigation when the core 10 languages are stable. Indonesian is a notable omission from the evaluation list — 252M speakers with 75% internet penetration.
+*Internet penetration from DataReportal Digital 2025 country reports (January 2025 data). See [language-demographics-sources.md](docs/reference/language-demographics-sources.md) for per-number source traceability.*
+
+Mandarin and Russian warrant investigation when the core 10 languages are stable. Indonesian is a notable omission from the evaluation list — 252M speakers with 75% internet penetration, higher reachable population than Bengali (Tier 2). Arabic reachable (~235M) is larger than Portuguese (Tier 2) — worth investigating if Yogananda translations exist in Arabic.
 
 ### YSS-Contributed Languages
 
@@ -5577,12 +5579,58 @@ Tamil (~85M speakers, ~60% internet, ~51M reachable), Telugu (~96M speakers, ~60
 
 These languages do not expand SRF's commitment. Each organization determines which languages it surfaces. The platform supports any language where either organization provides authorized content and the language readiness gate (ADR-077) is cleared. See PRO-043.
 
-**Hindi source authorization.** The Hindi deferral (Milestone 5b) was due to ebook purchasing logistics, not content unavailability. YSS has the authorized Hindi *Autobiography*. YSS authorization of the Hindi text for the shared corpus could resolve the source barrier, potentially activating Hindi (~425M reachable) earlier than Milestone 5b. See PRO-043.
+**Hindi source authorization.** The Hindi deferral (Milestone 5b) was due to ebook purchasing logistics, not content unavailability. YSS has the authorized Hindi *Autobiography*. YSS authorization of the Hindi text for the shared corpus could resolve the source barrier, potentially activating Hindi (~425M reachable) earlier than Milestone 5b. **Conversation sequencing matters:** deliver value first (English search widget for yssofindia.org), ask for content second. See PRO-043 § YSS Value Proposition.
+
+### Consolidated Language Reference
+
+Single sorted table for AI-assisted and human feature ordering. All languages — core, evaluation, and YSS-contributed — in one place, ranked by reachable population.
+
+**Validation methodology:** Numbers below are drawn from two source categories. **Category A** (core 9 + English): sourced from `docs/reference/Prioritizing Global Language Rollout.md` (53 citations from Ethnologue 2025, ITU 2025, DataReportal 2026, GSMA, World Bank, UNESCO). **Category B** (evaluation candidates): freshly surveyed from DataReportal Digital 2025 country reports (January 2025 data). **Before making prioritization decisions**, verify Category B numbers against the current DataReportal reports at `datareportal.com/reports/digital-2026-{country}`. Category A numbers should be refreshed at each arc boundary per ADR-128 § Consequences.
+
+| # | Language | Speakers (L1+L2) | Internet % | Reachable | Tier | Source Status | Activation | Access Barriers | Source |
+|---|----------|-----------------|------------|-----------|------|---------------|------------|-----------------|--------|
+| — | **English** | 1,528M | ~95% (L1 regions) | ~390M L1 (baseline) | Baseline | Available | M1a | — | A: Ethnologue 2025 |
+| \* | **Mandarin Chinese** | 1,184M | ~78% | ~924M\* | Evaluation | Unconfirmed | Unscheduled | \*Great Firewall: ICP license + China CDN required. Foreign services blocked/throttled. Freedom House 9/100. | B: DataReportal 2025 China |
+| 1 | **Spanish** | 558M | ~77% | ~430M | Tier 1 | SRF edition available | M1b | — | A |
+| 2 | **Hindi** | 609M | ~70% | ~425M | Tier 1 (deferred) | YSS authorization pending | M5b (conditional: M1b) | Romanized input pipeline needed. Authorized source requires YSS conversation. | A |
+| \* | **Arabic (MSA)** | 335M | ~70% (weighted) | ~235M | Evaluation | Unconfirmed | Unscheduled | Zero L1 speakers (all use dialect). Internet % varies: Saudi 99%, Egypt 82%. Complex script. | B: DataReportal 2025 Saudi Arabia, Egypt |
+| 3 | **Portuguese** | 267M | ~85% | ~225M | Tier 2 | TBD | M5a | — | A |
+| \* | **Russian** | 253M | ~92% | ~200M | Evaluation | Unconfirmed | Unscheduled | Content restrictions: Freedom House 17/100. Increasing censorship of foreign services. | B: DataReportal 2025 Russia |
+| \* | **Indonesian** | 252M | ~75% | ~188M | Evaluation | Unconfirmed | Unscheduled | Notable omission from core list. | B: DataReportal 2025 Indonesia |
+| 4 | **Bengali** | 284M | ~45% | ~130M | Tier 2 | TBD | M5a | Low internet penetration (Bangladesh ~45%, West Bengal similar). | A |
+| 5 | **German** | 130M | ~95% | ~123M | Tier 2 | TBD | M5a | — | A |
+| 6 | **Japanese** | 125M | ~95% | ~119M | Tier 3 | TBD | M5c | — | A |
+| 7 | **French** | 312M | ~37%\*\* | ~116M | Tier 3 | TBD | M5c | \*\*Francophone Africa drags average (~25%). France + Canada >90%. | A |
+| \* | **Korean** | ~80M | ~97% | ~78M | Evaluation | Unconfirmed | Unscheduled | South Korea only (North Korea isolated). | B: DataReportal 2025 South Korea |
+| 8 | **Italian** | 68M | ~90% | ~61M | Tier 3 | TBD | M5c | — | A |
+| † | **Telugu** | ~96M | ~60% | ~58M | Tier 2-eq | YSS (PRO-043) | YSS-contributed | — | A (estimate) |
+| † | **Tamil** | ~85M | ~60% | ~51M | Tier 2-eq | YSS (PRO-043) | YSS-contributed | — | A (estimate) |
+| 9 | **Thai** | 61M | ~80% | ~49M | Tier 3 | TBD | M5c | Script: no word boundaries, tone marks. | A |
+| † | **Kannada** | ~64M | ~60% | ~38M | Tier 2–3-eq | YSS (PRO-043) | YSS-contributed | — | A (estimate) |
+
+**Legend:** Numbered = Core 10 (SRF commitment). \* = Evaluation candidate (not committed). † = YSS-contributed (outside SRF scope, PRO-043). Source A = reference doc (53 citations). Source B = DataReportal 2025 (January 2025 data, freshly surveyed).
+
+**Key observations for feature ordering:**
+- Chinese has the largest reachable population but the most severe access barrier (Great Firewall). Effective reach for a Vercel-hosted service is near zero without China-specific infrastructure.
+- Hindi and Spanish are near-tied (~425M vs ~430M). Hindi requires YSS authorization; Spanish source is available. Spanish ships first per ADR-128 application protocol.
+- Arabic and Russian are evaluation candidates with ~200M+ reachable each — larger than any Tier 2 or 3 committed language. Worth investigating if translations exist.
+- Indonesian (~188M reachable) is a notable omission from the evaluation list. Higher reachable population than Bengali (Tier 2).
+- YSS-contributed languages together (~147M) exceed Thai + Italian combined (~110M).
+
+**DataReportal verification URLs** (January 2025 data):
+- China: `datareportal.com/reports/digital-2025-china` (1.11B users, 78.0%)
+- Indonesia: `datareportal.com/reports/digital-2025-indonesia` (212M users, 74.6%)
+- Russia: `datareportal.com/reports/digital-2025-russian-federation` (133M users, 92.2%)
+- South Korea: `datareportal.com/reports/digital-2025-south-korea` (50.4M users, 97.4%)
+- Saudi Arabia: `datareportal.com/reports/digital-2025-saudi-arabia` (33.9M users, 99.0%)
+- Egypt: `datareportal.com/reports/digital-2025-egypt` (96.3M users, 81.9%)
+
+**Last verified:** 2026-03-01. Refresh at arc boundaries. Full source traceability: [docs/reference/language-demographics-sources.md](docs/reference/language-demographics-sources.md).
 
 **Extends:** PRI-05 (Global-First), ADR-077 (Core Language Set), ADR-030 (Book Ingestion Priority)
 **Governs:** ROADMAP.md arc and milestone ordering. All future scope prioritization decisions.
 
-*Full demographic analysis: docs/reference/Prioritizing Global Language Rollout.md (53 citations: Ethnologue, ITU, UNESCO, DataReportal, GSMA, World Bank).*
+*Full demographic analysis: docs/reference/Prioritizing Global Language Rollout.md (53 citations: Ethnologue, ITU, UNESCO, DataReportal, GSMA, World Bank). Per-number source traceability and human validation checklist: [docs/reference/language-demographics-sources.md](docs/reference/language-demographics-sources.md).*
 
 ---
 
@@ -5625,7 +5673,7 @@ The Bridge is **Opus-generated** (ADR-014) — Claude reads the full corpus and 
 
 **Layer 4: Cross-Tradition Vocabulary** (Milestone 3b+) — Maps terms from other spiritual traditions to Yogananda's frame without erasing the difference. Requires multi-book corpus for meaningful tradition coverage.
 
-**Layer 5: Language-Specific State Mappings** (Milestone 1b for Spanish) — Not translated English mappings. Authored fresh for each language and culture by Opus reading the corpus in that language's translation. Cultural context included: "In Indian context, this expression often follows family rupture or public shame."
+**Layer 5: Language-Specific State Mappings** (Milestone 1b for Spanish) — Not translated English mappings. Each language receives a **separate bridge artifact** authored fresh by Opus reading the corpus in that language's translation. Cultural context included: "In Indian context, this expression often follows family rupture or public shame." See Per-Language Bridge Artifacts below.
 
 ### Data Model
 
@@ -5673,6 +5721,32 @@ When non-Yogananda SRF-published authors enter the corpus (Milestone 3a+), the b
 | Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
 
 A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors address the same concept in different registers.
+
+### Per-Language Bridge Artifacts
+
+Each language's Vocabulary Bridge is a **separate artifact**, not a translation of the English bridge. A language's spiritual vocabulary carries culturally distinct weight — Hindi *dhyan* (ध्यान) maps differently than English "meditation"; Spanish "noche oscura del alma" carries its own literary tradition (San Juan de la Cruz) independent of "dark night of the soul."
+
+**Per-language bridge generation:**
+
+| Language | Distinct Requirements |
+|----------|----------------------|
+| English | Baseline bridge. Modern secular → Yogananda vocabulary. American English emotional registers. |
+| Spanish | Latin American vs. Peninsular registers. Catholic mystical vocabulary (San Juan de la Cruz, Santa Teresa). "Meditación" is straightforward; crisis/grief states carry distinct cultural framing. |
+| Hindi | **Primary, not derivative.** Many Yogananda terms *originated* in Hindi/Sanskrit. The bridge maps colloquial Hindi states to Yogananda's formal vocabulary — the reverse direction from English. Requires YSS editorial review for cultural fidelity. (PRO-043) |
+| Bengali | Yogananda's mother tongue. Some terms are Bengali originals translated *into* English in the published works. Bridge recovers the original register. |
+| Portuguese | Brazilian Portuguese emotional vocabulary. Brazilian spiritual syncretism (Spiritism, Umbanda) introduces cross-tradition terms not present in European Portuguese. |
+| Other Indic | Tamil, Telugu, Kannada bridges (if YSS-contributed, PRO-043) require native-speaker generation, not translation from Hindi. Each Dravidian language carries its own bhakti literary tradition. |
+
+**Script-specific normalization.** Indic language bridges must handle Romanized input — Hindi seekers commonly type "yogananda dhyan" not "योगानन्द ध्यान". The bridge's query-time lookup must accept both Romanized and native script input. Implementation: fastText detects script mismatch → `indic-transliteration` converts Romanized input to native script → bridge lookup proceeds in native script. This adds ~2ms to Indic-language queries.
+
+**Generation lifecycle per language:**
+1. Opus reads the corpus in that language's translation
+2. Derives state mappings grounded in what Yogananda *actually wrote* in that translation
+3. Maps culturally distinct emotional expressions (not English translations) to corpus territory
+4. Native-speaker editorial review before activation (required for Indic languages per PRO-043; recommended for all)
+5. Bridge enters the same feedback loop as English: zero-result patterns, DES-058 evaluation, empirical improvement
+
+**Bridge activation gate.** A language's Vocabulary Bridge must pass the same quality evaluation as its search (DES-058) — dedicated bridge evaluation queries per language, authored by native speakers, testing culturally distinct emotional states and spiritual vocabulary. The bridge ships with language activation, not as a later enhancement.
 
 ### Alternatives Considered
 

@@ -1,4 +1,8 @@
 
+---
+Inhabit the [x] perspective.
+
+---
 How to ensure faithful reproduction of devanagari? Holy Science and others use it. Hindi is devanagari?
 
 Trilingual UI text at which milestone? I lean to Arc 1 with trilingual book ingestion. How to automate UI text translation/generation? Claude AI? Other? What is world class amazing performance and accuracy? Specialized service? Principles "5. Global-First" in mind.

@@ -97,6 +97,8 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 **Technical**
 - [ ] Sacred Places fallback hierarchy: ranked array of external links per place rather than Google Street View only? (DES-023, ADR-070)
 - [ ] Chant text chunking and embedding quality: evaluate during *Cosmic Chants* ingestion. (ADR-059, ADR-046)
+- [ ] Romanized Hindi/Bengali input: Hindi seekers commonly type in Roman script ("yogananda dhyan"). Search pipeline needs a transliteration step for Indic languages — fastText detects script mismatch, `indic-transliteration` converts to Devanagari before embedding lookup. Scope this before Hindi activation. (ADR-128, PRO-043)
+- [ ] DPDPA 2023 compliance: DELTA's zero-personal-data posture likely satisfies India's Digital Personal Data Protection Act. Brief legal confirmation warranted before Hindi activation and any YSS integration. (ADR-099, PRO-043)
 
 **Stakeholder**
 - [ ] Portal-app relationship: complementary or overlapping reader? Will portal search power the app?
@@ -105,6 +107,11 @@ Roles the AI cannot fill: editorial judgment on sacred text, theological review,
 - [ ] YSS content availability in Tamil, Telugu, Kannada: which editions of Yogananda's works exist as YSS publications? (PRO-043, ADR-077)
 - [ ] YSS preferred integration surface: embeddable widgets in yssofindia.org, API integration for Lessons app, full portal deployment, or combination? Technical capacity unknown. (PRO-043)
 - [ ] Content governance for bidirectional contribution: who triggers re-ingestion when errors are found in contributed texts? Each organization maintains editorial authority over contributed content? (PRO-043)
+- [ ] What are YSS's own digital priorities for making Yogananda's teachings available online? Frame the partnership conversation around YSS's goals, not SRF's content needs. (PRO-043)
+- [ ] If YSS authorizes Hindi source text, what prevents Hindi from entering Milestone 1b alongside Spanish? Concrete blockers: Romanized Hindi transliteration pipeline, Hindi golden-set queries, Hindi UI strings, human reviewer availability. (PRO-043, ADR-128)
+- [ ] Does YSS have digital audio files of the Hindi *Autobiography*? If so, audio should ship with Hindi text activation — not deferred to a separate media arc. (PRO-003, PRO-043, ADR-128 § Audio Equity)
+- [ ] Should YSS editorial team review the theme taxonomy and Vocabulary Bridge for Hindi cultural appropriateness before Hindi activation? Hindi spiritual vocabulary carries distinct weight — the bridge is a separate artifact, not a translation. (ADR-129, PRO-043)
+- [ ] Project naming in YSS conversations: use "Yogananda Teachings Platform" or similar org-neutral framing rather than "SRF Online Teachings Portal." (PRO-043)
 - [ ] Translated editions: do they preserve paragraph structure? (Critical for cross-language alignment)
 - [ ] *Cosmic Chants* canonical volume or family of editions? (ADR-059)
 - [ ] Monastic content scope: content *by* vs. *about* monastics. (ADR-036, ADR-037, ADR-001, PRO-014)
