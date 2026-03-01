@@ -18,15 +18,22 @@
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
 | PRO-007 | Logical Replication for Analytics CDC | Feature | Proposed | ADR-124, ADR-095, ADR-099 | Neon platform audit 2026-02-25 |
 | PRO-008 | Time Travel Queries for Production Debugging | Enhancement | Adopted → ADR-124, ADR-019, 1a.2 | ADR-019, ADR-124 | Neon platform audit 2026-02-25 |
-| PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-051, ADR-033, DES-048, DES-054, ADR-115 | Dedup 2026-02-25 (3 explorations) |
+| PRO-009 | Scientific-Spiritual Bridge Themes | Theme | Proposed | ADR-032, ADR-129, ADR-033, DES-048, DES-054, ADR-115 | Dedup 2026-02-25 (3 explorations) |
 | PRO-010 | Word-Level Graph Navigation | Feature | Proposed | DES-055, ADR-117, ADR-116, ADR-049, ADR-050 | Dedup 2026-02-25 |
 | PRO-011 | Proactive Editorial AI Agent | Enhancement | Proposed (subsumed by PRO-013 if adopted) | ADR-082, ADR-005, ADR-106, DES-052 | Dedup 2026-02-25 |
 | PRO-012 | Copyright and Legal Framework | Policy | Validated | ADR-081, ADR-099, ADR-003, ADR-001 | Dedup 2026-02-25 (2 explorations) |
 | PRO-013 | Internal Autonomous Agent Archetypes | Feature | Proposed | ADR-101, ADR-005, ADR-082, ADR-100, DES-031, DES-035, DES-048 | Exploration 2026-02-25 |
-| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRINCIPLES.md §1–2, CONTEXT.md § Mission | Exploration 2026-02-25 |
+| PRO-014 | Multi-Author Sacred Text Expansion | Policy | Adopted | ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, PRINCIPLES.md §1–2, CONTEXT.md § Mission | Exploration 2026-02-25 |
 | PRO-015 | AWS SES as SendGrid Alternative for Email Delivery | Enhancement | Proposed | ADR-091, ADR-099, ADR-016 | Stack divergence analysis 2026-02-26 |
 | PRO-016 | Retool vs. Portal Admin for Staff Dashboards | Enhancement | Proposed | ADR-082, ADR-053, ADR-095 | Deep review 2026-02-26 |
 | PRO-017 | Cloudflare Re-evaluation for SRF Domain Routing | Enhancement | Proposed | ADR-023, ADR-016 | Vendor drift analysis 2026-02-26 |
+| PRO-018 | Four Doors — Recognition-Based Emotional Entry | Feature | Proposed | ADR-129, ADR-130 | External design review 2026-03-01 |
+| PRO-019 | Multi-Lens Homepage — Recognition-First Portal Surface | Feature | Proposed | ADR-130, ADR-127 | External design review 2026-03-01 |
+| PRO-020 | The Wanderer's Path — Depth-Weighted Passage Discovery | Feature | Proposed | ADR-130, ADR-002 | External design review 2026-03-01 |
+| PRO-021 | Yogananda's Voice — Primary Source Audio Presence | Feature | Proposed | ADR-057, ADR-015, ADR-127 | External design review 2026-03-01 |
+| PRO-022 | Passage Depth Signatures — Opus-Classified Contemplative Quality | Enhancement | Proposed | ADR-014, ADR-115, ADR-129 | External design review 2026-03-01 |
+| PRO-023 | Human Review Gate — Production Content Governance | Policy | Proposed | ADR-005, ADR-032, ADR-078, ADR-092, ADR-082 | Principle analysis 2026-02-28 |
+| PRO-024 | Editorial Page Compositor — Data-Driven Layout Curation | Feature | Proposed | ADR-130, ADR-082, ADR-079, ADR-095, DES-028, DES-032 | Exploration 2026-02-28 |
 
 ---
 
@@ -116,8 +123,8 @@
 
 **Status:** Proposed
 **Type:** Theme
-**Governing Refs:** ADR-032, ADR-051, ADR-033, DES-048, DES-054, ADR-115
-**Dependencies:** Teaching topics taxonomy (ADR-032) and terminology bridge (ADR-051) operational. Enrichment pipeline (ADR-115) running.
+**Governing Refs:** ADR-032, ADR-129, ADR-033, DES-048, DES-054, ADR-115
+**Dependencies:** Teaching topics taxonomy (ADR-032) and Vocabulary Bridge (ADR-129) operational. Enrichment pipeline (ADR-115) running.
 **Scheduling Notes:** Consolidates three explorations proposing thematic entry points for currently under-served seeker populations. Three themes: (1) **Cosmic Life** — Yogananda's teachings on extraterrestrial life, astral worlds, and cosmic consciousness. Maps "extraterrestrial" → "astral beings," "alien life" → "cosmic consciousness." (2) **Self-Worth, Abundance, and Prosperity Consciousness** — teachings on divine supply, worthiness, and overcoming scarcity mentality. Serves seekers arriving from self-help, entrepreneurial, or therapeutic contexts. (3) **Vibration, AUM, and Scientific Parallels** — bridges quantum physics vocabulary to Yogananda's vibration teachings. Maps "quantum field" → "cosmic vibration," "wave-particle duality" → "maya." All three require terminology bridge entries, enrichment pipeline markers, and knowledge graph edges. Each independently reaches new seeker populations. Graduation path: `/theme-integrate` for each theme.
 **Re-evaluate At:** Arc 2 boundary (when taxonomy and enrichment pipeline are validated)
 **Decision Required From:** Editorial + theological review (do these themes accurately represent Yogananda's teachings?)
@@ -182,11 +189,11 @@
 
 **Status:** Adopted — Document cascade merged 2026-02-25.
 **Type:** Policy
-**Governing Refs:** ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111
+**Governing Refs:** ADR-001, ADR-005, ADR-007, ADR-030, ADR-034, ADR-040, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111
 
 **Summary.** Expanded corpus scope from "Yogananda's published books" to "all SRF/YSS-published books" with a three-tier author hierarchy by role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi Janakananda), monastic (monastic speakers). All tiers receive verbatim fidelity, no AI synthesis, no machine translation. Tiers govern search inclusion, daily passage pool, and social media pool. Both blocking stakeholder decisions resolved 2026-02-25: theological hierarchy confirmed, endowment scope confirmed. *Tier values renamed 2026-02-26 from sacred/authorized/commentary to guru/president/monastic — role-based naming avoids value judgments about authors' spiritual stature. Column renamed 2026-02-28 from `content_tier` to `author_tier` — the tier classifies the author's lineage role, not the content.*
 
-**Document cascade applied to:** PRINCIPLES.md §1–2, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-051, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DESIGN-arc1.md books schema (`author_tier` column, `author` DEFAULT removed).
+**Document cascade applied to:** PRINCIPLES.md §1–2, CLAUDE.md §1–2, CONTEXT.md §§ Mission/In Scope, ADR-001, ADR-005, ADR-007, ADR-030, ADR-039, ADR-048, ADR-129, ADR-078, ADR-089, ADR-091, ADR-092, ADR-111, DESIGN.md search/daily-passage APIs, DESIGN-arc1.md books schema (`author_tier` column, `author` DEFAULT removed).
 
 **Remaining for Milestone 3a:** Non-Yogananda book catalog requires SRF confirmation. Author-specific chunking parameters (ADR-048) need empirical calibration when *The Holy Science* enters the pipeline.
 
@@ -300,6 +307,241 @@ Defer the decision. Build Milestone 3b editorial portal in `/admin`. At Mileston
 
 **Re-evaluate At:** When portal domain is assigned, or if SRF indicates Cloudflare is required for organizational DNS routing
 **Decision Required From:** Architecture + SRF AE team (does SRF route all properties through Cloudflare?)
+
+---
+
+### PRO-018: Four Doors — Recognition-Based Emotional Entry
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-129 (Vocabulary Bridge), ADR-130 (Recognition-First IA)
+**Target:** Arc 2a (requires Vocabulary Bridge Layers 1+3, visual identity system)
+**Dependencies:** Vocabulary Bridge (ADR-129) for semantic depth — without the bridge, the doors are cosmetic labels over generic search. DES-006 (Frontend Design) for visual system.
+**Scheduling Notes:** Four recognition-based entry points for seekers arriving with an emotional state rather than a query: "I am searching" (curiosity, wonder), "I am struggling" (fear, grief, loss), "I want to understand" (the student, the scholar), "I want to practice" (ready to move from reading to doing). Not the primary homepage architecture — one lens among several in the multi-lens homepage (PRO-019). Lives in secondary navigation.
+
+**Why four?** Four can be held in working memory. Four covers the actual range without over-specifying. The existing six themes (Peace, Courage, Healing, Joy, Purpose, Love) are beautiful but assume the seeker already maps themselves to tradition vocabulary. "I am struggling" requires no such self-knowledge. The four doors are recognitions; the six themes become their children via the vocabulary bridge.
+
+**Inside each door:** Not immediate retrieval. The vocabulary bridge activates. "I am struggling" opens to a gentle second level of recognition ("You might be feeling... Loss and grief / Fear and anxiety / Loneliness / Doubt and confusion"). These are not filters — they are recognitions. The bridge maps each sub-state to corpus territory with retrieval intent (meet_first, console) and avoid-territory (no discipline passages for someone grieving).
+
+**"I want to practice" — the Practice Bridge door.** The most delicate. Explicitly not about reading. Acknowledges the seeker's readiness to move. Leads to Yogananda's own published words about meditation and the path, followed by the quiet signpost to SRF Lessons and local centers. Principle 4 (Signpost, Not Destination) becomes architecture.
+
+**Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
+
+---
+
+### PRO-019: Multi-Lens Homepage — Recognition-First Portal Surface
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-130 (Recognition-First IA), ADR-127 (Experience Quality)
+**Target:** Arc 2a (full implementation). 1c embodies the principle minimally.
+**Dependencies:** Vocabulary Bridge (ADR-129) for meaningful entry points. DES-006 for visual system. DES-007 (Opening Moment) updated to reference recognition-first principle.
+**Scheduling Notes:** The homepage holds multiple entry lenses without hierarchy. A returning devotee and a first-time visitor and someone at 2 AM all find their natural entry.
+
+**Homepage structure (Arc 2a):**
+```
+Today's Wisdom — the portal speaking first
+  [passage, possibly Yogananda's voice, full presence]
+
+──────────────────────────────────────
+Four entry points, equal weight:
+
+  What did Yogananda          Take me somewhere
+  say about...?               [The Wanderer — PRO-020]
+  [completes to search]
+
+  I come from...              A question I'm holding
+  [Tradition entry]           [Great Questions]
+
+──────────────────────────────────────
+[ Search — always visible, never primary ]
+
+──────────────────────────────────────
+Secondary nav: Books   Audio   The Four Doors   Guide   About
+```
+
+**1c minimal embodiment:** Today's Wisdom hero + "What did Yogananda say about...?" search prompt + "Show me another" + minimal secondary nav (Books | About) + Practice Bridge quiet line.
+
+**Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
+
+---
+
+### PRO-020: The Wanderer's Path — Depth-Weighted Passage Discovery
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-130 (Recognition-First IA), ADR-002 (DELTA)
+**Target:** Milestone 2b (requires passage depth signatures from enrichment pipeline)
+**Dependencies:** Passage depth signatures (Opus-generated classification of each passage as bottomless/informational/catalytic/consoling). localStorage for seen-passage non-repetition.
+**Scheduling Notes:** "Take me somewhere." A single quiet offering. The portal selects a passage using depth signatures — weighted toward bottomless passages, avoiding repetition — and presents it with full context. No parameters, no category, no state required.
+
+This is a practice many devotees already have: opening a beloved book to a random page. The portal embodies it digitally. Selection feels serendipitous; it is actually weighted by depth signatures and bridge wisdom.
+
+**The Personal Corpus:** Browser-local memory of which passages have been seen (list of chunk IDs in localStorage). The Wanderer's Path never returns to the same place twice. Today's Wisdom can optionally use the same mechanism — your Today's Wisdom, which has never shown you this passage before. The corpus has thousands of passages; a devotee could use this daily for years without repeating. DELTA-compliant: nothing stored on a server, no account, no tracking.
+
+**Relationship to Today's Wisdom:** Today's Wisdom is the communal version (same passage for everyone on a given day). The Wanderer's Path is the personal version (each invocation goes somewhere new). They are related but distinct.
+
+**Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
+
+---
+
+### PRO-021: Yogananda's Voice — Primary Source Audio Presence
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-057 (Audio Content Type), ADR-015 (Verbatim Media Fidelity), ADR-127 (Experience Quality)
+**Target:** Arc 2a (when visual identity arrives — not Arc 6 media library)
+**Dependencies:** SRF provides or authorizes voice recordings for portal use. Transcription pipeline (human-verified).
+**Scheduling Notes:** Yogananda's own voice recordings are not "media" — they are primary source in a different modality. A recording of Yogananda speaking about fearlessness carries something a text passage of the same words does not. These deserve earlier, more prominent placement than the general media library (Arc 6).
+
+**Three presentation points:**
+1. **Homepage alongside Today's Wisdom.** Some days, Today's Wisdom is a passage. Some days, it's thirty seconds of Yogananda's voice. Same quiet presentation — no album art, no progress bar. A simple invitation: *Listen.*
+2. **Within the book reader at chapter openings.** Where a corresponding recording exists: a quiet presence. Not autoplay. A single line: *Yogananda spoke on this.* One tap. His voice, then back to reading.
+3. **Secondary navigation: "Listen."** Available but not competing with primary entry. The seeker who arrives wanting to hear him can find their way.
+
+**Player design:** Nothing that resembles a music player. No waveform, no speed control. A circle that fills slowly as the recording plays. Pause. That's all. Typography beneath shows the passage being spoken, following along. When it ends, silence. A gentle offer: *Read the full passage.*
+
+**Distinction from Arc 6 audio:** Monastic audio (talks, readings) belongs in the general media library (Arc 6). Yogananda's own voice recordings belong at Arc 2a, treated with the same reverence as Today's Wisdom.
+
+**Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
+
+---
+
+### PRO-022: Passage Depth Signatures — Opus-Classified Contemplative Quality
+
+**Status:** Proposed
+**Type:** Enhancement
+**Governing Refs:** ADR-014 (Model Tiering — Opus for batch), ADR-115 (Unified Enrichment), ADR-129 (Vocabulary Bridge)
+**Target:** Milestone 1c (as part of enrichment pipeline — Deliverable 1c.13)
+**Dependencies:** Opus batch enrichment pipeline. Full corpus extracted.
+**Scheduling Notes:** Not all passages are the same kind of thing. Some are luminous and bottomless — they reward the hundredth reading. Some are informational — they answer a question. Some are catalytic — they shift something when you're ready. Some are consoling — they meet suffering.
+
+**Depth signature categories:**
+- **Bottomless** — rewards endless return. Belongs in Today's Wisdom, Wanderer's Path.
+- **Informational** — provides knowledge, answers a question. Belongs in search results, browse.
+- **Catalytic** — shifts something in the reader when ready. Belongs in bridge seed passages for practice-oriented seekers.
+- **Consoling** — meets suffering. Belongs in bridge seed passages for "I am struggling" entry.
+
+**How Opus generates them:** Each passage is classified during the enrichment pipeline (ADR-115). Opus reads the passage in full chapter context and assigns one or more depth categories with confidence scores. This classification is written to the chunk's enrichment metadata.
+
+**What depth signatures influence:**
+- Today's Wisdom selection (bottomless passages preferred)
+- Wanderer's Path weighting (PRO-020)
+- Bridge seed passage curation — consoling passages for distress states, catalytic for practice states
+- Related Teachings ordering — mix of depths, not all luminous
+
+**Origin:** External design review (docs/reference/Claude-Teachings-Portal-Suggestions.md, 2026-03-01)
+
+### PRO-023: Human Review Gate — Production Content Governance
+
+**Status:** Proposed
+**Type:** Policy
+**Governing Refs:** ADR-005 (Claude Permitted Uses), ADR-032 (Theme Tags), ADR-078 (Translation Honesty), ADR-092 (Social Media), ADR-082 (Editorial Portal)
+**Dependencies:** None architectural — infrastructure already exists (`tagged_by` three-state model, `is_published` boolean).
+**Scheduling Notes:** The portal architecture provides human review gates at every content workflow touchpoint. These are governance tools SRF can activate for production — not mandatory constraints. For the internal demo, the portal operates with autonomous AI release. This proposal captures the full inventory for SRF's consideration.
+
+**Review gate inventory (Arc 2+ unless noted):**
+
+1. **Theme tags** — `tagged_by` model (`auto`/`manual`/`reviewed`). Gate: filter to `manual`/`reviewed` only. Without gate: serve `auto` tags. (ADR-032)
+2. **UI translations** — Claude drafts, human reviews. Gate: require fluent SRF-aware reviewer sign-off. Without gate: ship Claude drafts directly. (ADR-078)
+3. **Social media** — Quote images and captions generated. Gate: human reviews and posts. Without gate: auto-post with editorial templates. (ADR-092)
+4. **Daily passage selection** — Enrichment pipeline selects. Gate: human curator approves each day's passage. Without gate: algorithmic selection serves directly. (Milestone 2b)
+5. **Audio transcription** — Speech-to-text generates. Gate: human verifies transcript. Without gate: serve with confidence scores. (Arc 6)
+6. **Practice Bridge tags** — Claude classifies technique-adjacent passages. Gate: human reviews tags before routing. Without gate: serve auto-classified routes. (ADR-104)
+7. **Calendar content** — Events and observances. Gate: human verifies dates and descriptions. Without gate: serve from editorial CMS directly. (Arc 4)
+8. **Ingestion QA** — Claude flags OCR errors. Gate: human makes every correction decision. Without gate: auto-correct high-confidence errors, flag low-confidence for batch review. (ADR-005 E4)
+9. **`is_published` boolean** — Schema-level gate. Gate: content defaults to unpublished, requires explicit approval. Without gate: change default to `true`, content goes live on ingestion. (Schema)
+
+**Recommendation:** The `tagged_by` model and `is_published` boolean are useful infrastructure regardless of governance decision — they enable filtering, auditing, and rollback even without mandatory gates. SRF should review this inventory and decide which gates to activate for production based on their risk tolerance and editorial capacity.
+
+**Re-evaluate At:** Pre-production (before public launch)
+**Decision Required From:** SRF leadership (editorial governance policy)
+**Origin:** Principle analysis — reframing human review from mandatory constraint to available governance (2026-02-28)
+
+---
+
+### PRO-024: Editorial Page Compositor — Data-Driven Layout Curation
+
+**Status:** Proposed
+**Type:** Feature
+**Governing Refs:** ADR-130 (Recognition-First IA), ADR-082 (Editorial Portal), ADR-079 (YSS Branding), ADR-095 (DELTA Framework), DES-028 (Calendar-Aware Surfacing), DES-032 (Content Management Strategy)
+**Dependencies:** Admin portal foundation (Milestone 3b). Component library maturity — the compositor composes from developer-built lenses, so enough lenses must exist to make composition valuable. Minimum viable: Today's Wisdom, search prompt, featured themes (3 components).
+**Target:** Milestone 3b (foundation) or Arc 4 (full scheduling + brand variants)
+
+**The gap.** The portal's homepage has 10+ content organization models (themes, threads, calendar, places, guide, browse, Wanderer's Path, Four Doors, daily passages, magazine) and a well-specified editorial review portal (ADR-082). Editors can curate *within* each content slot (pick today's passage, review theme tags). But no mechanism exists for editors to decide *which content lenses appear, in what order, with what emphasis* — that requires a code deployment. The compositor closes this gap.
+
+**What it is.** A constrained layout engine where editorial judgment configures the portal's public surfaces without code changes:
+
+- **Component library** is fixed — developers build the lenses (Today's Wisdom, Search Prompt, Wanderer's Path, Four Doors, Featured Themes, Calendar Event, etc.)
+- **Composition** is editorial — which lenses appear, what order, what per-component parameters, what scheduling
+- **Rendering** is standard Next.js Server Components reading config from Neon
+
+**What it is not:**
+- Not a generic page builder. Components are developer-built. Editors compose, they don't create.
+- Not Contentful's responsibility. Contentful manages content (book text, theme descriptions). The compositor manages layout and prominence — which content surfaces where on which pages.
+- Not low-code in the Retool/Webflow sense. A constrained editorial surface — closer to WordPress block ordering than to drag-and-drop page building.
+
+**Three capabilities unlocked:**
+
+1. **Editorial homepage governance.** Content editors configure which themes are featured, whether the Wanderer's Path is prominent during retreat season, whether calendar events push the hero position. Editorial judgment expressed through data, not code deployments.
+
+2. **Brand-variant homepages (YSS and beyond).** Instead of code-level `if (locale === 'hi') { showYSSBranding() }`, each brand variant gets its own page composition. YSS homepage can lead with a different aesthetic, different featured themes, different entry mode ordering — same component library, different editorial surface. The codebase stays unified; the brand experience diverges at the data layer. Extends to any future variant (youth portal, meditation-focused entry point).
+
+3. **Calendar/seasonal scheduling.** DES-028 specifies calendar-aware surfacing but currently only as "homepage adjusts when today matches a calendar event." The compositor makes this explicit: editors schedule homepage configurations in advance. Mahasamadhi week gets a contemplative layout. World Convocation gets an event-forward layout. No deploys required.
+
+**Minimum viable data model:**
+
+```sql
+-- Page compositions — an editorial arrangement of content lenses
+CREATE TABLE page_compositions (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  slug TEXT NOT NULL,              -- e.g., "homepage-srf-en"
+  brand TEXT NOT NULL DEFAULT 'srf', -- 'srf' | 'yss'
+  locale TEXT NOT NULL DEFAULT 'en',
+  active_from TIMESTAMPTZ NOT NULL DEFAULT now(),
+  active_until TIMESTAMPTZ,        -- NULL = no expiry (default composition)
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  created_by TEXT,                 -- editor identity (Milestone 7a+: Auth0 sub)
+  reviewed_by TEXT,                -- theological reviewer (if required)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Composition slots — ordered content lenses within a composition
+CREATE TABLE composition_slots (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  composition_id UUID NOT NULL REFERENCES page_compositions(id),
+  position INTEGER NOT NULL,       -- display order
+  component_type TEXT NOT NULL,    -- 'todays_wisdom' | 'search_prompt' | 'wanderer' | 'four_doors' | 'featured_themes' | 'calendar_event' | ...
+  config JSONB NOT NULL DEFAULT '{}', -- per-component parameters
+  is_visible BOOLEAN NOT NULL DEFAULT true,
+  UNIQUE(composition_id, position)
+);
+```
+
+Homepage renderer: `SELECT * FROM composition_slots WHERE composition_id = (best match for brand + locale + current date) ORDER BY position`. Server Components render each slot's `component_type` with its `config`. Cache-friendly (revalidate on composition change), preview-friendly, no client JS required.
+
+**Relationship to ADR-130.** The Five entry modes (ADR-130) become the *default composition*, not the *only composition*. The compositor launches with ADR-130 as the initial config but makes it mutable by editorial judgment. ADR-130 governs the default; the compositor governs the ability to vary from it.
+
+**Admin portal UI (extends ADR-082 Layer 3):**
+
+- Table showing current homepage slots with drag-to-reorder and toggle visibility
+- Per-slot config panel (e.g., "Featured Themes: select 6 from available themes")
+- Preview mode ("preview as seeker" — render the composition without publishing)
+- Brand/locale selector (editors with appropriate permissions see their brand's compositions)
+- Scheduling view: calendar showing active and upcoming compositions
+- No authentication before Milestone 7a — use the same lightweight auth as the editorial portal (open question, CONTEXT.md)
+
+**Non-goal: behavioral optimization.** The compositor supports editorial rotation and seasonal scheduling, not A/B testing. Composition decisions are driven by editorial judgment and qualitative feedback, not by aggregate behavioral metrics (Principle 8, ADR-095). The portal curates from the corpus, not from user behavior.
+
+**Pages beyond homepage.** The compositor pattern extends to any editorially curated page: `/guide`, `/browse`, `/themes`, the magazine landing. Start with homepage only; evaluate extension when the pattern proves itself.
+
+**Phasing:**
+- **Milestone 3b (foundation):** `page_compositions` + `composition_slots` tables. Admin UI for reorder + toggle. Single default composition per brand/locale. Preview mode.
+- **Arc 4 (full):** Scheduling (active_from/active_until). Multiple compositions per brand/locale. Calendar integration (link compositions to calendar events from DES-028). Brand-variant compositions for YSS.
+
+**Re-evaluate At:** Milestone 3b scoping (when admin portal architecture is finalized)
+**Decision Required From:** Architecture (data model, admin UI), SRF editorial (governance: does theological reviewer approve compositions, or just content within them?)
+**Origin:** Exploration — editorial surface gap analysis (2026-02-28)
 
 ---
 

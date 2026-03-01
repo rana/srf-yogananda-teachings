@@ -39,7 +39,7 @@ Each arc builds on the last. The full portal includes:
 
 ## Design Principles
 
-The portal is a **librarian, not an oracle** — it finds and ranks Yogananda's verbatim words but never generates, paraphrases, or synthesizes content. Every passage includes its citation. AI proposes, humans approve.
+The portal is a **librarian, not an oracle** — it finds and ranks Yogananda's verbatim words but never generates, paraphrases, or synthesizes content. Every passage includes its citation. Human review gates are available for production content governance — SRF decides which to activate.
 
 The design follows **Calm Technology** principles — warm cream backgrounds, serif typography, generous whitespace. No gamification, no autoplay, no interruptions. The portal encourages seekers to put down the device and practice — it is a **signpost to deeper SRF practice**, not a destination.
 

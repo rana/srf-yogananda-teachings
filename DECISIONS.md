@@ -6,7 +6,7 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Arc navigation:** ADRs in the Foundational Constraints, Architecture & Platform, Content & Data Model, and Search & AI groups govern Arcs 1–3 and require close attention during implementation. ADRs in later groups (Cross-Media, Internationalization, Staff & Community, Brand & Communications) are Provisional — they represent thorough architectural thinking but their implementation is distant. Treat them as direction, not immediate specification.
 
-*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 102–103 exist from restructuring. New ADRs append after 128. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
+*ADR numbers are stable identifiers, not sequence counters — do not renumber to fill gaps. Gaps at 028, 045, 051, 102–103 exist from restructuring. New ADRs append after 130. A gap may be reused for a new ADR if thematically adjacent to its group (e.g., ADR-015 was reclaimed for a Foundational ADR).*
 
 ### Index by Concern
 
@@ -77,7 +77,7 @@ Specifies what content the portal holds and how it is structured in the database
 
 **Search & AI**
 
-Governs how seekers find passages and how AI assists retrieval. Pure hybrid search (vector + BM25, fused via Reciprocal Rank Fusion) is the **primary search mode** with no AI services in the search hot path — achieving search p95 < 500ms globally. Index-time enrichment bridges vocabulary gaps so seekers find passages without query-time AI. Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text. AI-enhanced search (HyDE, cross-encoder reranking) is available as an optional upgrade, activated only if evaluation warrants. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The terminology bridge maps modern phrasing to Yogananda's vocabulary across books.
+Governs how seekers find passages and how AI assists retrieval. Pure hybrid search (vector + BM25, fused via Reciprocal Rank Fusion) is the **primary search mode** with no AI services in the search hot path — achieving search p95 < 500ms globally. Index-time enrichment bridges vocabulary gaps so seekers find passages without query-time AI. Voyage voyage-3-large embeddings, pg_search/ParadeDB for full-text. AI-enhanced search (HyDE, cross-encoder reranking) is available as an optional upgrade, activated only if evaluation warrants. Suggestions are corpus-derived (never behavior-derived), related teachings use pre-computed chunk relations and graph traversal, and a unified enrichment pipeline runs a single index-time pass per chunk. The **Vocabulary Bridge** (ADR-129) is a five-layer semantic infrastructure mapping human states of being to Yogananda's corpus — subsumes the flat terminology bridge with register awareness, retrieval intent routing, and language-specific cultural grounding. The bridge is Opus-generated and loaded in application memory for microsecond query-time lookups.
 
 - ADR-044: Hybrid Search (Vector + Full-Text)
 - ADR-046: Embedding Model Versioning and Migration (updated by ADR-118)
@@ -85,13 +85,14 @@ Governs how seekers find passages and how AI assists retrieval. Pure hybrid sear
 - ADR-048: Chunking Strategy Specification
 - ADR-049: Search Suggestions — Corpus-Derived, Not Behavior-Derived
 - ADR-050: Related Teachings — Pre-Computed Chunk Relations and Graph Traversal
-- ADR-051: Terminology Bridge Per-Book Evolution Lifecycle
 - ADR-052: Passage Resonance Signals — Content Intelligence Without Surveillance
 - ADR-053: "What Is Humanity Seeking?" — Anonymized Search Intelligence
 - ADR-114: pg_search / ParadeDB BM25 for Full-Text Search
 - ADR-115: Unified Enrichment Pipeline — Single Index-Time Pass per Chunk
 - ADR-118: Voyage voyage-3-large as Primary Embedding Model
 - ADR-119: Advanced Search Pipeline — Pure Hybrid Primary, AI-Enhanced Optional
+- ADR-129: Vocabulary Bridge — Semantic Infrastructure for State-Aware Retrieval
+- ADR-130: Recognition-First Information Architecture
 
 **Cross-Media**
 
@@ -197,7 +198,7 @@ ADR bodies are split across three files by concern group, mirroring the DESIGN f
 
 | File | Groups | ADRs | Arc Relevance |
 |------|--------|------|---------------|
-| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–027, 029–044, 046–053, 114–121, 125–128 | Arc 1+ (implementation-critical) |
+| [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Architecture, Content, Search | ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
 | [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations, Governance | ADR-082–101, 105–113, 123–124 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

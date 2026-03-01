@@ -7,13 +7,13 @@ argument-hint: "<theme-proposal.md or free-text theme description>"
 Read CONTEXT.md and the following DESIGN.md sections to ground in current theme infrastructure:
 - DES-004 § Data Model (teaching_topics, entity_registry tables)
 - ADR-031, ADR-032, ADR-033 in DECISIONS.md (theme taxonomy, multi-category, exploration categories)
-- ADR-051 in DECISIONS.md (Terminology Bridge)
+- ADR-129 in DECISIONS.md (Vocabulary Bridge)
 - ADR-115 in DECISIONS.md (Unified Enrichment Pipeline)
 - ADR-122 in DECISIONS.md (Crisis Query Detection)
 - DES-048 in DESIGN.md (Worldview Pathways)
 - DES-054 in DESIGN.md (Knowledge Graph Ontology)
 
-Also read `/lib/data/spiritual-terms.json` if it exists yet (may not in pre-code stage).
+Also read DES-059 in DESIGN-arc1.md (Vocabulary Bridge specification).
 
 ## Theme Integration
 
@@ -56,16 +56,11 @@ INSERT INTO teaching_topics (slug, name, category, description, sort_order) VALU
 - Generate embeddings description text optimized for semantic similarity matching
 - Assign sort_order relative to existing themes
 
-**Artifact 2: Terminology Bridge Entries**
-Following ADR-051 pattern. Map modern/colloquial terms to Yogananda's vocabulary:
-```json
-{
-  "[modern_term]": {
-    "yogananda_terms": ["[term1]", "[term2]"],
-    "sources": ["[book-slug]"],
-    "category": "[theme-slug]"
-  }
-}
+**Artifact 2: Vocabulary Bridge Entries**
+Following ADR-129 Layer 2 pattern. Map modern/colloquial terms to Yogananda's vocabulary:
+```sql
+INSERT INTO vocabulary_bridge (layer, human_term, yogananda_terms, corpus_territory_primary, sources, language)
+VALUES (2, '[modern_term]', ARRAY['[term1]', '[term2]'], ARRAY['[territory]'], ARRAY['[book-slug]'], 'en');
 ```
 - Minimum 5 mappings per theme
 - Include informal/colloquial terms seekers actually search for
@@ -124,7 +119,7 @@ Present each artifact as a numbered, reviewable block. The user can:
 
 On approval, write changes to the appropriate locations:
 
-1. **DECISIONS.md** — Amend ADR-032 taxonomy list, ADR-051 bridge entries, ADR-115 enrichment fields, ADR-122 patterns (if applicable)
+1. **DECISIONS.md** — Amend ADR-032 taxonomy list, ADR-129 bridge entries, ADR-115 enrichment fields, ADR-122 patterns (if applicable)
 2. **DESIGN.md** — Amend DES-048 worldview pathways, DES-054 graph edges, DES-028 calendar associations (if applicable)
 3. **ROADMAP.md** — Add theme to the appropriate arc/milestone deliverables (usually Milestone 2a for taxonomy, Milestone 3b for graph edges)
 4. **CONTEXT.md** — Add any unresolved editorial/stakeholder questions from the theme proposal as open questions
@@ -146,7 +141,7 @@ After execution, report:
 - **Seeker-first naming.** Theme names should use the language seekers use, not the language architects use. "Finding Your Worth" not "Self-Worth Identity Taxonomy Node."
 - **Yogananda's vocabulary is authoritative.** Modern terms are bridges *to* his words, not replacements.
 - **Crisis sensitivity is non-negotiable.** If the theme touches suffering, death, or despair in any way, Artifact 4 is mandatory even if the proposal didn't address it.
-- **Minimal graph additions.** Don't create concept nodes for things that are better served by the terminology bridge. Graph nodes are for structural relationships; vocabulary mappings are for search expansion.
+- **Minimal graph additions.** Don't create concept nodes for things that are better served by the Vocabulary Bridge. Graph nodes are for structural relationships; vocabulary mappings are for search expansion.
 - **Match existing density.** Read adjacent theme entries in each target. Match their level of detail. Don't over-specify a theme that sits next to three-line entries.
 
 ## Output Management

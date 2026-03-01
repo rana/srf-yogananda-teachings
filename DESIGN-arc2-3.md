@@ -1355,6 +1355,17 @@ The portal teaches its own navigation through the experience of using it — not
 
 **Fallback guarantee:** Every self-revealing pattern has a conventional fallback (tooltip, overlay, explicit link) for seekers who don't discover the organic path.
 
+**Secondary navigation architecture (ADR-130):** Persistent secondary nav populated progressively as features arrive. The nav grows with the portal — nothing is hidden, but nothing appears before it exists:
+
+| Milestone | Secondary Nav Items |
+|-----------|-------------------|
+| 1c | `Books` `About` |
+| 2a | + `The Four Doors` (PRO-018) `Guide` |
+| When audio arrives | + `Listen` (PRO-021 — Yogananda's voice, not Arc 6 media) |
+| 3a+ | + `Places` (DES-023) |
+
+The secondary nav is never the primary surface. It serves seekers who arrive with intent to explore a specific content type. The primary surface is the recognition-first multi-lens homepage (PRO-019, ADR-130).
+
 ### Image Usage Guidelines
 
 (See ADR-042 for full rationale, ADR-088 for portal imagery strategy.)
@@ -3114,7 +3125,7 @@ When the shared component library begins, Figma Professional ($15/editor/month) 
 
 ## DES-042: Glossary Architecture
 
-The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-051) is surfaced as a user-facing glossary. See ADR-038. Sanskrit display and search normalization policy in ADR-080.
+The Vocabulary Bridge Layer 2 entries (ADR-129, DES-059) are surfaced as a user-facing glossary. See ADR-038. Sanskrit display and search normalization policy in ADR-080.
 
 ### ADR-080: Glossary Schema Extensions
 

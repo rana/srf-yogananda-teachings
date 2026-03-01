@@ -2147,7 +2147,7 @@ Implementation:
 - **ICU normalization in pg_search BM25** handles diacritical variant collapsing natively via the ICU tokenizer (ADR-114). The `unaccent` extension remains available for pg_trgm fuzzy matching but is not needed for the primary full-text search index.
 - **Display text is never modified.** The `content` column stores the original text with diacritics preserved. Only the search index and embedding input are normalized.
 
-**Exception — Aum/Om:** Yogananda used "Aum" (three-syllable cosmic vibration) deliberately, distinguishing it from the single-syllable "Om." This distinction is theological, not orthographic. Search normalization must not collapse "Aum" to "Om." Instead, the terminology bridge (ADR-051) maps "Om" → ["Aum", "cosmic vibration", "Holy Ghost", "Amen"] for query expansion, preserving the distinction while ensuring seekers who search "Om" find Aum passages.
+**Exception — Aum/Om:** Yogananda used "Aum" (three-syllable cosmic vibration) deliberately, distinguishing it from the single-syllable "Om." This distinction is theological, not orthographic. Search normalization must not collapse "Aum" to "Om." Instead, the Vocabulary Bridge (ADR-129) maps "Om" → ["Aum", "cosmic vibration", "Holy Ghost", "Amen"] for query expansion, preserving the distinction while ensuring seekers who search "Om" find Aum passages.
 
 **General principle:** Where Yogananda's usage intentionally diverges from common usage and the divergence itself constitutes a teaching, the search system preserves the distinction via the terminology bridge (query expansion) rather than collapsing it in the index. Other examples: "meditation" (Yogananda's technique-specific meaning), "Christ" (Christ Consciousness / Kutastha Chaitanya), "Self-realization" (capitalized, specific metaphysical attainment).
 
@@ -2177,10 +2177,10 @@ With Hindi *Autobiography of a Yogi* in Arc 1 (ADR-128), Devanāgarī transition
 
 **4. Terminology bridge extensions for Sanskrit and cross-tradition terms.**
 
-The terminology bridge (ADR-051) is extended with two additional extraction categories:
+The Vocabulary Bridge (ADR-129) includes two extraction categories particularly relevant to Sanskrit handling:
 
 - **Sanskrit-to-English inline definitions:** Yogananda frequently defines Sanskrit terms inline — "Samadhi, the superconscious state of union with God." The ingestion QA step (ADR-005 E4) flags these as glossary source candidates. Claude identifies passages where Yogananda provides his own definition of a Sanskrit term, creating a machine-assisted but human-verified bridge built from Yogananda's own words.
-- **Cross-tradition terms:** The bridge accepts Pali, Bengali, and Hindi variant spellings as keys mapping to Yogananda's vocabulary (e.g., "nibbāna" → ["final liberation", "God-union"], "dhyāna" → ["meditation"]). The vocabulary extraction step (ADR-051 lifecycle) explicitly seeks non-Sanskrit Indic terms Yogananda uses or that seekers from other traditions might search.
+- **Cross-tradition terms:** The bridge accepts Pali, Bengali, and Hindi variant spellings as keys mapping to Yogananda's vocabulary (e.g., "nibbāna" → ["final liberation", "God-union"], "dhyāna" → ["meditation"]). The vocabulary extraction step (ADR-129 per-book lifecycle) explicitly seeks non-Sanskrit Indic terms Yogananda uses or that seekers from other traditions might search.
 
 ### Glossary enrichment (extends ADR-038)
 
@@ -2212,9 +2212,9 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 - **Search index:** pg_search BM25 index with ICU tokenizer handles diacritics normalization natively (ADR-114). The `unaccent` extension remains for pg_trgm fuzzy matching.
 - **Font stack:** Noto Serif Devanagari (reading) and Noto Sans Devanagari (UI/verses) added for Arc 1. Hindi locale loads eagerly; English pages with Devanāgarī content load conditionally
 - **Glossary schema:** Three new nullable columns (`phonetic_guide`, `pronunciation_url`, `has_teaching_distinction`) on `glossary_terms`
-- **Terminology bridge:** Two new extraction categories (inline Sanskrit definitions, cross-tradition terms) added to the ADR-051 vocabulary extraction lifecycle
+- **Vocabulary Bridge:** Two extraction categories (inline Sanskrit definitions, cross-tradition terms) documented in ADR-129 § Per-Book Evolution Lifecycle
 - **ADR-048:** Verse-aware chunking for *God Talks with Arjuna* extended with Devanāgarī script handling
-- **Extends:** ADR-051, ADR-005 E4, ADR-038, ADR-048
+- **Extends:** ADR-129, ADR-005 E4, ADR-038, ADR-048
 - **New stakeholder questions:** SRF editorial policy on contested transliterations; pronunciation recording availability; *God Talks with Arjuna* Devanāgarī display confirmation
 - **New technical questions:** IAST diacritics rendering verification in Merriweather/Lora at small sizes
 

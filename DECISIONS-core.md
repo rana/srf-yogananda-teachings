@@ -369,7 +369,7 @@ Enhance query expansion with tradition-aware vocabulary mapping. Seekers arrive 
 
 **Implementation:** Extend the query expansion system prompt with a spiritual terminology mapping. Claude already does query expansion (C1) — this enriches it with Yogananda-specific vocabulary awareness. The mapping is maintained as a versioned JSON glossary at `/lib/data/spiritual-terms.json`, reviewed by SRF-aware editors.
 
-**Per-book evolution (ADR-051):** The terminology bridge is a living glossary, not a static artifact. Each book ingestion triggers a vocabulary extraction step: Claude scans the new book's chunks and proposes additions to the bridge (new terms, new synonyms for existing mappings, book-specific usages). An SRF-aware editor reviews the diff and approves, modifies, or rejects each proposed addition before merge. The glossary carries source provenance — which book introduced which mapping — enabling source-aware query expansion. See ADR-051 for full lifecycle.
+**Per-book evolution (ADR-129):** The Vocabulary Bridge is a living glossary, not a static artifact. Each book ingestion triggers a vocabulary extraction step: Opus scans the new book's chunks across three extraction categories (modern-to-Yogananda mappings, Sanskrit inline definitions, cross-tradition terms) and proposes additions. The bridge carries source provenance — which book introduced which mapping — enabling source-aware query expansion. See ADR-129 § Per-Book Evolution Lifecycle.
 
 **Why this matters:** The portal serves Earth's population. Most seekers worldwide have never read Yogananda. They arrive with the vocabulary of their own tradition, their therapist, or their Google search. If the portal can only find passages using Yogananda's exact terminology, it fails the people who need it most.
 
@@ -412,9 +412,9 @@ During ingestion QA, Claude pre-screens ingested text and flags:
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a bilingual golden set of ~73 queries (~58 English, ~15 Spanish) across six difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Adversarial). Hindi queries (~15) added when Hindi activates in Milestone 5b. Full methodology, data format, metrics, and CI integration specified in DES-058.
+Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a bilingual golden set of ~81 queries (~66 English, ~15 Spanish) across seven difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Dark Night, Adversarial). The Dark Night category (~8 queries) tests fragmentary, distressed queries against the Vocabulary Bridge's state mappings and retrieval intent routing (ADR-129). Hindi queries (~15) added when Hindi activates in Milestone 5b. Full methodology, data format, metrics, and CI integration specified in DES-058.
 
-**Evaluation approach:** Substring matching resolves expected passages deterministically. For results not matching expected passages, Claude Haiku judges relevance (HIGH / PARTIAL / NOT_RELEVANT). This avoids false negatives when a different but equally relevant passage is returned.
+**Evaluation approach:** Substring matching resolves expected passages deterministically. For results not matching expected passages, Claude Opus judges relevance (HIGH / PARTIAL / NOT_RELEVANT). Opus is used as the evaluation judge (ADR-014) because judging whether a retrieved passage meets a seeker's emotional state requires the same reasoning depth as the enrichment itself. For Dark Night queries, Opus additionally judges retrieval intent match — does the passage console rather than instruct? Does it acknowledge rather than advise?
 
 **Metrics:** Recall@3 per category (primary gate: ≥ 80% overall), MRR@10 (secondary diagnostic), adversarial routing accuracy (target: 100%).
 
@@ -541,7 +541,7 @@ The portal works without Claude. Claude makes it *world-class*.
 - E4 (QA assistant) and E5 (eval judge) are added to Arc 1 — they improve quality foundations
 - E6 (cross-book threading) is added to Milestone 3c — it enhances the Related Teachings system
 - E7 (alt text) is added to Milestone 2a — it's an accessibility deliverable
-- The spiritual terminology mapping (`/lib/data/spiritual-terms.json`) becomes a maintained artifact, reviewed by SRF-aware editors. ADR-051 defines the per-book evolution lifecycle.
+- The Vocabulary Bridge (ADR-129) is a living glossary that deepens with each book, backed by the `vocabulary_bridge` PostgreSQL table.
 - Every new Claude use case proposed in future milestones should be evaluated against this ADR's three-category model and hard prohibitions
 - **Extended ADRs:** ADR-001 (cross-reference to this policy), ADR-014 (cross-reference to expansion roadmap)
 
@@ -624,7 +624,7 @@ The "Seeking..." empathic entry points and theme doors are currently written fro
 **Commitments:**
 - **Milestone 5b (multilingual launch) requires cultural consultation, not just translation.** For each language, SRF engages a native-speaking devotee (not a professional translator) to review the entry points and theme door labels for cultural resonance. The consultant answers: "Would a seeker in [country] phrase this question this way? What would feel more natural?"
 - **The "Seeking..." prompts are editorial content, not UI chrome.** They live in Contentful (Arc 4+), not in `messages/{locale}.json`. Each locale has independently authored prompts, not translations of the English originals.
-- **Query expansion (Claude API) handles the bridge.** Even if the entry point is culturally adapted, a seeker may still type their question in a culturally specific way. The terminology bridge (ADR-051) and Claude's query expansion handle the mapping from the seeker's phrasing to the passage corpus.
+- **Query expansion (Claude API) handles the bridge.** Even if the entry point is culturally adapted, a seeker may still type their question in a culturally specific way. The Vocabulary Bridge (ADR-129) and Claude's query expansion handle the mapping from the seeker's phrasing to the passage corpus.
 
 #### 7. Right-to-Left as a First-Class Layout
 
@@ -1143,8 +1143,9 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 ### Decision
 
 1. **Use AWS Bedrock** as the Claude API provider instead of the direct Anthropic API.
-2. **Use Claude Haiku** as the default model for all three search tasks (intent classification, query expansion, passage ranking).
-3. **Benchmark Haiku vs Sonnet** during Arc 1 using a test set of ~50 curated queries. If Haiku passage ranking quality falls below acceptable thresholds, promote passage ranking to Sonnet while keeping intent classification and query expansion on Haiku.
+2. **Use Claude Haiku** as the default model for per-search tasks (intent classification, query expansion, passage ranking).
+3. **Use Claude Opus** as the default model for all index-time/batch work — enrichment, vocabulary bridge generation, evaluation judging, passage depth classification.
+4. **Benchmark Haiku vs Sonnet** during Arc 1 using a test set of ~50 curated queries. If Haiku passage ranking quality falls below acceptable thresholds, promote passage ranking to Sonnet while keeping intent classification and query expansion on Haiku.
 
 ### Model Tiering Strategy
 
@@ -1156,17 +1157,23 @@ The portal uses Claude for three distinct search tasks: intent classification, q
 | Query expansion | Haiku | None (skip, use raw query) | Medium — vocabulary breadth | Every complex search |
 | Passage ranking | Haiku (promote to Sonnet if benchmarks warrant) | Skip (use RRF scores) | High — determines result quality | Every search with candidates |
 
-**Offline batch tasks (run once per content, quality over cost):**
+**Index-time batch tasks (run once per content, maximum quality):**
 
 | Task | Model | Rationale | Milestone |
 |------|-------|-----------|-----------|
-| Theme taxonomy classification | Opus | Classifying chunks across multi-category spiritual taxonomy requires deep comprehension of Yogananda's teachings | 3c |
-| Ambiguous chunk classification | Opus | Edge cases near classification thresholds benefit from nuanced reasoning | 1a+ (ingestion) |
-| Reference extraction (scriptures, persons, places) | Opus | Identifying cross-tradition references (Bible, Bhagavad Gita, scientific texts) across Yogananda's writing requires broad knowledge | Arc 4 |
-| UI translation drafting | Opus | Devotional register in 8+ languages requires precise tone; human review follows (ADR-078) | 5b |
-| Cross-book relationship mapping | Opus | Identifying thematic connections across the full library requires deep reading comprehension | 3d–Arc 4 |
+| Unified enrichment pipeline (ADR-115) | **Opus** | Sacred text requires the deepest available reasoning for register classification, emotional quality mapping, and corpus territory tagging. The corpus is small; batch costs are negligible. | 1c+ |
+| Vocabulary bridge generation (ADR-129) | **Opus** | Mapping human states of being to Yogananda's vocabulary across five layers requires deep reading comprehension, emotional intelligence, and cross-tradition fluency | 1a+ |
+| Passage depth signatures | **Opus** | Classifying passages as bottomless/informational/catalytic/consoling requires contemplative judgment, not pattern matching | 1c+ |
+| Theme taxonomy classification | **Opus** | Classifying chunks across multi-category spiritual taxonomy requires deep comprehension of Yogananda's teachings | 3c |
+| Search quality evaluation judging (DES-058) | **Opus** | Judging whether a retrieved passage meets a seeker's emotional state requires the same depth as the enrichment itself | 1a+ |
+| Ambiguous chunk classification | **Opus** | Edge cases near classification thresholds benefit from nuanced reasoning | 1a+ (ingestion) |
+| Reference extraction (scriptures, persons, places) | **Opus** | Identifying cross-tradition references (Bible, Bhagavad Gita, scientific texts) across Yogananda's writing requires broad knowledge | Arc 4 |
+| UI translation drafting | **Opus** | Devotional register in 8+ languages requires precise tone; human review follows (ADR-078) | 5b |
+| Cross-book relationship mapping | **Opus** | Identifying thematic connections across the full library requires deep reading comprehension | 3d–Arc 4 |
 
-Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaults to Opus). Cost is negligible: ~$2–5 per full book processed, run once per content change.
+**Rationale for Opus as batch default.** The portal's index-time work is its most consequential AI use — it determines what seekers find when they search, how passages are classified, whether the vocabulary bridge correctly maps "I feel empty" to teachings about spiritual longing. The corpus is small (~100K chunks at full scale). Batch enrichment of the full corpus costs ~$50-100 with Opus — a one-time investment. Haiku or Sonnet cost less but lack the reasoning depth for tasks where spiritual nuance matters: distinguishing consolation from instruction, recognizing when "death" is discussed philosophically vs. in grief, mapping cross-tradition vocabulary accurately. For a portal committed to "honoring the spirit of the teachings" (Principle 3), the AI work that shapes what seekers find deserves the most capable model available. Cost sensitivity applies to per-search tasks (recurring, scales with traffic); it does not apply to batch work (one-time, small corpus).
+
+Batch tasks are configured via `CLAUDE_MODEL_BATCH` in `/lib/config.ts` (defaults to Opus). Cost is negligible: ~$50–100 per full corpus enrichment pass, run once per content change.
 
 ### Cost Projection
 
@@ -1190,9 +1197,10 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` environment variable (defaul
 ### Alternatives Considered
 
 1. **Direct Anthropic API** — Simpler initial setup, day-one access to new model releases. Rejected because: SRF already has AWS billing, support contracts, and IAM infrastructure. A separate Anthropic contract adds vendor management overhead for zero functional gain. New model releases are irrelevant — the portal's librarian tasks are well-defined and stable.
-2. **All Sonnet** — Higher baseline quality for ranking. Rejected because: 10x cost increase over Haiku at scale. The portal's ranking task is constrained (select and order passage IDs from 20 candidates) — not open-ended reasoning. Haiku is likely sufficient; benchmark first.
-3. **Opus for intent classification** — Considered whether Opus's deeper reasoning would improve classification accuracy. Rejected because: intent classification is bounded enum categorization (~7 types). The input is a short user query, the output is structured JSON. Haiku reaches the quality ceiling for this task; additional model capability has nowhere to go.
-4. **Opus for passage ranking** — Considered whether Opus would better understand subtle spiritual nuance when ordering passages (e.g., distinguishing "divine fulfillment" from "renunciation" for "I feel empty inside"). Rejected because: the ranker receives 20 pre-retrieved passages already filtered by vector similarity + FTS relevance. It selects the top 5 and outputs ordered passage IDs — a constrained selection task, not open-ended reasoning. The heavy semantic lifting is done by the hybrid search layer, the spiritual-terms.json vocabulary bridge, and well-crafted system prompts with explicit ranking criteria (spiritual depth, directness of address, emotional resonance). The quality difference between models narrows significantly when the task is structured, the output format is constrained, and the candidate pool is pre-filtered. At ~$7,500/month for ranking alone (10K searches/day), the cost is unjustifiable for a free portal when architecture already ensures relevant results. **Opus is appropriate for offline batch work** (editorial analysis, theme taxonomy construction, cross-book relationship mapping) — low-volume, high-reasoning tasks — but not per-search costs.
+2. **All Sonnet** — Higher baseline quality for ranking. Rejected for per-search tasks because: 10x cost increase over Haiku at scale. The portal's ranking task is constrained (select and order passage IDs from 20 candidates) — not open-ended reasoning. Haiku is likely sufficient; benchmark first.
+3. **Sonnet for batch enrichment** — Considered as middle ground between Haiku and Opus for index-time work. Rejected because: the batch workload is the portal's most consequential AI use — it determines what seekers find. The corpus is small; the cost difference between Sonnet and Opus for batch work is ~$30-50 per full corpus pass. At this scale, the cost argument for a weaker model does not hold. Sacred text deserves the deepest available reasoning for quality classification.
+4. **Opus for intent classification** — Considered whether Opus's deeper reasoning would improve classification accuracy. Rejected because: intent classification is bounded enum categorization (~7 types). The input is a short user query, the output is structured JSON. Haiku reaches the quality ceiling for this task; additional model capability has nowhere to go.
+5. **Opus for passage ranking** — Considered whether Opus would better understand subtle spiritual nuance when ordering passages (e.g., distinguishing "divine fulfillment" from "renunciation" for "I feel empty inside"). Rejected for per-search use because: at ~$7,500/month for ranking alone (10K searches/day), the cost is unjustifiable for a free portal. The heavy semantic lifting is done by the hybrid search layer, the vocabulary bridge (ADR-129), and well-crafted system prompts with explicit ranking criteria. **Opus is the default for offline batch work** — the one-time index-time investment that makes per-search quality achievable with Haiku.
 5. **OpenAI GPT models** — Rejected because: Claude's instruction-following and constrained output format are well-suited to the librarian pattern. Embeddings use Voyage (ADR-118), not OpenAI, so there is no vendor-consolidation argument. Switching LLM providers for cost reasons alone adds migration risk. ADR-001 established Claude; no reason to revisit.
 
 ### Rationale
@@ -1225,12 +1233,14 @@ Claude via Bedrock is the initial implementation. The long-term direction is **m
 - `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
 - `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ROLE_ARN` for the `portal-vercel-runtime` IAM role (Vercel OIDC → Bedrock). No `ANTHROPIC_API_KEY`, no stored access keys. See ADR-126.
 - Terraform creates the `portal-vercel-runtime` IAM role with Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) + Secrets Manager read access. Vercel functions authenticate via OIDC federation (ADR-126) — zero long-lived credentials.
-- Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_BATCH` (default: Opus)
+- Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_ENRICH` (default: Opus), `CLAUDE_MODEL_EVALUATE` (default: Opus)
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
 - If Bedrock pricing or availability changes unfavorably, switching to direct Anthropic API requires only SDK client changes in `/lib/services/claude.ts` — business logic and degradation cascade are unaffected
 
 *Revised: 2026-02-28, added LLM Portability section. Claude is the initial provider; open-source models are the long-term direction. Index-time enrichment (not per-query search) is the primary LLM workload.*
+
+*Revised: 2026-03-01, Opus as batch default. Upgraded all index-time/batch work from mixed Sonnet/Opus to Opus-only. Added vocabulary bridge generation, passage depth signatures, and search evaluation judging to batch task table. Rationale: sacred text + small corpus + one-time cost = maximum model quality. Per-search tasks remain Haiku (cost-sensitive, recurring).*
 
 ---
 
@@ -3432,7 +3442,7 @@ The `/explore` graph gains a "Lineage" filter mode (extends ADR-062 view modes).
 
 ### Context
 
-The spiritual terminology bridge (`/lib/data/spiritual-terms.json`, ADR-051) maps modern and cross-tradition terms to Yogananda's vocabulary for internal search expansion. It is invisible to seekers. Yet Yogananda's writings use hundreds of Sanskrit, yogic, and esoteric terms — *samadhi*, *chitta*, *prana*, *astral body*, *Christ Consciousness* — that newcomers cannot be expected to know. A seeker encountering "samadhi" for the first time has nowhere within the portal to learn what it means. They must leave the portal, which breaks the reading flow and undermines the library's self-contained nature.
+The Vocabulary Bridge (ADR-129) maps modern and cross-tradition terms to Yogananda's vocabulary for internal search expansion. It is invisible to seekers. Yet Yogananda's writings use hundreds of Sanskrit, yogic, and esoteric terms — *samadhi*, *chitta*, *prana*, *astral body*, *Christ Consciousness* — that newcomers cannot be expected to know. A seeker encountering "samadhi" for the first time has nowhere within the portal to learn what it means. They must leave the portal, which breaks the reading flow and undermines the library's self-contained nature.
 
 ### Decision
 
@@ -3479,7 +3489,7 @@ CREATE TABLE chunk_glossary_terms (
 
 ### Scheduling
 
-- Data: Seed from `spiritual-terms.json` starting Arc 1. Enriched per-book via vocabulary extraction lifecycle (ADR-051).
+- Data: Seeded from Vocabulary Bridge Layer 2 entries (ADR-129). Enriched per-book via ADR-129 extraction lifecycle.
 - Glossary page (`/glossary`): Milestone 2b (when multi-book content provides sufficient explanation passages).
 - Inline reader highlighting: Milestone 2b (reader settings already exist from Milestone 2a).
 
@@ -3489,7 +3499,7 @@ CREATE TABLE chunk_glossary_terms (
 - Glossary page added to navigation (linked from reader settings and footer, not in primary nav — it's a reference tool, not a destination)
 - Inline highlighting is opt-in and off by default — respects the clean reading experience
 - Editorial effort: brief definitions must be written for each term. Yogananda's own definitions are identified during ingestion QA.
-- **Extends ADR-051** (terminology bridge) from an internal search tool to a user-facing feature
+- **Extends ADR-129** (Vocabulary Bridge) from an internal search tool to a user-facing feature
 
 ---
 
@@ -4100,7 +4110,7 @@ Three dimensions of embedding quality matter for this portal:
 
 2. **Domain specificity.** General-purpose embedding models are trained on web text, Wikipedia, and news. Yogananda's prose is spiritually dense, metaphorical, and uses vocabulary that spans traditions ("The wave forgets it is the ocean" — simultaneously about water and cosmic consciousness). General models may not capture the semantic relationships that matter for this corpus.
 
-3. **Cross-language alignment for sacred vocabulary.** Terms like "samadhi," "サマーディ," "समाधि" should occupy the same region of vector space. The spiritual terminology bridge (`spiritual-terms.json`, ADR-051) handles this at the query expansion layer, but embedding-level alignment is more robust.
+3. **Cross-language alignment for sacred vocabulary.** Terms like "samadhi," "サマーディ," "समाधि" should occupy the same region of vector space. The Vocabulary Bridge (ADR-129) handles this at the query expansion layer, but embedding-level alignment is more robust.
 
 ### Decision
 
@@ -4243,7 +4253,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 4. **Librarian identity (ADR-001, ADR-089).** A librarian helps you formulate your question and knows the collection. Suggestions are a natural extension of the librarian metaphor — showing the seeker what terrain the teachings cover.
 
-5. **Existing vocabulary bridge.** The spiritual terminology bridge (`spiritual-terms.json`, ADR-051) already maps seeker vocabulary to Yogananda's vocabulary. This infrastructure can power a unique suggestion type: surfacing the gap between what a seeker types and how Yogananda expressed the same concept.
+5. **Existing vocabulary bridge.** The Vocabulary Bridge (ADR-129) already maps seeker vocabulary to Yogananda's vocabulary. This infrastructure can power a unique suggestion type: surfacing the gap between what a seeker types and how Yogananda expressed the same concept.
 
 ### Decision
 
@@ -4286,7 +4296,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 - **Bounded corpus is the advantage.** Web-scale autocomplete must handle infinite content and relies on query logs for signal. A sacred text library has finite, known content — every suggestion can guarantee results. This property is more valuable than trending queries.
 - **Corpus-derived suggestions are always fresh.** When a new book is ingested, its vocabulary automatically enters the suggestion index. No cold-start problem, no minimum query volume needed.
-- **Bridge-powered suggestions are unique.** No existing search product surfaces the gap between user vocabulary and corpus vocabulary as a suggestion. This extends the spiritual terminology bridge (ADR-051) from a backend query-expansion tool to a user-facing navigation aid.
+- **Bridge-powered suggestions are unique.** No existing search product surfaces the gap between user vocabulary and corpus vocabulary as a suggestion. This extends the Vocabulary Bridge (ADR-129) from a backend query-expansion tool to a user-facing navigation aid.
 - **DELTA compliance by construction.** No behavioral data enters the suggestion pipeline. Privacy is a design property, not a policy constraint.
 - **Calm Technology alignment.** Suggestions show what's available — they don't optimize for engagement. No "trending," no social proof, no urgency signals.
 
@@ -4296,7 +4306,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 - New DESIGN.md subsection within the AI Librarian search architecture: "Search Suggestions — Corpus-Derived, Not Behavior-Derived"
 - ROADMAP.md updated: Deliverable 1c.9 (basic prefix matching), 3a.9 (multi-book + bridge + curated), Milestone 5b (per-language indices)
 - CONTEXT.md updated with new open questions: zero-state experience, transliteration support, editorial governance of curated suggestions, mobile keyboard interaction
-- Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-051 lifecycle)
+- Suggestion index extraction becomes part of the book ingestion pipeline (extends ADR-129 per-book lifecycle)
 - Accessibility requirement: ARIA combobox pattern for the suggestion dropdown (extends ADR-003)
 - Per-language suggestion indices required for Milestone 5b (extends multilingual architecture)
 
@@ -4387,75 +4397,6 @@ In Arc 1 (en/es), English chunks have empty supplemental slots; Spanish chunks p
 - The `books` table gains a `bookstore_url` column to power "Find this book" links (physical book bridge)
 
 ---
-
----
-
-## ADR-051: Terminology Bridge Per-Book Evolution Lifecycle
-
-**Status:** Accepted | **Date:** 2026-02-19
-
-### Context
-
-ADR-005 E2 establishes the spiritual terminology bridge at `/lib/data/spiritual-terms.json` as a static vocabulary mapping. However, each new book in the corpus introduces new terms, metaphors, and usages specific to its content. The bridge must grow with the library.
-
-### Decision
-
-Add a vocabulary extraction step to the book ingestion pipeline. When a new book's chunks are processed, Claude scans the full chunk set (Classifying category, JSON output) and extracts Yogananda's distinctive terms. The extracted vocabulary is diffed against the current `spiritual-terms.json`, and proposed additions are presented to an SRF-aware editor for human review before merging.
-
-The glossary carries source provenance — which book introduced which mapping — enabling source-aware query expansion (terms from the book a seeker is currently reading can be boosted).
-
-### Data Structure
-
-```json
-{
- "mindfulness": {
- "yogananda_terms": ["concentration", "one-pointed attention", "interiorization"],
- "sources": ["autobiography-of-a-yogi", "mans-eternal-quest"],
- "added": "2026-03"
- }
-}
-```
-
-### Lifecycle
-
-1. **Extract:** Claude scans new book chunks → produces vocabulary inventory (JSON)
-2. **Diff:** Compare against existing `spiritual-terms.json` → identify new terms, new synonyms, book-specific usages
-3. **Review:** SRF-aware editor approves/modifies/rejects each proposed addition (AI proposes, humans approve)
-4. **Merge:** Approved additions committed to `spiritual-terms.json` with provenance metadata
-
-### Extraction Categories
-
-The vocabulary extraction step scans for three categories of terms:
-
-1. **Modern-to-Yogananda mappings** (original scope): Identifies modern, clinical, or cross-tradition terms that seekers might use and maps them to Yogananda's specific vocabulary (e.g., "mindfulness" → "concentration").
-
-2. **Sanskrit inline definitions** (ADR-080): Identifies passages where Yogananda provides his own definition of a Sanskrit term — "Samadhi, the superconscious state of union with God." These are flagged as glossary source candidates (ADR-038) and added to the bridge as Sanskrit-to-English mappings.
-
-3. **Cross-tradition and Indic variant terms** (ADR-080): Identifies Pali, Bengali, and Hindi terms Yogananda uses or that seekers from other traditions might search. The bridge accepts these as keys mapping to Yogananda's vocabulary (e.g., Pali "nibbāna" → "final liberation"; Vedantic "viveka" → "discrimination, spiritual discernment"). Also captures alternate romanizations of the same term across editions.
-
-### Per-Author Vocabulary (PRO-014)
-
-When non-Yogananda SRF-published authors enter the corpus (Milestone 3a+), the terminology bridge needs per-author vocabulary tables, not just per-book evolution. Sri Yukteswar's vocabulary differs from Yogananda's:
-
-| Concept | Yogananda's Term | Sri Yukteswar's Term |
-|---|---|---|
-| Cosmic cycles | "yugas" (narrative context) | "yugas" (astronomical calculation, specific durations) |
-| Divine creation | "cosmic vibration," "Aum" | "the Word," "Pranava" |
-| Liberation | "Self-realization," "God-union" | "kaivalya," "mukti" |
-| Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
-
-A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors address the same concept in different registers.
-
-### Consequences
-
-- The terminology bridge becomes a living glossary that deepens with each book, not a one-time artifact
-- Each book ingestion generates a vocabulary review task for the editorial workflow
-- No schema migration needed — the bridge is a file-based artifact in git, read by the ingestion pipeline and query expansion prompt
-- **Extends ADR-005 E2** with the evolution lifecycle
-- **Extended by ADR-080** with Sanskrit inline definition extraction and cross-tradition term categories
-- **Extended by PRO-014** with per-author vocabulary tables
-
-*Revised: 2026-02-25, PRO-014 — added per-author vocabulary section for multi-author corpus.*
 
 ---
 
@@ -4889,7 +4830,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 2. **Two-system data synchronization is a permanent operational tax.** Every entity must be synced between Postgres and Neptune. Every migration, debugging session, and monitoring pipeline doubles in surface area. This tax compounds over the project's 10-year horizon.
 3. **The single-query unification advantage is narrow.** The combined traversal + vector query is elegant but adds only ~10-20ms latency when decomposed into multi-step SQL. In a search pipeline already at 200-400ms, this is negligible.
 4. **ADR-013's single-database rationale applies to Neptune as strongly as to DynamoDB.** The original arguments — one backup strategy, one connection string, one migration tool, one monitoring target — are just as valid for a graph database as for a key-value store.
-5. **The terminology bridge (ADR-051) and query expansion (Milestone 1c) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the terminology bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
+5. **The Vocabulary Bridge (ADR-129) and query expansion (Milestone 1c) already cover the primary GraphRAG use case.** Cross-tradition term mappings ("Holy Spirit" ↔ "AUM") are captured in the bridge and expanded at query time. The remaining edge cases where PATH C would uniquely contribute are vanishingly rare in a single-author corpus with consistent vocabulary.
 
 **Apache AGE (PostgreSQL extension):** Adds openCypher support to PostgreSQL — attractive in principle, but not available on Neon (the project's database provider). Would require self-hosting Postgres, contradicting the managed-infrastructure strategy.
 
@@ -4977,7 +4918,7 @@ Use Voyage `voyage-3-large` (1024 dimensions, 26 languages, 32K token input) as 
 
 The search pipeline uses a two-path hybrid search: pgvector dense vector + full-text keyword, merged via Reciprocal Rank Fusion. This pure hybrid approach — with no external AI services in the search path — is the **primary search mode** for all arcs.
 
-The design invests in index-time enrichment (ADR-115 unified enrichment, ADR-051 terminology bridge, ADR-116 entity resolution) so that the vocabulary gap between seeker language and Yogananda's language is bridged *in the index*, not at query time. A seeker types "mindfulness" and BM25 finds chunks enriched with "concentration" because the terminology bridge already made that connection during ingestion.
+The design invests in index-time enrichment (ADR-115 unified enrichment, ADR-129 Vocabulary Bridge, ADR-116 entity resolution) so that the vocabulary gap between seeker language and Yogananda's language is bridged *in the index*, not at query time. A seeker types "mindfulness" and BM25 finds chunks enriched with "concentration" because the bridge already made that connection during ingestion.
 
 Three well-established retrieval enhancements remain available as **optional upgrades**, activated only if Milestone 1a's search quality evaluation demonstrates they are needed:
 
@@ -5023,7 +4964,7 @@ Full mode (M4+, if warranted):      PATH A + PATH B + PATH C + HyDE → RRF → 
 ### Rationale
 
 - **Pure hybrid is fast and globally equitable.** Without AI services in the hot path, search completes in ~200–400ms from anywhere on Earth. A seeker in rural Bihar gets the same latency as one in Los Angeles. Adding Claude and Cohere to the hot path adds 700–1500ms — the AI services become the bottleneck, not the database or network.
-- **Index-time enrichment bridges the vocabulary gap.** The terminology bridge (ADR-051), unified enrichment (ADR-115), and entity resolution (ADR-116) map modern vocabulary to Yogananda's language at ingestion time. "Mindfulness" is linked to "concentration" in the BM25 index. The gap that HyDE solves at query time can instead be solved at index time — with no per-query cost and no per-query latency.
+- **Index-time enrichment bridges the vocabulary gap.** The Vocabulary Bridge (ADR-129), unified enrichment (ADR-115), and entity resolution (ADR-116) map modern vocabulary to Yogananda's language at ingestion time. "Mindfulness" is linked to "concentration" in the BM25 index. The gap that HyDE solves at query time can instead be solved at index time — with no per-query cost and no per-query latency.
 - **HyDE is high-lift for spiritual text — but may be unnecessary if enrichment is thorough.** Seekers express queries as emotional states ("I feel lost") or experiential descriptions ("a light I saw in meditation"). These diverge from Yogananda's document language. HyDE bridges this gap at query time; enrichment bridges it at index time. If the enrichment pipeline captures emotional quality, experiential depth, and cross-vocabulary mappings (ADR-115), the query-time bridge may be redundant.
 - **Cross-encoder reranking improves precision — at a latency and cost.** Cross-encoders detect relevance that bi-encoder similarity misses. But for a constrained corpus (one book in Arc 1, ~25 books at full corpus), RRF fusion over well-enriched chunks may achieve comparable precision without the per-query API call.
 - **Graph-augmented retrieval finds what search cannot.** A passage about "the vibration of AUM" may not mention "Holy Spirit" in its text, but the knowledge graph connects them via Yogananda's explicit cross-tradition mapping. PATH C surfaces this passage — neither vector similarity nor BM25 would find it. This enhancement is not conditional; it activates when the graph is ready (Milestone 3b+).
@@ -5670,3 +5611,175 @@ Mandarin and Russian warrant investigation when the core 10 languages are stable
 **Governs:** ROADMAP.md arc and milestone ordering. All future scope prioritization decisions.
 
 *Full demographic analysis: docs/reference/Prioritizing Global Language Rollout.md (53 citations: Ethnologue, ITU, UNESCO, DataReportal, GSMA, World Bank).*
+
+---
+
+## ADR-129: Vocabulary Bridge — Semantic Infrastructure for State-Aware Retrieval
+
+**Status:** Accepted
+
+**Date:** 2026-03-01
+
+### Context
+
+The original terminology bridge (ADR-005 E2) mapped modern vocabulary to Yogananda's terms via a flat JSON file (`spiritual-terms.json`). This handled one dimension: vocabulary distance ("anxiety" → "fear," "restlessness of mind"). But seekers arrive with emotional states, not vocabulary — "I can't stop crying" is not a vocabulary lookup, it's a state of being that needs to be mapped to corpus territory with register awareness, retrieval intent, and careful avoidance of passages that would miss the seeker.
+
+The vocabulary gap has five dimensions, not one:
+1. **State → corpus territory.** A human state of being mapped to primary/secondary/avoid regions of the corpus.
+2. **Modern → Yogananda vocabulary.** The original bridge's domain (ADR-005 E2).
+3. **Register awareness.** "Death" asked philosophically needs different passages than "death" asked in grief.
+4. **Cross-tradition vocabulary.** Seekers from other traditions use their tradition's terms.
+5. **Language-specific states.** Hindi expressions of grief are not translations of English expressions — they are culturally distinct.
+
+A flat synonym map cannot represent this. The portal needs structured semantic infrastructure.
+
+### Decision
+
+Replace the flat `spiritual-terms.json` terminology bridge with a **five-layer Vocabulary Bridge** — a structured PostgreSQL-backed semantic model that maps human states of being to corpus territory with register awareness, retrieval intent routing, and language-specific cultural grounding.
+
+The Bridge operates at two points:
+- **Index time:** Enrichment vocabulary and corpus territory tags are written into chunk index entries during the enrichment pipeline (ADR-115). Zero query-time cost.
+- **Query time:** Bridge lookup expands queries, routes retrieval intent, and boosts seed passages. The bridge is loaded into application memory at startup (~2,000 rows at full scale). Query-time overhead: 3-8ms (microsecond hash lookups + string concatenation).
+
+The Bridge is **Opus-generated** (ADR-014) — Claude reads the full corpus and generates bridge entries grounded in what Yogananda actually wrote. Every entry cites source passages for traceability. No human editorial gate initially; the zero-result feedback loop and search quality evaluation (DES-058) provide the improvement signal. Human review activates at crisis-adjacent entries only.
+
+### The Five Layers
+
+**Layer 1: State Mappings** (Milestone 1a) — The atomic unit. A human state of being mapped to corpus territory with retrieval intent.
+
+**Layer 2: Vocabulary Expansions** (Milestone 1a) — Modern/secular terms mapped to Yogananda's actual vocabulary. Replaces the original flat `spiritual-terms.json` design (ADR-005 E2).
+
+**Layer 3: Register Bridges** (Milestone 1c) — The same concept at different emotional registers requires different passages and different retrieval intents. "Death" asked philosophically → cosmic consciousness. "Death" asked in grief → divine love, reunion, immortality. "Death" asked in crisis → soul's indestructibility + crisis resources.
+
+**Layer 4: Cross-Tradition Vocabulary** (Milestone 3b+) — Maps terms from other spiritual traditions to Yogananda's frame without erasing the difference. Requires multi-book corpus for meaningful tradition coverage.
+
+**Layer 5: Language-Specific State Mappings** (Milestone 1b for Spanish) — Not translated English mappings. Authored fresh for each language and culture by Opus reading the corpus in that language's translation. Cultural context included: "In Indian context, this expression often follows family rupture or public shame."
+
+### Data Model
+
+Full schema specification in DES-059. Key tables: `vocabulary_bridge` (bridge entries with layers, territories, retrieval intents), `bridge_seed_passages` (human/Opus-curated anchor passages per state), `bridge_gaps` (zero-result feedback loop).
+
+### Generation Pipeline
+
+```
+1. Opus reads the full corpus (all extracted books)
+2. For each language: derives vocabulary expansions from actual Yogananda terms
+3. For each human state category: finds which corpus regions address it
+4. Every entry includes: source_passages[], confidence, derivation_note
+5. Bridge goes live — loaded in memory at startup
+6. Zero-result log + DES-058 evaluation provides feedback signal
+7. Human review at crisis-adjacent entries; empirical improvement elsewhere
+```
+
+### Retrieval Intent
+
+Bridge entries carry a `retrieval_intent` that shapes how results are presented:
+- `meet_first` — passage should acknowledge the seeker's state before pointing elsewhere
+- `console` — passage should offer comfort, not instruction
+- `orient` — passage should help the seeker understand their situation
+- `invite` — passage should open a door without pushing through it
+
+### Per-Book Evolution Lifecycle
+
+Each book ingestion triggers vocabulary extraction. When a new book's chunks are processed, Opus scans the full chunk set and extracts vocabulary across three categories:
+
+1. **Modern-to-Yogananda mappings.** Modern, clinical, or cross-tradition terms seekers might use, mapped to Yogananda's specific vocabulary (e.g., "mindfulness" → "concentration").
+2. **Sanskrit inline definitions** (ADR-080). Passages where Yogananda provides his own definition of a Sanskrit term — "Samadhi, the superconscious state of union with God." Flagged as glossary source candidates (ADR-038) and added as Sanskrit-to-English Layer 2 entries.
+3. **Cross-tradition and Indic variant terms** (ADR-080). Pali, Bengali, and Hindi terms Yogananda uses or that seekers from other traditions might search (e.g., Pali "nibbāna" → "final liberation"; Vedantic "viveka" → "discrimination, spiritual discernment"). Also captures alternate romanizations across editions.
+
+Lifecycle: Extract (Opus scans new book chunks) → Diff (compare against existing bridge entries) → Review (human review at crisis-adjacent entries only; empirical improvement elsewhere) → Merge (approved entries written to `vocabulary_bridge` table with source provenance).
+
+### Per-Author Vocabulary (PRO-014)
+
+When non-Yogananda SRF-published authors enter the corpus (Milestone 3a+), the bridge needs per-author vocabulary awareness. Sri Yukteswar's vocabulary differs from Yogananda's:
+
+| Concept | Yogananda's Term | Sri Yukteswar's Term |
+|---|---|---|
+| Cosmic cycles | "yugas" (narrative context) | "yugas" (astronomical calculation, specific durations) |
+| Divine creation | "cosmic vibration," "Aum" | "the Word," "Pranava" |
+| Liberation | "Self-realization," "God-union" | "kaivalya," "mukti" |
+| Subtle body | "astral body," "astral world" | "fine material body," "Bhuvarloka" |
+
+A seeker searching "what are the cosmic cycles" should find both Yogananda's accessible narrative and Sri Yukteswar's precise astronomical treatment, with the search understanding that both authors address the same concept in different registers.
+
+### Alternatives Considered
+
+1. **Keep flat JSON.** Simpler, no database overhead. Rejected because: cannot represent register awareness, retrieval intent, avoid-territory, or seed passages. Produces search that finds relevant results but cannot meet seekers in their emotional state.
+2. **Separate bridge service.** Microservice with its own API. Rejected because: adds latency, operational complexity, and a failure mode. The bridge is small enough to live in application memory — no service boundary needed.
+3. **Human-authored bridge only.** Higher initial quality, no AI risk. Rejected because: no humans are available in the build phase, and the bridge needs thousands of entries across multiple languages. Opus can generate grounded entries traceable to source passages. Human review at failure points (crisis-adjacent, zero-result patterns) is more effective than upfront review of entries that work well.
+
+### Consequences
+
+- New tables: `vocabulary_bridge`, `bridge_seed_passages`, `bridge_gaps` (schema in DES-059)
+- The flat `spiritual-terms.json` artifact is replaced by `vocabulary_bridge` Layer 2 entries in PostgreSQL
+- The enrichment pipeline (ADR-115) gains additional output fields: `retrieval_intent_hints`, `emotional_register`, `corpus_territory_tags`
+- Search service gains bridge-mediated query expansion (3-8ms additional latency, negligible against 500ms p95 target)
+- DES-058 evaluation harness gains a "Dark Night" query category — 8-10 fragmentary, pre-linguistic distress queries evaluated for "does this passage meet the seeker?"
+- Bridge is loaded into application memory at startup; refreshed on content change (webhook from Contentful or manual trigger)
+- The Four Doors (PRO-018) and Multi-Lens Homepage (PRO-019) depend on the Bridge for semantic depth — without the Bridge, recognition-based entry points collapse to cosmetic labels
+
+**Extends:** ADR-005 E2 (Terminology Bridge), ADR-115 (Unified Enrichment)
+**Governs:** DES-059 (Vocabulary Bridge specification), DES-058 (evaluation harness Dark Night category)
+
+---
+
+## ADR-130: Recognition-First Information Architecture
+
+**Status:** Accepted (Provisional — Arc 2a+)
+
+**Date:** 2026-03-01
+
+### Context
+
+The current portal design leads with a search box: "What are you seeking?" (DES-007). This assumes the seeker arrives with language — a query they can articulate. But the seeker who most needs this portal is least able to articulate their need. A person at 2 AM who can't sleep because of anxiety doesn't know to search for "overcoming fear" or "restlessness of mind." They arrive in a state, not with a vocabulary.
+
+The portal's homepage is the first moment of contact. Whether it asks or offers in that moment is a fundamental architectural decision — not a UI choice.
+
+### Decision
+
+Adopt a **recognition-first** information architecture: the portal offers something before it asks anything. The homepage leads with Today's Wisdom (the portal speaks first), followed by multiple entry lenses that serve different personas without hierarchy.
+
+**The principle:** Recognition before query. The portal offers before it asks.
+
+**The implementation (Arc 2a):** A multi-lens homepage with five concurrent entry modes:
+
+1. **Today's Wisdom** (hero position) — The portal's gift before any interaction. A passage, sometimes Yogananda's voice. Full presence.
+2. **"What did Yogananda say about...?"** — The primary search invitation, reframed from "What are you seeking?" to set correct expectations (verbatim retrieval, not AI generation).
+3. **The Wanderer's Path** — "Take me somewhere." Opus-weighted random passage selection using depth signatures. No parameters, no category. The seeker who doesn't know what they need lets the corpus offer something.
+4. **Tradition/Question entry** — "I come from..." (tradition entry) or "A question I'm holding" (great questions). Serves the philosopher, the scholar, the cross-tradition seeker.
+5. **The Four Doors** — "I am searching / I am struggling / I want to understand / I want to practice." Recognition-based emotional entry. Available in secondary navigation, not the primary architecture.
+
+**Secondary navigation:** Persistent, progressively populated: `Books | About` (1c) → `+ The Four Doors | Guide` (2a) → `+ Listen` (when audio arrives).
+
+**The search box remains** — always visible, never primary. For the seeker who knows exactly what they're looking for.
+
+### What This Changes from the Current Design
+
+- **DES-007 (Opening Moment):** Shifts from search-box-primary to Today's Wisdom hero + multi-lens entry. The opening moment is an offering, not a prompt.
+- **Thematic navigation:** The six curated themes (Peace, Courage, Healing, Joy, Purpose, Love) become children of the Four Doors' vocabulary bridge mappings — the tradition's vocabulary for what the Doors name in human terms. They don't disappear; they move one level deeper.
+- **Homepage structure:** DES-006 (Frontend Design) gains the multi-lens entry specification. The homepage holds multiple personas without hierarchy.
+
+### Milestone 1c Embodiment
+
+The full multi-lens homepage is Arc 2a. At 1c, the recognition-first principle manifests minimally:
+- Today's Wisdom hero (already planned)
+- Search prompt: "What did Yogananda say about...?" (replaces "What are you seeking?")
+- "Show me another" for Today's Wisdom rotation
+- Minimal secondary nav: `Books | About`
+- Practice Bridge: single quiet line linking to SRF Lessons information
+
+### Alternatives Considered
+
+1. **Search-primary (current design).** Familiar, proven pattern. Rejected as primary because: assumes language, excludes the pre-linguistic seeker, privileges the articulate over the struggling.
+2. **Four Doors as primary architecture.** Strong for emotional arrival but undersells the corpus's intellectual depth. A scholar, a devotee, a cross-tradition seeker — none maps to "I am struggling." Rejected as primary; adopted as one lens among several.
+3. **Single entry point.** One invitation only. Rejected because: the corpus serves too many personas for any single entry mode.
+
+### Consequences
+
+- DES-007 updated to reference this ADR and describe the recognition-first principle
+- DES-015 (Self-Revealing Navigation) gains secondary nav specification with progressive population plan
+- Deliverable 1c.5 search prompt changes from "What are you seeking?" to "What did Yogananda say about...?"
+- The Vocabulary Bridge (ADR-129) is a prerequisite for meaningful recognition-based entry — without it, the Four Doors and emotional entry points are cosmetic
+- PRO-018 (Four Doors), PRO-019 (Multi-Lens Homepage), PRO-020 (Wanderer's Path) capture the Arc 2a+ implementation details
+
+**Governs:** DES-006, DES-007, DES-015, PRO-018, PRO-019, PRO-020

@@ -74,6 +74,7 @@
 | [DES-055: Concept/Word Graph](DESIGN-arc2-3.md#des-055-conceptword-graph) | 3b+ | DESIGN-arc2-3.md |
 | [DES-056: Feature Catalog (RAG Architecture Proposal)](DESIGN-arc2-3.md#des-056-feature-catalog-rag-architecture-proposal) | 2b–6+ | DESIGN-arc2-3.md |
 | [DES-058: Search Quality Evaluation Harness](DESIGN-arc1.md#des-058-search-quality-evaluation-harness) | 1 | DESIGN-arc1.md |
+| [DES-059: Vocabulary Bridge](DESIGN-arc1.md#des-059-vocabulary-bridge) | 1+ | DESIGN-arc1.md |
 
 ---
 
@@ -2070,7 +2071,7 @@ The portal's personas are **need-based, not demographic**. A 16-year-old in care
 
 | Persona | Entry Pattern | Primary Section | Key ADRs |
 |---|---|---|---|
-| **The curious reader** | Homepage → themes / search / browse | DES-048 seeker archetypes | ADR-051 |
+| **The curious reader** | Homepage → themes / search / browse | DES-048 seeker archetypes | ADR-129 |
 | **The person in need** | "Seeking..." empathic entry → Quiet Corner / theme page | DES-006, DES-011 | ADR-071 |
 | **The meditation seeker** | Homepage → `/guide` → practice pathways | DES-048 | ADR-104 |
 | **The shared-link recipient** | `/passage/[id]` via friend's message | ADR-067 (#1) | — |

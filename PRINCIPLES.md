@@ -38,6 +38,8 @@ Content integrity verification (ADR-039) ensures that published text has not bee
 
 The translation honesty commitment deserves emphasis: when an official translation doesn't exist for a language, the book is simply unavailable in that language. The portal is honest about asymmetry rather than hiding it behind machine translation. This is an "inviolable constraint, not a cost optimization" (ADR-078). The reason is theological: these are sacred texts where precision of language carries spiritual weight. A machine translation of "Self-realization" might produce a phrase that means something entirely different in the target tradition.
 
+When content is absent — no results match a query, no translation exists, a book isn't yet available — the portal treats this as an invitation, not a wall. Honest absence becomes an opportunity to guide: suggest related themes the seeker might explore, point toward the language the content *is* available in, or connect the seeker to SRF resources that might help. The portal never fabricates content to fill the gap, but it also never abandons the seeker at a dead end. Absence handled with care is itself a form of the librarian's service.
+
 *Section revised: 2026-02-28, sharpened from "Sacred Text Fidelity" — removed duplication with Principle 1 (AI/media prohibition), focused on the unique commitments: provenance, attribution, translation honesty.*
 
 ---
@@ -117,6 +119,8 @@ Screen reader quality goes beyond mere compliance. ADR-073 specifies that the sp
 The DELTA framework (Dignity, Embodiment, Love, Transcendence, Agency) produces privacy protections that exceed any single regulation. The crosswalk is documented in ADR-099: DELTA Dignity maps to GDPR Art. 5(1)(a) fairness; DELTA Embodiment maps to Art. 5(1)(b) purpose limitation. Ethics came first; legal compliance follows naturally from the theological framework.
 
 The portal collects approximately five event types: page view (anonymized), search query (anonymized, no user association), book opened, chapter read, Quiet Corner timer started. No user identification, no session stitching, no behavioral profiles, no cross-device tracking. The measurement question "Is this portal succeeding?" is answered not by engagement metrics but by "What Is Humanity Seeking?" — aggregated, anonymized search trends that reveal what the world is asking.
+
+Curation algorithms — search ranking, theme suggestions, Related Teachings, Today's Wisdom selection — derive their intelligence from the corpus itself: textual similarity, thematic co-occurrence, author relationships, and editorial curation. They never derive from user behavior patterns, even anonymized or aggregated. No collaborative filtering, no "seekers who read this also read," no behavioral recommendations. The corpus is the teacher; seekers are not data sources for each other.
 
 The consequence for code: never install analytics that track users. Never add session IDs. Never correlate events across visits. Every analytics call goes through the event allowlist. If an event isn't on the list, it doesn't fire.
 
