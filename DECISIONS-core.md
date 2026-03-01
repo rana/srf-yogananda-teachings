@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Architecture Decision Records (Core)
 
-> **Scope.** This file contains ADRs from the **Foundational Constraints**, **Architecture & Platform**, **Content & Data Model**, and **Search & AI** groups. These govern Arcs 1–3 and require close attention during implementation. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
+> **Scope.** This file contains ADRs from the **Foundational Constraints**, **Infrastructure & Platform**, **Application Architecture**, **Content & Data Model**, and **Search & AI** groups. These govern Arcs 1–3 and require close attention during implementation. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
 > **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. Git history serves as the full audit trail.
 

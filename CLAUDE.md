@@ -15,9 +15,9 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 5. **design/experience/** — Frontend, pages, accessibility, responsive, video, events, places, multilingual (9 files)
 6. **design/editorial/** — Staff tools, editorial workflows, content intelligence, curated features (14 files)
 7. **DECISIONS.md** — Index and navigational summaries for ADRs across 11 topical groups. ADR bodies split into three files:
-   - **DECISIONS-core.md** — Foundational, Architecture, Content, Search (ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130). Arc 1+.
+   - **DECISIONS-core.md** — Foundational, Infrastructure, Application Architecture, Content, Search (ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
-   - **DECISIONS-operations.md** — Staff, Brand, Operations, Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
+   - **DECISIONS-operations.md** — Staff, Brand, Operations & Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
 9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 

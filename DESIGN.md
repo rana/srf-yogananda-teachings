@@ -1302,7 +1302,7 @@ Three brief empathy narratives for how non-English seekers may discover and use 
 
 ### Locale-Specific Cultural Adaptation
 
-The same seeker archetype requires cultural adaptation across locales — not just language translation but emotional register, platform habits, and trust signals. Full cultural notes per language in DES-018. Summary of key design differentiators:
+The same seeker archetype requires cultural adaptation across locales — not just language translation but emotional register, platform habits, and trust signals. Summary of key design differentiators:
 
 | Locale | Key Adaptation | Platform Priority |
 |---|---|---|

@@ -33,7 +33,7 @@
 | PRO-021 | Yogananda's Voice — Primary Source Audio Presence | Feature | Proposed | ADR-057, ADR-015, ADR-127 | External design review 2026-03-01 |
 | PRO-022 | Passage Depth Signatures — Opus-Classified Contemplative Quality | Enhancement | Proposed | ADR-014, ADR-115, ADR-129 | External design review 2026-03-01 |
 | PRO-023 | Human Review Gate — Production Content Governance | Policy | Proposed | ADR-005, ADR-032, ADR-078, ADR-092, ADR-082 | Principle analysis 2026-02-28 |
-| PRO-024 | Editorial Page Compositor — Data-Driven Layout Curation | Feature | Proposed | ADR-130, ADR-082, ADR-079, ADR-095, DES-028, DES-032 | Exploration 2026-02-28 |
+| PRO-024 | Editorial Page Compositor — Data-Driven Layout Curation | Feature | Proposed | ADR-130, ADR-082, ADR-079, ADR-095, DES-028 | Exploration 2026-02-28 |
 | PRO-025 | Structural Enrichment Tier — Whole-Context AI Understanding for Navigation | Enhancement | Proposed | ADR-115, ADR-117, ADR-014, ADR-129, ADR-130, PRO-020, PRO-022 | Graph navigation exploration 2026-02-28 |
 | PRO-026 | Semantic Cartography — Meaningful Spatial Navigation | Feature | Proposed | ADR-061, ADR-117, ADR-130, PRO-025 | Graph navigation exploration 2026-02-28 |
 | PRO-027 | Design Tooling (Figma + Storybook) | Enhancement | Suspended from ADR-096, DES-040 | ADR-096 | ADR-096 suspension 2026-02-28 |
@@ -518,7 +518,7 @@ This is a practice many devotees already have: opening a beloved book to a rando
 
 **Status:** Proposed
 **Type:** Feature
-**Governing Refs:** ADR-130 (Recognition-First IA), ADR-082 (Editorial Portal), ADR-079 (YSS Branding), ADR-095 (DELTA Framework), DES-028 (Calendar-Aware Surfacing), DES-032 (Content Management Strategy)
+**Governing Refs:** ADR-130 (Recognition-First IA), ADR-082 (Editorial Portal), ADR-079 (YSS Branding), ADR-095 (DELTA Framework), DES-028 (Calendar-Aware Surfacing)
 **Dependencies:** Admin portal foundation (Milestone 3b). Component library maturity — the compositor composes from developer-built lenses, so enough lenses must exist to make composition valuable. Minimum viable: Today's Wisdom, search prompt, featured themes (3 components).
 **Target:** Milestone 3b (foundation) or Arc 4 (full scheduling + brand variants)
 

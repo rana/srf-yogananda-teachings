@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Architecture Decision Records (Operations)
 
-> **Scope.** This file contains ADRs from the **Staff & Community**, **Brand & Communications**, **Operations & Engineering**, and **Governance** groups. These govern how the portal is built, operated, and evolved. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
+> **Scope.** This file contains ADRs from the **Staff & Community**, **Brand & Communications**, and **Operations, Engineering & Governance** groups. These govern how the portal is built, operated, and evolved. For the navigational index and group summaries, see [DECISIONS.md](DECISIONS.md). For other ADR files, see the links in the index.
 >
 > **Living documents.** ADRs are mutable. Update them directly — add, revise, or replace content in place. Git history serves as the full audit trail.
 
@@ -1555,7 +1555,7 @@ A cross-API review after ADR-108 (magazine rationalization) revealed five incons
 
 2. **Video endpoints use `{id}` while every other resource uses `{slug}`.** The `videos` table has `slug TEXT NOT NULL UNIQUE`, but ADR-025 and ADR-055 defined transcript endpoints as `/api/v1/videos/{id}/transcript`. Audio uses `{slug}` for the identical pattern.
 
-3. **DESIGN.md still references a rejected PDF namespace.** The sharing section (DES-018) uses `/api/v1/pdf/passage/{chunk-id}`, `/api/v1/pdf/chapter/{book-slug}/{chapter}`, `/api/v1/pdf/book/{book-slug}` — a parallel namespace that ADR-025 explicitly rejected under "Why Not `/api/v1/pdf/books/{slug}`".
+3. **DESIGN.md referenced a rejected PDF namespace.** A former sharing section (DES-018, since deleted) used `/api/v1/pdf/passage/{chunk-id}`, `/api/v1/pdf/chapter/{book-slug}/{chapter}`, `/api/v1/pdf/book/{book-slug}` — a parallel namespace that ADR-025 explicitly rejected under "Why Not `/api/v1/pdf/books/{slug}`".
 
 4. **Audio and video lack single-resource detail endpoints.** Every other content type (books, images, people, glossary, ontology, places, magazine issues/articles) has a `GET /resource/{slug}` detail endpoint. Audio and video only had list + transcript sub-resources.
 
@@ -1617,7 +1617,7 @@ Returns title, author, description, cover image, publication year, bookstore URL
 
 - The top-level `/api/v1/chapters/` namespace no longer exists — all chapter sub-resources live under `/api/v1/books/[slug]/chapters/[number]/`
 - All video endpoints use `{slug}`, consistent with every other resource
-- DESIGN.md § DES-018 sharing section uses ADR-025-compliant PDF routes
+- PDF routes consolidated under ADR-025-compliant resource-anchored pattern (former DES-018 sharing section deleted)
 - Three new detail endpoints: `GET /api/v1/books/{slug}`, `GET /api/v1/audio/{slug}`, `GET /api/v1/videos/{slug}`
 - Cache table gains entries for all new detail endpoints
 - Service layer gains `getBook(slug)`, `getRecording(slug)`, `getVideo(slug)` functions
@@ -2002,7 +2002,7 @@ Examples:
 - Chunk size 200–300 tokens (ADR-048) — tune per language after ingestion
 - Chunk overlap: none (ADR-048) — evaluate 10% overlap in Milestone M1a-8
 - Rate limits: 15 req/min search, 200 req/hr hard block (ADR-023) — adjust based on observed traffic
-- Email purge delay: 90 days (DES-030) — adjust based on legal review
+- Email purge delay: 90 days (ADR-099) — adjust based on legal review
 - Cache TTLs: 5min/1hr/24hr (DES-020) — adjust based on cache hit rate data
 - ISR revalidation intervals (DES-006) — adjust based on Vercel Analytics metrics
 - Circadian color band boundaries (DES-011) — adjust after Milestone 2b user feedback
