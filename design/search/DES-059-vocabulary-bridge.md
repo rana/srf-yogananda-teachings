@@ -255,7 +255,7 @@ Three growth sources:
 
 ### What the Bridge Is Not
 
-The bridge does not generate passages. It does not interpret Yogananda. It does not tell the retrieval system what a passage means — it tells the retrieval system where to look when a human expresses something the corpus addresses in different words. An imperfect bridge mapping produces suboptimal search results, not fabricated teachings. This distinction matters for a portal committed to no AI-generated content reaching seekers (Principle 1).
+The bridge does not generate passages. It does not interpret Yogananda. It does not tell the retrieval system what a passage means — it tells the retrieval system where to look when a human expresses something the corpus addresses in different words. An imperfect bridge mapping produces suboptimal search results, not fabricated teachings. This distinction matters for a portal committed to no AI-generated content reaching seekers (PRI-01).
 
 ### Phasing
 

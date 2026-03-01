@@ -77,7 +77,7 @@ Human editor reviews Claude's suggestions alongside the current 14-day schedule,
 
 When a calendar event approaches (within 30 days), Claude scans the corpus for thematically related passages and suggests passage-event associations. For example, approaching Christmas meditation: Claude identifies passages about Christ, the Nativity, and universal spirituality from across the library. Human curator reviews, selects, and links.
 
-**Milestone:** 3b (alongside calendar event management, deliverable 3b.8).
+**Milestone:** 3b (alongside calendar event management, M3b-8).
 
 #### Community Collection Pre-Review
 
@@ -122,7 +122,7 @@ Seeker feedback (ADR-084) arrives as free text. Claude categorizes it before it 
 
 Human sees pre-categorized feedback with Claude's reasoning, adjusts categories as needed. The categorization itself is never shown to the seeker — it's an internal routing aid.
 
-**Milestone:** 3b (alongside seeker feedback mechanism, deliverable 3b.9).
+**Milestone:** 3b (alongside seeker feedback mechanism, M3b-9).
 
 #### Ingestion Changelog Generation
 

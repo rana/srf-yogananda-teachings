@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        "redhat.vscode-yaml",
+        "timonwong.shellcheck",
+        "hashicorp.terraform",
+        "ms-python.python",
+        "eamodio.gitlens"
+    ],
+    "unwantedRecommendations": []
+}

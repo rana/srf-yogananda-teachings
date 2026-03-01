@@ -569,7 +569,7 @@ See CONTEXT.md § Open Questions for the consolidated list of technical and stak
 
 | PRO | Feature | Type |
 |-----|---------|------|
-| PRO-003 | Text-to-Speech (TTS) for passages | Feature |
+| PRO-003 | Spoken Teachings — Human Narration Program | Feature (Content + Portal) |
 | PRO-043 | Teachings Platform — Shared Foundation for SRF and YSS | Feature (Platform) |
 | PRO-004 | Audio-visual ambiance toggle (temple/nature sounds) | Enhancement |
 | PRO-005 | Neon Auth as Auth0 Alternative | Enhancement |

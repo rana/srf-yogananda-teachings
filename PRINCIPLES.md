@@ -2,6 +2,8 @@
 
 Eleven principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify. When principles tension against each other, Content Identity principles take precedence over Seeker Experience, which takes precedence over Engineering Foundation.
 
+**Reading guidance.** PRI-NN numbers are stable identifiers, not importance rankings — a principle's tier communicates its precedence, not its number. Within each tier, principles are ordered by topic adjacency, not by weight. Several principles have structural dependencies: PRI-06 is PRI-05's structural mechanism (multilingual schema is how global-first becomes real); PRI-07 is PRI-05's inclusion mechanism (accessibility is how global-first serves disabled seekers); PRI-02 enables PRI-01 (attribution prevents orphaned quotes); PRI-09 enforces PRI-08 (DELTA analytics is calm technology's privacy layer). When implementing, check all principles against the current task — do not assume lower-numbered principles are more relevant.
+
 CLAUDE.md carries the compressed, code-affecting form of each principle. This document adds the *why*: enough rationale to prevent well-intentioned erosion across sessions. For the full alternatives-considered analysis, see the referenced ADRs in DECISIONS.md.
 
 Specific numeric values throughout these documents (chunk sizes, rate limits, thresholds) are tunable parameters, not principles — implement them as named constants in `/lib/config.ts` per ADR-123.
@@ -86,15 +88,15 @@ When a feature proposal seems to conflict with this principle, the response is n
 
 ---
 
-### PRI-06: Calm Technology
+### PRI-06: Multilingual from the Foundation
 
-**No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI.** The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
+**Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 
-Standard web patterns — aggressive CTAs, notification badges, engagement dashboards, "You've read X books this month" — are designed to maximize time-on-site. These goals directly conflict with the DELTA Embodiment principle: the portal should encourage logging off and practicing, not maximizing session length. Spiritual depth is not quantifiable. No metrics, leaderboards, or streaks.
+The multilingual commitment shapes technical decisions made long before all translations exist. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — validated from Arc 1 with bilingual content (en/es). pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
 
-The design system is derived from existing SRF properties (yogananda.org, the Online Meditation Center, the convocation site), enhanced with Calm Technology constraints: generous whitespace as "digital silence," warm backgrounds (never pure white), no decorative animations beyond subtle 0.3s transitions, pill-shaped buttons from SRF's established interaction patterns. The portal's visual language should feel like entering a library, not a marketplace.
+The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
-Personalization features are classified into three tiers (ADR-002): build (language preference, font size, bookmarks — genuinely helpful); build with caution (search history — opt-in only, user-clearable, never inferred); never build (reading streaks, behavioral recommendations, social features, push notifications, engagement dashboards). The portal's anonymous experience through Arc 6 must be excellent without any personalization.
+*Reclassified: 2026-03-01, moved from Engineering Foundation to Seeker Experience. The engineering framing (language columns, API parameters) describes implementation of a mission commitment, not an architecture preference. Violating PRI-06 structurally excludes the majority of Earth's seekers — that is seeker harm, not technical debt. PRI-06 is PRI-05's structural mechanism: global-first without multilingual foundations is aspiration without substance.*
 
 ---
 
@@ -112,7 +114,19 @@ Screen reader quality goes beyond mere compliance. ADR-073 specifies that the sp
 
 ---
 
-### PRI-08: DELTA-Compliant Analytics
+### PRI-08: Calm Technology
+
+**No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI.** The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
+
+Standard web patterns — aggressive CTAs, notification badges, engagement dashboards, "You've read X books this month" — are designed to maximize time-on-site. These goals directly conflict with the DELTA Embodiment principle: the portal should encourage logging off and practicing, not maximizing session length. Spiritual depth is not quantifiable. No metrics, leaderboards, or streaks.
+
+The design system is derived from existing SRF properties (yogananda.org, the Online Meditation Center, the convocation site), enhanced with Calm Technology constraints: generous whitespace as "digital silence," warm backgrounds (never pure white), no decorative animations beyond subtle 0.3s transitions, pill-shaped buttons from SRF's established interaction patterns. The portal's visual language should feel like entering a library, not a marketplace.
+
+Personalization features are classified into three tiers (ADR-002): build (language preference, font size, bookmarks — genuinely helpful); build with caution (search history — opt-in only, user-clearable, never inferred); never build (reading streaks, behavioral recommendations, social features, push notifications, engagement dashboards). The portal's anonymous experience through Arc 6 must be excellent without any personalization.
+
+---
+
+### PRI-09: DELTA-Compliant Analytics
 
 **No user identification, no session tracking, no behavioral profiling.** Amplitude event allowlist only. (ADR-095, ADR-099)
 
@@ -130,7 +144,7 @@ The consequence for code: never install analytics that track users. Never add se
 
 *How we build. Violating these creates technical debt.*
 
-### PRI-09: 10-Year Design Horizon
+### PRI-10: 10-Year Design Horizon
 
 **Every component is designed for graceful evolution over a decade.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Every Tier 3 component is replaceable without touching Tier 1. (ADR-004)
 
@@ -142,7 +156,7 @@ The search quality test suite (bilingual golden set — DES-058) serves as the a
 
 ---
 
-### PRI-10: API-First Architecture
+### PRI-11: API-First Architecture
 
 **All business logic in `/lib/services/`.** API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
 
@@ -150,14 +164,4 @@ Next.js encourages embedding business logic in React Server Components. This is 
 
 The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
 
----
-
-### PRI-11: Multilingual from the Foundation
-
-**Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
-
-The multilingual commitment shapes technical decisions made long before all translations exist. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — validated from Arc 1 with bilingual content (en/es). pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
-
-The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
-
-*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with PRI-01 removed. "Honoring the Spirit" elevated from position 12 to position 3. 2026-03-01, PRI-NN identifiers added — principles now have first-class identifiers consistent with ADR/DES/PRO.*
+*Principles restructured: 2026-02-28, reordered into three tiers (Content Identity, Seeker Experience, Engineering Foundation) for AI implementer cognitive utility. "Parameters as Named Constants" (former Principle 12/11) demoted to mandatory coding standard (ADR-123) — retained in CLAUDE.md Quick Reference. "Sacred Text Fidelity" sharpened to "Full Attribution Always" — duplication with PRI-01 removed. "Honoring the Spirit" elevated from position 12 to position 3. 2026-03-01, PRI-NN identifiers added — principles now have first-class identifiers consistent with ADR/DES/PRO. 2026-03-01, PRI-06 reclassified from Engineering Foundation to Seeker Experience — multilingual schema serves seekers, not architecture. 2026-03-01, PRI-NN renumbered for clean sequential ordering within each tier: PRI-11 (Multilingual) → PRI-06, PRI-06 (Calm) → PRI-08, PRI-08 (DELTA) → PRI-09, PRI-09 (10-Year) → PRI-10, PRI-10 (API-First) → PRI-11.*

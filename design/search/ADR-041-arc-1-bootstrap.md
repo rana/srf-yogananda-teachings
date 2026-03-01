@@ -32,7 +32,7 @@ The path from "no code" to "running search" — the ceremony that transforms des
  └── Verify error capture with test exception
 
 6. First Content
- └── Run ingestion script (deliverable 1a.4)
+ └── Run ingestion script (M1a-4)
  └── Verify: pnpm run ingest -- --book autobiography
  └── Check: book_chunks populated, embeddings present
  └── Run: pnpm run relations -- --full

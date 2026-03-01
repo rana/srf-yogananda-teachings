@@ -1,6 +1,6 @@
 ## DES-058: Search Quality Evaluation Harness
 
-**Governed by:** ADR-005 E5, Deliverables 1a.8, 1b.2
+**Governed by:** ADR-005 E5, M1a-8, M1b-2
 
 The search quality evaluation harness is the acceptance gate for Arc 1. It validates that hybrid search returns relevant passages for representative queries before the portal is deployed. This section specifies the golden set format, query design protocol, evaluation methodology, metrics, automation, and CI integration.
 
@@ -51,7 +51,7 @@ Each file is an array of query specifications:
 
 ### Query Design Protocol
 
-**Sequencing:** Golden set queries are drafted *after* Deliverable 1a.4 (English ingestion complete) and *before* 1a.8 evaluation runs. Claude reads the ingested corpus to write queries that test real content.
+**Sequencing:** Golden set queries are drafted *after* M1a-4 (English ingestion complete) and *before* M1a-8 evaluation runs. Claude reads the ingested corpus to write queries that test real content.
 
 **Process per category:**
 
@@ -186,10 +186,10 @@ The golden set is the evaluation instrument for tuning parameters governed by AD
 
 | Parameter | Values to Test | Deliverable |
 |-----------|---------------|-------------|
-| RRF k-constant | 40, 60, 80 | 1a.8 |
-| Chunk size (token count) | 200, 300, 500 | 1a.8 (contingency) |
-| Embedding model | Voyage voyage-3-large (default), Cohere embed-v3, BGE-M3 | 1a.8 (contingency) |
-| BM25 vs. vector weight balance | RRF-only (equal), 60/40 vector, 60/40 BM25 | 1a.8 |
+| RRF k-constant | 40, 60, 80 | M1a-8 |
+| Chunk size (token count) | 200, 300, 500 | M1a-8 (contingency) |
+| Embedding model | Voyage voyage-3-large (default), Cohere embed-v3, BGE-M3 | M1a-8 (contingency) |
+| BM25 vs. vector weight balance | RRF-only (equal), 60/40 vector, 60/40 BM25 | M1a-8 |
 
 Each parameter evaluation uses the same golden set and produces a comparable results JSON. The per-category breakdowns reveal *where* a parameter change helps or hurts — e.g., a larger chunk size might improve Emotional queries (more context) but hurt Direct queries (diluted keyword signal).
 
@@ -202,10 +202,10 @@ The golden set grows as the corpus grows:
 | 1a | English Autobiography | ~58 en queries |
 | 1b | + Hindi, Spanish Autobiography | + ~15 hi, ~15 es queries |
 | 3a | + 7 additional English books | Re-evaluate existing en queries + ~20 new cross-book queries |
-| 3c | + related content graph | ~50 relation-quality queries (DES separate — Deliverable 3c.5) |
+| 3c | + related content graph | ~50 relation-quality queries (DES separate — M3c-5) |
 
 Old queries are **never removed** — they serve as regression tests. New queries are appended. The `id` field ensures stability across versions.
 
-*Section added: 2026-02-28, filling methodology gap for Deliverables 1a.8 and 1b.2.*
+*Section added: 2026-02-28, filling methodology gap for M1a-8 and M1b-2.*
 
 ---

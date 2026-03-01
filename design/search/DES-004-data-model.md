@@ -687,7 +687,7 @@ CREATE TABLE user_profiles (
 );
 ```
 
-*Schema revised: 2026-02-26, deep review — fixed DEFAULT now() syntax across 7 tables, added missing columns (chapters.content_hash per ADR-039, updated_at per ADR-107 on chapters/book_chunks/teaching_topics/daily_passages/affirmations), resolved content_hash definition conflict (GENERATED ALWAYS AS per ADR-022), reordered tables (archive after chapters/book_chunks), added book_chunks_archive.author_tier per PRO-014, added search_theme_aggregates and chapter_study_notes table definitions per Deliverable 1a.2, added composite (updated_at, id) indexes per ADR-107.*
+*Schema revised: 2026-02-26, deep review — fixed DEFAULT now() syntax across 7 tables, added missing columns (chapters.content_hash per ADR-039, updated_at per ADR-107 on chapters/book_chunks/teaching_topics/daily_passages/affirmations), resolved content_hash definition conflict (GENERATED ALWAYS AS per ADR-022), reordered tables (archive after chapters/book_chunks), added book_chunks_archive.author_tier per PRO-014, added search_theme_aggregates and chapter_study_notes table definitions per M1a-2, added composite (updated_at, id) indexes per ADR-107.*
 
 ### Contentful Content Model (Arc 1+)
 

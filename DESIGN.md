@@ -2,7 +2,7 @@
 
 > **Navigation guide.** Design specifications are organized by domain into individual files under `design/`. This root file contains the navigation index and cross-cutting sections that apply to all domains. The **File** column shows where each section lives. Use the domain directories as loading groups: `design/search/` for search and data platform, `design/experience/` for frontend and seeker-facing pages, `design/editorial/` for staff tools and content intelligence.
 >
-> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
+> **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. M1a-8 (search quality evaluation) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
 | Section | Arc/Milestone | File |
 |---------|---------------|------|
@@ -1027,7 +1027,7 @@ No user identification. No IP addresses. No session IDs.
 
 **`requested_language` rationale:** The `page_viewed` event carries `language` (the locale actually served) and `requested_language` (the seeker's `Accept-Language` header preference). The delta between requested and served is a direct measure of unmet language demand — e.g., how many seekers per week arrive wanting Hindi but receive English. This signal is impossible to backfill and directly informs Milestone 5b language prioritization. When `requested_language === language`, the property adds no information and can be elided in analysis.
 
-**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Milestone 3d staff dashboard (deliverable 3d.4, PRO-016) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
+**`zero_results` rationale:** The `search_performed` event's `zero_results` boolean tracks searches that return no passages. The zero-result rate is the portal's single most actionable operational metric: a rising rate signals corpus gaps, query expansion failures, or search pipeline regressions. The Milestone 3d staff dashboard (M3d-4, PRO-016) should surface zero-result rate trend and the most common zero-result queries as top-level indicators.
 
 ### Standing Operational Metrics
 
@@ -1129,7 +1129,7 @@ All must pass before merge.
 
 ### Related Content Quality Evaluation (Milestone 3c+)
 
-Mirrors the search quality evaluation (deliverable 1a.8) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
+Mirrors the search quality evaluation (M1a-8) but for the pre-computed `chunk_relations`. The teaching portal is focused on quality teaching — bad relations undermine trust as much as bad search results.
 
 **Test suite:**
 

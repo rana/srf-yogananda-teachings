@@ -77,7 +77,7 @@ The search pipeline has evolved through three arc tiers. Milestones 1a–2a use 
 
  RECIPROCAL RANK FUSION (RRF):
  - Merge results from all active paths (A+B in Milestones 1a–3a; A+B+C in Milestone 3b+)
- - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: Milestone 1a.8 golden set at k=40/60/80]*
+ - score = Σ 1/(k + rank_in_path) across all paths, k=60 *[Parameter — default: 60, evaluate: M1a-8 golden set at k=40/60/80]*
  - Deduplicate, producing top 20 candidates
  │
  ▼
@@ -253,7 +253,7 @@ Candidate passages:
 {passages_json}
 ```
 
-*These prompts are starting points. Milestone 1a empirical testing (deliverable 1a.8, search quality evaluation — English only) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
+*These prompts are starting points. Milestone 1a empirical testing (M1a-8, search quality evaluation — English only) will refine wording, few-shot examples, and temperature settings. All prompts are maintained in `/lib/prompts/` as version-controlled TypeScript template literals.*
 
 ### Search Without AI (Fallback / Simple Queries)
 
@@ -317,7 +317,7 @@ When the embedding model changes (e.g., from `voyage-3-large` to a successor, or
  New embeddings produce different similarity scores.
 
 5. VALIDATE (on branch)
- Run the search quality evaluation test suite (deliverable 1a.8).
+ Run the search quality evaluation test suite (M1a-8).
  Compare results against production baseline.
  Threshold: new model must match or exceed current ≥ 80% pass rate.
 
@@ -403,7 +403,7 @@ BRIDGE-POWERED SUGGESTION (spiritual-terms.json)
 
 **1. Term completion.** Client-side prefix matching against pre-computed, CDN-served suggestion files partitioned by two-character prefix. Sources: distinctive terms extracted from corpus chunks during ingestion, theme names (`teaching_topics.name`), book titles, chapter titles, and `spiritual-terms.json` canonical entries. Implementation: static JSON files at Vercel CDN edge (Tier A, ADR-120) with pg_trgm async fuzzy fallback (Tier B). Latency target: < 10ms for prefix match (CDN hit + client filter), < 80ms for fuzzy fallback.
 
-**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation golden set (~58 English queries, Deliverable 1a.8 / DES-058) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: Claude validates autonomously against all user-facing content standards.
+**2. Query suggestion.** Curated complete question forms seeded from the search quality evaluation golden set (~58 English queries, M1a-8 / DES-058) and editorially expanded as the corpus grows. These are not derived from user query history — they are maintained in `/lib/data/curated-queries.json`, reviewed by SRF-aware editors (ADR-078), and versioned in git. Examples: "How do I overcome fear?", "What is the purpose of life?", "How do I meditate?" Editorial governance: Claude validates autonomously against all user-facing content standards.
 
 **3. Bridge-powered suggestion.** When the prefix matches a key in `spiritual-terms.json`, the response includes a `bridge_hint` showing Yogananda's vocabulary for that concept. This is the differentiator — no other search product surfaces the gap between user vocabulary and corpus vocabulary as a real-time suggestion. The seeker learns that "mindfulness" maps to "concentration" and "one-pointed attention" *before* submitting the query, setting expectations for what the results will contain. Bridge hints continue into search results: when a bridge-expanded query produces results, the results page shows "Showing results for 'concentration' and 'one-pointed attention' (Yogananda's terms for mindfulness)."
 
@@ -520,7 +520,7 @@ When the search bar receives focus but the seeker has typed nothing, display cur
 
 - Theme names as suggestion chips ("Peace", "Courage", "Grief & Loss")
 - One or two curated question prompts ("How do I overcome fear?", "What is the purpose of life?")
-- The search placeholder remains "What are you seeking?" (Deliverable 1a.6)
+- The search placeholder remains "What are you seeking?" (M1a-6)
 
 Zero-state content is editorially governed — it shapes which teachings seekers encounter first. Claude validates autonomously (ADR-078). Editorial governance of curated suggestions uses the same review process as theme tagging (resolve before Milestone 1c — see CONTEXT.md).
 

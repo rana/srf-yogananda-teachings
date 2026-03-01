@@ -788,7 +788,7 @@ The portal's API metadata, `llms.txt`, and machine-readable content (ADR-081) sh
 - ADR-005 gains prohibition #8 (cross-media sacred content generation)
 - ADR-042 gains explicit AI image generation prohibition for guru imagery
 - ADR-058 gains boundary statement cross-referencing this ADR
-- PRO-003 (TTS for Passages) updated: human narration as primary path; synthetic TTS not permitted for sacred text
+- PRO-003 (Spoken Teachings — Human Narration Program) updated: human narration as primary path; synthetic TTS not permitted for sacred text
 - Future audio features (book narration, Cosmic Chants performance) must use human recordings
 - Standard restoration of historical media remains permitted and encouraged
 - `media_integrity` metadata field added to API responses when cross-media content types ship (Arc 6+)
@@ -2006,7 +2006,7 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 
 ### Alternatives Evaluated
 
-- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails PRI-11 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
+- **Turso (libSQL edge database):** Evaluated 2026-02-28. Turso's embedded replicas offer genuine low-latency reads for distributed workloads. Rejected for this project because: (1) no confirmed ICU tokenization for multilingual FTS — fails PRI-06 for 10 target languages including Thai, Hindi, Bengali; (2) vector search (DiskANN) is less mature than pgvector HNSW — one known production customer; (3) hybrid search (vector + BM25 + graph in one query) is not composable in SQLite's virtual table architecture; (4) embedded replicas require persistent filesystems, incompatible with Vercel Edge Functions; (5) libsql-server is v0.x with no published SLA; (6) migration from PostgreSQL would require rewriting all SQL migrations, violating ADR-004 longevity principle. Turso is excellent for multi-tenant SaaS and local-first mobile apps — it solves a different problem than the one this portal has.
 
 ### Consequences
 

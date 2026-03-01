@@ -48,7 +48,7 @@ Located in `docs/reference/`:
 
 ## Principles (Code-Affecting)
 
-Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. When principles tension, Content Identity takes precedence over Seeker Experience, which takes precedence over Engineering Foundation. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
+Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. When principles tension, Content Identity takes precedence over Seeker Experience, which takes precedence over Engineering Foundation. Within each tier, principles are ordered by topic adjacency, not by weight — do not assume lower-numbered principles are less relevant. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
 
 **Content Identity** — what this project is:
 - **PRI-01: Direct quotes only.** The AI is a librarian, not an oracle. It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it NEVER generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. AI generation, synthesis, or cloning of any media representing Yogananda or the lineage gurus is prohibited. The corpus spans three author tiers by role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity. (ADR-001, ADR-005, ADR-015, PRO-014)
@@ -58,14 +58,20 @@ Eleven principles define the project's identity and directly constrain code gene
 
 **Seeker Experience** — who we serve and how:
 - **PRI-05: Global-First.** Supports all humans of Earth equally — low-resourced and high-resourced peoples, low-resource phones with intermittent bandwidth and high-resource phones, tablets and desktops. A seeker in rural Bihar on 2G and a seeker in Los Angeles on fiber both get the complete experience. Progressive enhancement: HTML is the foundation, CSS enriches, JavaScript enhances. No feature gating behind connectivity. Core experiences degrade gracefully with intermittent or absent connectivity. Performance budgets enforce this. **Scope prioritization:** when scope must be ordered, the option serving more reachable people ships first (ADR-128). Spanish is Tier 1 activated in Arc 1; Hindi is Tier 1 deferred to Milestone 5b (authorized YSS source not yet available outside India). (ADR-006, ADR-128)
-- **PRI-06: Calm Technology.** No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI. The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
+- **PRI-06: Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. PRI-05's structural mechanism — global-first without multilingual foundations is aspiration without substance. (ADR-075, ADR-076, ADR-077, ADR-078)
 - **PRI-07: Accessibility from first deployment.** WCAG 2.1 AA from the first component. Mobile-first responsive design from the first deployable page — ~70% of the Hindi/Spanish audience is mobile-first (ADR-128, ADR-006). Semantic HTML, ARIA landmarks, keyboard navigation, screen reader support, 44×44px touch targets, `prefers-reduced-motion`. Performance budgets: < 100KB JS, FCP < 1.5s. axe-core in CI — accessibility violations block merges. (ADR-003)
-- **PRI-08: DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. Curation algorithms derive intelligence from the corpus, never from user behavior patterns — even anonymized. (ADR-095, ADR-099)
+- **PRI-08: Calm Technology.** No push notifications, no autoplay, no engagement tracking, no gamification, no reading streaks, no time-pressure UI. The portal waits; it does not interrupt. Technology requires the smallest possible amount of attention. (ADR-065, ADR-002)
+- **PRI-09: DELTA-compliant analytics.** No user identification, no session tracking, no behavioral profiling. Amplitude event allowlist only. Curation algorithms derive intelligence from the corpus, never from user behavior patterns — even anonymized. (ADR-095, ADR-099)
 
 **Engineering Foundation** — how we build:
-- **PRI-09: 10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
-- **PRI-10: API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
-- **PRI-11: Multilingual from the foundation.** Every content table carries a `language` column from the first migration. Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
+- **PRI-10: 10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
+- **PRI-11: API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
+
+**Principle dependencies.** Several principles enable or enforce others — when implementing, the enabling principle constrains code even when the enabled principle is not directly relevant:
+- PRI-06 enables PRI-05: multilingual schema is global-first's structural mechanism
+- PRI-07 enables PRI-05: accessibility is global-first's inclusion mechanism
+- PRI-02 enables PRI-01: attribution prevents orphaned quotes
+- PRI-09 enforces PRI-08: DELTA analytics is calm technology's privacy layer
 
 ## Quick Reference
 
@@ -105,7 +111,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**PRI-NN** (Principles) — The 11 immutable commitments in PRINCIPLES.md. Two-digit zero-padded (PRI-01 through PRI-11). PRI numbers are stable and append-only — new principles append after the current max. Tier grouping (Content Identity PRI-01–04, Seeker Experience PRI-05–08, Engineering Foundation PRI-09–11) communicates precedence, not the number. Header format in PRINCIPLES.md: `### PRI-NN: Title`.
+**PRI-NN** (Principles) — The 11 immutable commitments in PRINCIPLES.md. Two-digit zero-padded (PRI-01 through PRI-11). PRI numbers are stable and append-only — new principles append after the current max. Tier grouping (Content Identity PRI-01–04, Seeker Experience PRI-05–09, Engineering Foundation PRI-10–11) communicates precedence, not the number. Header format in PRINCIPLES.md: `### PRI-NN: Title`.
 
 **ADR-NNN** (Architecture Decision Records) — ADRs are current architectural directives, not historical records — git preserves the evolution. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after the current highest in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`.
 

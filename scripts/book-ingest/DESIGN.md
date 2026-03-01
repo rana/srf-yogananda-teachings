@@ -1409,7 +1409,7 @@ Autonomous decisions made 2026-02-26, informed by end-system lifecycle analysis:
    - `Photograph` — image (Asset), caption, altText, pageNumber, chapter (ref), isIllustration
    This aligns with ADR-010 (Contentful as CMS) and the existing `book.json` manifest structure.
 
-4. **Text gaps: Mark with editorial annotation.** Critical gaps (188, 216) are flagged in `book.json` for human recovery. The portal should NOT silently omit text. If gaps remain at publication, display: `[Text continues on page N of the print edition]` — consistent with Principle 2 (full attribution: no fabrication, no silent omission).
+4. **Text gaps: Mark with editorial annotation.** Critical gaps (188, 216) are flagged in `book.json` for human recovery. The portal should NOT silently omit text. If gaps remain at publication, display: `[Text continues on page N of the print edition]` — consistent with PRI-02 (full attribution: no fabrication, no silent omission).
 
 5. **Cover image: Captured from Reader.** 1232×1572 PNG sufficient for `og:image`, book cards, and listings. SRF may provide higher-res marketing art later.
 
@@ -1417,7 +1417,7 @@ Autonomous decisions made 2026-02-26, informed by end-system lifecycle analysis:
 
 7. **Glossary: Per-book now, portal-wide later.** Extract Sanskrit terms from per-chapter metadata into a structured glossary JSON. The portal glossary system (ADR-062, Arc 3) will aggregate across books. For now, build `glossary.json` per book with term, transliteration, definition (from footnotes), and first-use page.
 
-8. **Human review gate: Required before publication.** AI extraction has 5.0/5.0 confidence, but Principle 2 demands human verification for sacred text. Flag for SRF editorial review. The `qa/review.html` side-by-side viewer enables this.
+8. **Human review gate: Required before publication.** AI extraction has 5.0/5.0 confidence, but PRI-02 demands human verification for sacred text. Flag for SRF editorial review. The `qa/review.html` side-by-side viewer enables this.
 
 9. **Next book: Pipeline is reusable.** `capture.ts`, `extract.ts`, `assemble.ts`, `validate.ts`, `qa-report.ts` accept `--book <slug>`. Adding a book requires: (a) config entry in `config.ts`, (b) `capture-meta.json`, (c) cloud reader access. The photo capture script (`capture-photos.ts`) generalizes via extraction-data scanning.
 

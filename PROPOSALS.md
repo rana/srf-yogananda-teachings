@@ -12,7 +12,7 @@
 |-----|-------|------|--------|----------------|--------|
 | PRO-001 | SRF Corpus MCP — Three-Tier Architecture | Feature | Validated | ADR-101, DES-031, ADR-097, ADR-011 | ADR-101 (descheduled 2026-02-24) |
 | PRO-002 | SRF Lessons Integration | Feature | Validated | ADR-085, ADR-121 | Stakeholder vision |
-| PRO-003 | Text-to-Speech for Passages | Feature | Proposed | ADR-003, ADR-073, ADR-015 | Accessibility vision |
+| PRO-003 | Spoken Teachings — Human Narration Program | Feature (Content + Portal) | Proposed | ADR-003, ADR-073, ADR-015, PRO-029, PRO-043 | Accessibility vision |
 | PRO-004 | Audio-Visual Ambiance Toggle | Enhancement | Proposed | ADR-065 | Unscheduled feature |
 | PRO-005 | Neon Auth as Auth0 Alternative | Enhancement | Proposed | ADR-124 | Neon platform audit 2026-02-25 |
 | PRO-006 | pg_cron for In-Database Scheduling | Enhancement | Proposed | ADR-124, ADR-017 | Neon platform audit 2026-02-25 |
@@ -51,7 +51,7 @@
 | PRO-039 | Design-Artifact Traceability — Spec-to-Code-to-Deploy Linkage | Enhancement | Adopted → DES-060 §Layer 4, 2a | ADR-098, ADR-094, PRO-037, PRO-035, PRO-041, DES-060 | Ops exploration 2026-03-01 |
 | PRO-040 | Living Golden Set — Seeker-Fed Search Quality | Enhancement | Proposed | DES-058, ADR-095, ADR-099, ADR-053 | Ops exploration 2026-03-01 |
 | PRO-041 | Documents as Executable Specifications | Enhancement | Proposed | ADR-098, ADR-094, PRO-037 | Ops exploration 2026-03-01 |
-| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature | Proposed | PRO-038, PRO-036, DES-060, ADR-095, ADR-099, ADR-098, PRI-06 | Ops exploration 2026-03-01 |
+| PRO-042 | Feature Lifecycle Portal — Calm Operations for Engineering Leadership | Feature | Proposed | PRO-038, PRO-036, DES-060, ADR-095, ADR-099, ADR-098, PRI-08 | Ops exploration 2026-03-01 |
 
 ---
 
@@ -77,15 +77,51 @@
 **Re-evaluate At:** Stakeholder request
 **Decision Required From:** SRF leadership
 
-### PRO-003: Text-to-Speech for Passages
+### PRO-003: Spoken Teachings — Human Narration Program
 
 **Status:** Proposed
-**Type:** Feature
-**Governing Refs:** ADR-003, ADR-073, ADR-015
-**Dependencies:** Passage display infrastructure (Milestone 2a). Screen reader emotional quality standards (ADR-073) inform voice selection criteria. ADR-015 (Verbatim Media Fidelity) constrains implementation options.
-**Scheduling Notes:** Listed in ROADMAP.md § Unscheduled Features. Per ADR-015 (Verbatim Media Fidelity), portal-initiated TTS of Yogananda's words must use human-recorded narration (monastic or SRF-approved reader). Synthetic text-to-speech is not permitted for sacred text — synthetic voice imposes machine prosody on a realized master's teachings. User-controlled assistive technology (browser screen readers, OS-level TTS) is always permitted and unaffected by this policy. The primary investment path is human-narrated audio by monastics as first-class content (paragraph-level playback, gender-choice narration per language), reaching an estimated 771 million illiterate adults (UNESCO 2022). Synthetic TTS may serve non-sacred portal content only (navigation, UI feedback). The monastic narration path requires content production investment; evaluate feasibility and SRF willingness at Arc 2 boundary.
-**Re-evaluate At:** Arc 2 boundary
-**Decision Required From:** Architecture + accessibility review + SRF editorial (narration approval)
+**Type:** Feature (Content Production + Portal Delivery)
+**Governing Refs:** ADR-003, ADR-073, ADR-015, PRO-029 (cross-media/audio), PRO-043 (YSS partnership)
+**Dependencies:** Passage display infrastructure (Milestone 2a) for portal delivery. Recording infrastructure and organizational commitment for content production. ADR-015 (Verbatim Media Fidelity) constrains: portal-initiated audio of Yogananda's words must use human-recorded narration — synthetic TTS is not permitted for sacred text. User-controlled assistive technology (browser screen readers, OS-level TTS) always permitted and unaffected.
+
+**Scope.** This is a content production program with a technology delivery component, not a software feature with a recording component. The program has four layers:
+
+1. **Yogananda's own voice.** SRF possesses archival recordings of Yogananda's lectures and talks. Where these overlap with published text, surfacing the Master's own voice is the most theologically pure and highest-impact first step — requiring digitization and alignment, not new recording. Governed by ADR-057/PRO-029.
+2. **Human narration of published text.** New recordings by monastics or SRF/YSS-approved readers. SRF already produces audiobooks and monastic readings — this layer extends existing capability to serve the portal. Scope ranges from daily passages to full books. Each organization determines its own recording approach, narrator selection, and production workflow.
+3. **Portal Listen mode.** The technology layer: audio player, text-audio alignment, streaming, offline support, low-bandwidth delivery. Designed multilingual from the foundation (PRI-06) — adding a new language's narration should require zero code changes.
+4. **Distribution beyond the portal.** The recordings are the most expensive asset. Distribution should match: podcast feeds, YouTube, SRF/YSS app integration, WhatsApp-shareable audio, smart speakers. The portal player is one channel among several.
+
+**Why this matters.** 771 million adults lack basic literacy (UNESCO 2022). 295 million have moderate-severe vision loss. Millions more are auditory learners, commuters, children, or elderly with declining vision. Beyond accessibility, spoken teachings restore the original medium — Yogananda's teaching tradition is oral. He recorded his own voice. Monastics read aloud in services. This program extends what already happens into digital reach.
+
+**Minimum viable proof of concept.** A daily passage recording — one monastic reads one passage each day (~2-3 minutes). Distributed as a podcast. Tests recording workflow, listener reception, and organizational fit with minimal commitment. If the daily passage works, expand to chapters, then books.
+
+**SRF and YSS considerations.** Both organizations have existing audio production experience, but may have different capabilities, priorities, and narrator pools. SRF and YSS should each evaluate independently what recording infrastructure they have, what they would need, and what narration scope makes sense for their communities. Hindi narration by YSS monastics intersects directly with PRO-043 (YSS partnership) — the same authorization conversation that could unblock Hindi text could also enable Hindi narration.
+
+**Narration as seva.** In many spiritual traditions, reading sacred text aloud is itself devotional practice. If SRF frames recording as seva (selfless service), it may align naturally with monastic life rather than competing with existing duties. This is a question for the organizations, not the architecture.
+
+**Open questions for SRF:**
+- What existing audiobook and recording infrastructure does SRF have? (Mother Center studio, equipment, production workflow)
+- Which existing audiobook productions could serve the portal? (Commercial audiobooks, CD catalog, retreat recordings)
+- Would monastics find narration recording to be a natural extension of their service, or a burden?
+- What recording locations are suitable? (Mother Center, Encinitas, Hidden Valley — each has different noise environments and monastic populations)
+- Would SRF consider professional narrators vetted and approved by the order?
+- What is the preferred first step: daily passage podcast, key chapters, or full book?
+
+**Open questions for YSS:**
+- What audio production capability exists at YSS ashrams? (Ranchi, Dakshineswar)
+- Are there YSS monastics interested in Hindi/Bengali narration?
+- Does YSS have different recording needs? (Climate considerations, equipment sourcing in India, power stability)
+- How does YSS's organizational structure handle content production decisions?
+
+**Open questions for both:**
+- Should narrator identity be disclosed? ("Read by Brother/Sister [Name]" or anonymous?)
+- Gender-choice narration: essential from the start, or a later enhancement?
+- How should narration quality be reviewed and approved?
+- What is the relationship between portal narration and commercial audiobook distribution?
+- Could the philanthropist's funding support recording infrastructure and/or a dedicated narrator role?
+
+**Re-evaluate At:** Arc 2 boundary — or earlier if organizational conversations surface readiness
+**Decision Required From:** SRF editorial + SRF/YSS leadership (organizational commitment) + Architecture (portal delivery)
 **Related Explorations:** `book-read-to-me-mode-toggle-displayed-next-to-book-text.md` (archived)
 
 ### PRO-004: Audio-Visual Ambiance Toggle
@@ -549,7 +585,7 @@ Homepage renderer: `SELECT * FROM composition_slots WHERE composition_id = (best
 - Scheduling view: calendar showing active and upcoming compositions
 - No authentication before Milestone 7a — use the same lightweight auth as the editorial portal (open question, CONTEXT.md)
 
-**Non-goal: behavioral optimization.** The compositor supports editorial rotation and seasonal scheduling, not A/B testing. Composition decisions are driven by editorial judgment and qualitative feedback, not by aggregate behavioral metrics (PRI-08, ADR-095). The portal curates from the corpus, not from user behavior.
+**Non-goal: behavioral optimization.** The compositor supports editorial rotation and seasonal scheduling, not A/B testing. Composition decisions are driven by editorial judgment and qualitative feedback, not by aggregate behavioral metrics (PRI-09, ADR-095). The portal curates from the corpus, not from user behavior.
 
 **Pages beyond homepage.** The compositor pattern extends to any editorially curated page: `/guide`, `/browse`, `/themes`, the magazine landing. Start with homepage only; evaluate extension when the pattern proves itself.
 
@@ -1051,7 +1087,7 @@ The seeker view (`/updates`) omits these. The feature view (`/updates?view=featu
 |---------|-----------|-------------------|--------|------|
 | English search | 1a | ~390M | Deployed | ADR-044, ADR-029 |
 | Spanish search | 1b | ~430M additional | Deployed | ADR-128, ADR-077 |
-| Read-to-me (monastic narration) | TBD | ~771M illiterate adults | PRO-003 | PRO-003, ADR-015 |
+| Spoken Teachings (human narration) | TBD | ~771M illiterate adults + audio-preferring seekers | PRO-003 | PRO-003, ADR-015 |
 
 Mission-aligned impact storytelling. "The teachings now speak Spanish" for seekers; "Spanish search: ~430M additional reachable" for stakeholders. Same event, two framings.
 
@@ -1385,13 +1421,13 @@ The script parses design documents for patterns that map to testable assertions:
 
 **Status:** Proposed
 **Type:** Feature
-**Governing Refs:** PRO-038 (Dream a Feature), PRO-036 (Operational Health), DES-060 (Operational Surface), ADR-095 (Observability), ADR-099 (DELTA Privacy), ADR-098 (Documentation Architecture), PRI-06 (Calm Technology)
+**Governing Refs:** PRO-038 (Dream a Feature), PRO-036 (Operational Health), DES-060 (Operational Surface), ADR-095 (Observability), ADR-099 (DELTA Privacy), ADR-098 (Documentation Architecture), PRI-08 (Calm Technology)
 **Target:** Milestone 2a (lightweight: morning brief + email feedback) → Milestone 3b (full catalog UI + stakeholder circles + decision journal)
 **Dependencies:** PRO-038 (Dream a Feature) operational — provides the autonomous development engine. DES-060 operational surface deployed (Milestone 1c). Vercel preview deployments working. Features exist to manage.
 
 **The gap.** PRO-038 describes how features are autonomously developed and deployed to preview branches. DES-060 provides health monitoring and deployment ceremony. Neither addresses what happens *between* preview deployment and production merge — the review, feedback, decision, and institutional memory lifecycle. The engineering leader currently manages this lifecycle across GitHub PRs, Vercel dashboards, email threads, and mental notes. The cognitive load compounds with every concurrent feature.
 
-**The deeper gap.** Every operational tool the engineering leader has ever used was designed to maximize information density. More charts, more alerts, more knobs. This violates the portal's own PRI-06: "Technology requires the smallest possible amount of attention." The portal's operational experience should follow the same design principles as the seeker experience.
+**The deeper gap.** Every operational tool the engineering leader has ever used was designed to maximize information density. More charts, more alerts, more knobs. This violates the portal's own PRI-08: "Technology requires the smallest possible amount of attention." The portal's operational experience should follow the same design principles as the seeker experience.
 
 **Design principle: Calm Operations.** The operational surface applies the portal's 11 principles to the engineering leader's experience:
 
@@ -1567,7 +1603,7 @@ CREATE TABLE feature_decisions (
 ```
 
 **What this enables over time:**
-- **Pattern recognition.** "You've revised 60% of features for accessibility. You've declined 3 features, all for PRI-06 reasons." The engineering leader sees her own design taste emerging.
+- **Pattern recognition.** "You've revised 60% of features for accessibility. You've declined 3 features, all for PRI-08 reasons." The engineering leader sees her own design taste emerging.
 - **Institutional memory.** When she moves on, her successor inherits not just the codebase but her judgment — encoded in hundreds of decision points with reasoning.
 - **AI calibration.** Claude's recommendations improve based on the journal. If she consistently revises for accessibility that Claude didn't flag, Claude learns to weight accessibility higher.
 - **Stakeholder transparency.** The philanthropist or SRF leadership can see: "47 features evaluated, 32 approved, 8 revised, 5 declined, 2 deferred. Average time from proposal to production: 3 days."
@@ -1588,7 +1624,7 @@ Accessible from the feature catalog as "The Archive" — a searchable collection
 - The engineering leader's decline reasoning
 - The governing principle(s) that informed the decision
 
-**The archive as immune system.** When someone asks "Why doesn't the portal have push notifications?" the archive answers: "PRO-NNN, proposed 2027-04, declined. PRI-06: Calm Technology — 'The portal waits; it does not interrupt.' Engineering leader's note: 'This would compromise the contemplative character of the portal.'"
+**The archive as immune system.** When someone asks "Why doesn't the portal have push notifications?" the archive answers: "PRO-NNN, proposed 2027-04, declined. PRI-08: Calm Technology — 'The portal waits; it does not interrupt.' Engineering leader's note: 'This would compromise the contemplative character of the portal.'"
 
 **The archive as wisdom.** Over years, the archive tells a story about what the portal *is* by documenting what it deliberately *isn't*. This is rare in software projects — most teams lose track of why features were rejected. The archive preserves that reasoning permanently.
 
@@ -1618,7 +1654,7 @@ A composite signal — not a quality metric — predicting how well a feature fi
 
 **7:30am** — Morning brief arrives by email. The portal is healthy. One feature awaits review. She reads it with her coffee. The Sanskrit hover preview looks good. Brother Ananda left a thoughtful comment about IAST transliteration. She taps "Send to Theological Review" from the email link.
 
-**10:00am** — She has an idea: "What if the Quiet Corner played different bowls for different times of day?" She types it into the feature catalog (or tells Claude via any interface). Claude creates PRO-046, runs the impact assessment — PRI-06 check: user-initiated audio, consistent. Cost: +0.2KB per audio file. Population impact: neutral. Resonance: high. She queues it for development with one click.
+**10:00am** — She has an idea: "What if the Quiet Corner played different bowls for different times of day?" She types it into the feature catalog (or tells Claude via any interface). Claude creates PRO-046, runs the impact assessment — PRI-08 check: user-initiated audio, consistent. Cost: +0.2KB per audio file. Population impact: neutral. Resonance: high. She queues it for development with one click.
 
 **12:00pm** — The Theological Review circle has responded. 2 approvals, 1 note: "Use IAST transliteration, not Harvard-Kyoto." She adds a revision note: "Use IAST." Claude re-enters development with the feedback. No context-switching needed — everything happened in the catalog.
 
