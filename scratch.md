@@ -5,6 +5,9 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+Would you remove or thin anything from the project? Nothing is also fine.
+
+---
 Think slowly and carefully.
 Be proactive — bias to action.
 
