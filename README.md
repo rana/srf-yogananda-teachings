@@ -10,13 +10,13 @@ A British philanthropist asked SRF a simple question: *"What can we do to help m
 
 ## Arc 1: What We're Proving First
 
-The first arc answers one question: **does trilingual semantic search work over Yogananda's text?**
+The first arc answers one question: **does bilingual semantic search work over Yogananda's text?**
 
-- **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries in English, Hindi, and Spanish, returning ranked verbatim passages with book, chapter, and page citations
-- **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful, with Devanagari support for Hindi
-- **Search quality evaluation** — ~88-query trilingual golden set (~58 en + ~15 hi + ~15 es) across six difficulty categories, proving retrieval relevance before anything else is built
+- **Intelligent search** — hybrid semantic + BM25 full-text search that understands conceptual queries in English and Spanish, returning ranked verbatim passages with book, chapter, and page citations
+- **Book reader** — chapter-by-chapter reading with contemplative typography served from Contentful
+- **Search quality evaluation** — ~73-query bilingual golden set (~58 en + ~15 es) across six difficulty categories, proving retrieval relevance before anything else is built
 
-One book (*Autobiography of a Yogi*) in three languages (en/hi/es), serving ~1.25 billion reachable people from the proof-of-concept. One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
+One book (*Autobiography of a Yogi*) in two languages (en/es), serving ~820 million reachable people from the proof-of-concept. One search API. One reader. If the search returns passages that speak to what seekers are experiencing, everything else follows.
 
 ## The Full Vision
 
@@ -74,7 +74,7 @@ The project is planned across 7 thematic arcs, each delivering a coherent narrat
 
 | Arc | Theme | Focus |
 |-----|-------|-------|
-| **1: Foundation** | Proving the Light | Ingest one book in 3 languages (en/hi/es), prove trilingual semantic search, deploy with AI librarian (Milestones 1a/1b) |
+| **1: Foundation** | Proving the Light | Ingest one book in 2 languages (en/es), prove bilingual semantic search, deploy with AI librarian (Milestones 1a/1b) |
 | **2: Presence** | The Living Library | All pages, reading experience, accessibility, design system, PWA (Milestones 2a/2b) |
 | **3: Wisdom** | Expanding Understanding | Multi-book catalog, editorial operations, cross-book intelligence, full corpus (Milestones 3a–3d) |
 | **4: Service** | Tools for Devotion | Study tools, PDF export, magazine, Contentful Custom Apps, multi-environment |

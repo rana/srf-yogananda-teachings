@@ -1,6 +1,6 @@
 # SRF Online Teachings Portal — Arc 1 Design (Foundation)
 
-> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b/1c) — proving the AI librarian concept (1a, English), extending to trilingual (1b, Hindi/Spanish), and deploying (1c). For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
+> **Scope.** This file contains the technical design sections relevant to **Arc 1: Foundation** (Milestones 1a/1b/1c) — proving the AI librarian concept (1a, English), extending to bilingual (1b, Spanish), and deploying (1c). For cross-cutting principles and navigation, see [DESIGN.md](DESIGN.md). For Arcs 2–3, see [DESIGN-arc2-3.md](DESIGN-arc2-3.md). For Arc 4+, see [DESIGN-arc4-plus.md](DESIGN-arc4-plus.md).
 >
 > **Parameter convention (ADR-123).** Specific numeric values in this document (cache TTLs, debounce timers, fusion parameters, chunk sizes, rate limits, color band boundaries, purge delays, revalidation intervals) are **tunable defaults**, not architectural commitments. They represent best pre-production guesses and should be implemented as named configuration constants in `/lib/config.ts`, not hardcoded literals. Milestone 1a.8 (search quality evaluation, English only) and subsequent arc gates include parameter validation as deliverables. When a parameter is tuned based on evidence, annotate the section: `*Parameter tuned: [date], [old] → [new], [evidence].*` See ADR-123 for the full governance framework.
 
@@ -502,7 +502,7 @@ If prefix.length >= 2:
 Select suggestion → intent classification (ADR-005 E1) → route
 ```
 
-**Tier A: Static JSON at CDN edge (Milestone 1a+ English, Milestone 1b+ trilingual).** Pre-computed suggestion files — English from Milestone 1a, Hindi/Spanish added in Milestone 1b:
+**Tier A: Static JSON at CDN edge (Milestone 1a+ English, Milestone 1b+ bilingual).** Pre-computed suggestion files — English from Milestone 1a, Spanish added in Milestone 1b:
 
 ```
 /public/suggestions/en/_zero.json    — English zero-state (theme chips, curated questions)
@@ -515,7 +515,7 @@ Select suggestion → intent classification (ADR-005 E1) → route
 /public/suggestions/es/me.json       — all Spanish entries starting with "me" [Milestone 1b]
 ```
 
-< 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB. Hindi and Spanish sets are smaller (single-book vocabulary). **Devanāgarī native-script prefix files** use Unicode first-character partitioning — a Hindi seeker typing "सम" hits `स.json` for the same < 10ms experience as a Latin-script seeker.
+< 10ms globally. $0 cost. No cold start. Rebuilds on deploy. Each prefix file is 2–8KB. Entire English set is ~150KB. Spanish set is smaller (single-book vocabulary). **Devanāgarī native-script prefix files** (Unicode first-character partitioning) added in Milestone 5b when Hindi activates.
 
 **Tier B: pg_trgm fuzzy fallback (Milestone 1c+, always-on).** Async endpoint for misspellings and transliterated input. Queries both `suggestion` and `latin_form` columns — a Hindi seeker typing Romanized "samadhi" matches against `latin_form`. Latency: 40–80ms. Edge-cached: `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
 
@@ -637,7 +637,7 @@ URLs are shareable and bookmarkable. Intent classification still runs server-sid
 
 #### Multilingual Suggestions
 
-**Trilingual from Arc 1 (en/hi/es).** Suggestion indices are generated for all languages with ingested content. Arc 1 ingests the Autobiography in English (Milestone 1a), then Hindi and Spanish (Milestone 1b, ADR-128 Tier 1) — all three languages get full suggestion infrastructure by end of Milestone 1b. Per-language suggestion indices for the remaining 7 languages activate in Milestone 5b.
+**Bilingual from Arc 1 (en/es).** Suggestion indices are generated for all languages with ingested content. Arc 1 ingests the Autobiography in English (Milestone 1a), then Spanish (Milestone 1b, ADR-128 Tier 1) — both languages get full suggestion infrastructure by end of Milestone 1b. Per-language suggestion indices for Hindi and the remaining 7 languages activate in Milestone 5b.
 
 Each language gets:
 - Its own extracted corpus vocabulary (from language-specific chunks)
@@ -676,7 +676,7 @@ The suggestion dropdown implements the ARIA combobox pattern (WAI-ARIA 1.2):
 | Milestone | Suggestion Capability | Infrastructure |
 |-----------|----------------------|----------------|
 | 1a | English-only static JSON prefix files from single-book vocabulary + chapter titles + zero-state chips. | Tier A: CDN-served static JSON (English) |
-| 1b | + Hindi/Spanish static JSON prefix files. Hindi: Devanāgarī native-script prefix files + Latin prefix files for Romanized input. `latin_form` populated during ingestion. | Tier A: CDN-served static JSON (trilingual) |
+| 1b | + Spanish static JSON prefix files. `latin_form` populated during ingestion. Hindi Devanāgarī prefix files added in Milestone 5b. | Tier A: CDN-served static JSON (bilingual) |
 | 1c | + pg_trgm fuzzy fallback endpoint + golden suggestion set (300 entries, 6 tiers) | Tier A + B |
 | 2b | + Vercel KV if migration trigger thresholds reached | Tier A + B + C (conditional) |
 | 3a | + multi-book vocabulary + bridge-powered suggestions + curated queries | Expanded corpus, same tiers |
@@ -1570,7 +1570,7 @@ Step 5: Language Detection (per-chunk, fastText)
  └── Detect primary language of each chunk
  └── Detect script (Latin, Devanagari, CJK, etc.)
  └── Assign language_confidence score
- └── Arc 1: trilingual (en/hi/es); column populated for all chunks
+ └── Arc 1: bilingual (en/es); column populated for all chunks
 
 Step 6: Entity Resolution (ADR-116)
  └── Resolve names, places, Sanskrit terms against entity_registry
@@ -2562,7 +2562,7 @@ Each file is an array of query specifications:
 | **Technique-boundary** | ~8 | 100% | Queries about meditation techniques, Kriya Yoga specifics, or spiritual practices. Must route to Practice Bridge (ADR-104), never return technique instructions. `expected_routing: "practice_bridge"`. |
 | **Adversarial** | ~8 | N/A | Off-topic ("What is the weather in LA?"), misspelled ("Yoganada meditashun"), multi-intent ("Tell me about fear and also what's the best restaurant"), prompt-injection attempts. `expected_routing: "no_results"` or graceful degradation. No relevance score — pass/fail on routing correctness. |
 
-**Total English:** ~58 queries. Hindi and Spanish (~15 each) use the same six categories but weighted toward Direct and Conceptual given smaller corpus coverage in Milestone 1b.
+**Total English:** ~58 queries. Spanish (~15 queries) uses the same six categories but weighted toward Direct and Conceptual given smaller corpus coverage in Milestone 1b. Hindi queries (~15) added when Hindi activates in Milestone 5b.
 
 ### Evaluation Metrics
 

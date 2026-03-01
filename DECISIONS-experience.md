@@ -1739,14 +1739,14 @@ Implement a **three-layer localization strategy** with English fallback:
 
 **English fallback:** When the user's language has insufficient content (fewer than 3 search results, sparse theme pages, small daily passage pool), supplement with English passages clearly marked with a `[EN]` language tag and "Read in English" links. The fallback is transparent — never silent.
 
-### Milestone 2a i18n Infrastructure + Trilingual UI
+### Milestone 2a i18n Infrastructure + Bilingual UI
 
-Milestone 2a delivers **trilingual UI chrome** (English, Hindi, Spanish) alongside trilingual content (ADR-128 Tier 1). Hindi and Spanish UI strings are translated via Claude draft → human review (ADR-078) in Milestone 2a — not deferred to 5b. Remaining language UI strings are a Milestone 5b deliverable. The i18n infrastructure is in place from day one for all 10 core languages:
+Milestone 2a delivers **bilingual UI chrome** (English, Spanish) alongside bilingual content (ADR-128 Tier 1). Spanish UI strings are translated via Claude draft → human review (ADR-078) in Milestone 2a — not deferred to 5b. Hindi and remaining language UI strings are a Milestone 5b deliverable. The i18n infrastructure is in place from day one for all 10 core languages:
 
 | Requirement | Rationale |
 |-------------|-----------|
 | All UI strings in `messages/en.json` | Retrofitting i18n into hardcoded JSX is expensive |
-| `next-intl` configured with `en`, `hi`, `es` locales | Adding more locales later is a config change, not a refactor |
+| `next-intl` configured with `en`, `es` locales | Adding more locales later is a config change, not a refactor |
 | CSS logical properties (`margin-inline-start`, not `margin-left`) | Free RTL support for future languages |
 | `lang` attribute on `<html>` element | Screen readers and search engines depend on this |
 | `language` column on all content tables | Already present in the schema |
@@ -1775,16 +1775,16 @@ The following decisions were made during a comprehensive multilingual audit to e
 
 6. **`chunk_relations` stores per-language relations.** Top 30 same-language + top 10 English supplemental per chunk ensures non-English languages get full related teachings without constant real-time fallback. The English supplemental relations follow the same pattern as the search fallback — supplement, clearly mark with `[EN]`, never silently substitute.
 
-7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's trilingual search quality evaluation (Deliverable 1a.8: 50 en + 15 hi + 15 es queries) and prevents launching a language with degraded retrieval quality.
+7. **Per-language search quality evaluation is a launch gate.** Each language requires a dedicated search quality test suite (15–20 queries with expected passages) that must pass before that language goes live. This mirrors Arc 1's bilingual search quality evaluation (Deliverable 1a.8: ~58 en + Milestone 1b: ~15 es queries) and prevents launching a language with degraded retrieval quality.
 
 8. **Chunk size must be validated per language.** English-calibrated chunk sizes (200/300/500 tokens) may produce different semantic density across scripts. Per-language chunk size benchmarking is required during Milestone 5b ingestion — particularly for CJK and Indic scripts where tokenization differs significantly from Latin text.
 
 ### Consequences
 
-- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization) and **trilingual UI chrome** (en/hi/es) via Claude draft → human review (ADR-078); Arc 1 content is trilingual (en/hi/es) per ADR-128
+- Milestone 2a includes i18n infrastructure setup (locale routing, string externalization) and **bilingual UI chrome** (en/es) via Claude draft → human review (ADR-078); Arc 1 content is bilingual (en/es) per ADR-128
 - Arc 1 includes the `topic_translations` table (empty until Milestone 5b)
 - Milestone 5b requires knowing which books SRF has in digital translated form (stakeholder question)
-- Milestone 2a Hindi/Spanish UI string translation uses the AI-assisted workflow (ADR-078): Claude generates drafts, human reviewer refines tone, spiritual terminology, and cultural nuance. Milestone 5b repeats this proven workflow for remaining 7 languages.
+- Milestone 2a Spanish UI string translation uses the AI-assisted workflow (ADR-078): Claude generates drafts, human reviewer refines tone, spiritual terminology, and cultural nuance. Milestone 5b repeats this proven workflow for Hindi and remaining 7 languages.
 - The content availability matrix creates asymmetric experiences per language — this is honest, not a bug
 - The book catalog per language shows only available books, plus a "Also available in English" section
 - The `hybrid_search` function accepts a `search_language` parameter and filters to the user's locale
@@ -1795,7 +1795,7 @@ The following decisions were made during a comprehensive multilingual audit to e
 - `books.bookstore_url` provides "Find this book" links to SRF Bookstore. Per-language bookstore routing (e.g., YSS Bookstore for Hindi/Bengali) can be added via a simple lookup table if needed at Milestone 5b.
 
 *Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
-*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a — trilingual content deserves trilingual chrome (ADR-128, ADR-127)*
+*Revised: 2026-02-28, moved Hindi/Spanish UI translation from Milestone 5b to Milestone 2a. Revised: 2026-03-01, Hindi deferred from Arc 1 — bilingual content (en/es) gets bilingual chrome. Hindi UI strings move to Milestone 5b.*
 
 ---
 
@@ -1850,7 +1850,7 @@ Tailwind CSS supports logical properties via the `ms-*` (margin-start), `me-*` (
 - **Status:** Accepted
 - **Date:** 2026-02-17
 - *Revised: 2026-02-24, replaced Hindi/Bengali locale roadmap with a unified core language set.*
-- *Revised: 2026-02-28, replaced "no wave ordering" with reachable-population priority ordering per ADR-128. Hindi and Spanish elevated to Tier 1 (Arc 1). Remaining languages ordered by demographic impact.*
+- *Revised: 2026-02-28, replaced "no wave ordering" with reachable-population priority ordering per ADR-128. Hindi and Spanish elevated to Tier 1. Spanish activated in Arc 1; Hindi deferred to Milestone 5b (authorized source unavailable outside India). Remaining languages ordered by demographic impact.*
 
 ### Context
 
@@ -1879,7 +1879,7 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 
 *Speaker data: Ethnologue 2025. Internet penetration: ITU/DataReportal 2025–2026. Full analysis: docs/reference/Prioritizing Global Language Rollout.md.*
 
-**Tier 1 (Hindi, Spanish):** Activated in Arc 1 alongside English. *Autobiography of a Yogi* ingested in all three languages. Together these serve ~855M reachable people — more than double English L1.
+**Tier 1 (Hindi, Spanish):** Both Tier 1 by reachable population. Spanish activated in Arc 1 alongside English (~820M reachable). Hindi deferred from Arc 1 — authorized YSS ebook only purchasable from India/Nepal/Sri Lanka (Razorpay); Amazon Kindle edition is third-party (Fingerprint! Publishing). Hindi activates when an authorized source becomes available (Milestone 5b or earlier).
 
 **Tier 2 (Portuguese, Bengali):** Activated as the next priority after Tier 1 languages are live. Bengali's mission weight (Yogananda's mother tongue, YSS heartland) is significant despite lower internet penetration.
 
@@ -1892,21 +1892,21 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 ### Rationale
 
 - **Mission integrity.** The core set covers the languages where official Yogananda translations exist and SRF/YSS has organizational presence. Every core language has published translations — the portal serves verbatim text, not machine-translated content.
-- **Reachable population ordering.** Priority determined by `speakers × internet_penetration × content_availability` (ADR-128). Hindi and Spanish each individually match English L1 reach. Deferring them behind English-only features contradicts Principle 5.
+- **Reachable population ordering.** Priority determined by `speakers × internet_penetration × content_availability` (ADR-128). Spanish matches English L1 reach. Hindi is Tier 1 by population but deferred from Arc 1 due to authorized source availability — activates when sourcing resolves.
 - **Population reach.** The core set covers ~3 billion speakers across 6 scripts (Latin, CJK, Thai, Devanagari, Bengali). Hindi + Bengali alone exceed 830M speakers.
 - **Script diversity drives architectural quality.** Supporting Latin, CJK, Thai, Devanagari, and Bengali from the core set forces robust i18n infrastructure — font loading, line-height adaptation, word-boundary handling (Thai has none), search tokenization.
 - **Thai inclusion.** Official Thai translations exist. Thai script's lack of word boundaries makes it an excellent forcing function for search tokenization quality. SRF/YSS has presence in Thailand.
 
 ### Risks
 
-- **Tier 1 in Arc 1 adds scope.** Hindi and Spanish ingestion in Arc 1 requires per-language search quality evaluation, full Devanāgarī typography (Noto Serif Devanagari for reading, Noto Sans Devanagari for UI — ADR-080), and conjunct rendering QA. Mitigated: same ingestion pipeline, same embedding model (Voyage multilingual), same search infrastructure. Incremental cost is modest.
+- **Tier 1 adds scope incrementally.** Spanish ingestion in Arc 1 requires per-language search quality evaluation. Hindi (when sourced) requires the same plus full Devanāgarī typography (Noto Serif Devanagari for reading, Noto Sans Devanagari for UI — ADR-080) and conjunct rendering QA. Mitigated: same ingestion pipeline, same embedding model (Voyage multilingual), same search infrastructure. Incremental cost is modest.
 - **Digital text availability.** Confirmed that official translations exist in all core languages. Digital text availability (machine-readable format) must be verified per language — a critical stakeholder question. Arc 1 uses purchased books as temporary sources (same approach as spiritmaji.com for English).
 - **Human reviewer availability.** Each language needs a fluent, SRF-aware reviewer for UI strings (ADR-078). The readiness gate ensures no language ships with unreviewed translations.
 - **Thai script complexity.** Thai has no word boundaries, combining characters, and tone marks. Search tokenization (pg_search ICU) handles Thai, but per-language search quality benchmarking is essential.
 
 ### Consequences
 
-- Hindi and Spanish *Autobiography* ingested in Arc 1 alongside English — trilingual from the proof-of-concept
+- Spanish *Autobiography* ingested in Arc 1 alongside English — bilingual from the proof-of-concept. Hindi ingested when authorized source becomes available (Milestone 5b or earlier).
 - Remaining languages activate ordered by reachable population, each clearing the readiness gate independently
 - Need to confirm digital text availability for all core languages (stakeholder question)
 - YSS-specific UI adaptations needed for Hindi and Bengali locales (organizational branding differences between SRF and YSS per ADR-079)
@@ -1926,7 +1926,7 @@ Define a **core language set of 10 languages** that the portal commits to suppor
 
 ### Context
 
-The portal requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 9 languages. Hindi and Spanish (Tier 1) are translated in Milestone 2a alongside trilingual content — a seeker reading Hindi content deserves Hindi navigation. Remaining 7 languages are translated in Milestone 5b. The question: who translates these, and how?
+The portal requires translating ~200–300 UI strings (nav labels, button text, search prompts, error messages, footer links, accessibility labels) into 9 languages. Spanish (Tier 1) is translated in Milestone 2a alongside bilingual content — a seeker reading Spanish content deserves Spanish navigation. Hindi (Tier 1, deferred) is translated when content becomes available. Remaining 7 languages are translated in Milestone 5b. The question: who translates these, and how?
 
 Three categories of translatable content exist in the portal, each with fundamentally different fidelity requirements:
 
@@ -2222,7 +2222,7 @@ ALTER TABLE glossary_terms ADD COLUMN has_teaching_distinction BOOLEAN NOT NULL 
 - **Devanāgarī typography QA:** Conjunct rendering, matra placement, halant/virama, and nukta characters verified at all font sizes as a Milestone 1b success criterion
 
 *Revised: 2026-02-24, ADR-114/ADR-118 coherence update*
-*Revised: 2026-02-28, extended from supplemental verse rendering to full-text Hindi reading experience (ADR-128 trilingual Arc 1)*
+*Revised: 2026-02-28, extended from supplemental verse rendering to full-text Hindi reading experience (ADR-128). Hindi full-text reading deferred from Arc 1 — authorized source unavailable outside India. Devanāgarī fonts still load in Arc 1 for Sanskrit verses in English Gita/Holy Science.*
 
 ---
 

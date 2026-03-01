@@ -1669,16 +1669,16 @@ Download WOFF2 files for Merriweather (300, 400, 700), Lora (400), and Open Sans
 | **Book content** | Yogananda's published text in official translations | Language-specific chunks in Neon (`language` column). Contentful locales (available from Arc 1, activated in Milestone 5b). **Never machine-translate sacred text.** | 5b |
 | **Search** | FTS, vector similarity, query expansion | Per-language BM25 index (pg_search, ADR-114). Multilingual embedding model (Voyage, ADR-118). Claude expands queries per language. | 5b |
 
-### Milestone 2a — Trilingual Content and Trilingual UI
+### Milestone 2a — Bilingual Content and Bilingual UI
 
-Arc 1 ingests content in English, Hindi, and Spanish (ADR-128 Tier 1). **Milestone 2a delivers trilingual UI chrome** — Hindi and Spanish UI strings translated via Claude draft → human review (ADR-078). A seeker reading Hindi content deserves Hindi navigation. The i18n infrastructure is in place from day one for all 10 core languages:
+Arc 1 ingests content in English and Spanish (ADR-128 Tier 1; Hindi deferred from Arc 1 — authorized source unavailable outside India). **Milestone 2a delivers bilingual UI chrome** — Spanish UI strings translated via Claude draft → human review (ADR-078). A seeker reading Spanish content deserves Spanish navigation. The i18n infrastructure is in place from day one for all 10 core languages:
 
 - All UI strings externalized to `messages/en.json` (never hardcoded in components)
-- Hindi and Spanish UI strings translated: `messages/hi.json`, `messages/es.json` (ADR-078 workflow)
-- Spiritual terminology glossaries bootstrapped: `messages/glossary-hi.json`, `messages/glossary-es.json`
+- Spanish UI strings translated: `messages/es.json` (ADR-078 workflow). Hindi (`messages/hi.json`) added when content becomes available.
+- Spiritual terminology glossary bootstrapped: `messages/glossary-es.json`. Hindi glossary added with Hindi content.
 - String context file: `messages/en.context.json` — per-key description of where each string appears
 - Translation script: `scripts/translate-ui.ts` — generates `{locale}.draft.json` from `en.json` + glossary + context
-- `next-intl` configured with `en`, `hi`, `es` locales (remaining locales added in Milestone 5b)
+- `next-intl` configured with `en`, `es` locales (`hi` added when Hindi content available; remaining locales in Milestone 5b)
 - CSS logical properties throughout (`ms-4` not `ml-4`, `text-align: start` not `text-align: left`)
 - `lang` attribute set dynamically per locale on `<html>` element
 - `language` column already present on `book_chunks`, `search_queries`, `email_subscribers`
@@ -1765,7 +1765,7 @@ The `[EN]` tag is a small, muted language indicator. It is honest, not apologeti
 
 > **Note:** pg_search BM25 indexes are configured per-language using ICU tokenization (defined in § Data Model). Each chunk's `language` column determines the appropriate analyzer at query time. No additional indexes are needed when new languages are added in Milestone 5b — only new content rows with the correct `language` value and the corresponding ICU analyzer configuration.
 
-**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. Voyage voyage-3-large (ADR-118) supports 26 languages and places semantically equivalent passages in different languages close together in the unified cross-lingual embedding space. This means Arc 1 embeddings (en/hi/es) remain valid when German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
+**Vector search:** The embedding model **must be multilingual** — this is an explicit requirement, not an accident. Voyage voyage-3-large (ADR-118) supports 26 languages and places semantically equivalent passages in different languages close together in the unified cross-lingual embedding space. This means Arc 1 embeddings (en/es) remain valid when Hindi, German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus. Any future embedding model migration (ADR-046) must preserve this multilingual property. Benchmark per-language retrieval quality with actual translated passages in Milestone 5b. Switch to per-language models only if multilingual quality is insufficient — but note that per-language models sacrifice the English fallback's vector search quality and cross-language passage alignment.
 
 **Query expansion:** Claude handles all target languages. The expansion prompt includes the target language:
 

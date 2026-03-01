@@ -412,7 +412,7 @@ During ingestion QA, Claude pre-screens ingested text and flags:
 
 **Category:** Classifying | **Cost:** ~$0.10/evaluation run | **Human review:** No (CI infrastructure)
 
-Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a trilingual golden set of ~88 queries (~58 English, ~15 Hindi, ~15 Spanish) across six difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Adversarial). Full methodology, data format, metrics, and CI integration specified in DES-058.
+Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Claude as the evaluator. The evaluation uses a bilingual golden set of ~73 queries (~58 English, ~15 Spanish) across six difficulty categories (Direct, Conceptual, Emotional, Metaphorical, Technique-boundary, Adversarial). Hindi queries (~15) added when Hindi activates in Milestone 5b. Full methodology, data format, metrics, and CI integration specified in DES-058.
 
 **Evaluation approach:** Substring matching resolves expected passages deterministically. For results not matching expected passages, Claude Haiku judges relevance (HIGH / PARTIAL / NOT_RELEVANT). This avoids false negatives when a different but equally relevant passage is returned.
 
@@ -422,7 +422,7 @@ Automate the search quality evaluation (Deliverables 1a.8 and 1b.2) by using Cla
 
 **Why this matters:** As the corpus grows (Milestone 3a through Arc 3) and the search pipeline evolves, automated regression testing ensures quality doesn't silently degrade. Per-category breakdowns reveal *where* search needs improvement — enabling targeted tuning rather than blind iteration.
 
-*Revised: 2026-02-28, expanded with metrics, six categories, trilingual scope, and DES-058 cross-reference.*
+*Revised: 2026-02-28, expanded with metrics, six categories, trilingual scope, and DES-058 cross-reference. Revised: 2026-03-01, trilingual → bilingual (Hindi deferred from Arc 1).*
 
 #### E6: Cross-Book Conceptual Threading (Milestone 3c)
 
@@ -4063,7 +4063,7 @@ ALTER TABLE book_chunks RENAME COLUMN embedding_v2 TO embedding;
 
 **The embedding model must be multilingual.** This is an explicit requirement, not a side-effect. Voyage voyage-3-large embeds 26 languages in a unified vector space as a design goal — not an incidental capability. This means:
 
-- Arc 1 embeddings (en/hi/es) remain valid when German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus.
+- Arc 1 embeddings (en/es) remain valid when Hindi, German, Japanese, and other chunks are added in Milestone 5b — no re-embedding of the existing corpus.
 - The English fallback strategy (searching English when locale results < 3) works because the multilingual model places the English search query and English passages in compatible vector space — validated from Arc 1 when Hindi or Spanish queries find English passages.
 - Cross-language passage alignment (`canonical_chunk_id`) is validated by embedding proximity, not just paragraph index matching.
 - Any future embedding model migration must preserve this multilingual property.
@@ -4106,7 +4106,7 @@ Three dimensions of embedding quality matter for this portal:
 
 1. **Voyage voyage-3-large is the Arc 1 embedding model.** ADR-118 adopted Voyage voyage-3-large (1024 dimensions, 26 languages, 32K token input) based on its multilingual-first design, asymmetric encoding support (`input_type = 'document'` at ingestion, `input_type = 'query'` at search time), and strong performance on literary/spiritual text retrieval. Originally, OpenAI text-embedding-3-small (1536 dimensions) was selected for its simplicity and adequate multilingual support; ADR-118 superseded that choice after the RAG Architecture Proposal demonstrated that Voyage's intentional multilingual design and literary retrieval quality justified the switch before any corpus was embedded.
 
-2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestones 1a–1b trilingual evaluation (Deliverable 1a.8 English + Milestone 1b Hindi/Spanish: 50 en + 15 hi + 15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
+2. **Milestone 5b benchmarks Voyage against multilingual alternatives.** Voyage voyage-3-large is the baseline. Benchmark candidates include Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, and domain-adapted fine-tunes. The Milestones 1a–1b bilingual evaluation (Deliverable 1a.8 English + Milestone 1b Spanish: ~58 en + ~15 es queries) provides initial multilingual signal but cannot assess the full 10-language retrieval quality. The ADR-046 migration path activates if a candidate demonstrably outperforms Voyage on specific languages.
 
 3. **Domain-adapted embeddings remain a later-stage research effort.** Fine-tuning an embedding model on Yogananda's corpus — across languages — could produce world-class retrieval quality that no general-purpose model achieves. The portal has a defined, bounded corpus (Yogananda's published works in multiple languages) that is ideal for domain adaptation. This is a research track, not an Arc 1 deliverable:
  - **Input:** The complete multilingual corpus (available after Milestone 5b ingestion)
@@ -4132,13 +4132,13 @@ Three dimensions of embedding quality matter for this portal:
 
 - **Quality is the differentiator.** At < $10 for the full multilingual corpus, the embedding model should be selected for quality, not cost. Voyage voyage-3-large was selected because it is designed multilingual-first, supports asymmetric encoding for retrieval optimization, and outperforms OpenAI models on literary retrieval benchmarks at a smaller dimension (1024 vs. 1536).
 - **Domain adaptation is the highest-ceiling option.** General models compete on benchmarks across all domains. A model fine-tuned on Yogananda's corpus would compete on one domain — the only one that matters for this portal. This is the path to world-class retrieval quality.
-- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on only 3 languages — Arc 1's trilingual corpus (en/hi/es) provides a starting point but not the full linguistic diversity needed.
+- **Sequencing matters.** Domain adaptation requires a multilingual corpus to train on (Milestone 5b) and a per-language evaluation framework to validate against (Milestone 5b). Starting this research before those exist would produce a model trained on only 2 languages — Arc 1's bilingual corpus (en/es) provides a starting point but not the full linguistic diversity needed.
 - **The architecture is already ready.** ADR-046's model versioning, the Neon branch migration workflow, and the per-language evaluation suites provide the complete infrastructure for model evolution. This ADR adds strategic direction, not architectural changes.
 
 ### Consequences
 
 - Arc 1 proceeds with Voyage voyage-3-large (1024 dimensions)
-- Deliverables 1a.8 + Milestone 1b scope note: trilingual evaluation (en/hi/es — English in 1a.8, Hindi/Spanish in 1b) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
+- Deliverables 1a.8 + Milestone 1b scope note: bilingual evaluation (en/es — English in 1a.8, Spanish in 1b) provides initial multilingual signal; full 10-language quality assessment deferred to Milestone 5b
 - Milestone 5b benchmarks Voyage as the baseline against multilingual-optimized alternatives (Cohere embed-v3, BGE-M3, multilingual-e5-large-instruct, Jina-embeddings-v3, domain-adapted fine-tunes)
 - Domain-adapted embeddings remain a documented research track, scoped after Milestone 5b corpus completion
 - CONTEXT.md open questions updated to reflect the multilingual quality evaluation and domain adaptation tracks
@@ -4270,7 +4270,7 @@ Google-style autocomplete is powered by billions of user queries — the suggest
 
 4. **Zero-state experience is editorially curated.** When the search bar is focused but empty, display curated entry points (theme names, "Seeking..." prompts). This is an editorial statement — governance follows the same human-review principle as all user-facing content.
 
-5. **Milestone progression:** Basic prefix matching in Arc 1 — trilingual (en/hi/es) from day one, with Devanāgarī native-script prefix files for < 10ms Hindi suggestions. Bridge-powered suggestions and curated queries added incrementally. Per-language suggestion indices for remaining 7 languages in Milestone 5b. Optional personal "recent searches" (client-side only, no server storage) in Milestone 7a.
+5. **Milestone progression:** Basic prefix matching in Arc 1 — bilingual (en/es) from day one. Bridge-powered suggestions and curated queries added incrementally. Hindi Devanāgarī native-script prefix files and per-language suggestion indices for remaining 8 languages in Milestone 5b. Optional personal "recent searches" (client-side only, no server storage) in Milestone 7a.
 
 ### Alternatives Considered
 
@@ -4362,7 +4362,7 @@ In a multilingual corpus, a naive "top 30 global" approach underserves non-Engli
 - Total: up to 40 rows per chunk (at 400K chunks across all languages = 16M rows — trivial for PostgreSQL)
 - The `rank` column indicates rank within its group (1–30 for same-language, 1–10 for English supplemental)
 
-In Arc 1 (en/hi/es), English chunks have empty supplemental slots; Hindi and Spanish chunks populate both same-language (up to 30) and English supplemental (up to 10) relations from the start.
+In Arc 1 (en/es), English chunks have empty supplemental slots; Spanish chunks populate both same-language (up to 30) and English supplemental (up to 10) relations from the start.
 
 **Filtering:** Relations are filtered at query time via JOINs — by book, content type, language, or life theme. Top 30 same-language relations provide ample headroom for filtered queries within a language. English supplemental relations are included when the same-language results are insufficient, following the same pattern as the search English fallback (always marked with `[EN]`). When filtering yields < 3 results, fall back to a real-time vector similarity query with the filter as a WHERE clause.
 
@@ -5172,7 +5172,7 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - ADR-049 updated with six-tier hierarchy
 - Build step in ingestion pipeline: export `suggestion_dictionary` → partitioned static JSON files per language
 - Milestone 1a: English static JSON suggestion files + client-side prefix filtering
-- Milestone 1b: Hindi/Spanish static JSON suggestion files (trilingual). Hindi includes Devanāgarī native-script prefix files (`स.json`) alongside Latin prefix files for Romanized input (`sa.json`). `latin_form` populated during Hindi/Spanish ingestion for transliteration support.
+- Milestone 1b: Spanish static JSON suggestion files (bilingual). `latin_form` populated during Spanish ingestion. Hindi Devanāgarī prefix files added in Milestone 5b.
 - Milestone 1c: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`) — queries both `suggestion` and `latin_form` columns for transliteration
 - Milestone 2b+: Vercel KV activated if migration trigger thresholds are sustained
 - Milestone 5b: Per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies
@@ -5180,7 +5180,7 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary and triggers a static JSON rebuild
 
 *Revised: 2026-02-25, rewrite from ElastiCache to three-tier progressive architecture (Static JSON → pg_trgm → Vercel KV). Rationale: ElastiCache operational overhead disproportionate for dictionary size; VPC networking adds latency with Vercel; Vercel KV provides equivalent Redis semantics with zero ops.*
-*Revised: 2026-02-28, trilingual suggestions from Arc 1 (en/hi/es) — aligned with trilingual content and UI chrome. Devanāgarī native-script prefix files for < 10ms Hindi suggestions. Transliteration (`latin_form`) populated during ingestion, not deferred to 5b.*
+*Revised: 2026-02-28, trilingual suggestions from Arc 1. Revised: 2026-03-01, trilingual → bilingual (en/es) — Hindi deferred from Arc 1. Devanāgarī prefix files moved to Milestone 5b.*
 
 ---
 
@@ -5607,7 +5607,7 @@ Reachable Population = speakers × internet_penetration × content_availability
 
 *Sources: Ethnologue 2025 (speaker counts), ITU Global Connectivity Report 2025 (internet penetration), DataReportal Digital 2026 (regional breakdowns). Full analysis with 53 citations in docs/reference/Prioritizing Global Language Rollout.md.*
 
-Hindi and Spanish together serve **~855M reachable people** — more than double English L1. This makes them Tier 1 priorities, activated alongside English from Arc 1.
+Hindi and Spanish together serve **~855M reachable people** — more than double English L1. This makes them Tier 1 priorities. Spanish is activated alongside English from Arc 1. Hindi is deferred from Arc 1 — the authorized YSS ebook is only purchasable from India/Nepal/Sri Lanka (Razorpay); the Amazon Kindle edition is third-party (Fingerprint! Publishing). Hindi activates in Milestone 5b when an authorized source becomes available.
 
 ### Application Protocol
 
@@ -5625,14 +5625,14 @@ When a future scope decision arises:
 
 | Decision | Option A | Option B | Resolution |
 |----------|----------|----------|------------|
-| Reader polish vs. Hindi Autobiography | Dwell mode serves existing English readers (~390M) | Hindi Autobiography serves ~425M new people | **Hindi ships first** — higher reach, architecturally independent |
+| Reader polish vs. Hindi Autobiography | Dwell mode serves existing English readers (~390M) | Hindi Autobiography serves ~425M new people | **Hindi ships first** — higher reach, architecturally independent. *(Note: Hindi deferred from Arc 1 due to source availability; this example illustrates the metric, not the current schedule.)* |
 | PDF export vs. Portuguese activation | PDF serves engaged users across active languages | Portuguese activates ~225M new people | **Portuguese ships first** — reach delta is large |
 | Dark mode vs. Italian activation | Dark mode serves all existing users across all active languages | Italian activates ~61M new people | **Depends on active user base** — if users across active languages significantly exceed 61M, dark mode has higher reach |
-| Cross-book search vs. more languages | Cross-book search improves experience for ~1.25B (en+hi+es users) | Next language tier adds ~355M (pt+bn) | **Cross-book search first** — higher total impact |
+| Cross-book search vs. more languages | Cross-book search improves experience for ~820M (en+es users) | Next language tier adds ~780M (hi+pt+bn) | **Depends on Hindi availability** — if Hindi source acquired, languages first; otherwise cross-book search first |
 
 ### Consequences
 
-- **Roadmap reordered:** Languages (formerly Milestone 5b) move before reader refinement (formerly Milestone 2b) and before study tools (formerly Arc 4). Hindi and Spanish Autobiography ingestion moves into Arc 1.
+- **Roadmap reordered:** Languages (formerly Milestone 5b) move before reader refinement (formerly Milestone 2b) and before study tools (formerly Arc 4). Spanish Autobiography ingestion moves into Arc 1. Hindi deferred from Arc 1 (authorized source unavailable outside India) — activates in Milestone 5b.
 - **ADR-077 revised:** Language priority ordering replaces "no wave ordering." Languages ship as they clear a readiness gate (content + UI strings + human reviewer), ordered by reachable population.
 - **Breadth-first, not depth-first:** The portal reaches 3 billion people with a good experience before reaching 390 million with a perfect experience.
 - **Decision audit trail:** Future scope decisions reference this ADR with the specific reach calculation.

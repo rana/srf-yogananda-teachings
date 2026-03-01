@@ -137,7 +137,7 @@ Claude is used only offline: search quality evaluation (ADR-005 E5).
 
 No AI services in the search path — pure hybrid search is the primary mode.
 Deployed to Vercel. Contentful webhook sync replaces batch sync.
-Trilingual (en, hi, es). (ADR-113, ADR-010, ADR-119)
+Bilingual (en, es). (ADR-113, ADR-010, ADR-119)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -165,7 +165,7 @@ Trilingual (en, hi, es). (ADR-113, ADR-010, ADR-119)
 │ │ • book_chunks │ service │ Book → Chapter │ │
 │ │ • BM25 (pg_search) │ │ → Section → TextBlock │ │
 │ │ • HNSW vector index │ │ │ │
-│ │ • search_queries │ │ Locales: en, hi, es │ │
+│ │ • search_queries │ │ Locales: en, es │ │
 │ └────────────────────┘ └────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 
@@ -1824,7 +1824,7 @@ These proportions are guidelines, not gates — the important thing is that most
 | **Unit / Integration** | Vitest + React Testing Library | Service functions, API route handlers, component rendering | Milestone 2a |
 | **End-to-End** | Playwright | Full user flows: search → read → share → navigate. Cross-browser. | Milestone 2a |
 | **Accessibility** | axe-core (CI) + Playwright a11y | Automated WCAG checks. Keyboard navigation flows. | Milestone 2a |
-| **Search quality** | Custom eval harness (`/scripts/eval/search-quality.ts`) | ~58 English + ~30 trilingual queries (golden set). Recall@3, MRR@10, routing accuracy. Six categories. CI regression on search-affecting PRs. DES-058. | Milestone 1a (en), 1b (hi/es) |
+| **Search quality** | Custom eval harness (`/scripts/eval/search-quality.ts`) | ~58 English + ~15 Spanish queries (golden set). Recall@3, MRR@10, routing accuracy. Six categories. CI regression on search-affecting PRs. DES-058. | Milestone 1a (en), 1b (es) |
 | **Related content quality** | Custom Vitest suite | Pre-computed relations are thematically relevant, cross-book diverse, no false friends. | Milestone 3c |
 | **Performance** | Lighthouse CI | LCP < 2.5s, CLS < 0.1, INP < 200ms | Milestone 2a |
 | **Visual** | Storybook | Component documentation, design token consistency | Milestone 2a |

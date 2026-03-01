@@ -80,7 +80,7 @@ The commitments are specific: homepage initial payload under 50KB; text-only mod
 
 When a feature proposal seems to conflict with this principle, the response is not "we can't do that" but "and how does the base experience work?" Global-First does not constrain ambition. It demands that ambition serve everyone.
 
-**Prioritization metric:** When scope must be ordered, the option serving more reachable people ships first. Reachable population (speakers × internet penetration × content availability) is the default tiebreaker for all scope decisions. Hindi and Spanish — each serving ~425–430M reachable people — are Tier 1 priorities activated alongside English from Arc 1, not deferred to a distant milestone. See ADR-128 for the full quantitative framework, application protocol, and demographic data.
+**Prioritization metric:** When scope must be ordered, the option serving more reachable people ships first. Reachable population (speakers × internet penetration × content availability) is the default tiebreaker for all scope decisions. Spanish (~430M reachable) is activated alongside English from Arc 1. Hindi (~425M) is Tier 1 but deferred from Arc 1 — the authorized YSS ebook is only purchasable from India/Nepal/Sri Lanka (Razorpay); the Amazon Kindle edition is third-party (Fingerprint! Publishing). Hindi activates in Milestone 5b when an authorized source becomes available. See ADR-128 for the full quantitative framework, application protocol, and demographic data.
 
 ---
 
@@ -134,7 +134,7 @@ The teaching portal serves Yogananda's published works — content that is timel
 
 Three durability tiers: Tier 1 (effectively permanent, 10+ years) — PostgreSQL, the service layer, the data model, SQL migrations, REST + JSON APIs, HTML + CSS, Terraform HCL, WCAG standards. Tier 2 (stable, 5-7 years) — Next.js, Vercel, Contentful (editorial source of truth from Arc 1; ADR-010). Tier 3 (replaceable) — specific npm packages, Claude model versions, embedding model versions, Auth0, Amplitude. The five longevity guarantees: all data in PostgreSQL; business logic is framework-agnostic; raw SQL migrations; standard protocols at boundaries; decisions are documented.
 
-The search quality test suite (trilingual golden set — DES-058) serves as the acceptance gate for any AI model migration — you can swap embedding models or LLM providers and verify the system still works.
+The search quality test suite (bilingual golden set — DES-058) serves as the acceptance gate for any AI model migration — you can swap embedding models or LLM providers and verify the system still works.
 
 ---
 
@@ -152,7 +152,7 @@ The shared service layer (`/lib/services/`) is pure TypeScript with zero framewo
 
 **Every content table carries a `language` column from the first migration.** Every content API accepts a `language` parameter. UI strings externalized, CSS uses logical properties, schema includes cross-language linking. Adding a new language should require zero schema migrations, zero API changes, and zero search rewrites. (ADR-075, ADR-076, ADR-077, ADR-078)
 
-The multilingual commitment shapes technical decisions made long before all translations exist. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — validated from Arc 1 with trilingual content (en/hi/es). pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
+The multilingual commitment shapes technical decisions made long before all translations exist. Voyage voyage-3-large was selected as the embedding model specifically for its multilingual capability (26 languages, unified cross-lingual embedding space) — validated from Arc 1 with bilingual content (en/es). pg_search uses ICU tokenization that handles Latin, Cyrillic, Arabic, Thai, and Devanagari from day one. CSS logical properties (`margin-inline-start` not `margin-left`) are required from Milestone 2a so RTL languages work without layout redesign.
 
 The three-layer localization strategy: Layer 1 is UI chrome (~200-300 strings, externalized in JSON via next-intl); Layer 2 is portal-authored content (theme descriptions, entry points, editorial reading threads — authored per locale, not translated); Layer 3 is Yogananda's published text (only official SRF/YSS translations, never machine-translated). Each layer has different authoring authority and different translation workflows.
 
