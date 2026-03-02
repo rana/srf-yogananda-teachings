@@ -53,7 +53,7 @@ One-time credential provisioning required before the first `terraform apply`. Th
 | Amplitude API Key | Milestone 3d (analytics) | Amplitude dashboard (`NEXT_PUBLIC_*` — Vercel env var, not Secrets Manager) |
 | SendGrid API Key | Milestone 5a (email) | SendGrid dashboard → Secrets Manager (ADR-091; see PRO-015 for SES alternative) |
 | ~~Cloudflare API Token~~ | Removed from portal stack (PRO-017) | If SRF routes domain through Cloudflare, add at that point |
-| Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard → Secrets Manager |
+| Auth0 credentials | Milestone 7a+ (if ever) | Auth0 dashboard → Secrets Manager. **Provisioned early:** tenant `yogananda-tech.us.auth0.com`, M2M app configured. See `.env.local` for client ID/secret. |
 
 ## Auth Mechanism Summary
 

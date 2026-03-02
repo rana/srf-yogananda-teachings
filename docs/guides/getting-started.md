@@ -1,6 +1,6 @@
 # Getting Started
 
-You need 7 accounts and about 15 minutes. After that, Claude builds everything autonomously.
+You need 8 accounts and about 15 minutes. After that, Claude builds everything autonomously.
 
 ---
 
@@ -24,7 +24,7 @@ terraform -v      # 1.7+ (https://developer.hashicorp.com/terraform/install)
 
 ## Step 2: Create accounts (~15 min)
 
-Create these 6 accounts. Keep the tokens somewhere — you'll paste them to Claude in Step 3.
+Create these 8 accounts. Keep the tokens somewhere — you'll paste them to Claude in Step 3.
 
 ### 1. Neon (database)
 - Go to [console.neon.tech](https://console.neon.tech) and sign up
@@ -63,7 +63,18 @@ Create these 6 accounts. Keep the tokens somewhere — you'll paste them to Clau
 - Note your **API key** (starts with `NRAK-`)
 - Claude configures the MCP server for NRQL queries, alerts, and monitoring
 
-### 7. AWS (infrastructure)
+### 7. Auth0 (authentication — provisioned early)
+- Go to [manage.auth0.com](https://manage.auth0.com) and sign up (free tier)
+- Create a tenant (e.g., `yogananda-tech`)
+- Go to Applications → Create Application → Machine to Machine
+- Authorize access to the Auth0 Management API
+- Note three values:
+  - **Domain** (e.g., `yogananda-tech.us.auth0.com`)
+  - **Client ID**
+  - **Client Secret**
+- Auth is not used until Milestone 7a+, but provisioning early ensures the tenant exists
+
+### 8. AWS (infrastructure)
 - If you don't have an account: [aws.amazon.com](https://aws.amazon.com)
 - Configure the CLI: `aws configure` with region `us-west-2`
 - Only needed for Milestone 1c deployment — not blocking for Milestone 1a
@@ -86,6 +97,9 @@ Sentry DSN: [paste]
 Sentry auth token: [paste]
 Vercel API token: [paste]
 New Relic API key: [paste]
+Auth0 domain: [paste]
+Auth0 client ID: [paste]
+Auth0 client secret: [paste]
 ```
 
 **What Claude does with these:**
