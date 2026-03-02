@@ -304,7 +304,7 @@ describe("footer accessibility", () => {
           <a href="https://yogananda.org" target="_blank" rel="noopener noreferrer">
             yogananda.org
           </a>
-          <a href="https://bookstore.yogananda.org" target="_blank" rel="noopener noreferrer">
+          <a href="https://bookstore.yogananda-srf.org" target="_blank" rel="noopener noreferrer">
             Bookstore
           </a>
         </nav>

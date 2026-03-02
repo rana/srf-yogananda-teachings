@@ -7,9 +7,9 @@
 
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import pool from "@/lib/db";
-import { getChapterContent } from "@/lib/services/books";
+import { getChapterContent, getEquivalentBook } from "@/lib/services/books";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -58,6 +58,16 @@ export default async function ChapterPage({
 
   const content = await getChapterContent(pool, bookId, chapterNumber);
   if (!content) notFound();
+
+  // Cross-language redirect: if book language doesn't match locale,
+  // redirect to the equivalent book's same chapter (PRI-06)
+  if (content.book.language !== locale) {
+    const equivalent = await getEquivalentBook(pool, bookId, locale);
+    if (equivalent) {
+      redirect(`/${locale}/books/${equivalent.id}/${chapterNumber}`);
+    }
+    // No equivalent — show this content (ADR-077 cross-language fallback)
+  }
 
   const bookUrl = `https://teachings.yogananda.org/${locale}/books/${bookId}`;
   const chapterUrl = `${bookUrl}/${chapterNumber}`;

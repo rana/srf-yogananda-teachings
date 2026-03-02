@@ -41,12 +41,12 @@ const BOOK_EXTRAS: Record<
 > = {
   "autobiography-of-a-yogi": {
     publicationYear: 1946,
-    bookstoreUrl: "https://bookstore.yogananda.org/autobiography-of-a-yogi",
+    bookstoreUrl: "https://bookstore.yogananda-srf.org/autobiography-of-a-yogi",
   },
   "autobiografia-de-un-yogui": {
     publicationYear: 1946,
     bookstoreUrl:
-      "https://bookstore.yogananda.org/autobiografia-de-un-yogui-autobiography-of-a-yogi-spanish",
+      "https://bookstore.yogananda-srf.org/autobiografia-de-un-yogui-autobiography-of-a-yogi-spanish",
   },
 };
 

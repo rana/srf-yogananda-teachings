@@ -63,7 +63,7 @@ export function Footer() {
             {t("lessons")}
           </a>
           <a
-            href="https://bookstore.yogananda.org"
+            href="https://bookstore.yogananda-srf.org"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-srf-navy/60 transition-colors"

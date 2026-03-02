@@ -117,6 +117,38 @@ export async function getChapters(
   }));
 }
 
+/**
+ * Find the equivalent book in a target language (cross-language linking, PRI-06).
+ * Matches by author + same chapter count — works for translations of the same work.
+ * Future: use a dedicated `work_id` column for explicit cross-language linking.
+ */
+export async function getEquivalentBook(
+  pool: pg.Pool,
+  bookId: string,
+  targetLanguage: string,
+): Promise<Book | null> {
+  const { rows } = await pool.query(
+    `SELECT b2.id, b2.title, b2.author, b2.language, b2.publication_year,
+            b2.cover_image_url, b2.bookstore_url
+     FROM books b1
+     JOIN books b2 ON b2.author = b1.author AND b2.language = $2 AND b2.id != b1.id
+     WHERE b1.id = $1
+     LIMIT 1`,
+    [bookId, targetLanguage],
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    title: r.title,
+    author: r.author,
+    language: r.language,
+    publicationYear: r.publication_year,
+    coverImageUrl: r.cover_image_url,
+    bookstoreUrl: r.bookstore_url,
+  };
+}
+
 export interface Passage {
   id: string;
   content: string;

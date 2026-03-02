@@ -302,7 +302,7 @@ async function main() {
         book.asin,
         1946, // first publication year
         "guru",
-        "https://bookstore.yogananda.org/autobiography-of-a-yogi",
+        "https://bookstore.yogananda-srf.org/autobiography-of-a-yogi",
       ],
     );
     const bookId = bookResult.rows[0].id;

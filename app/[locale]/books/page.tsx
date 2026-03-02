@@ -39,7 +39,13 @@ export default async function BooksPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("books");
-  const books = await getBooks(pool);
+  // Show books matching the current locale first; fall back to all books
+  // only if no books exist in the current locale (ADR-077 cross-language fallback)
+  let books = await getBooks(pool, locale);
+  const hasLocaleBooks = books.length > 0;
+  if (!hasLocaleBooks) {
+    books = await getBooks(pool);
+  }
 
   // Get chapter counts for each book
   const booksWithChapters = await Promise.all(
@@ -130,7 +136,7 @@ export default async function BooksPage({
             {/* SRF Bookstore signpost */}
             <p className="mt-4 text-center text-sm">
               <a
-                href="https://bookstore.yogananda.org"
+                href="https://bookstore.yogananda-srf.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-srf-navy/50 underline decoration-srf-gold/40 underline-offset-2 hover:text-srf-navy"

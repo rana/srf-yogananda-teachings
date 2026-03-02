@@ -20,7 +20,7 @@ const GO_DEEPER_LINKS = [
   { key: "centers", url: "https://yogananda.org/find-a-center" },
   { key: "meditation", url: "https://yogananda.org/online-meditation-center" },
   { key: "app", url: "https://yogananda.org/srf-app" },
-  { key: "bookstore", url: "https://bookstore.yogananda.org" },
+  { key: "bookstore", url: "https://bookstore.yogananda-srf.org" },
   { key: "youtube", url: "https://www.youtube.com/@YoganandaSRF" },
 ];
 
