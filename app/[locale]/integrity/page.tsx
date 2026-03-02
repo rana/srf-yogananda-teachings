@@ -7,7 +7,7 @@
 
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import pool from "@/lib/db";
-import { getBooks, getChapters } from "@/lib/services/books";
+import { getBooks } from "@/lib/services/books";
 
 export const revalidate = 86400; // 24 hours
 
