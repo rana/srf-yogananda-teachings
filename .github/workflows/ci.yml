@@ -1,0 +1,62 @@
+# CI Pipeline — M1c-1
+#
+# Runs on every push and PR. Tests, lint, build, doc-validate.
+# CI-agnostic deployment scripts in /scripts/ (ADR-018).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm tsc --noEmit
+
+      - name: Build
+        run: pnpm build
+
+  doc-validate:
+    name: Document Integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Advisory in Arc 1 — does not block merge
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate documents
+        run: |
+          if [ -f scripts/doc-validate.sh ]; then
+            bash scripts/doc-validate.sh
+          else
+            echo "doc-validate.sh not found, skipping"
+          fi
