@@ -10,6 +10,8 @@
 import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
 import { ShareButton } from "@/app/components/ShareButton";
 import { locales, localeNames } from "@/i18n/config";
@@ -64,6 +66,7 @@ function SearchSkeleton() {
 
 function SearchPageInner() {
   const t = useTranslations("search");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [language, setLanguage] = useState("en");
@@ -231,16 +234,16 @@ function SearchPageInner() {
                     </>
                   )}
                   <span aria-hidden="true">&middot;</span>
-                  <a
+                  <Link
                     href={`/books/${result.citation.bookId}/${result.citation.chapterNumber}`}
                     className="text-srf-gold hover:text-srf-navy transition-colors min-h-11 inline-flex items-center"
                   >
                     {t("readInContext")}
-                  </a>
+                  </Link>
                   <ShareButton
                     passage={result.content}
                     citation={result.citation}
-                    url={`/passage/${result.id}`}
+                    url={`/${locale}/passage/${result.id}`}
                   />
                 </footer>
               </article>

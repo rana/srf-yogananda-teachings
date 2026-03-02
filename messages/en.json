@@ -154,8 +154,11 @@
   },
   "errors": {
     "notFound": "This page could not be found.",
+    "notFoundGuide": "The path you followed may have changed. The teachings await you at any of these places:",
     "serverError": "Something went wrong. Please try again.",
-    "backHome": "Return home"
+    "tryAgain": "Try again",
+    "backHome": "Return home",
+    "helpfulLinks": "Helpful links"
   },
   "a11y": {
     "skipToContent": "Skip to main content",

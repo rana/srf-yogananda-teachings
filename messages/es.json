@@ -154,8 +154,11 @@
   },
   "errors": {
     "notFound": "Esta página no se pudo encontrar.",
+    "notFoundGuide": "La ruta que seguiste puede haber cambiado. Las enseñanzas te esperan en cualquiera de estos lugares:",
     "serverError": "Algo salió mal. Por favor intenta de nuevo.",
-    "backHome": "Volver al inicio"
+    "tryAgain": "Intentar de nuevo",
+    "backHome": "Volver al inicio",
+    "helpfulLinks": "Enlaces útiles"
   },
   "a11y": {
     "skipToContent": "Saltar al contenido principal",

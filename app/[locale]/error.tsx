@@ -29,7 +29,7 @@ export default function Error({
           onClick={reset}
           className="min-h-11 inline-flex items-center rounded-lg border border-srf-gold/30 px-4 py-2 text-sm text-srf-navy transition-colors hover:bg-white hover:border-srf-gold"
         >
-          Try again
+          {t("tryAgain")}
         </button>
         <Link
           href="/"

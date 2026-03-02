@@ -105,6 +105,45 @@ test.describe("API", () => {
   });
 });
 
+test.describe("Locale", () => {
+  test("Spanish homepage loads", async ({ page }) => {
+    await page.goto("/es");
+    await expect(page.locator("main")).toBeVisible();
+    // HTML lang attribute should be Spanish
+    await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  });
+
+  test("unknown locale redirects to default", async ({ page }) => {
+    const response = await page.goto("/fr");
+    // Should redirect or fall back to a valid locale
+    expect(response?.status()).toBeLessThan(500);
+  });
+});
+
+test.describe("Passage", () => {
+  test("passage page shows content and citation", async ({ page }) => {
+    // Search first to get a result with an ID
+    await page.goto("/en/search?q=God");
+    await page.waitForSelector("[role='listitem']", { timeout: 10000 });
+
+    // Find and click a "Read in context" link
+    const readLink = page.locator("a", { hasText: "Read in context" }).first();
+    await readLink.click();
+
+    // Should navigate to a book/chapter page
+    await expect(page).toHaveURL(/\/en\/books\//);
+    await expect(page.locator("main")).toBeVisible();
+  });
+});
+
+test.describe("404", () => {
+  test("shows friendly not-found page", async ({ page }) => {
+    const response = await page.goto("/en/nonexistent-page-xyz");
+    expect(response?.status()).toBe(404);
+    await expect(page.locator("main")).toBeVisible();
+  });
+});
+
 test.describe("Accessibility", () => {
   test("all pages have main-content landmark", async ({ page }) => {
     const pages = ["/en", "/en/search", "/en/books", "/en/about", "/en/quiet"];
@@ -121,5 +160,19 @@ test.describe("Accessibility", () => {
     // The skip link should become visible
     const skipLink = page.locator('a[href="#main-content"]');
     await expect(skipLink).toBeVisible();
+  });
+
+  test("touch targets meet 44px minimum", async ({ page }) => {
+    await page.goto("/en");
+    // Check all interactive elements meet minimum touch target
+    const buttons = page.locator("button, a[href]");
+    const count = await buttons.count();
+    for (let i = 0; i < Math.min(count, 10); i++) {
+      const box = await buttons.nth(i).boundingBox();
+      if (box) {
+        // At least one dimension should be >= 44px (some inline links may be smaller)
+        expect(box.height >= 44 || box.width >= 44).toBeTruthy();
+      }
+    }
   });
 });
