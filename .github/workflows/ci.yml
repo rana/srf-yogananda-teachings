@@ -44,7 +44,12 @@ jobs:
         run: pnpm test
 
       - name: Build
-        run: pnpm build
+        id: build
+        run: pnpm build 2>&1 | tee build-output.txt
+
+      - name: Performance budget (PRI-07)
+        if: always() && steps.build.conclusion == 'success'
+        run: bash scripts/check-perf-budget.sh build-output.txt
 
   doc-validate:
     name: Document Integrity
