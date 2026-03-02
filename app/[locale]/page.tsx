@@ -9,10 +9,9 @@
  */
 
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import NextLink from "next/link";
 import pool from "@/lib/db";
 import { getRandomPassage } from "@/lib/services/passages";
-import { LazySearchBar } from "@/app/components/LazySearchBar";
 import { TodaysWisdom } from "@/app/components/TodaysWisdom";
 
 export const dynamic = "force-dynamic";
@@ -50,9 +49,34 @@ export default async function HomePage({
         {/* Today's Wisdom — hero position */}
         <TodaysWisdom passage={passage} />
 
-        {/* Search */}
+        {/* Search — server-rendered form, zero JS (PRI-05, PRI-07) */}
         <section className="mt-12">
-          <LazySearchBar />
+          <form
+            action={`/${locale}/search`}
+            method="get"
+            role="search"
+            aria-label={t("searchPrompt")}
+          >
+            <label htmlFor="home-search-input" className="sr-only">
+              {t("searchPrompt")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="home-search-input"
+                name="q"
+                type="search"
+                placeholder={t("searchPrompt")}
+                className="min-h-11 flex-1 rounded-lg border border-srf-navy/15 bg-white px-4 py-2.5 text-srf-navy placeholder:text-srf-navy/35 focus:border-srf-gold/60 focus:outline-none focus:ring-1 focus:ring-srf-gold/30"
+                maxLength={500}
+              />
+              <button
+                type="submit"
+                className="min-h-11 min-w-11 rounded-lg bg-srf-navy px-4 py-2.5 text-sm font-sans font-semibold text-white transition-colors hover:bg-srf-navy/90"
+              >
+                {t("searchButton")}
+              </button>
+            </div>
+          </form>
         </section>
 
         {/* Thematic doors — M2a-1 */}
@@ -62,13 +86,13 @@ export default async function HomePage({
           </h2>
           <div className="flex flex-wrap justify-center gap-3">
             {THEMATIC_DOORS.map((door) => (
-              <Link
+              <NextLink
                 key={door.key}
-                href={`/search?q=${encodeURIComponent(door.query)}`}
+                href={`/${locale}/search?q=${encodeURIComponent(door.query)}`}
                 className="rounded-full border border-srf-gold/30 px-4 py-2 text-sm text-srf-navy/70 transition-all hover:border-srf-gold hover:bg-white hover:text-srf-navy min-h-11 inline-flex items-center"
               >
                 {t(`thematicDoors.${door.key}`)}
-              </Link>
+              </NextLink>
             ))}
           </div>
         </section>
@@ -80,13 +104,13 @@ export default async function HomePage({
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {SEEKING_ENTRIES.map((entry) => (
-              <Link
+              <NextLink
                 key={entry.key}
-                href={`/search?q=${encodeURIComponent(entry.query)}`}
+                href={`/${locale}/search?q=${encodeURIComponent(entry.query)}`}
                 className="rounded-lg border border-srf-navy/10 bg-white px-4 py-3 text-sm text-srf-navy/70 transition-colors hover:border-srf-gold/40 hover:text-srf-navy min-h-11"
               >
                 {t(`seeking.${entry.key}`)}
-              </Link>
+              </NextLink>
             ))}
           </div>
         </section>
@@ -97,8 +121,8 @@ export default async function HomePage({
             {t("startHere.heading")}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Link
-              href="/books"
+            <NextLink
+              href={`/${locale}/books`}
               className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
             >
               <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
@@ -107,9 +131,9 @@ export default async function HomePage({
               <p className="text-xs leading-relaxed text-srf-navy/60">
                 {t("startHere.curious.description")}
               </p>
-            </Link>
-            <Link
-              href={`/search?q=${encodeURIComponent("comfort hope healing")}`}
+            </NextLink>
+            <NextLink
+              href={`/${locale}/search?q=${encodeURIComponent("comfort hope healing")}`}
               className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
             >
               <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
@@ -118,9 +142,9 @@ export default async function HomePage({
               <p className="text-xs leading-relaxed text-srf-navy/60">
                 {t("startHere.need.description")}
               </p>
-            </Link>
-            <Link
-              href={`/search?q=${encodeURIComponent("meditation technique practice")}`}
+            </NextLink>
+            <NextLink
+              href={`/${locale}/search?q=${encodeURIComponent("meditation technique practice")}`}
               className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
             >
               <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
@@ -129,7 +153,7 @@ export default async function HomePage({
               <p className="text-xs leading-relaxed text-srf-navy/60">
                 {t("startHere.seeker.description")}
               </p>
-            </Link>
+            </NextLink>
           </div>
         </section>
 

@@ -8,8 +8,8 @@
  */
 
 import { useState, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import NextLink from "next/link";
 import type { DailyPassage } from "@/lib/services/passages";
 
 interface Props {
@@ -18,6 +18,7 @@ interface Props {
 
 export function TodaysWisdom({ passage: initial }: Props) {
   const t = useTranslations("home");
+  const locale = useLocale();
   const [passage, setPassage] = useState(initial);
   const [loading, setLoading] = useState(false);
 
@@ -66,12 +67,12 @@ export function TodaysWisdom({ passage: initial }: Props) {
         <footer className="mt-4 text-sm text-srf-navy/60">
           <cite className="not-italic">
             — {passage.bookAuthor},{" "}
-            <Link
-              href={`/books/${passage.bookId}`}
+            <NextLink
+              href={`/${locale}/books/${passage.bookId}`}
               className="underline decoration-srf-gold/40 underline-offset-2 hover:text-srf-navy"
             >
               <em>{passage.bookTitle}</em>
-            </Link>
+            </NextLink>
             {passage.pageNumber && `, p. ${passage.pageNumber}`}
           </cite>
         </footer>

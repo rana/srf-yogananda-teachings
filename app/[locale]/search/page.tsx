@@ -11,15 +11,8 @@ import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
-import dynamic from "next/dynamic";
-import { Link } from "@/i18n/navigation";
-import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
+import NextLink from "next/link";
 import { locales, localeNames } from "@/i18n/config";
-
-const ShareButton = dynamic(
-  () => import("@/app/components/ShareButton").then((mod) => mod.ShareButton),
-  { ssr: false },
-);
 import type { CrisisInfo } from "@/lib/services/crisis";
 
 interface Citation {
@@ -66,6 +59,98 @@ function SearchSkeleton() {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Inline crisis interstitial — M1c-9 (ADR-122).
+ * Inlined to avoid separate module import overhead (PRI-07).
+ */
+function CrisisBanner({ crisis }: { crisis: CrisisInfo }) {
+  if (!crisis.detected || !crisis.helpline) return null;
+  return (
+    <div
+      role="alert"
+      className="mb-6 rounded-lg border border-srf-gold/30 bg-srf-gold/5 p-4 md:p-5"
+    >
+      <p className="text-sm font-medium text-srf-navy">
+        If you or someone you know is struggling, help is available.
+      </p>
+      <p className="mt-2 text-sm text-srf-navy/80">
+        <strong>{crisis.helpline.action}</strong> — {crisis.helpline.name}
+      </p>
+      <p className="mt-1 text-xs text-srf-navy/50">
+        {crisis.helpline.available} &middot;{" "}
+        <a
+          href={crisis.helpline.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-srf-gold/40 underline-offset-2 hover:text-srf-navy"
+        >
+          {crisis.helpline.url}
+        </a>
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Inline share button — M2a-6 (DES-006, PRI-02).
+ * Web Share API with clipboard fallback. Inlined to avoid
+ * next/dynamic overhead (PRI-07).
+ */
+function InlineShareButton({
+  passage,
+  citation,
+  url,
+}: {
+  passage: string;
+  citation: Citation;
+  url: string;
+}) {
+  const t = useTranslations("share");
+  const [copied, setCopied] = useState(false);
+
+  const shareText = `"${passage}"\n\n— ${citation.author}, ${citation.book}, Ch. ${citation.chapterNumber}: ${citation.chapter}${citation.page ? `, p. ${citation.page}` : ""}`;
+  const shareTitle = `${citation.book} — ${citation.chapter}`;
+
+  const handleShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url });
+        return;
+      } catch {
+        /* User cancelled — fall through */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n\n${url}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* Clipboard unavailable */
+    }
+  }, [shareText, shareTitle, url]);
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      data-no-print
+      className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-srf-navy/10 px-3 py-1.5 text-xs text-srf-navy/60 transition-colors hover:border-srf-gold/40 hover:text-srf-navy"
+      aria-label={t("button")}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="h-3.5 w-3.5"
+        aria-hidden="true"
+      >
+        <path d="M13 4.5a2.5 2.5 0 1 1 .702 1.737L6.97 9.604a2.518 2.518 0 0 1 0 .799l6.732 3.365a2.5 2.5 0 1 1-.671 1.341l-6.732-3.365a2.5 2.5 0 1 1 0-3.482l6.732-3.365A2.52 2.52 0 0 1 13 4.5Z" />
+      </svg>
+      {copied ? t("copied") : t("button")}
+    </button>
   );
 }
 
@@ -181,7 +266,7 @@ function SearchPageInner() {
 
       {/* Results */}
       <div className="mx-auto max-w-3xl px-4 py-6" aria-live="polite">
-        <CrisisInterstitial crisis={crisis} />
+        <CrisisBanner crisis={crisis} />
 
         {meta && (
           <div className="mb-4">
@@ -239,13 +324,13 @@ function SearchPageInner() {
                     </>
                   )}
                   <span aria-hidden="true">&middot;</span>
-                  <Link
-                    href={`/books/${result.citation.bookId}/${result.citation.chapterNumber}`}
+                  <NextLink
+                    href={`/${locale}/books/${result.citation.bookId}/${result.citation.chapterNumber}`}
                     className="text-srf-gold hover:text-srf-navy transition-colors min-h-11 inline-flex items-center"
                   >
                     {t("readInContext")}
-                  </Link>
-                  <ShareButton
+                  </NextLink>
+                  <InlineShareButton
                     passage={result.content}
                     citation={result.citation}
                     url={`/${locale}/passage/${result.id}`}
