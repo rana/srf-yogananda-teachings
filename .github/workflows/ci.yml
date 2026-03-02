@@ -40,6 +40,9 @@ jobs:
       - name: Type check
         run: pnpm tsc --noEmit
 
+      - name: Test (unit + accessibility)
+        run: pnpm test
+
       - name: Build
         run: pnpm build
 
