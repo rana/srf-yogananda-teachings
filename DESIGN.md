@@ -227,8 +227,8 @@ The portal shares SRF's core infrastructure (AWS, Vercel, Contentful, Neon, Auth
 |---|---|---|---|
 | DynamoDB (single-table) | Neon PostgreSQL + pgvector | ADR-013 | Vector similarity search, BM25 full-text, knowledge graph queries — none feasible in DynamoDB |
 | GitLab SCM + CI/CD | GitHub + GitHub Actions | ADR-016 | Claude Code integration; GitHub Copilot workspace; open-source community norms |
-| Serverless Framework v4 | Terraform-native Lambda | ADR-017 | Portal's IaC spans Neon, Vercel, AWS (S3, Bedrock, Lambda) — Terraform unifies all; SF v4 adds licensing cost for < 15 functions |
-| Terraform Cloud (state) | S3 + DynamoDB | ADR-016 | Zero vendor dependency over 10-year horizon (ADR-004); plan review via PR comments, not external UI |
+| Serverless Framework v4 | Platform-Managed Lambda | ADR-017 | Platform MCP manages all vendor infrastructure including Lambda; SF v4 adds licensing cost for < 15 functions |
+| Terraform (IaC) | Platform MCP + `teachings.json` | ADR-016 | AI-native operations (PRI-12) — Platform MCP preserves IaC capabilities (declarative, repeatable, auditable) through an AI-native interface. `bootstrap.sh` handles one-time AWS security. |
 | Cloudflare (CDN/WAF) | Vercel-native (Firewall, DDoS, CDN) | PRO-017 | Portal runs on Vercel — double-CDN adds complexity without unique value. Compatible if SRF routes domain through Cloudflare. |
 | Retool (admin panel) | Deferred — evaluate at Milestone 3d | PRO-016 | Portal admin needs are modest; Next.js `/admin` route may suffice. Retool remains an option. |
 | New Relic (observability) | Sentry (Arc 1–3c) → New Relic (3d+ APM) | ADR-041 | Sentry covers error tracking through pre-launch and early production. New Relic joins at production scale for APM, Synthetics monitors, distributed tracing, and geographic CWV — capabilities that matter at scale but not during development. |
@@ -851,7 +851,7 @@ The architecture is designed so that **nothing needs to be thrown away and rebui
 |---------|-----------|-----------------|
 | **3 years (2029)** | Everything. Minor dependency upgrades. | Library versions. |
 | **5 years (2031)** | Core data model, service layer, migrations, ADRs. | Embedding model (swap via ADR-046). Possibly CMS or auth provider. |
-| **7 years (2033)** | Database, APIs, Terraform, service functions. | Next.js may be superseded. UI layer rewrite against same APIs. |
+| **7 years (2033)** | Database, APIs, platform config, service functions. | Next.js may be superseded. UI layer rewrite against same APIs. |
 | **10 years (2036)** | PostgreSQL schema, SQL migrations, service logic, ADRs. | UI framework, some SaaS integrations will have evolved. |
 
 **The five longevity guarantees:**

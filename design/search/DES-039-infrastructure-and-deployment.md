@@ -1,20 +1,18 @@
 ## DES-039: Infrastructure and Deployment
 
-All infrastructure is defined as code per SRF engineering standards from Milestone 1a. See ADR-016.
+All infrastructure is managed as code per SRF engineering standards. Vendor resources are managed by the yogananda-platform MCP server; one-time AWS security setup uses `bootstrap.sh`. See ADR-016 (revised 2026-03-01).
 
-### Bootstrap: Greenfield Provisioning
+### Bootstrap: One-Time Security Setup
 
-The portal starts greenfield — no existing infrastructure to import. Terraform creates all resources from scratch on first `terraform apply`. Any Neon projects or Vercel projects created during design exploration (e.g., via MCP) should be deleted before bootstrap to avoid naming conflicts.
-
-**Bootstrap via script** (before first `terraform apply`):
+The portal uses `scripts/bootstrap.sh` for one-time AWS security infrastructure. This creates resources that exist once and rarely change — IAM roles, OIDC federation, KMS keys, Secrets Manager paths, S3 buckets, and DynamoDB tables.
 
 ```bash
 ./scripts/bootstrap.sh
 ```
 
-The bootstrap script automates all CLI-scriptable setup. The human runs one script, pastes two credentials that require manual console creation (Neon org API key, Sentry auth token), and the script handles everything else: S3 bucket creation, DynamoDB table, OIDC provider, IAM role, Vercel CLI link, and GitHub secret population via `gh secret set`. The script is idempotent — safe to re-run.
+The bootstrap script automates all CLI-scriptable setup. The human runs one script, pastes two credentials that require manual console creation (Neon org API key, Sentry auth token), and the script handles everything else. The script is idempotent — safe to re-run.
 
-**What the script does:**
+**What the script creates:**
 
 | Step | Tool | What It Creates | Manual? |
 |------|------|----------------|---------|
@@ -23,83 +21,69 @@ The bootstrap script automates all CLI-scriptable setup. The human runs one scri
 | 3 | AWS CLI | OIDC provider + IAM role (`portal-ci`) from `terraform/bootstrap/trust-policy.json` | No |
 | 4 | Prompt | Neon org API key — console-only, paste when prompted | **Yes** |
 | 5 | Prompt | Sentry auth token — console-only, paste when prompted | **Yes** |
-| 6 | Vercel CLI | Project link + API token | No |
-| 7 | `gh` CLI | All 6 GitHub secrets in batch | No |
-| 8 | Terraform | `terraform init` — connects to S3 backend | No |
+| 6 | `gh` CLI | GitHub secrets in batch | No |
 
-**Prerequisites:** AWS CLI configured (`aws configure`), `gh` CLI authenticated, `vercel` CLI installed, Neon and Sentry accounts exist. See `docs/guides/manual-steps-milestone-1a.md` for the detailed human walkthrough.
+**Prerequisites:** AWS CLI configured (`aws configure`), `gh` CLI authenticated, Neon and Sentry accounts exist. See `docs/guides/manual-steps-milestone-1a.md` for the detailed human walkthrough.
 
-After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`.
+**IAM policy documents** are retained in `terraform/bootstrap/`:
+- `trust-policy.json` — GitHub OIDC trust policy
+- `ci-policy.json` — CI IAM role permissions
+- `vercel-trust-policy.json` — Vercel OIDC trust policy
+- `vercel-runtime-policy.json` — Vercel runtime IAM permissions
 
-### Environment Lifecycle Scripts (Arc 4+)
+These are reference documents for `bootstrap.sh`, not active Terraform configuration.
 
-When multi-environment promotion activates in Arc 4, two additional scripts manage environments:
+### Platform-Managed Infrastructure
 
-```bash
-# Create a complete environment in ~2 minutes
-./scripts/create-env.sh staging
+Vendor resources (Vercel project, Neon branches, Route 53 records, Contentful environments, Sentry config) are managed by the yogananda-platform MCP server. The teachings app is an application that gets deployed; the platform manages its infrastructure.
 
-# Destroy an environment in ~1 minute
-./scripts/destroy-env.sh staging
-```
+**Declarative specification:** `config/projects/teachings.json` in the platform repo describes the project's infrastructure needs — domain, repo, environment chain, gates, vendor project IDs, tier mappings. This serves the same role as `.tf` files: version-controlled, human-readable, machine-executable.
 
-**`create-env.sh {env}`** creates a Terraform workspace, a Neon branch from `main`, applies Terraform with the environment's tfvars, and configures GitHub Environment protection rules. **`destroy-env.sh {env}`** reverses all four steps. Both scripts are idempotent.
+**Three-layer model:**
 
-The branch=environment principle (ADR-020) means environments are disposable. Neon branching is instant and zero-cost. Vercel branch deployments are automatic. Sentry uses environment tags on a single DSN. No per-environment project creation needed.
+| Layer | Tool | What It Manages | Frequency |
+|-------|------|----------------|-----------|
+| **One-time security** | `bootstrap.sh` | IAM, OIDC, KMS, Secrets Manager, S3, DynamoDB | Once at project creation |
+| **Vendor resources** | Platform MCP | Vercel project, Neon project/branches, Route 53 DNS, Contentful environments | On onboarding; drift checks as needed |
+| **Operational lifecycle** | Platform MCP | Environments, deployments, promotions, health verification | Every deployment cycle |
 
-### Terraform Module Layout
+**Key platform MCP tools for infrastructure:**
 
-```
-/terraform/
- main.tf — Provider configuration, S3 backend
- variables.tf — Input variables (project name, environment)
- outputs.tf — Connection strings, URLs, DSNs
- versions.tf — required_providers with version constraints
+| Tool | Purpose |
+|------|---------|
+| `project_bootstrap` | Create all vendor resources from `teachings.json` config |
+| `project_audit` | Compare config against actual vendor state (drift detection) |
+| `environment_create` | Create Neon branch + discover Vercel deployment + DNS record |
+| `environment_promote` | Move named env pointer, update DNS, enforce gates |
+| `environment_destroy` | Clean up Neon branch, DNS, archive in platform DB |
+| `deploy_status` | Health check across all vendors for an environment |
 
- /modules/
- /neon/ — Neon project, database, roles, pgvector, pg_search
- /vercel/ — Vercel project, env vars
- /sentry/ — Sentry project, DSN, alert rules
- /aws/ — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm, state backend
- /newrelic/ — Synthetics monitors, alert policies (Milestone 3d)
+### Deployment Model
 
- /environments/
- dev.tfvars — Milestone 1a (only active environment)
- staging.tfvars — Arc 4+
- prod.tfvars — Arc 4+
+Vercel builds artifacts from git pushes. The platform decides where those artifacts go live. Auto-production deploy is disabled.
 
- /bootstrap/
- trust-policy.json — IAM OIDC trust policy template (used by bootstrap.sh)
-```
+**Build:** Vercel git integration watches GitHub and produces immutable deployment URLs for every push. Preview deployments for PRs are useful for human review.
 
-#### Progressive Module Activation
+**Promote:** The platform moves DNS pointers to specific Vercel deployment URLs. For Arc 1 (read-only portal, shared database), promotion is pure DNS — the same artifact serves all environments. For Arc 2+ (environment isolation), the app resolves its environment from the hostname.
 
-Modules are activated via feature-flag variables in `dev.tfvars`. This avoids commenting out modules or maintaining separate Terraform configurations per milestone.
+**Gate enforcement:** The platform's environment chain (dev → qa → stg → prd) enforces gates:
+- dev: automatic (tracks latest main deployment)
+- qa: requires CI pass
+- stg: requires quality suite pass
+- prd: requires stakeholder approval + deployment ceremony
 
-| Variable | 1a | 1b | 1c | 2a | 3a+ |
-|----------|----|----|----|----|-----|
-| `enable_neon` | `true` | `true` | `true` | `true` | `true` |
-| `enable_sentry` | `true` | `true` | `true` | `true` | `true` |
-| `enable_aws_core` | `true` | `true` | `true` | `true` | `true` |
-| `enable_vercel` | `false` | `false` | `true` | `true` | `true` |
-| `enable_lambda` | `false` | `false` | `false` | `true` | `true` |
-| `enable_newrelic` | `false` | `false` | `false` | `false` | 3d |
+**Rollback:** Promote the previous deployment. DNS pointer swap takes < 5 seconds.
 
-Each module is conditionally included via `count = var.enable_<module> ? 1 : 0`. The first `terraform apply` in Milestone 1a creates Neon project, Sentry project, and AWS core resources (OIDC provider, IAM roles, S3 bucket, Budget alarm). Milestone 1b adds Hindi/Spanish content (no new infrastructure modules). Milestone 1c adds Vercel. Milestone 2a adds Lambda (database backup via EventBridge Scheduler). Milestone 3a deploys batch Lambda functions (ingestion, relation computation) to already-working infrastructure. Clean, incremental, auditable.
+### Two-Layer Neon Management Model
 
-### Three-Layer Neon Management Model
+Neon infrastructure is managed through two distinct control planes (revised from three — the former Terraform layer is absorbed by the platform).
 
-Neon infrastructure is managed through three distinct control planes, each with a clear purpose and boundary. This model applies to all Neon operations from Milestone 1a.
+| Layer | Tool | What It Manages | Audit Trail |
+|-------|------|----------------|-------------|
+| **Infrastructure + Operations** | Platform MCP + Neon MCP | Project, branches (persistent and ephemeral), environment isolation, snapshots, schema diffs, connection strings | Platform database (lifecycle) + conversation logs (interactive) |
+| **Data** | SQL via `@neondatabase/serverless` + dbmate | Schema migrations, content, queries, extensions | Git (migrations), database WAL |
 
-| Layer | Tool | What It Manages | When | Audit Trail |
-|-------|------|----------------|------|-------------|
-| **Infrastructure** | Terraform (`kislerdm/neon` provider) | Project, tier, persistent branches (production/staging/dev), compute configuration, branch protection | PRs → `terraform plan` → merge → `terraform apply` | Git + Terraform state in S3 |
-| **Operations** | Neon MCP / CLI / API | Ephemeral branches, snapshots, schema diffs, verification, connection strings, Time Travel queries | Development sessions, CI runs | Conversation logs (MCP), CI logs (CLI) |
-| **Data** | SQL via `@neondatabase/serverless` + dbmate | Schema migrations, content, queries, extensions | Application runtime, migration scripts | Git (migrations), database WAL |
-
-**Design principle:** MCP operations should never create persistent state that Terraform doesn't know about. Ephemeral branches (CI test, PR preview, migration test, ingestion sandbox) are Operations-layer concerns — created and deleted within a session or CI run. Persistent branches (production, staging, dev) are Infrastructure-layer concerns — declared in Terraform, never created ad hoc.
-
-**Neon MCP as development tool.** The Neon MCP server (`@neondatabase/mcp-server-neon`) is Claude's primary interface for Neon operations during development sessions. It provides:
+**Neon MCP as development tool.** The Neon MCP server (`@neondatabase/mcp-server-neon`) is Claude's primary interface for Neon operations during development sessions:
 
 | MCP Tool | Use Case |
 |----------|----------|
@@ -110,36 +94,32 @@ Neon infrastructure is managed through three distinct control planes, each with 
 | `create_branch` | Ephemeral branches for experimentation |
 | `get_connection_string` | Retrieve connection strings for `.env.local` population |
 | `describe_branch` | Verify branch state, compute configuration |
-| `list_projects` | Verify project exists after `terraform apply` |
+| `list_projects` | Verify project exists |
 
-The MCP occupies the same role as `psql` for a human developer — exploratory, immediate, judgment-based. Terraform provides the plan/apply review gate for persistent infrastructure; MCP provides the interactive feedback loop for operational tasks.
-
-**API key scoping per layer** (see ADR-124 § API Key Scoping Policy):
+**API key scoping** (see ADR-124 § API Key Scoping Policy):
 
 | Context | Key Type | Scope | Rationale |
 |---------|----------|-------|-----------|
-| Terraform (`terraform.yml`) | Organization API key | All projects in org | Can create/delete projects |
+| Platform MCP (environment lifecycle) | Project-scoped API key | Single project | Least privilege for branch creation/deletion |
 | CI branch operations (`neon-branch.yml`) | Project-scoped API key | Single project | Can create/delete branches but cannot delete the project |
-| Claude Code / MCP development | Project-scoped API key | Single project | Least privilege for interactive operations |
+| Claude Code / Neon MCP (interactive) | Project-scoped API key | Single project | Least privilege for interactive operations |
 
-### Boundary: Terraform vs. Operations vs. Application Code
+### Boundary: Platform vs. Operations vs. Application Code
 
-| Managed by Terraform | Managed by Operations (MCP/CLI/API) | Managed by Application Code |
-|---------------------|--------------------------------------|------------------------------|
-| Service creation (Neon project, Vercel project, Sentry project) | Ephemeral branches (CI, PR, migration test) | Database schema + extensions (dbmate SQL migrations) |
-| Persistent branches (production, staging, dev) | Snapshots (pre-migration, checkpoints) | `vercel.json`, `sentry.client.config.ts`, `newrelic.js` |
-| Compute configuration (CU, autosuspend) | Schema diffs and verification | Lambda handler code (`/lambda/`) |
-| Environment variables, secrets placeholders | Connection string retrieval | GitHub settings (manual), CI workflows (`.github/workflows/`) |
-| AWS IAM roles, S3 buckets, Budgets alarm | Time Travel queries (debugging) | Application routing (`next.config.js`) |
-| DNS records, domain bindings (when active) | Branch cleanup (nightly script) | Structured logging (`lib/logger.ts`) |
-| Alert rules, Synthetics monitors | Compute start/suspend (operational) | — |
+| Managed by Platform MCP | Managed by Operations (Neon MCP/CLI) | Managed by Application Code |
+|------------------------|--------------------------------------|------------------------------|
+| Vendor resource creation (Vercel, Neon, Sentry) | Ephemeral branches (CI, PR, migration test) | Database schema + extensions (dbmate SQL migrations) |
+| Persistent branches (production, per named env) | Snapshots (pre-migration, checkpoints) | `sentry.client.config.ts`, `newrelic.js` |
+| Environment variables, DNS records | Schema diffs and verification | Lambda handler code (`/lambda/`) |
+| Deployment tracking, promotion, health verification | Connection string retrieval | Application routing (`next.config.ts`) |
+| Gate enforcement | Time Travel queries (debugging) | CI workflows (`.github/workflows/`) |
 
 ### Source Control and CI/CD
 
-| Phase | SCM | CI/CD | Terraform State |
-|-------|-----|-------|-----------------|
-| **Primary (all arcs)** | GitHub | GitHub Actions | S3 + DynamoDB |
-| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+| Phase | SCM | CI/CD | Infrastructure State |
+|-------|-----|-------|---------------------|
+| **Primary (all arcs)** | GitHub | GitHub Actions | Platform database |
+| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | Platform database (unchanged) |
 
 #### CI/CD Pipeline (GitHub Actions)
 
@@ -152,19 +132,17 @@ On every PR:
  5. Playwright (E2E)
  6. Lighthouse CI (performance)
  7. Search quality suite
- 8. terraform fmt -check + terraform validate (if /terraform/ changed)
- 9. terraform plan (if /terraform/ changed) — posted as PR comment
 
 On merge to main:
  1. All of the above
- 2. Neon snapshot (if /migrations/ changed) — pre-migration safety net via Neon Snapshot API (ADR-019 Layer 2)
+ 2. Neon snapshot (if /migrations/ changed) — pre-migration safety net
  3. dbmate migrate — apply pending migrations
- 4. terraform apply (dev)
+ 4. Platform auto-tracks main → dev environment
 ```
 
-Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraform validate`, `terraform plan` on PR, and `terraform apply` on merge. Migration changes (`/migrations/**`) trigger a pre-migration Neon snapshot before applying — provides instant rollback without timestamp arithmetic. Application changes trigger the full test suite. Multiple triggers can fire in the same PR.
+Infrastructure changes no longer trigger a separate CI pipeline. Vendor resources are managed through Platform MCP tool calls, not CI/CD workflows.
 
-**Pre-migration snapshot pattern:** When `/migrations/**` files change, the merge-to-main workflow calls `/scripts/neon-snapshot.sh` (using `NEON_PROJECT_API_KEY`) to create a snapshot named `pre-migrate-{sha}` before running `dbmate migrate`. If migration fails, restore from the snapshot. No Lambda infrastructure needed — this is a single API call to `POST /projects/{id}/branches/{branch_id}/snapshots`. (See ADR-019 Layer 2.)
+**Pre-migration snapshot pattern:** When `/migrations/**` files change, the merge-to-main workflow calls `/scripts/neon-snapshot.sh` to create a snapshot named `pre-migrate-{sha}` before running `dbmate migrate`. If migration fails, restore from the snapshot.
 
 #### Workflow File Structure
 
@@ -172,29 +150,22 @@ Infrastructure changes (`/terraform/**`) trigger `terraform fmt -check`, `terraf
 .github/
  workflows/
    ci.yml              — [1a] App CI: lint, type check, test, build, a11y, Lighthouse, search quality
-   terraform.yml        — [1a] Infra CI: fmt, validate, plan (PR), apply (merge to main)
    neon-branch.yml      — [1c] Neon branch lifecycle: create on PR open, delete on PR close
    neon-cleanup.yml     — [1c] Nightly: delete orphaned Neon preview branches
- dependabot.yml         — [1a] Automated provider + dependency update PRs
+ dependabot.yml         — [1a] Automated dependency update PRs
 ```
 
-Milestone 1a creates `ci.yml`, `terraform.yml`, and `dependabot.yml`. The Neon branch workflows (`neon-branch.yml`, `neon-cleanup.yml`) are added in 1c when preview deployments become active (Vercel enabled).
-
-**`ci.yml`** runs on all PRs and pushes to main. No AWS credentials needed — pure app testing.
-
-**`terraform.yml`** runs only when `/terraform/**` changes. Uses OIDC federation (`AWS_ROLE_ARN`) for AWS auth. Provider tokens (`NEON_API_KEY`, `VERCEL_TOKEN`, `SENTRY_AUTH_TOKEN`) as GitHub secrets. Posts `terraform plan` output as PR comment. On merge to main, `terraform apply` runs automatically for the dev environment.
-
-**`neon-branch.yml`** runs on PR lifecycle events. Uses `NEON_API_KEY` secret. Creates a Neon branch on PR open, deletes on PR close.
-
-**`neon-cleanup.yml`** runs on `schedule: cron('0 3 * * *')`. Calls `/scripts/neon-branch-cleanup.sh`. Catches orphans.
-
-**`dependabot.yml`** covers two ecosystems: `terraform` (provider updates for `/terraform/`) and `npm` (dependency updates). Provider update PRs automatically trigger `terraform.yml`, producing a plan diff for review.
+`terraform.yml` is removed — infrastructure changes flow through Platform MCP, not CI/CD.
 
 #### Vercel Deployment Strategy
 
-Vercel auto-deploys on git push via its native GitHub integration. Terraform manages the Vercel *project* (settings, environment variables, domain bindings) but does not trigger deployments. This keeps the Terraform boundary clean ("Terraform creates services; app code triggers deployments") and avoids race conditions between Terraform-triggered and git-triggered deploys.
+Vercel builds artifacts from git pushes via its native GitHub integration. Auto-production deploy is **disabled**. The platform manages which deployment serves which environment through DNS pointer management and Vercel's promotion API.
 
-For Arc 4+ multi-environment promotion (dev → staging → prod), deployment switches to Vercel CLI invoked from CI scripts (ADR-018), with Vercel's git integration disabled. This gives explicit control over which environment receives which build.
+For the environment chain (dev → qa → stg → prd), promotion is explicit via Platform MCP `environment_promote`. The platform:
+1. Validates gate requirements (CI pass, quality suite, stakeholder approval)
+2. Moves the DNS pointer (e.g., `qa.teachings.yogananda.tech`) to the deployment URL
+3. Runs health verification against the new URL
+4. Records the promotion with full audit trail
 
 #### Neon Branch-per-PR
 
@@ -206,51 +177,51 @@ Preview deployments use Neon's branching for database isolation:
 | **Preview** (per PR) | Created on PR open | 7 days after last commit | GitHub Action on PR close + nightly cleanup script |
 | **CI test** (per run) | Created at test start | Deleted at test end | GitHub Action post-step |
 
-TTL enforcement: a GitHub Action runs on PR close (`types: [closed]`) to delete the associated Neon branch via Neon API. A nightly cleanup script (`/scripts/neon-branch-cleanup.sh`) catches orphans — branches older than 7 days with no open PR. Both use the `NEON_API_KEY` secret.
+TTL enforcement: a GitHub Action runs on PR close (`types: [closed]`) to delete the associated Neon branch via Neon API. A nightly cleanup script (`/scripts/neon-branch-cleanup.sh`) catches orphans.
 
 #### Cost Alerting
 
-Terraform provisions an AWS Budget alarm at 80% and 100% of monthly target ($100 for Arcs 1–3, adjusted as services scale). The alarm sends email to the human principal. Neon and Vercel cost alerts are configured manually in their dashboards (no Terraform provider support for spend alerts).
+AWS Budget alarm at 80% and 100% of monthly target ($100 for Arcs 1–3). Created by `bootstrap.sh`. Neon and Vercel cost alerts are configured manually in their dashboards.
 
 ### Environment Configuration
 
-The portal has three distinct configuration layers — application environment variables, named constants, and developer tooling — each with a clear owner and location. ADR-041 and all other sections reference this canonical definition.
+The portal has three distinct configuration layers — application environment variables, named constants, and developer tooling — each with a clear owner and location.
 
 #### 1. Application Environment Variables (`.env.example`)
 
-Values that vary per environment or contain secrets. The `.env.example` file is the local development reference. In deployed environments, Terraform reads secrets from AWS Secrets Manager (ADR-125) and distributes them as Vercel environment variables. See `.env.example` for the canonical variable list with tag legend.
+Values that vary per environment or contain secrets. The `.env.example` file is the local development reference. In deployed environments, the platform distributes secrets from AWS Secrets Manager (ADR-125) to Vercel environment variables via the Vercel API.
 
-**Tag legend:** `[terraform]` = set by Terraform output in deployed environments (fill manually for local dev). `[secrets-manager]` = stored in AWS Secrets Manager; Terraform reads and distributes to Vercel; fill manually in `.env.local` for local dev. `[static]` = fixed value, same across all environments.
+**Tag legend:** `[platform]` = set by Platform MCP in deployed environments (fill manually for local dev). `[secrets-manager]` = stored in AWS Secrets Manager; platform distributes to Vercel; fill manually in `.env.local` for local dev. `[static]` = fixed value, same across all environments.
 
 **Secrets management architecture (ADR-125).** Two tiers:
 
 | Tier | What | Where | Changes via |
 |------|------|-------|-------------|
-| **Config** (non-secrets) | Named constants, per-environment config, `NEXT_PUBLIC_*` build-time vars | `/lib/config.ts` + Vercel env vars | Code PR or `terraform apply` |
-| **Secrets** (all credentials) | API keys, tokens, connection strings | AWS Secrets Manager → Terraform → Vercel env vars | Secrets Manager update (+ `terraform apply` for Vercel distribution) |
+| **Config** (non-secrets) | Named constants, per-environment config, `NEXT_PUBLIC_*` build-time vars | `/lib/config.ts` + Vercel env vars | Code PR or Platform MCP |
+| **Secrets** (all credentials) | API keys, tokens, connection strings | AWS Secrets Manager → Platform MCP → Vercel env vars | Secrets Manager update (+ platform redistribution) |
 
 Secrets Manager path convention: `/portal/{environment}/{service}/{key-name}` (e.g., `/portal/production/voyage/api-key`).
 
-**Credential distribution pattern.** Terraform data sources read secret values from Secrets Manager and set them as `vercel_project_environment_variable` resources. Result: a single `terraform apply` distributes secrets to Vercel — the human never manually copies secrets between platforms. For local development, `.env.local` provides the same values directly. The `/lib/config.ts` facade checks environment variables first, so local dev works without Secrets Manager access.
+**Credential distribution pattern.** The platform reads secret values from Secrets Manager and sets them as Vercel environment variables via API. Result: a single `project_bootstrap` or `environment_promote` distributes secrets to Vercel — the human never manually copies secrets between platforms. For local development, `.env.local` provides the same values directly. The `/lib/config.ts` facade checks environment variables first, so local dev works without Secrets Manager access.
 
 **AWS authentication by context (ADR-126):**
 
 | Context | Auth mechanism | Credentials |
 |---|---|---|
 | **Vercel functions → Bedrock + Secrets Manager** | Vercel OIDC federation (`portal-vercel-runtime` role) | `AWS_ROLE_ARN` env var (not a secret) — no stored keys |
-| **Lambda → Bedrock/S3** | IAM execution role (attached by Terraform) | No env vars needed — role is automatic |
-| **GitHub Actions → AWS** | GitHub OIDC federation (ADR-016, `portal-ci` role) | `AWS_ROLE_ARN` secret, no stored keys |
+| **Lambda → Bedrock/S3** | IAM execution role (attached at provisioning) | No env vars needed — role is automatic |
+| **GitHub Actions → AWS** | GitHub OIDC federation (`portal-ci` role) | `AWS_ROLE_ARN` secret, no stored keys |
 | **Local dev → Bedrock** | AWS credential chain fallback | `AWS_PROFILE=srf-dev` or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` in `.env.local` |
 
-**Zero long-lived AWS credentials.** Vercel OIDC (ADR-126) authenticates Vercel functions to AWS via short-lived OIDC tokens exchanged for temporary IAM credentials through `AssumeRoleWithWebIdentity`. The `awsCredentialsProvider` from `@vercel/functions/oidc` handles the STS exchange and credential refresh. Combined with GitHub Actions OIDC (ADR-016), no long-lived AWS credentials exist in any environment.
+**Zero long-lived AWS credentials.** Vercel OIDC (ADR-126) authenticates Vercel functions to AWS via short-lived OIDC tokens. Combined with GitHub Actions OIDC, no long-lived AWS credentials exist in any environment.
 
-**Environment-scoped security.** The Vercel OIDC `sub` claim includes the deployment environment (`production`, `preview`, `development`). Separate IAM roles per environment scope Secrets Manager access: production deployments can only read `/portal/production/*` secrets. Preview deployments cannot assume the production role.
+**Environment-scoped security.** The Vercel OIDC `sub` claim includes the deployment environment. Separate IAM roles per environment scope Secrets Manager access: production deployments can only read `/portal/production/*` secrets.
 
-**`ANTHROPIC_API_KEY` is removed from `.env.example`.** The application code uses `@anthropic-ai/bedrock-sdk` (not `@anthropic-ai/sdk`) for all Claude calls, routing through Bedrock in every environment including local dev. One code path, one auth mechanism. If a developer cannot access Bedrock (e.g., no AWS account yet during initial scaffold), the search pipeline gracefully degrades — search works without Claude-powered query expansion, returning BM25 + vector results only.
+**`ANTHROPIC_API_KEY` is removed from `.env.example`.** The application code uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment including local dev.
 
 **What is NOT in `.env.example`:**
 - Model IDs, chunk sizes, search parameters → `/lib/config.ts` (see below)
-- CI-only secrets (NEON_API_KEY, VERCEL_TOKEN, AWS_ROLE_ARN) → GitHub Secrets only (see CONTEXT.md § Bootstrap Credentials Checklist)
+- CI-only secrets (NEON_API_KEY, AWS_ROLE_ARN) → GitHub Secrets only
 - Claude Code developer tooling → developer shell profile (see below)
 
 #### 2. Named Constants (`/lib/config.ts` — ADR-123)
@@ -303,20 +274,16 @@ export const CACHE_TTL_SEARCH_SECONDS     = 300;
 export const CACHE_TTL_SUGGESTIONS_SECONDS = 3600;
 ```
 
-Model IDs are parameters, not secrets — they don't need env var indirection. When a model is upgraded, the change is a code PR with a `terraform plan`-equivalent diff: visible, reviewable, and auditable.
+Model IDs are parameters, not secrets — they don't need env var indirection. When a model is upgraded, the change is a code PR: visible, reviewable, and auditable.
 
 #### 3. CI-Only Secrets (GitHub Secrets)
 
-Never in `.env.local` or `.env.example`. Used only by GitHub Actions and Terraform. Documented in CONTEXT.md § Bootstrap Credentials Checklist.
+Never in `.env.local` or `.env.example`. Used only by GitHub Actions.
 
 | Secret | Used by | Purpose |
 |---|---|---|
-| `TF_STATE_BUCKET` | Terraform | S3 state backend bucket name (not a secret, but CI needs it) |
 | `AWS_ROLE_ARN` | GitHub Actions OIDC | Assume IAM role for AWS operations |
-| `NEON_API_KEY` | Terraform, branch cleanup script | Neon provider + branch management |
-| `VERCEL_TOKEN` | Terraform | Vercel provider |
-| `VERCEL_ORG_ID` | Terraform | Scope Vercel operations |
-| `SENTRY_ORG` | Terraform | Scope Sentry operations |
+| `NEON_API_KEY` | Branch cleanup script | Neon branch management |
 
 #### 4. Developer Tooling (Claude Code + MCP)
 
@@ -328,24 +295,14 @@ export CLAUDE_CODE_USE_BEDROCK=1
 export AWS_REGION=us-west-2
 export AWS_PROFILE=srf-dev           # or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
 
-# Claude Code — Bedrock bearer token (alternative to IAM credentials)
-# export AWS_BEARER_TOKEN_BEDROCK=   # If using bearer token auth instead of IAM
-
-# Claude Code — experimental features
-export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-
 # MCP servers (configured in .claude/settings.json, not env vars)
 # Neon MCP: uses NEON_API_KEY from env or settings
 # Sentry MCP: uses SENTRY_AUTH_TOKEN from env or settings
 ```
 
-**Why separate from `.env.example`:** Claude Code env vars configure the *development tool*, not the application. They route the AI developer through the project's AWS account (same billing, same permissions). A human developer using VS Code wouldn't need these; an AI developer using Claude Code does. The application code never reads `CLAUDE_CODE_USE_BEDROCK` — only the Claude Code CLI does.
-
-**AWS authentication for local development:** The developer (human or AI) authenticates to AWS via an IAM user with an `srf-dev` profile, or via `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`. This is separate from the OIDC federation used by GitHub Actions. The IAM user needs Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) for the configured region.
-
 ### Local Development Environment
 
-Developers run the app locally without Terraform. The development environment uses a Neon dev branch (not local PostgreSQL) to ensure extension parity (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements).
+Developers run the app locally without the platform. The development environment uses a Neon dev branch (not local PostgreSQL) to ensure extension parity (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements).
 
 **Bootstrap sequence:**
 
@@ -356,37 +313,25 @@ Developers run the app locally without Terraform. The development environment us
 
 **Neon dev branch workflow:**
 
-- The `dev` branch is created from `main` during initial Neon project setup (Terraform or console)
+- The `dev` branch exists on the Neon project (created during project setup)
 - Developers connect to the dev branch via `NEON_DATABASE_URL` in `.env.local`
-- Each developer may create personal branches from `dev` for isolated work: `neonctl branches create --name feat/my-feature --parent dev`
-- CI creates ephemeral branches per PR (see § Neon Branch-per-PR above); developers do not share the CI branch
-- When working on migrations, run `pnpm db:migrate` against the dev branch and verify with `pnpm db:status`
+- Each developer may create personal branches from `dev` for isolated work
+- CI creates ephemeral branches per PR (see § Neon Branch-per-PR above)
+- When working on migrations, run `pnpm db:migrate` against the dev branch
 
 **Contentful local access:**
 
 - Contentful Delivery API (read-only) is accessed via `CONTENTFUL_ACCESS_TOKEN` + `CONTENTFUL_SPACE_ID` in `.env.local`
-- The book reader fetches from Contentful Delivery API; search fetches from Neon. Both work locally without additional setup
-- For ingestion development, the `CONTENTFUL_MANAGEMENT_TOKEN` is needed — only for developers working on the ingestion pipeline
-
-**Test data seeding:**
-
-- `pnpm db:seed` loads a minimal dataset for local development: a subset of Autobiography chapters (3–5 chapters), pre-computed embeddings, and a handful of search queries for the golden set
-- The seed script is idempotent — safe to run repeatedly
-- Full corpus ingestion is a separate pipeline step, not part of local dev setup
+- For ingestion development, the `CONTENTFUL_MANAGEMENT_TOKEN` is needed
 
 **Offline/degraded mode:**
 
 - If Neon is unreachable, `pnpm dev` still starts — page rendering works, but search and reader API calls fail with clear error messages
-- If Contentful is unreachable, the book reader shows a fallback message; search continues to work (Neon is the search index)
-- Claude API unavailability (Bedrock) degrades search to pure hybrid results — no query expansion or passage ranking
+- If Contentful is unreachable, the book reader shows a fallback message; search continues to work
+- Claude API unavailability (Bedrock) degrades search to pure hybrid results
 
-**Claude Code developer tooling:**
+The platform manages deployed environments only. Local development uses direct Neon connection strings and local config files.
 
-- MCP servers configured in `.claude/settings.json` provide database access and context. See § Developer Tooling above for the Neon MCP configuration
-- Claude Code can run migrations, query the dev branch, and execute the ingestion pipeline directly
-
-Terraform manages deployed environments only. Local development uses direct Neon connection strings and local config files.
-
-**Operational surface companion:** DES-060 specifies the operational *surface* built on top of this infrastructure foundation — health endpoint, `/ops` dashboard, deployment ceremony scripts, SLI/SLO framework, and design-artifact traceability. DES-039 is the infrastructure; DES-060 is the visibility layer. See PRO-035, PRO-036, PRO-037, PRO-039.
+**Operational surface companion:** DES-060 specifies the operational *surface* built on top of this infrastructure foundation — health endpoint, SLI/SLO framework, and design-artifact traceability. Operational dashboarding is provided by the platform MCP server. DES-039 is the infrastructure; DES-060 is the visibility layer. See PRO-035, PRO-036, PRO-037, PRO-039.
 
 ---

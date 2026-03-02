@@ -81,7 +81,7 @@ Twelve principles define the project's identity and directly constrain code gene
 
 **Parameters as named constants (ADR-123).** Specific numeric values (chunk sizes, rate limits, thresholds) are tunable defaults, not architectural commitments. All parameters in `/lib/config.ts`. Each documents: value, rationale, evaluation trigger.
 
-**Core stack:** Next.js on Vercel, Neon PostgreSQL 18 Scale tier + pgvector + pg_search/ParadeDB + pg_stat_statements (ADR-124), Contentful (Arc 1+, editorial source of truth; ADR-010), Claude via AWS Bedrock (index-time enrichment only — never in search hot path, never generates content; ADR-014, ADR-119), Voyage voyage-3-large (embeddings, ADR-118), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Vercel KV/Upstash Redis (suggestions Milestone 2b+ if needed, ADR-120; Arc 1 uses static JSON at CDN edge + pg_trgm fuzzy fallback), fastText (language detection), dbmate migrations, Terraform IaC. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI in the search path. AI-enhanced search (HyDE, cross-encoder reranking) optional, conditional on evaluation (ADR-119). See DESIGN.md for the full tech stack.
+**Core stack:** Next.js on Vercel, Neon PostgreSQL 18 Scale tier + pgvector + pg_search/ParadeDB + pg_stat_statements (ADR-124), Contentful (Arc 1+, editorial source of truth; ADR-010), Claude via AWS Bedrock (index-time enrichment only — never in search hot path, never generates content; ADR-014, ADR-119), Voyage voyage-3-large (embeddings, ADR-118), Python + NetworkX graph batch pipeline (Milestone 3b+, ADR-117), Vercel KV/Upstash Redis (suggestions Milestone 2b+ if needed, ADR-120; Arc 1 uses static JSON at CDN edge + pg_trgm fuzzy fallback), fastText (language detection), dbmate migrations. Infrastructure managed by yogananda-platform MCP (ADR-016 revised); one-time AWS security via `bootstrap.sh`. Pure hybrid search (vector + BM25 + RRF) is the primary search mode — no AI in the search path. AI-enhanced search (HyDE, cross-encoder reranking) optional, conditional on evaluation (ADR-119). See DESIGN.md for the full tech stack.
 
 **Code layout:**
 ```
@@ -92,11 +92,11 @@ Twelve principles define the project's identity and directly constrain code gene
 /app/ — Next.js Server Components + Route Handlers
 /app/api/v1/ — Versioned API routes
 /migrations/ — Numbered SQL migrations (dbmate)
-/terraform/ — Infrastructure as Code (Neon, Vercel, Sentry, AWS modules)
+/terraform/bootstrap/ — IAM policy documents (referenced by bootstrap.sh; .tf files archived)
 /lambda/ — AWS Lambda handlers (Milestone 3a+, ADR-017)
 /messages/ — Locale JSON files (next-intl)
 /scripts/ — Bootstrap, CI-agnostic deployment, and environment lifecycle scripts (ADR-018, ADR-020)
-/.github/workflows/ — CI/CD pipelines (ci.yml, terraform.yml, neon-branch.yml)
+/.github/workflows/ — CI/CD pipelines (ci.yml, neon-branch.yml)
 /design/ — Individual design specifications (search/, experience/, editorial/)
 /docs/guides/ — Human onboarding and setup (getting-started, credentials, manual steps)
 /docs/operations/ — Operational runbooks and procedures (Milestone 3b+)
@@ -130,7 +130,7 @@ Twelve principles define the project's identity and directly constrain code gene
 
 **PRO-NNN** (Proposals) — Curated proposals in PROPOSALS.md. PRO-NNN identifiers are permanent — never renamed or reassigned. When a proposal is adopted, the PRO entry gets `Status: Adopted → [ADR/DES/Milestone refs]`. When an ADR is suspended, a PRO entry is created and the ADR gets `Status: Suspended → PRO-NNN`. New PROs append after the current max. Header format: `### PRO-NNN: Title`.
 
-**M{arc}{milestone}-{deliverable}** (Milestone Deliverables) — Deliverables in ROADMAP.md use the `M` prefix for self-identifying cross-references. Pattern: `M1a-4` (Arc 1, Milestone a, deliverable 4). The `M` prefix disambiguates deliverables from version numbers and section references. Milestones in prose use full form: "Milestone 1a"; deliverables use the M-notation: "M1a-4". Examples: M1a-1 (repository setup), M1a-8 (search quality evaluation), M1c-16 (operational dashboard).
+**M{arc}{milestone}-{deliverable}** (Milestone Deliverables) — Deliverables in ROADMAP.md use the `M` prefix for self-identifying cross-references. Pattern: `M1a-4` (Arc 1, Milestone a, deliverable 4). The `M` prefix disambiguates deliverables from version numbers and section references. Milestones in prose use full form: "Milestone 1a"; deliverables use the M-notation: "M1a-4". Examples: M1a-1 (repository setup), M1a-8 (search quality evaluation), M1c-17 (deploy manifest).
 
 When referencing identifiers in prose, use the prefix form: `PRI-01`, `ADR-017`, `DES-003`, `PRO-001`, `M1a-4`. Zero-pad to the standard width for each type (PRI: 2 digits, ADR/DES/PRO: 3 digits).
 

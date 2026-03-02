@@ -1102,7 +1102,7 @@ The teachings portal uses **Neon PostgreSQL exclusively** as its database layer.
 - **The data model is fundamentally relational.** Books → chapters → chunks → topics with many-to-many relationships, cross-references, editorial threads, and chunk relations. This is PostgreSQL's strength. Shoehorning relational data into DynamoDB's key-value model would require denormalization and access pattern planning that adds complexity without benefit.
 - **pgvector eliminates the separate vector store.** Embeddings, full-text search, and relational data coexist in a single database. Adding DynamoDB would mean splitting data across two stores with consistency challenges.
 - **Single database simplifies operations.** One backup strategy (ADR-019), one connection configuration, one migration tool (dbmate), one monitoring target. Two databases means two of everything.
-- **10-year architecture horizon (ADR-004).** Every dependency is a 10-year maintenance commitment. DynamoDB would add: AWS SDK dependency, IAM configuration, separate Terraform module, separate monitoring, separate backup strategy, and cross-database consistency logic — all for zero functional gain.
+- **10-year architecture horizon (ADR-004).** Every dependency is a 10-year maintenance commitment. DynamoDB would add: AWS SDK dependency, IAM configuration, separate infrastructure configuration, separate monitoring, separate backup strategy, and cross-database consistency logic — all for zero functional gain.
 - **Scale profile doesn't warrant it.** The portal serves spiritual seekers, not e-commerce transactions. Peak load is modest. PostgreSQL with Neon's serverless autoscaling handles the portal's read-heavy, moderate-write workload comfortably.
 - **SRF ecosystem alignment is about patterns, not tools.** The portal aligns with SRF's tech stack in framework (Next.js), hosting (Vercel), database vendor (Neon), identity (Auth0), and observability (Sentry, New Relic, Amplitude). Using the same vendor (Neon/PostgreSQL) for a different access pattern (relational + vector) is good engineering, not deviation.
 
@@ -1110,7 +1110,7 @@ The teachings portal uses **Neon PostgreSQL exclusively** as its database layer.
 
 - All data lives in Neon PostgreSQL: content, embeddings, search indexes, analytics, configuration
 - Single backup target, single migration tool, single connection strategy
-- Terraform infrastructure is simpler (no DynamoDB module, no IAM policies for cross-service access)
+- Infrastructure is simpler (no DynamoDB configuration, no IAM policies for cross-service access)
 - If SRF's DynamoDB usage evolves to include a pattern the portal genuinely needs (e.g., real-time collaborative features in future milestones), this decision can be revisited via a new ADR
 - Developers familiar with SRF's DynamoDB patterns should note: the portal's data model is relational by nature, and the single-database approach is an intentional architectural strength
 
@@ -1195,7 +1195,7 @@ Batch tasks are configured via `CLAUDE_MODEL_BATCH` in `/lib/config.ts` (default
 
 - **AWS alignment.** SRF's stack is AWS-native (ADR-013 notes this). Bedrock means consolidated billing, VPC endpoints (API traffic stays off the public internet), IAM-based access control, and existing AWS support contracts. No separate Anthropic API key management.
 - **Committed throughput pricing.** Bedrock offers provisioned throughput for predictable costs at scale — important for a free portal with no revenue to absorb cost spikes.
-- **Operational simplicity.** One cloud provider for compute (Vercel deploys to AWS), database (Neon), and AI (Bedrock). Terraform manages Bedrock model access alongside other AWS resources.
+- **Operational simplicity.** One cloud provider for compute (Vercel deploys to AWS), database (Neon), and AI (Bedrock). Platform manages Bedrock model access alongside other vendor resources.
 - **Haiku-first is prudent.** The portal's Claude tasks are tightly constrained: classify intent (enum output), expand terms (JSON array output), rank passages (ordered ID list output). These are not open-ended generation tasks. Haiku handles structured, bounded tasks well.
 - **Benchmark before promoting.** Rather than assuming Sonnet is needed for ranking, measure first. The Arc 1 test set provides empirical data. If Haiku ranks comparably, the portal saves ~$1,200/month at 10K searches/day.
 - **10-year horizon (ADR-004).** AWS Bedrock is a managed service with AWS's long-term commitment. The portal's `/lib/services/claude.ts` abstracts the provider — switching from Bedrock to direct API (or vice versa) requires changing the SDK client, not the business logic.
@@ -1220,7 +1220,7 @@ Claude via Bedrock is the initial implementation. The long-term direction is **m
 
 - `/lib/services/claude.ts` uses `@anthropic-ai/bedrock-sdk` for all Claude calls, routing through Bedrock in every environment
 - `.env.example` includes `AWS_REGION=us-west-2` + `AWS_ROLE_ARN` for the `portal-vercel-runtime` IAM role (Vercel OIDC → Bedrock). No `ANTHROPIC_API_KEY`, no stored access keys. See ADR-126.
-- Terraform creates the `portal-vercel-runtime` IAM role with Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) + Secrets Manager read access. Vercel functions authenticate via OIDC federation (ADR-126) — zero long-lived credentials.
+- `bootstrap.sh` creates the `portal-vercel-runtime` IAM role with Bedrock inference permissions (`bedrock:InvokeModel*`, `bedrock:Converse*`) + Secrets Manager read access. Vercel functions authenticate via OIDC federation (ADR-126) — zero long-lived credentials.
 - Model IDs are named constants in `/lib/config.ts` per ADR-123 (not env vars): `CLAUDE_MODEL_CLASSIFY`, `CLAUDE_MODEL_EXPAND`, `CLAUDE_MODEL_RANK` (default: Haiku), `CLAUDE_MODEL_ENRICH` (default: Opus), `CLAUDE_MODEL_EVALUATE` (default: Opus)
 - Arc 1 includes a ranking benchmark task: 50 curated queries, compare Haiku vs Sonnet ranking quality, decide promotion
 - New model versions (e.g., Haiku 4.0) are available on Bedrock days/weeks after direct API release — acceptable for a portal that values stability over cutting-edge
@@ -1228,10 +1228,10 @@ Claude via Bedrock is the initial implementation. The long-term direction is **m
 
 ---
 
-## ADR-016: Infrastructure as Code (Terraform)
+## ADR-016: Infrastructure as Code — Platform-Managed Infrastructure
 
-- **Status:** Accepted
-- **Date:** 2026-02-17
+- **Status:** Accepted (Revised 2026-03-01 — Terraform replaced by Platform MCP)
+- **Date:** 2026-02-17 (original); 2026-03-01 (revised)
 
 ### Context
 
@@ -1240,203 +1240,128 @@ The SRF Tech Stack Brief mandates Infrastructure as Code as a core engineering p
 > *"All infrastructure should be defined as Infrastructure-as-Code and deployable via a GitLab CI/CD pipeline"*
 > — SRF Infrastructure Philosophy, Principle #4
 
-The brief names **Terraform** as the IaC tool for "everything else" (i.e., everything not covered by Serverless Framework for AWS Lambda). The portal's infrastructure (Neon, Vercel, Sentry, later Auth0, New Relic) falls squarely in Terraform's "everything else" category.
+The brief names Terraform as the IaC tool. ADR-016 originally adopted Terraform for all infrastructure from Milestone 1c. This served the project through M1c, producing working `.tf` files for Neon, Vercel, Sentry, and AWS resources.
 
-AI-assisted development (Claude Code) makes Terraform authoring and maintenance practical even for small teams. Terraform's declarative HCL syntax is well within Claude Code's capabilities, reducing the traditional overhead of writing and evolving `.tf` files.
+**What changed:** PRI-12 (AI-Native Development and Operations) introduced the yogananda-platform as the AI operator's primary interface. The platform MCP server manages environment lifecycle, deployment orchestration, and vendor resources through `teachings.json` configuration and MCP tool calls. This created architectural redundancy — two systems (Terraform and Platform MCP) managing the same vendor resources (Neon branches, Vercel projects, Route 53 records, Contentful environments), with two state stores (S3 tfstate and platform database), two execution pipelines (terraform.yml and MCP tool calls), and two declarative specifications (.tf files and teachings.json).
+
+The revision resolves this redundancy by recognizing that the platform MCP provides all seven IaC capabilities through an AI-native interface:
+
+| IaC Capability | Terraform | Platform MCP |
+|---------------|-----------|-------------|
+| Declarative intent | `.tf` files | `teachings.json` config |
+| Drift detection | `terraform plan` (batch) | `project_audit` queries actual state vs config (real-time) |
+| Repeatability | `terraform apply` from scratch | `project_bootstrap` from config |
+| Dependency ordering | HCL implicit DAG | Orchestration code in vendor service layer |
+| Plan/review workflow | `terraform plan` → human reads HCL diff | AI explains intent in natural language → human approves |
+| State tracking | `tfstate` (current snapshot) | Platform database (full history with audit trail) |
+| Version control | `.tf` files in git | Config files + tool implementations in git |
 
 ### Decision
 
-Use **Terraform** for all infrastructure provisioning from Milestone 1c. The portal repo includes a `/terraform` directory with modules for each service.
+**Infrastructure as Code is preserved. The execution engine changes from Terraform to Platform MCP.**
+
+The teachings project's infrastructure is managed by the yogananda-platform. The teachings repo contains application code; the platform repo manages infrastructure for all projects.
+
+#### Three-Layer Infrastructure Model
+
+| Layer | Tool | What It Manages | When |
+|-------|------|----------------|------|
+| **One-time security setup** | `scripts/bootstrap.sh` | AWS IAM roles, OIDC federation, KMS keys, Secrets Manager, S3 state bucket, DynamoDB locks | Once, at project creation |
+| **Vendor resources** | Platform MCP (`project_bootstrap`, `project_audit`) | Vercel project, Neon project/branches, Route 53 records, Contentful environments, Sentry config | On project onboarding; drift checks as needed |
+| **Operational lifecycle** | Platform MCP (environment tools) | Environment creation, deployment tracking, promotion, health verification, teardown | Every deployment cycle |
+
+**`bootstrap.sh` is preserved for AWS security resources.** IAM policies, OIDC federation, and KMS keys are security-critical, created once, and rarely change. The bootstrap script creates them with explicit AWS CLI calls and IAM policy documents (`terraform/bootstrap/*.json`). These resources don't benefit from ongoing state management — they need creation and occasional audit, not continuous reconciliation.
+
+**`teachings.json` replaces `.tf` files as the declarative specification.** The platform's project config describes what infrastructure the project needs: domain, repo, environment chain, gates, vendor project IDs, tier mappings. Platform MCP tools read this config to create, query, and manage resources.
+
+**Platform database replaces `tfstate` as the state store.** Every environment creation, promotion, and destruction is recorded with full audit trail — richer than Terraform state, which captures only current snapshot.
 
 #### Source Control and CI/CD
 
-| Phase | SCM | CI/CD | Terraform State |
-|-------|-----|-------|-----------------|
-| **Primary (all arcs)** | GitHub | GitHub Actions | S3 + DynamoDB |
-| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | GitLab Terraform backend |
+| Phase | SCM | CI/CD | Infrastructure State |
+|-------|-----|-------|---------------------|
+| **Primary (all arcs)** | GitHub | GitHub Actions | Platform database (yogananda-platform Neon) |
+| **If SRF requires migration** | GitLab (SRF IDP) | GitLab CI/CD | Platform database (unchanged) |
 
-GitHub is the primary SCM for development velocity and simplicity. GitLab migration is not planned but architecturally supported — CI-agnostic deployment scripts (ADR-018) ensure migration requires only CI config rewrite, not logic rewrite. If SRF requires GitLab for production handoff, the migration path is clean. The Terraform code itself is SCM-agnostic.
-
-#### Terraform State: S3 + DynamoDB
-
-An S3 bucket stores state files; a DynamoDB table provides state locking. Both are provisioned during one-time bootstrap (manually or via a minimal script) before the first `terraform apply`. Rationale:
-
-- **Zero vendor dependency.** No external SaaS account for state management. S3 and DynamoDB are already in the AWS footprint (ADR-016 uses AWS for Lambda, S3 backups, Bedrock). One fewer vendor to manage over a 10-year horizon (ADR-004).
-- **Built-in state locking.** DynamoDB conditional writes prevent concurrent `terraform apply` operations.
-- **Negligible cost.** State files are small (< 100 KB). S3 storage + DynamoDB on-demand: effectively $0/month.
-- **Plan review in PR context.** `terraform plan` output is posted as a PR comment by `terraform.yml`. The human principal reviews AI-authored plans in the same PR where code changes are reviewed — the natural review venue for the AI-as-implementer model.
-- **GitLab-portable.** If SRF requires GitLab migration, the S3 backend works unchanged. (GitLab also supports its own Terraform backend, but S3 is CI-agnostic.)
-
-Bootstrap (one-time, before first `terraform apply`):
-1. Create an S3 bucket (`srf-portal-terraform-state`) with versioning enabled and server-side encryption (AES-256)
-2. Create a DynamoDB table (`srf-portal-terraform-locks`) with partition key `LockID` (String), on-demand billing
-3. Configure `backend "s3"` in `/terraform/main.tf`
-
-After bootstrap, all infrastructure changes flow through PRs → `terraform plan` → merge → `terraform apply`. See CONTEXT.md § Bootstrap Credentials Checklist.
+The platform's infrastructure state is in its own Neon database, not in S3 tfstate. SCM migration affects only CI workflows, not infrastructure management — the platform MCP operates independently of the CI system.
 
 #### GitHub Actions Authentication: OIDC Federation
 
-GitHub Actions authenticates to AWS via **OpenID Connect (OIDC) federation** — no long-lived AWS credentials stored as GitHub secrets.
+OIDC federation for GitHub Actions (ADR-126) is unchanged. Created by `bootstrap.sh`, not Terraform.
 
 ```
 GitHub Actions → OIDC token → AWS STS AssumeRoleWithWebIdentity → temporary credentials (1 hour)
 ```
 
-Bootstrap (one-time manual setup):
-1. Create an AWS IAM OIDC Identity Provider for `token.actions.githubusercontent.com`
-2. Create an IAM Role with a trust policy scoped to the portal's GitHub repo and `main` branch
-3. Attach policies for S3 (backups), Lambda, EventBridge, Bedrock, and ECR (if needed)
+The IAM Role ARN is stored as a GitHub secret (`AWS_ROLE_ARN`). No long-lived AWS credentials exist. This was created by `bootstrap.sh` and managed as a one-time security resource.
 
-The IAM Role ARN is stored as a GitHub secret (`AWS_ROLE_ARN`). No access keys exist. Credential rotation is eliminated — OIDC tokens are ephemeral (1 hour TTL). Even a compromised workflow cannot escalate beyond the scoped IAM role.
+#### What the Platform Manages vs. What It Doesn't
 
-For non-AWS providers (Neon, Vercel, Sentry), API tokens are stored as GitHub secrets and rotated manually on a quarterly cadence. These providers do not support OIDC federation.
+| Managed by Platform MCP | Managed by bootstrap.sh (one-time) | Managed by Application Code |
+|------------------------|-----------------------------------|-----------------------------|
+| Neon branches (create, destroy, promote) | IAM OIDC provider + roles | Database schema (dbmate migrations) |
+| Vercel project creation + env vars | KMS keys | `sentry.client.config.ts`, `newrelic.js` |
+| Route 53 DNS records | Secrets Manager paths | Lambda handler code (`/lambda/`) |
+| Contentful environments + aliases | S3 buckets (backup, state) | Application routing (`next.config.ts`) |
+| Sentry configuration | DynamoDB table (legacy, for Terraform state compatibility) | CI workflows (`.github/workflows/`) |
+| Deployment tracking + health verification | AWS Budget alarms | — |
+| Environment promotion + gate enforcement | — | — |
 
-#### Provider Version Pinning
+The boundary: the platform manages *vendor resource lifecycle*. `bootstrap.sh` handles *one-time AWS security setup*. Application code configures *how the app uses those services*.
 
-All Terraform providers specify exact version constraints in `required_providers`:
+### SRF Tech Stack Brief Divergence
 
-```hcl
-terraform {
- required_version = ">= 1.7"
- required_providers {
-   neon     = { source = "kislerdm/neon",     version = "~> 0.6" }
-   vercel   = { source = "vercel/vercel",     version = "~> 2.0" }
-   sentry   = { source = "jianyuan/sentry",   version = "~> 0.14" }
-   aws      = { source = "hashicorp/aws",     version = "~> 5.0" }
- }
-}
-```
+The brief prescribes Terraform for IaC. This decision preserves the IaC principle while changing the tool:
 
-The `~>` (pessimistic) operator allows patch updates but locks major/minor versions. Provider upgrades are explicit PRs with `terraform plan` diff review. The Neon provider (`kislerdm/neon`) is community-maintained — pin conservatively and test upgrades.
+- **Declarative specification:** `teachings.json` serves the same role as `.tf` files — version-controlled, human-readable, machine-executable description of desired infrastructure state.
+- **Reproducibility:** `project_bootstrap("teachings")` creates all vendor resources from the config, equivalent to `terraform apply` from scratch.
+- **Audit trail:** The platform database records full operational history — richer than `tfstate`.
+- **Drift detection:** `project_audit("teachings")` compares config against actual state in real-time.
 
-#### Terraform Module Structure
-
-```
-/terraform/
- main.tf — Provider configuration, S3 backend
- variables.tf — Input variables (project name, environment, etc.)
- outputs.tf — Connection strings, URLs, DSNs
- versions.tf — required_providers with version constraints
-
- /modules/
- /neon/
- main.tf — Neon project, database, roles, pgvector extension
- variables.tf
- outputs.tf — Connection string, branch IDs
-
- /vercel/
- main.tf — Vercel project, environment variables
- variables.tf
- outputs.tf — Deployment URL
-
- /sentry/
- main.tf — Sentry project, DSN, alert rules
- variables.tf
- outputs.tf — DSN
-
- /aws/
- main.tf — IAM OIDC provider, Lambda role, S3 buckets, Budgets alarm, state backend resources
- variables.tf
- outputs.tf
-
- /newrelic/ — Added at Milestone 3d
- /auth0/ — Added at Milestone 7a+ (if needed)
-
- /environments/
- dev.tfvars — Milestone 1c (only active environment)
- staging.tfvars — Arc 4+
- prod.tfvars — Arc 4+
-```
-
-Three environments (dev/staging/prod). The four-environment SRF convention (dev/qa/stg/prod) adds QA overhead without a QA team — automated tests run in CI against dev or ephemeral environments. Staging is added when multi-environment promotion becomes active (Arc 4+).
-
-#### Environment Management
-
-For Arcs 1–3, only `dev` is active. Additional environments are added as the portal moves toward production.
-
-#### What Terraform Manages vs. What It Doesn't
-
-| Managed by Terraform | Managed by Application Code |
-|---------------------|-----------------------------|
-| Neon project creation, roles | Database schema + extensions (dbmate SQL migrations — `CREATE EXTENSION IF NOT EXISTS pgvector`, etc.) |
-| Vercel project, env vars | `vercel.json` (build/routing config) |
-| Sentry project, alert rules | `sentry.client.config.ts` (SDK config) |
-| AWS IAM roles, S3 buckets, Budgets | Lambda handler code (`/lambda/`) |
-| — | GitHub settings (manual), CI workflows (`.github/workflows/`) |
-| — | Application routing (`next.config.js`) |
-
-The boundary: Terraform creates and configures the *services*. Application code configures *how the app uses those services*. Database schema is managed by dbmate migrations, not Terraform — schema changes require migration semantics (up/down), not declarative state.
-
-#### CI/CD Pipeline (GitHub Actions)
-
-```yaml
-# .github/workflows/terraform.yml
-# Triggered on changes to /terraform/**
-
-on:
- pull_request:
-   paths: ['terraform/**']
- push:
-   branches: [main]
-   paths: ['terraform/**']
-
-jobs:
- validate:
-   # terraform fmt -check && terraform validate
- plan:
-   # On PR: terraform plan, post diff as PR comment
-   # Uses OIDC to assume AWS_ROLE_ARN (no stored AWS keys)
- apply:
-   # On merge to main: terraform apply (dev environment)
-   # Uses OIDC to assume AWS_ROLE_ARN
-```
-
-`terraform fmt -check` and `terraform validate` run before plan. Plan output is posted as a PR comment for human review.
+**Justification:** PRI-12 (AI-Native Operations) establishes that the AI operator's tooling is the primary operational interface. Terraform was designed for human operators who need visual HCL diffs and batch plan/apply workflows. The AI operator reasons about changes directly, explains intent in natural language, and executes through MCP tools. The IaC substance (declarative, repeatable, auditable) is preserved; the Terraform-specific form is replaced by an AI-native equivalent.
 
 ### Rationale
 
-- **SRF-aligned IaC.** The tech stack brief requires IaC via Terraform. Delivering infrastructure without Terraform deviates from SRF engineering standards.
-- **AI-assisted authoring.** Claude Code writes and maintains Terraform fluently. The traditional objection to IaC ("too much overhead for a small team") is neutralized when the AI handles `.tf` file generation.
-- **Reproducible environments.** `terraform apply` creates a complete environment from scratch. Disaster recovery and staging creation become simple operations.
-- **Drift detection.** Terraform detects when infrastructure has been manually changed outside of code.
-- **Code review for infrastructure.** Infrastructure changes go through the same PR review process as application code.
-- **OIDC eliminates credential management.** No AWS access keys to rotate, no long-lived secrets to leak. GitHub Actions authenticates via ephemeral tokens scoped to the repo.
-- **Plan review in PRs.** `terraform plan` output is posted as PR comments — readable diffs in the PR context where the human reviews. No external UI needed.
+- **Single management plane.** One system (Platform MCP) manages vendor resources. No dual-state ambiguity between Terraform and the platform.
+- **AI-native interface.** MCP tools are the natural interface for the AI operator (PRI-12). No context-switching between MCP and Terraform.
+- **Richer state.** Platform database records full history with audit trail. Terraform state is a current-state snapshot only.
+- **Real-time drift detection.** Platform queries actual vendor state on demand, compared to Terraform's batch `plan`.
+- **No state backend dependency.** Terraform's S3 + DynamoDB backend required AWS credentials (which expire). The platform database is always accessible.
+- **Vendor-agnostic.** Platform service layers (~130 lines each) are replaceable independently. If Vercel is replaced by Amplify, only `vercel.ts` changes.
+- **IaC preserved.** `teachings.json` is declarative, version-controlled, and machine-executable — the same properties that make `.tf` files valuable.
 
 ### Alternatives Considered
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Terraform from Milestone 1c (chosen)** | SRF-aligned; reproducible from day one; aligns with ADR-017 Lambda timing | Upfront setup time; state backend needed |
-| **Terraform deferred to Milestone 2a** | Slightly simpler Arc 1 start | Manual infrastructure creates undocumented state; ADR-017 needs Lambda in Arc 1; import-or-recreate friction |
-| **Terraform Cloud (free tier)** | Zero bootstrap; built-in plan review UI; state locking without DynamoDB | External vendor dependency (HashiCorp/IBM); additional credential (TF_API_TOKEN); 500-resource limit; plan review UI not available in local execution mode |
-| **Pulumi (TypeScript)** | Same language as application; type-safe infrastructure | Not the SRF standard; smaller provider ecosystem |
-| **Platform-native config only** | Simpler; no Terraform learning curve | Not reproducible; no drift detection; violates SRF IaC principle |
+| **Platform MCP only (chosen)** | Single management plane; AI-native; richer state; no Terraform dependency | New approach; teachings.json must be comprehensive; platform is a dependency |
+| **Terraform only (original ADR-016)** | SRF-aligned; mature ecosystem; proven model | Dual management with Platform MCP; designed for human operators; state backend requires AWS creds |
+| **Terraform + Platform MCP (hybrid)** | Both tools available | Dual state stores; resource ownership ambiguity; two execution pipelines |
+| **Pulumi (TypeScript)** | Same language as app; type-safe | Still a second IaC tool alongside Platform MCP |
 
 ### Consequences
 
-- Milestone 1c includes `/terraform` directory with modules for Neon, Vercel, Sentry, and AWS
-- GitHub is the primary SCM with GitHub Actions CI/CD. GitLab migration architecturally supported but not planned.
-- Terraform state stored in S3 with DynamoDB locking (zero vendor dependency)
-- GitHub Actions authenticates to AWS via OIDC federation — no long-lived AWS credentials
-- Non-AWS provider tokens (Neon, Vercel, Sentry) stored as GitHub secrets with quarterly rotation
-- All environment variables and service configuration defined in Terraform. Explicit exceptions: GitHub branch protection (manual), Neon/Vercel spend alerts (manual dashboard settings — see CONTEXT.md § Bootstrap Credentials Checklist)
-- `.env.example` still maintained for local development
-- New Relic and Auth0 modules added as those services are introduced
-- Three-environment convention (dev/staging/prod), with only `dev` active in Arcs 1–3
-- Provider versions pinned with pessimistic constraints; upgrades are explicit PRs
-- `.terraform.lock.hcl` committed to version control (reproducible provider installations, like `pnpm-lock.yaml`)
-- `terraform apply` runs automatically on merge to main (dev environment). Staging and production environments (Arc 4+) require manual confirmation before apply.
+- The teachings repo's `/terraform/*.tf` files are archived (git history preserves them). `terraform/bootstrap/*.json` (IAM policy documents) are retained — referenced by `bootstrap.sh`.
+- `.github/workflows/terraform.yml` is removed. Infrastructure changes flow through Platform MCP, not CI/CD.
+- `teachings.json` in the platform repo is the declarative infrastructure specification.
+- Platform MCP tools (`project_bootstrap`, `project_audit`, environment lifecycle tools) are the execution engine.
+- Platform database is the state store with full audit trail.
+- `bootstrap.sh` is preserved for one-time AWS security setup (IAM, OIDC, KMS, Secrets Manager, S3, DynamoDB).
+- The S3 state bucket and DynamoDB locks table continue to exist (created by bootstrap.sh) but are no longer actively used by Terraform.
+- SRF Tech Stack Brief divergence is explicitly justified by PRI-12.
+- Provider version pinning (Neon, Vercel, Sentry Terraform providers) no longer applies — the platform uses REST APIs directly.
+- `.env.example` is still maintained for local development.
+- New vendor integrations (New Relic, Auth0) are added as Platform MCP service layers, not Terraform modules.
 
 ---
 
 ---
 
-## ADR-017: Terraform-Native Lambda
+## ADR-017: Platform-Managed Lambda
 
-**Status:** Accepted | **Date:** 2026-02-21
+**Status:** Accepted (Revised 2026-03-01 — deployment via Platform MCP, not Terraform) | **Date:** 2026-02-21
 
-**Supersedes:** The former Lambda batch decision (AWS Lambda for Batch and Background Workloads)
+**Supersedes:** The former Lambda batch decision (AWS Lambda for Batch and Background Workloads). Title revised from "Terraform-Native Lambda" — the Lambda runtime choice is unchanged; the deployment mechanism shifts from Terraform to Platform MCP per ADR-016 revision.
 
 ### Context
 
@@ -1454,11 +1379,11 @@ A comparative analysis of the SRF Tech Stack Brief against the portal's architec
 
 1. **Keep Lambda as the batch processing runtime.** All batch, scheduled, and event-driven workloads run on AWS Lambda. This is unchanged from the former Lambda batch decision.
 
-2. **Deploy Lambda via Terraform, not Serverless Framework v4.** Lambda functions, layers, IAM roles, and EventBridge schedules are managed by the same Terraform that manages all other portal infrastructure. One IaC tool. One deployment pipeline. One state backend.
+2. **Deploy Lambda via Platform MCP, not Serverless Framework v4.** Lambda functions, layers, IAM roles, and EventBridge schedules are managed by the platform — the same system that manages all other portal infrastructure. One management plane. One operational interface. (Originally "via Terraform" — revised per ADR-016 to Platform MCP.)
 
 3. **Use EventBridge Scheduler (not EventBridge Rules) for cron tasks.** EventBridge Scheduler is the purpose-built service for scheduled invocations, with built-in retry with exponential backoff, dead-letter queues, and one-time scheduling. All nightly/daily cron tasks use Scheduler.
 
-4. **Provision Lambda infrastructure when first needed (Milestone 3a), not at a fixed gate (former Milestone 2a).** Terraform module *code* for Lambda (`/terraform/modules/lambda/`, `/terraform/modules/eventbridge/`) exists in the repo from Milestone 1c — it's code like any other. Lambda *infrastructure* (IAM roles, functions, EventBridge schedules) is provisioned in Milestone 3a when the first function (backup, ADR-019) deploys. Subsequent milestones add functions to already-provisioned infrastructure.
+4. **Provision Lambda infrastructure when first needed (Milestone 3a), not at a fixed gate (former Milestone 2a).** Lambda *infrastructure* (IAM roles, functions, EventBridge schedules) is provisioned in Milestone 3a when the first function (backup, ADR-019) deploys. The platform MCP manages Lambda provisioning via AWS SDK. Subsequent milestones add functions to already-provisioned infrastructure.
 
 5. **Replace `/serverless/` directory with `/lambda/`.** The directory name reflects the runtime, not a vendor tool.
 
@@ -1574,8 +1499,6 @@ Add a `scripts/` directory with CI-system-agnostic deployment scripts. GitHub Ac
 
 ```
 /scripts/
- terraform-plan.sh — Run terraform plan for a given environment
- terraform-apply.sh — Run terraform apply for a given environment
  db-migrate.sh — Run dbmate migrations against a given database URL
  smoke-test.sh — Run smoke tests against a deployed environment
  search-quality.sh — Run the search quality evaluation suite
@@ -1587,7 +1510,6 @@ Add a `scripts/` directory with CI-system-agnostic deployment scripts. GitHub Ac
 ```yaml
 # GitHub Actions
 steps:
- - run: ./scripts/terraform-plan.sh dev
  - run: ./scripts/db-migrate.sh $NEON_DATABASE_URL
  - run: ./scripts/smoke-test.sh $DEPLOYMENT_URL
 ```
@@ -1603,12 +1525,11 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 ```
 
 Each promotion runs:
-1. `terraform-apply.sh {env}` — apply infrastructure for target environment
-2. `db-migrate.sh {env}` — run migrations against target environment's database
-3. Vercel deployment to target environment's project
-4. `smoke-test.sh {env}` — verify the deployment
+1. `db-migrate.sh {env}` — run migrations against target environment's database
+2. Vercel deployment to target environment's project
+3. `smoke-test.sh {env}` — verify the deployment
 
-Migration sequencing: Terraform apply runs *first* (in case it creates the database), then dbmate migrations (which depend on the database existing), then Vercel deploys the new code (which depends on the new schema).
+Migration sequencing: Platform MCP provisions infrastructure *first* (in case it creates the database), then dbmate migrations (which depend on the database existing), then Vercel deploys the new code (which depends on the new schema).
 
 ### Rationale
 
@@ -1621,7 +1542,7 @@ Migration sequencing: Terraform apply runs *first* (in case it creates the datab
 - `/scripts/` directory added to repo in Milestone 1a
 - GitHub Actions workflows call scripts instead of inline commands
 - All scripts accept environment name as parameter, defaulting to `dev`
-- **Extends ADR-016** (Terraform) with concrete deployment orchestration
+- **Extends ADR-016** (Platform MCP) with concrete deployment orchestration
 
 **Operational surface extension:** DES-060 adds `deploy.sh` (deployment ceremony), `release-tag.sh` (semantic tagging), `doc-validate.sh` (document integrity), and `status.sh` (AI self-orientation) to the `/scripts/` directory — following the same CI-agnostic pattern. See PRO-035, PRO-036, PRO-037.
 
@@ -1670,7 +1591,7 @@ Configure automated snapshots on the production branch via **Neon Snapshot API**
 - **Monthly snapshot** on the 1st
 - **Retention:** Up to 10 snapshots (Scale tier limit). Lifecycle: keep 7 daily + 2 weekly + 1 monthly.
 - **Restore:** One-step restore from any snapshot via API. Faster than PITR for known-good checkpoints.
-- **Pre-migration snapshots:** CI workflow (`terraform.yml`) creates a snapshot before applying any migration PR. This provides an instant rollback point without timestamp arithmetic. See DES-039 § CI/CD Pipeline.
+- **Pre-migration snapshots:** CI workflow creates a snapshot before applying any migration PR. This provides an instant rollback point without timestamp arithmetic. See DES-039 § CI/CD Pipeline.
 - **On-demand snapshots:** Claude creates snapshots via MCP before risky operations (re-ingestion, embedding model migration, bulk data changes). Part of the Operations layer (DES-039 § Three-Layer Neon Management Model).
 
 #### Layer 3: pg_dump to S3 (vendor-independent)
@@ -1683,14 +1604,9 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 - **Retention:** 90 days of daily backups, plus the 1st of each month retained for 1 year
 - **Size estimate:** Arc 1 database (~2,000 chunks + embeddings) ≈ 50–100MB compressed. Full library (~50,000 chunks) ≈ 1–2GB compressed. S3 cost: < $1/month.
 
-#### Terraform module
+#### Platform MCP management
 
-```
-/terraform/modules/backup/
- main.tf — S3 bucket, Lambda function, EventBridge rule, IAM role
- variables.tf — Bucket name, retention policy, schedule
- outputs.tf — Bucket ARN
-```
+S3 backup bucket, Lambda function, EventBridge rule, and IAM role are provisioned and managed via Platform MCP.
 
 #### Restore decision tree
 
@@ -1732,12 +1648,12 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 - Snapshot schedule configured during Milestone M1a-2 Neon project setup via Neon Snapshot API (not Console)
 - Pre-migration snapshots created by CI workflow before migration PRs
 - On-demand snapshots created by Claude via MCP before risky operations
-- `/terraform/modules/backup/` added in Milestone 2a (S3 bucket, Lambda, EventBridge)
+- Backup infrastructure (S3 bucket, Lambda, EventBridge) provisioned in Milestone 2a via Platform MCP
 - Lambda function for nightly pg_dump added when Lambda infrastructure from ADR-017 is first deployed
-- S3 bucket created and managed by Terraform
+- S3 bucket created and managed by Platform MCP
 - Restore procedure documented in operational playbook
 - Quarterly restore drill: test restore from a random backup to a Neon branch, verify content integrity
-- **Extends ADR-016** (Terraform), **ADR-004** (10-year architecture), and **ADR-124** (Neon platform governance)
+- **Extends ADR-016** (Platform MCP), **ADR-004** (10-year architecture), and **ADR-124** (Neon platform governance)
 
 ---
 
@@ -1752,7 +1668,7 @@ Nightly `pg_dump` to S3 provides a portable backup that can restore to any Postg
 
 ### Context
 
-The portal will operate across multiple environments (dev, staging, production) as it moves toward production readiness. SRF uses AWS as their cloud provider and Terraform for IaC. The architecture team has autonomous design authority for infrastructure decisions. Key constraint: the portal is a free, public, no-auth teaching portal — environment isolation requirements differ from SRF's member-facing or e-commerce systems that handle PII and payments.
+The portal will operate across multiple environments (dev, staging, production) as it moves toward production readiness. SRF uses AWS as their cloud provider and Platform MCP for infrastructure management. The architecture team has autonomous design authority for infrastructure decisions. Key constraint: the portal is a free, public, no-auth teaching portal — environment isolation requirements differ from SRF's member-facing or e-commerce systems that handle PII and payments.
 
 ### Decision
 
@@ -1762,11 +1678,11 @@ The portal will operate across multiple environments (dev, staging, production) 
 
 | Service | One Instance | Environment Primitive | How Separation Works |
 |---------|-------------|----------------------|---------------------|
-| **Neon** | One project | Branches | `main` (prod), `staging`, `dev` — instant copy-on-write. Terraform declares persistent branches; operations layer manages ephemeral. |
+| **Neon** | One project | Branches | `main` (prod), `staging`, `dev` — instant copy-on-write. Platform MCP declares persistent branches; operations layer manages ephemeral. |
 | **Vercel** | One project | Branch deployments | Production from `main`, preview from branches. Vercel-native, zero config. |
 | **Sentry** | One project | `environment` tag | Single DSN, events tagged `production`/`staging`/`development`. Standard Sentry pattern. |
 | **Contentful** | One space | Environments feature | `master` (prod), `staging`, `dev` aliases. Content model changes promoted via migration CLI. |
-| **S3 (Terraform state)** | One bucket | Path-based (workspace prefix) | `env:/dev/terraform.tfstate`, `env:/staging/...`, `env:/prod/...` — automatic via Terraform workspaces. |
+| **S3 (legacy state)** | One bucket | Path-based | `env:/dev/terraform.tfstate`, `env:/staging/...`, `env:/prod/...` — legacy from initial Terraform setup; retained for state history. |
 | **DynamoDB (locks)** | One table | Shared | Lock key includes workspace path. No duplication. |
 | **Voyage AI** | One API key | N/A | Stateless embedding service. No environment separation needed. |
 
@@ -1774,7 +1690,7 @@ The portal will operate across multiple environments (dev, staging, production) 
 
 ### AWS Account Strategy
 
-Single AWS account with IAM role boundaries for Arcs 1–3. If SRF governance requires separate accounts for production (a stakeholder decision, not a technical one), the Terraform workspace + tfvars model supports multi-account without rearchitecture — add an OIDC role per account and a `provider` alias per workspace.
+Single AWS account with IAM role boundaries for Arcs 1–3. If SRF governance requires separate accounts for production (a stakeholder decision, not a technical one), the platform config model supports multi-account without rearchitecture — add an OIDC role per account and a provider alias per environment.
 
 ```
 AWS Account: srf-teachings (dedicated account within SRF AWS Organization)
@@ -1786,13 +1702,13 @@ AWS Account: srf-teachings (dedicated account within SRF AWS Organization)
 ├── IAM Role: portal-vercel-runtime  — Vercel OIDC → Bedrock + Secrets Manager (ADR-126)
 ├── KMS Key: portal-secrets          — Encrypts all Secrets Manager entries (ADR-125)
 ├── Secrets Manager: /portal/{env}/* — All application secrets (ADR-125)
-├── S3: srf-portal-terraform-state   — Terraform state (all environments)
+├── S3: srf-portal-terraform-state   — Legacy Terraform state (retained for history)
 ├── S3: srf-portal-assets-{env}      — Per-environment asset buckets
 ├── Lambda: {env}-*                  — Per-environment functions (Milestone 2a+)
-└── DynamoDB: srf-portal-terraform-locks — State locking (shared)
+└── DynamoDB: srf-portal-terraform-locks — Legacy state locking (retained)
 ```
 
-Terraform workspaces + `environments/{env}.tfvars` parameterize resource names, compute sizes, and permissions per environment. Environment-specific IAM roles provide blast-radius containment within a single account.
+Platform MCP + environment configuration parameterize resource names, compute sizes, and permissions per environment. Environment-specific IAM roles provide blast-radius containment within a single account.
 
 ### Bootstrap Automation
 
@@ -1820,23 +1736,20 @@ The human should never visit five consoles and copy-paste credentials. A bootstr
 5. **Prompt:** Sentry auth token (console-only — paste when prompted)
 6. Vercel CLI: Link project, get token
 7. GitHub CLI: `gh secret set` for all 6 secrets in batch
-8. Terraform: `terraform init` to connect to S3 backend
 
 The script is idempotent — safe to re-run. Each step checks for existing resources before creating.
 
 **`create-env.sh {env}` flow (Arc 4+):**
 
-1. `terraform workspace new {env}` (or select if exists)
+1. Platform MCP provisions environment resources (Neon branch, S3 buckets, Lambda functions)
 2. `neonctl branches create --name {env} --parent main`
-3. `terraform apply -var-file="environments/{env}.tfvars"`
-4. `gh api` — configure GitHub Environment with protection rules
+3. `gh api` — configure GitHub Environment with protection rules
 
 **`destroy-env.sh {env}` flow:**
 
-1. `terraform destroy -var-file="environments/{env}.tfvars"`
+1. Platform MCP deprovisions environment resources
 2. `neonctl branches delete {env}`
-3. `terraform workspace delete {env}`
-4. `gh api` — remove GitHub Environment
+3. `gh api` — remove GitHub Environment
 
 ### CI/CD Promotion Pipeline
 
@@ -1847,7 +1760,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - **CI-agnostic scripts.** All deployment logic lives in `/scripts/` (ADR-018). GitHub Actions calls these scripts; any future CI system calls the same scripts.
 - **Manual production gate.** Production deployments always require manual approval. No automatic promotion from staging to production.
 - **GitHub Environments.** Each environment is a GitHub Environment with its own URL and protection rules, enabling deployment tracking and required reviewers.
-- **Promotion = merge.** Staging → production is a Git merge to `main`. Neon branch promotes. Vercel rebuilds. Terraform applies with `prod.tfvars`.
+- **Promotion = merge.** Staging → production is a Git merge to `main`. Neon branch promotes. Vercel rebuilds. Platform promotes with `environment_promote`.
 
 ### Rationale
 
@@ -1858,7 +1771,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 
 ### Consequences
 
-- Terraform configurations parameterized by environment from Arc 1 via workspaces + tfvars
+- Platform configurations parameterized by environment from Arc 1
 - Single AWS account with IAM role boundaries (escalate to multi-account only if SRF governance requires it)
 - One Neon project with branch-based environment separation (ADR-124)
 - One Vercel project with branch deployments
@@ -1870,7 +1783,7 @@ PR → dev (auto) → staging (manual gate) → prod (manual gate)
 - GitHub Environments configured per environment (dev, staging, prod) with protection rules
 - Neon branching strategy documented in runbook (`docs/guides/manual-steps-milestone-1a.md`)
 
-**Operational surface extension:** DES-060 adds an `/ops` page (Milestone 1c) with deployment history, SLI/SLO dashboard, and design-artifact coverage — consuming the deploy manifests generated by the deployment ceremony scripts that follow the branch=environment model. See PRO-035, PRO-036.
+**Operational surface extension:** DES-060 specifies health endpoints, SLI/SLO targets, and design-artifact traceability. Operational dashboarding moved to the platform MCP server — the teachings app exposes data via `/api/v1/health`, the platform provides the operational surface. See PRO-035, PRO-036.
 
 ---
 
@@ -1967,9 +1880,9 @@ With pure hybrid search as the primary search mode (ADR-119 — no external AI s
 Neon is the portal's database provider for the long term (ADR-124). When Neon ships cross-region read replicas, activate them to reduce search latency further — particularly for South Asia and Africa where network RTT to us-west-2 is highest.
 
 **Activation plan:**
-- When available: create read replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Terraform
+- When available: create read replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Platform MCP
 - Route search API read queries to the nearest replica; writes (ingestion, editorial) to the primary
-- This is a Terraform configuration change, not an architectural change — the application code is unaffected
+- This is a platform configuration change, not an architectural change — the application code is unaffected
 - Expected search latency improvement: South Asia drops from ~300ms to ~150ms; Europe from ~240ms to ~140ms
 
 **No exit ramp needed.** Neon's Scale tier, branching workflow, pgvector + pg_search extension ecosystem, and development velocity are the right fit for this project. Plan to grow with Neon, not away from it.
@@ -1979,7 +1892,7 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 - **Cost-proportionate resilience.** Active-active multi-region would cost 3–5× more in infrastructure and add significant operational complexity. The portal's availability SLA does not justify this. "Search is down for 30 minutes while Neon fails over" is acceptable; "a seeker loses their reading progress" is not (but all reading state is client-side in `localStorage` anyway).
 - **Pure hybrid search removes the latency bottleneck.** With no AI services in the search hot path (ADR-119), search latency is ~200–400ms globally — competitive with Google Search. The AI services (Claude, Cohere) were the latency bottleneck, not the database or network. Removing them from the hot path achieves the p95 < 500ms target without multi-region infrastructure.
 - **Edge distribution covers most requests.** The majority of portal requests — page loads, PDFs, audio streams, static assets, search suggestions — are served from Vercel's edge. Only search queries reach the origin.
-- **Neon multi-region read replicas are the next-level investment.** When Neon ships them, activating replicas in Mumbai and Frankfurt is a Terraform change that further improves the experience for the largest seeker populations (India, Europe).
+- **Neon multi-region read replicas are the next-level investment.** When Neon ships them, activating replicas in Mumbai and Frankfurt is a platform configuration change that further improves the experience for the largest seeker populations (India, Europe).
 - **Backup is separate from failover.** ADR-019 (nightly pg_dump to S3) provides data recovery. This ADR addresses service availability. They complement each other.
 
 ### Alternatives Evaluated
@@ -1993,7 +1906,7 @@ Neon is the portal's database provider for the long term (ADR-124). When Neon sh
 - Lambda functions deployed to the same region as Neon primary
 - CloudFront distribution configured for all static assets from Arc 1
 - Search p95 < 500ms from any continent (achieved by pure hybrid search, no multi-region required)
-- When Neon ships cross-region read replicas: activate via Terraform in `ap-south-1` and `eu-central-1`
+- When Neon ships cross-region read replicas: activate via Platform MCP in `ap-south-1` and `eu-central-1`
 - Health check endpoint (`/api/v1/health`) reports database connectivity, enabling uptime monitoring
 - **Explicit non-goal:** No active-active multi-region. No global database write replication. No cross-region Lambda orchestration. No edge database replacement.
 
@@ -4823,7 +4736,7 @@ Neptune Analytics was the original choice (Feb 2026). It offers combined graph t
 - DES-054 (Knowledge Graph Ontology) and DES-055 (Concept/Word Graph) describe node/edge types stored in Postgres tables, computed by batch jobs
 - DES-003 (Search Architecture) PATH C uses multi-step SQL queries in `/lib/services/graph.ts`
 - Milestone 3b in ROADMAP.md adds graph algorithm batch pipeline (Python + NetworkX), not Neptune provisioning
-- No Terraform configuration for graph infrastructure — batch job runs as Lambda or Vercel cron
+- No infrastructure configuration for graph infrastructure — batch job runs as Lambda or Vercel cron
 - Graph ontology designed from Arc 1 and documented in DES-054/055
 
 ---
@@ -5036,7 +4949,7 @@ If Tier A + B latency is insufficient, Vercel KV (built on Upstash Redis) provid
 - Nightly refresh incorporates query log signal (Tier 5)
 - **Cost: ~$20/mo at 1M requests** (Upstash pay-per-use via Vercel integration)
 - **Global distribution:** Upstash global replication, no VPC required
-- **No Terraform complexity:** Provisioned via Vercel dashboard or `vercel env`
+- **No infrastructure complexity:** Provisioned via Vercel dashboard or `vercel env`
 
 **Concrete migration trigger:** Activate Tier C when any of these thresholds are sustained for 7 days:
 - Suggestion p95 latency exceeds 30ms (measuring CDN miss + client filter time)
@@ -5086,7 +4999,7 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 - Milestone 1c: pg_trgm fuzzy fallback endpoint (`/api/v1/search/suggest`) — queries both `suggestion` and `latin_form` columns for transliteration
 - Milestone 2b+: Vercel KV activated if migration trigger thresholds are sustained
 - Milestone 5b: Per-language suggestion indices for remaining 7 languages; CJK/Thai tokenization strategies
-- No Terraform ElastiCache configuration — Vercel KV provisioned via Vercel integration when needed
+- No ElastiCache infrastructure — Vercel KV provisioned via Vercel integration when needed
 - The suggestion pipeline becomes part of the ingestion pipeline — each new book updates the dictionary and triggers a static JSON rebuild
 
 ---
@@ -5103,7 +5016,7 @@ The suggestion system extends the librarian metaphor — a guide who, when appro
 The portal manages ~12 secrets across multiple services (Neon, Voyage, Contentful, Sentry, AWS Bedrock). A secrets management strategy must address:
 
 1. **Audit trail.** Who accessed what secret, when? CloudTrail provides this for AWS-managed secrets. Platform-native stores (GitHub Secrets, Vercel env vars) do not.
-2. **Single source of truth.** Each secret should live in exactly one place, distributed to consumers by Terraform — not duplicated across platforms.
+2. **Single source of truth.** Each secret should live in exactly one place, distributed to consumers by Platform MCP — not duplicated across platforms.
 3. **Rotation without redeployment.** Secrets Manager supports runtime reads with caching — rotation takes effect on the next cache refresh without redeployment. Vercel env vars require a redeployment.
 4. **SRF organizational alignment.** SRF's established technology stack (Tech Stack Brief § 7) designates AWS Secrets Manager for sensitive credentials and SSM Parameter Store for non-sensitive config.
 5. **10-year design horizon (ADR-004).** The credential count will grow as arcs add services (Cohere, YouTube, SendGrid, New Relic, Amplitude, Auth0). A centralized foundation now avoids retrofitting later.
@@ -5119,7 +5032,7 @@ Values that are not sensitive. Two sub-categories:
 | Sub-tier | Where | Changes via | Examples |
 |----------|-------|-------------|----------|
 | Named constants | `/lib/config.ts` (ADR-123) | Code PR | Model IDs, chunk sizes, rate limits, cache TTLs |
-| Per-environment config | Vercel env vars (set by Terraform) | `terraform apply` or Vercel dashboard | `AWS_REGION`, `NEON_PROJECT_ID`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_*` build-time vars |
+| Per-environment config | Vercel env vars (set by Platform MCP) | Platform MCP or Vercel dashboard | `AWS_REGION`, `NEON_PROJECT_ID`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_*` build-time vars |
 
 **`NEXT_PUBLIC_*` carve-out:** Variables prefixed `NEXT_PUBLIC_` are injected at build time by the Next.js build runtime. They cannot be sourced from Secrets Manager at runtime — this is a hard Vercel/Next.js constraint, not a design choice. Documented as intentional divergence from the SRF standard, which was written for Lambda (runtime-only).
 
@@ -5143,7 +5056,7 @@ Examples:
 |---------|------------------------|----------------|
 | **Vercel functions (runtime)** | `@aws-sdk/client-secrets-manager` via `/lib/config.ts` facade, cached with 5-minute TTL | Vercel OIDC role (ADR-126) |
 | **Lambda functions** | IAM execution role → `GetSecretValue` | IAM role (automatic) |
-| **GitHub Actions / Terraform** | `aws secretsmanager get-secret-value` via OIDC role, or Terraform `data "aws_secretsmanager_secret_version"` | GitHub OIDC (ADR-016) |
+| **GitHub Actions / Platform MCP** | `aws secretsmanager get-secret-value` via OIDC role, or Platform MCP reads secrets | GitHub OIDC (ADR-016) |
 | **Local development** | `.env.local` (fallback — facade checks env vars before Secrets Manager) | AWS profile `srf-dev` |
 
 **The `/lib/config.ts` facade.** Call sites import config from `/lib/config.ts` and never know whether a value came from `process.env`, Secrets Manager, or a hardcoded constant. The facade's resolution order:
@@ -5174,33 +5087,21 @@ The portal operates in a **dedicated AWS account within SRF's AWS Organization**
 - Independent IAM policies and OIDC trust relationships
 - No credential sharing or cross-account access needed for portal operations
 
-#### Terraform Integration
+#### Platform MCP Integration
 
-Terraform manages secret *resources* (names, policies, KMS encryption, rotation configuration) but not secret *values*:
+Platform MCP manages secret *resources* (names, policies, KMS encryption, rotation configuration) but not secret *values*:
 
-```hcl
-resource "aws_secretsmanager_secret" "voyage_api_key" {
-  name        = "/portal/${var.environment}/voyage/api-key"
-  description = "Voyage voyage-3-large embedding API key (ADR-118)"
-  kms_key_id  = aws_kms_key.portal_secrets.arn
-}
-# Secret VALUE populated manually or via bootstrap script — never in Terraform state
-```
+- Secret resources created with path convention `/portal/{environment}/{service}/{key-name}`
+- KMS customer-managed key encrypts all entries
+- Secret VALUES populated manually or via bootstrap script — never in configuration files
 
-Terraform data sources read secrets for distribution to Vercel:
+Platform MCP reads secrets from Secrets Manager and distributes them to Vercel as environment variables:
 
-```hcl
-data "aws_secretsmanager_secret_version" "voyage_api_key" {
-  secret_id = aws_secretsmanager_secret.voyage_api_key.id
-}
+- Reads secret values via `aws secretsmanager get-secret-value`
+- Sets Vercel project environment variables via Vercel API
+- Single source of truth, platform-distributed
 
-resource "vercel_project_environment_variable" "voyage_api_key" {
-  value = data.aws_secretsmanager_secret_version.voyage_api_key.secret_string
-  # ...
-}
-```
-
-This means Vercel env vars are *derived from* Secrets Manager via Terraform, not independently managed. Single source of truth, Terraform-distributed.
+This means Vercel env vars are *derived from* Secrets Manager via Platform MCP, not independently managed. Single source of truth, platform-distributed.
 
 ### Alternatives Considered
 
@@ -5213,14 +5114,14 @@ This means Vercel env vars are *derived from* Secrets Manager via Terraform, not
 
 ### Consequences
 
-- All `[secret]`-tagged env vars in `.env.example` have a corresponding `aws_secretsmanager_secret` Terraform resource
+- All `[secret]`-tagged env vars in `.env.example` have a corresponding Secrets Manager resource managed by Platform MCP
 - DES-039 § Environment Configuration updated with secrets management architecture and `/lib/config.ts` facade specification
-- `docs/guides/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Terraform
+- `docs/guides/bootstrap-credentials.md` updated: secrets created in Secrets Manager during bootstrap, distributed to Vercel by Platform MCP
 - `.env.example` uses `[secrets-manager]` tag: Secrets Manager in deployed environments; env var in `.env.local` for local dev
-- Rotation is single-point: update Secrets Manager, run `terraform apply`, done. No multi-platform coordination.
+- Rotation is single-point: update Secrets Manager, run platform redistribution, done. No multi-platform coordination.
 - CloudTrail logs all `GetSecretValue` calls — audit trail for secret access from Milestone 1c
 - KMS customer-managed key encrypts all portal secrets (cost: ~$1/month per key)
-- **Extends:** ADR-016 (Terraform), ADR-020 (environment lifecycle), ADR-124 (Neon keys)
+- **Extends:** ADR-016 (Platform MCP), ADR-020 (environment lifecycle), ADR-124 (Neon keys)
 - **Enables:** ADR-126 (Vercel OIDC — secrets accessed via role, not stored keys)
 
 ---
@@ -5337,7 +5238,7 @@ The `awsCredentialsProvider` handles STS exchange and credential refresh transpa
 
 | Variable | Purpose | Secret? |
 |----------|---------|---------|
-| `AWS_ROLE_ARN` | IAM role ARN for OIDC assumption | No — resource identifier, set by Terraform |
+| `AWS_ROLE_ARN` | IAM role ARN for OIDC assumption | No — resource identifier, set by Platform MCP |
 | `AWS_REGION` | Bedrock and Secrets Manager region | No — static `us-west-2` |
 
 No `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` in any deployed environment. Dependency: `@vercel/functions` (for OIDC helper).
@@ -5368,13 +5269,13 @@ OIDC tokens only exist inside Vercel's runtime. For local development:
 | Option | Pros | Cons |
 |--------|------|------|
 | **Vercel OIDC (chosen)** | Zero stored credentials; environment-scoped; auto-refresh; no rotation needed; GA on all plans | Requires OIDC provider setup; local dev uses different auth path |
-| **IAM user with static access keys** | Simple setup; works everywhere identically | Long-lived credentials; quarterly rotation; environment-agnostic (same keys work in any env); credential in Terraform state |
+| **IAM user with static access keys** | Simple setup; works everywhere identically | Long-lived credentials; quarterly rotation; environment-agnostic (same keys work in any env); credential in state files |
 
 ### Consequences
 
-- Terraform creates `aws_iam_openid_connect_provider` (Vercel) alongside existing GitHub OIDC provider (ADR-016)
-- Terraform creates `portal-vercel-runtime` IAM role(s) with Bedrock + Secrets Manager permissions, scoped per environment
-- `AWS_ROLE_ARN` set as Vercel env var by Terraform (non-secret)
+- `bootstrap.sh` creates the Vercel OIDC identity provider alongside existing GitHub OIDC provider (ADR-016)
+- `bootstrap.sh` creates `portal-vercel-runtime` IAM role(s) with Bedrock + Secrets Manager permissions, scoped per environment
+- `AWS_ROLE_ARN` set as Vercel env var by Platform MCP (non-secret)
 - `@vercel/functions` added as project dependency
 - **Zero long-lived AWS credentials in any environment** — GitHub OIDC (CI) + Vercel OIDC (runtime)
 - **Extends:** ADR-016 (OIDC pattern), ADR-125 (Secrets Manager access via role)

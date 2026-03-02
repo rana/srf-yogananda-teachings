@@ -39,7 +39,7 @@ When an arc enters active planning, move its questions back to CONTEXT.md § Ope
 ## Arc 4 (Service)
 
 ### Technical
-- [ ] GitLab migration plan: CI/CD pipeline rewrite (GitHub Actions → GitLab CI), Terraform state backend migration, developer workflow change. Deserves an ADR before Arc 4 planning. (ADR-016, ADR-018, ADR-017)
+- [ ] GitLab migration plan: CI/CD pipeline rewrite (GitHub Actions → GitLab CI), Platform MCP adaptation, developer workflow change. Deserves an ADR before Arc 4 planning. (ADR-016, ADR-018, ADR-017)
 
 ---
 

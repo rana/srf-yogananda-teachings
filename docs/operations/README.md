@@ -3,7 +3,7 @@
 Operational runbooks, procedures, and playbooks. Populated as infrastructure and editorial operations are implemented.
 
 **Planned documents:**
-- Deployment procedures (Vercel, Terraform)
+- Deployment procedures (Vercel, Platform MCP)
 - Monitoring and alerting (Sentry, observability)
 - Neon database operations (branching, migrations, scaling)
 - Secrets rotation (per ADR-125)

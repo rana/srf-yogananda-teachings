@@ -45,7 +45,7 @@
 | PRO-043 | Teachings Platform — Shared Foundation for SRF and YSS | Feature (Platform) | Proposed | ADR-075, ADR-077, ADR-078, ADR-128, ADR-011, ADR-079, PRO-034 | Strategic exploration 2026-03-01 |
 | PRO-034 | Magazine API Rationalization | Enhancement | Suspended from ADR-108 | ADR-108 | Bulk suspension 2026-03-01 |
 | PRO-035 | Release Tagging and Deployment Ceremony | Enhancement | Adopted → DES-060, M1a-11, M1c-17, M1c-18 | ADR-018, ADR-020, DES-039, ADR-105, DES-051, DES-060 | Ops exploration 2026-03-01 |
-| PRO-036 | Operational Health Surface and SLI/SLO Framework | Feature | Adopted → DES-060, ADR-095 §SLI/SLO, M1a-10, M1c-16 | ADR-095, ADR-020, DES-039, ADR-021, DES-060 | Ops exploration 2026-03-01 |
+| PRO-036 | Operational Health Surface and SLI/SLO Framework | Feature | Adopted → DES-060, ADR-095 §SLI/SLO, M1a-10. `/ops` page → platform MCP | ADR-095, ADR-020, DES-039, ADR-021, DES-060 | Ops exploration 2026-03-01 |
 | PRO-037 | Document Integrity Validation in CI | Enhancement | Adopted → DES-060, M1a-9 | ADR-098, ADR-094, ADR-093, DES-038, DES-060 | Ops exploration 2026-03-01 |
 | PRO-038 | Dream a Feature — AI-Driven Prototyping Workflow | Feature | Proposed | ADR-020, ADR-124, PRO-001, DES-039 | Ops exploration 2026-03-01 |
 | PRO-039 | Design-Artifact Traceability — Spec-to-Code-to-Deploy Linkage | Enhancement | Adopted → DES-060 §Layer 4, 2a | ADR-098, ADR-094, PRO-037, PRO-035, PRO-041, DES-060 | Ops exploration 2026-03-01 |
@@ -269,11 +269,11 @@ The question: does the portal's minimal, DELTA-constrained email use case justif
 
 #### For SES (the case for divergence)
 
-1. **Already in the AWS footprint.** The portal uses S3, Bedrock, Lambda, EventBridge — all AWS. SES adds no new vendor, no new account, no new billing relationship. Terraform manages it alongside everything else (ADR-016).
+1. **Already in the AWS footprint.** The portal uses S3, Bedrock, Lambda, EventBridge — all AWS. SES adds no new vendor, no new account, no new billing relationship. Platform MCP manages it alongside everything else (ADR-016).
 2. **Cost.** SES: $0.10/1,000 emails, no monthly minimum. SendGrid free tier: 100 emails/day; paid starts at $19.95/month for 50K emails. At portal scale (estimated 5K–50K daily subscribers by Arc 5), SES costs $0.50–$5/day. SendGrid costs $19.95+/month.
 3. **DELTA simplicity.** SES has no built-in engagement tracking by default — open/click tracking must be explicitly enabled via configuration sets. SendGrid enables open/click tracking by default and requires active configuration to disable it (Tracking Settings API or per-message headers). For a DELTA-compliant system that must never track engagement, the "off by default" posture is safer.
 4. **No feature waste.** SendGrid's value is in templates (Stripo), A/B testing, marketing campaigns, contact management, engagement analytics. The portal uses none of these. The daily email is a Lambda function that renders one HTML passage and calls an email API.
-5. **Terraform-native.** `aws_ses_domain_identity`, `aws_ses_configuration_set` — first-class Terraform resources. SendGrid's Terraform provider exists but is community-maintained and less mature.
+5. **AWS-native.** `aws_ses_domain_identity`, `aws_ses_configuration_set` — first-class AWS resources manageable via Platform MCP. No separate provider or third-party integration needed.
 6. **OIDC authentication.** Lambda already authenticates to AWS via OIDC (ADR-016). SES requires no additional API key — the Lambda execution role gets `ses:SendEmail` permission. SendGrid requires a separate API key stored as a secret.
 
 #### Against SES (the case for alignment)
@@ -287,7 +287,7 @@ The question: does the portal's minimal, DELTA-constrained email use case justif
 
 #### Through (the synthesis)
 
-The portal's email use case is genuinely different from SRF's typical transactional email: no templates, no marketing, no engagement tracking, one message type. This is the same pattern as DynamoDB → PostgreSQL (ADR-013) and Serverless Framework → Terraform (ADR-017) — the SRF standard serves the general case well, but the portal's specific constraints favor a different choice.
+The portal's email use case is genuinely different from SRF's typical transactional email: no templates, no marketing, no engagement tracking, one message type. This is the same pattern as DynamoDB → PostgreSQL (ADR-013) and Serverless Framework → Platform MCP (ADR-017) — the SRF standard serves the general case well, but the portal's specific constraints favor a different choice.
 
 However, the cost savings are modest ($15–20/month), and the deliverability bootstrapping and bounce handling costs (developer time) may exceed the savings. The strongest SES argument is DELTA purity (tracking off by default); the strongest SendGrid argument is operational alignment.
 
@@ -344,7 +344,7 @@ Defer the decision. Build Milestone 3b editorial portal in `/admin`. At Mileston
 
 **Current posture:** Cloudflare removed from portal infrastructure. Rate limiting (ADR-023) redesigned to use Vercel Firewall at the edge layer. All documents updated.
 
-**Re-evaluate if:** SRF routes the portal's domain through Cloudflare as part of their organization-wide DNS/CDN strategy (SRF uses Cloudflare across other properties). In that case, the portal is fully compatible — Cloudflare would sit in front of Vercel transparently. The question then becomes whether to leverage Cloudflare's WAF rules *in addition to* Vercel Firewall, or let Vercel handle security alone. If Cloudflare is added, create a Terraform `/modules/cloudflare/` module for DNS records and WAF rules.
+**Re-evaluate if:** SRF routes the portal's domain through Cloudflare as part of their organization-wide DNS/CDN strategy (SRF uses Cloudflare across other properties). In that case, the portal is fully compatible — Cloudflare would sit in front of Vercel transparently. The question then becomes whether to leverage Cloudflare's WAF rules *in addition to* Vercel Firewall, or let Vercel handle security alone. If Cloudflare is added, add a Cloudflare service layer to Platform MCP for DNS records and WAF rules.
 
 **What Vercel covers without Cloudflare:**
 - Firewall Rules (IP-based rate limiting, path-based rules)
@@ -922,7 +922,7 @@ Magazine API design — flat resources, single-segment slugs. Governs how Self-R
 | T1: Cosmetic | Only CSS, copy, layout changed | Merge freely |
 | T2: Feature | API routes or pages changed, no migrations | Merge freely |
 | T3: Data | `/migrations/` changed | Pre-deploy snapshot required |
-| T4: Infrastructure | `/terraform/` changed | `terraform plan` review |
+| T4: Infrastructure | Platform config or `bootstrap.sh` changed | Platform MCP audit review |
 | T5: Cross-service | T3 + T4, or Contentful model + migrations | Explicit confirmation |
 
 Tier shows in PR title automatically via CI. Not a gate — visibility.
@@ -949,13 +949,13 @@ Tier shows in PR title automatically via CI. Not a gate — visibility.
 |-----------|----------------|--------|
 | **Population** | Who is served? How many? | ADR-128 data, language scope |
 | **Cost: Development** | Hours to build? | Git diff size, files touched |
-| **Cost: Infrastructure** | Monthly delta? Compute, storage, bandwidth? | Terraform diff, Neon compute changes, new API routes |
+| **Cost: Infrastructure** | Monthly delta? Compute, storage, bandwidth? | Platform config diff, Neon compute changes, new API routes |
 | **Cost: AI tokens** | One-time or recurring token cost? | Bedrock/Voyage calls in changed code paths |
 | **Cost: Maintenance** | Tests added? Translations needed? Docs to keep current? | New test files, new i18n keys, new DES/ADR refs |
 | **Risk: Failure modes** | What could go wrong? | Service dependencies in changed paths |
 | **Risk: Blast radius** | Tier T1–T5, who is affected if it breaks? | Blast tier auto-detection (see above) |
 | **Risk: Rollback complexity** | How hard to undo? Single-service or orchestrated? | Migration presence, Contentful changes, cross-service deps |
-| **Risk: Dependency** | New vendor, library, or service dependency? | `package.json` diff, Terraform resource additions |
+| **Risk: Dependency** | New vendor, library, or service dependency? | `package.json` diff, platform config additions |
 | **Performance** | Latency impact? Bundle size delta? | New API routes, JS bundle analysis |
 | **Accessibility** | Does this improve or risk a11y? | axe-core diff, new interactive elements |
 | **Security** | Attack surface change? | New API endpoints, auth boundary changes |
@@ -993,10 +993,10 @@ This framework makes cost a first-class citizen alongside population impact. A s
 
 ### PRO-036: Operational Health Surface and SLI/SLO Framework
 
-**Status:** Adopted → DES-060, ADR-095 §SLI/SLO, ROADMAP M1a-10, M1c-16
+**Status:** Adopted → DES-060, ADR-095 §SLI/SLO, ROADMAP M1a-10, M1c-16. `/ops` page moved to platform MCP server (2026-03-01); health endpoint remains in teachings app.
 **Type:** Feature
 **Governing Refs:** ADR-095 (Observability), ADR-020 (Multi-Environment), DES-039 (Infrastructure), ADR-021 (Regional Distribution), ADR-003 (Accessibility), DES-060 (Operational Surface)
-**Target:** Milestone 1c (health endpoint + SLI targets) → Milestone 2a (ops page) → Arc 4+ (dashboard with API-driven data)
+**Target:** Milestone 1c (health endpoint + SLI targets). Operational dashboard now provided by platform MCP server (`deploy_status`, `environment_describe`).
 **Dependencies:** `/api/v1/health` (already a Milestone 1c deliverable). Sentry project (Milestone 1c). Deployed services to monitor.
 
 **The gap.** The project has 7+ external services (Neon, Vercel, Sentry, Contentful, AWS Bedrock, Voyage, GitHub). No unified view of system state. No SLI/SLO definitions. No operational surface for stakeholders who lack vendor dashboard access. ADR-095 specifies observability tools but not health targets.

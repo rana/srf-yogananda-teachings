@@ -19,14 +19,14 @@ A unified operational layer providing health monitoring, deployment ceremony, do
 | Milestone | What Ships |
 |-----------|-----------|
 | **1a** | `doc-validate.sh` (identifier cross-reference integrity), `status.sh` (AI self-orientation), `release-tag.sh` (semantic release tagging) |
-| **1c** | `/api/v1/health` (JSON health endpoint), `/ops` page (operational dashboard), deploy manifest generation, `deploy.sh` (deployment ceremony script) |
+| **1c** | `/api/v1/health` (JSON health endpoint), deploy manifest generation, `deploy.sh` (deployment ceremony script) |
 | **2a** | CI traceability roll-up, `@implements`/`@validates` coverage reporting |
 
 ---
 
 ### Layer 1: Health Endpoint — `/api/v1/health`
 
-**Milestone 1c.** JSON endpoint returning system health for synthetic monitoring and the `/ops` page.
+**Milestone 1c.** JSON endpoint returning system health for synthetic monitoring and the platform's `deploy_status` tool.
 
 ```
 GET /api/v1/health
@@ -63,55 +63,13 @@ These targets are tunable parameters per ADR-123 — initial values based on pre
 
 ---
 
-### Layer 2: Operational Dashboard — `/ops`
+### Layer 2: Operational Dashboard — Moved to Platform
 
-**Milestone 1c.** A Next.js page (not public-facing, but not auth-gated in Arc 1) presenting operational health for the human principal and AI sessions.
+**Moved to platform MCP server (2026-03-01).** The operational dashboard responsibility belongs to the platform, not individual applications. The platform's `deploy_status` MCP tool calls `/api/v1/health` to surface app health. Corpus stats, search activity, and SLI/SLO data are available through the health API and future per-project API endpoints that the platform aggregates.
 
-```
-┌─────────────────────────────────────────────┐
-│ Portal Operations                           │
-│                                             │
-│ Status: ● OK                                │
-│ Version: v1a.3 (deployed 2 hours ago)       │
-│ Environment: production                     │
-│                                             │
-│ Health Checks                               │
-│ ─────────────────────                       │
-│ Database:   ● 12ms                          │
-│ Contentful: ● 45ms                          │
-│ Search:     ● 87ms                          │
-│                                             │
-│ SLI Dashboard                               │
-│ ─────────────────────                       │
-│ Search p95:  423ms  (target: <500ms) ✓      │
-│ Availability: 99.7% (target: 99.5%) ✓      │
-│ FCP:         1.2s   (target: <1.5s)  ✓      │
-│ Error rate:  0.03%  (target: <0.1%)  ✓      │
-│                                             │
-│ Recent Deployments                          │
-│ ─────────────────────                       │
-│ v1a.3  2026-11-15  DES-058, ADR-041         │
-│ v1a.2  2026-11-10  DES-004, DES-005         │
-│ v1a.1  2026-11-01  Initial deployment       │
-│                                             │
-│ Document Integrity                          │
-│ ─────────────────────                       │
-│ Last check: 2 hours ago ✓                   │
-│ Identifiers: 234 (130 ADR, 63 DES, 41 PRO) │
-│ Cross-ref errors: 0                         │
-│                                             │
-│ Design Coverage (v1a.3)                     │
-│ ─────────────────────                       │
-│ DES-004 Data Model        ██████████ impl ✓ │
-│ DES-058 Search Quality    ████████░░ impl ✓ │
-│ ADR-048 Chunking          ██████░░░░ impl ✓ │
-│ DES-017 Homepage          ░░░░░░░░░░ —      │
-└─────────────────────────────────────────────┘
-```
+The platform MCP server (`yogananda-platform`) provides: `environment_list`, `environment_describe`, `deploy_status`, and `environment_promote` — covering the operational surface for all managed projects from a single tool set.
 
-**Typography:** Merriweather 400 headings, Open Sans 400 body (operational page, not a reading page). `--srf-navy` headings, status colors: green `#2d7d46`, amber `#b8860b`, red `#c41e3a`.
-
-**Data sources:** `/api/v1/health` (live), deploy manifest JSON (static file at `/.well-known/deploy-manifest.json`), `doc-validate.sh` output (CI artifact), traceability roll-up (CI artifact, Milestone 2a).
+**Data sources remain:** `/api/v1/health` (live), deploy manifest JSON (static file at `/.well-known/deploy-manifest.json`), `doc-validate.sh` output (CI artifact), traceability roll-up (CI artifact, Milestone 2a).
 
 ---
 
@@ -197,7 +155,7 @@ Creates annotated git tags with deployment metadata:
 | T2 | Single page | Changes in one `/app/` route |
 | T3 | Multi-page | Changes in multiple `/app/` routes or `/lib/services/` |
 | T4 | Data model | Changes in `/migrations/` or `/lib/services/` + schema |
-| T5 | Cross-service | Changes in `/terraform/`, `.github/workflows/`, or external API contracts |
+| T5 | Cross-service | Changes in platform config, `.github/workflows/`, or external API contracts |
 
 #### `scripts/deploy.sh` — Deployment Ceremony (Milestone 1c)
 
@@ -270,22 +228,20 @@ Advisory in Arc 1 — no enforcement gate. Arc 2+ may add minimum coverage thres
 | **Structured logs** | Request volume by locale | `language` field on every request → real language demand, more granular than Amplitude's `requested_language` | Milestone 1c |
 | **Sentry** | Error clustering by route and device | Errors concentrated on specific devices or browsers → broken experience for specific populations (PRI-05 failure detection) | Milestone 1c |
 
-**Reading cadence:** Infrastructure-as-intelligence is not a dashboard — it is a periodic reading practice. At arc boundaries and milestone reviews, the human principal and AI review infrastructure signals for patterns that explicit analytics might miss. The `/ops` page (Layer 2) may surface selected infrastructure metrics in future milestones.
+**Reading cadence:** Infrastructure-as-intelligence is not a dashboard — it is a periodic reading practice. At arc boundaries and milestone reviews, the human principal and AI review infrastructure signals for patterns that explicit analytics might miss. The platform operational surface may surface selected infrastructure metrics in future milestones.
 
 **Relationship to Amplitude:** Infrastructure signals answer "how much" and "how fast." Amplitude events answer "which feature" and "in what context." They are complementary. When an infrastructure signal (e.g., audio CDN bandwidth spike) raises a question, an Amplitude event (e.g., `audio_play_started` by language) provides the context. Do not duplicate: if infrastructure already answers a question, do not add an Amplitude event for the same signal.
 
 ### Accessibility
 
-- `/ops` page: semantic HTML, screen-reader accessible, keyboard navigable
 - Status indicators use both color and icon (●/◌/✕) — not color alone
 - All operational data available as JSON via `/api/v1/health` for programmatic access
-- ARIA label: "Portal operations dashboard — system health, deployments, and document integrity"
 
 ---
 
 ### Relationship to Other Sections
 
-- **DES-039** (Infrastructure and Deployment) — DES-060 adds the operational *surface* (health endpoint, dashboard, deploy ceremony) to DES-039's infrastructure *foundation* (Terraform, CI, bootstrap)
+- **DES-039** (Infrastructure and Deployment) — DES-060 adds the operational *surface* (health endpoint, dashboard, deploy ceremony) to DES-039's infrastructure *foundation* (Platform MCP, CI, bootstrap)
 - **DES-037** (Observability) — DES-060's SLI/SLO targets complement DES-037's logging and error tracking
 - **DES-038** (Testing Strategy) — Design-artifact traceability (Layer 4) links tests back to governing specs
 - **PRO-041** (Docs as Executable Specs) — Extracts testable assertions from design prose; PRO-039/DES-060 links existing tests back to design identifiers. Complementary directions.

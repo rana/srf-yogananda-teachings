@@ -30,7 +30,7 @@ Establishes the project's theological and ethical identity. The portal displays 
 
 **Infrastructure & Platform**
 
-The technology stack and infrastructure topology. Next.js on Vercel (frontend), Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB), Contentful as editorial source of truth, AWS Bedrock Claude with model tiering. Infrastructure is Terraform-managed from Milestone 1c with GitHub Actions CI/CD, OIDC federation, S3 + DynamoDB state backend, and CI-agnostic deployment scripts. Secrets management uses AWS Secrets Manager (ADR-125) with Vercel OIDC federation eliminating long-lived credentials (ADR-126). Also covers PWA strategy, database backup, multi-environment design, redundancy/failover, and Postgres-native graph intelligence.
+The technology stack and infrastructure topology. Next.js on Vercel (frontend), Neon PostgreSQL with pgvector and pg_search (single-database, no DynamoDB), Contentful as editorial source of truth, AWS Bedrock Claude with model tiering. Infrastructure managed by yogananda-platform MCP server (ADR-016 revised 2026-03-01); one-time AWS security via `bootstrap.sh`. GitHub Actions CI/CD with OIDC federation. Secrets management uses AWS Secrets Manager (ADR-125) with Vercel OIDC federation eliminating long-lived credentials (ADR-126). Also covers PWA strategy, database backup, multi-environment design, redundancy/failover, and Postgres-native graph intelligence.
 
 - ADR-008: Next.js + Vercel for Frontend
 - ADR-009: Neon + pgvector for Vector Search
@@ -38,8 +38,8 @@ The technology stack and infrastructure topology. Next.js on Vercel (frontend), 
 - ADR-012: Progressive Web App as Mobile Intermediate Step
 - ADR-013: Single-Database Architecture — No DynamoDB
 - ADR-014: AWS Bedrock Claude with Model Tiering ◆
-- ADR-016: Infrastructure as Code (Terraform)
-- ADR-017: Terraform-Native Lambda
+- ADR-016: Infrastructure as Code — Platform-Managed Infrastructure (revised 2026-03-01)
+- ADR-017: Platform-Managed Lambda (revised 2026-03-01)
 - ADR-018: CI-Agnostic Deployment Scripts
 - ADR-019: Database Backup and Recovery Strategy
 - ADR-020: Multi-Environment Infrastructure Design

@@ -755,7 +755,7 @@ Three tiers of MCP server adoption, phased with the project:
 
 | Service | Why Skip |
 |---------|----------|
-| **AWS** | Terraform manages infrastructure declaratively. Sentry catches errors. The gap — "what's in that S3 bucket?" — is too narrow. `aws` CLI through Bash handles rare ad-hoc queries. |
+| **AWS** | Platform MCP manages infrastructure declaratively. Sentry catches errors. The gap — "what's in that S3 bucket?" — is too narrow. `aws` CLI through Bash handles rare ad-hoc queries. |
 | **Figma** | Suspended (PRO-027). No design tool needed during AI-led development. |
 | **Amplitude** | Analytics code targets the SDK, not the query API. By the time analytics data matters (Milestone 3d+), queries are infrequent. Dashboard is adequate. |
 | **New Relic** | APM data (slow queries, endpoint latency) is useful during the Milestone 3d observability work, but that's a narrow window. Dashboards handle ongoing monitoring. |
@@ -771,7 +771,7 @@ The **SRF Corpus MCP** server architecture (ADR-101, DES-031) gives the AI devel
 - Contentful MCP evaluated and added at Milestone 1c when Contentful webhook sync activates
 - GitHub MCP evaluated during Arc 1; kept or dropped based on actual utility versus `gh` CLI
 - SRF Corpus MCP server moved to Unscheduled Features (2026-02-24). Architecture preserved in DES-031.
-- AWS MCP explicitly not adopted — Terraform + Sentry + `aws` CLI is sufficient
+- AWS MCP explicitly not adopted — Platform MCP + Sentry + `aws` CLI is sufficient
 - MCP server configuration documented in CLAUDE.md for all future AI sessions
 - This decision is revisited at Arc 6 (cross-media) and Milestone 7a (user accounts) when new services enter the stack
 
@@ -2087,9 +2087,9 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 
 **Schema convention — UUIDv7:** All table primary keys use `DEFAULT uuidv7()` instead of `gen_random_uuid()`. UUIDv7 embeds a millisecond-precision timestamp, providing natural chronological ordering and significantly better B-tree index locality (reduced page splitting on INSERT). The embedded timestamp is not sensitive — all content tables already carry explicit `created_at`/`updated_at` columns.
 
-**Terraform parameter:** Neon project specifies `postgres_version = "18"` explicitly. Never rely on Neon's default version.
+**Platform config parameter:** Neon project specifies `postgres_version = "18"` explicitly. Never rely on Neon's default version.
 
-**Verification gate (Deliverable M1a-2):** After `terraform apply`, verify all 5 required extensions (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements) install correctly on Neon PG18. If any extension fails, fallback: recreate on PG17 with no code changes required (only Terraform `postgres_version` parameter changes).
+**Verification gate (Deliverable M1a-2):** After platform provisioning, verify all 5 required extensions (pgvector, pg_search, pg_trgm, unaccent, pg_stat_statements) install correctly on Neon PG18. If any extension fails, fallback: recreate on PG17 with no code changes required (only platform `postgres_version` parameter changes).
 
 #### Tier Selection: Scale
 
@@ -2125,9 +2125,9 @@ Establish **Neon Scale tier with PostgreSQL 18** as the project's database platf
 
 | Branch Type | Naming | TTL | Created By | Deleted By |
 |-------------|--------|-----|------------|------------|
-| **Production** | `production` | Permanent | Terraform | Never (protected) |
-| **Staging** | `staging` | Permanent | Terraform | Never |
-| **Dev** | `dev` | Permanent | Terraform | Manual |
+| **Production** | `production` | Permanent | Platform MCP | Never (protected) |
+| **Staging** | `staging` | Permanent | Platform MCP | Never |
+| **Dev** | `dev` | Permanent | Platform MCP | Manual |
 | **CI test** | `ci-{run_id}` | 1 hour | GitHub Actions | Auto (TTL) or CI cleanup step |
 | **PR preview** | `pr-{number}` | 7 days | GitHub Actions | Auto (TTL) or on PR close |
 | **Migration test** | `migrate-{date}` | 2 hours | Manual / CI | Auto (TTL) |
@@ -2180,10 +2180,10 @@ Neon is the portal's database provider for the long term. The project plans to g
 **Current state (2026-02):** Neon read replicas are same-region only. The portal uses a single-region origin in `us-west-2` with global edge distribution via Vercel CDN. Pure hybrid search (ADR-119) achieves search p95 < 500ms from any continent without multi-region database infrastructure (see ADR-021 § Regional Latency Targets).
 
 **When Neon ships cross-region read replicas:**
-- Activate replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Terraform
+- Activate replicas in `ap-south-1` (Mumbai) and `eu-central-1` (Frankfurt) via Platform MCP
 - Route search API read queries to the nearest replica; writes to the primary
 - Expected improvement: South Asia search latency drops from ~300ms to ~150ms
-- This is a Terraform configuration change — no application code changes
+- This is a platform configuration change — no application code changes
 
 **Why Neon, long-term:** Neon's Scale tier, PostgreSQL 18, branching workflow, pgvector + pg_search extension ecosystem, scale-to-zero economics, and developer velocity are the right fit for this project. The single-database architecture (ADR-013) depends on PostgreSQL's extension ecosystem — pgvector, pg_search/ParadeDB, pg_trgm, unaccent, pg_stat_statements — which Neon supports fully. No alternative database (Turso, Aurora DSQL, PlanetScale) provides equivalent single-database hybrid search capability. See ADR-021 § Alternatives Evaluated for the Turso evaluation.
 
@@ -2201,27 +2201,24 @@ Neon offers three API key types (Personal, Organization, Project-scoped). The po
 
 | Context | Key Type | GitHub Secret Name | Scope | Rationale |
 |---------|----------|-------------------|-------|-----------|
-| **Terraform** (`terraform.yml`) | Organization API key | `NEON_API_KEY` | All org projects | Terraform creates/deletes projects — requires org-level access |
+| **Platform MCP** | Organization API key | `NEON_API_KEY` | All org projects | Platform MCP creates/deletes projects — requires org-level access |
 | **CI branch ops** (`neon-branch.yml`, `neon-cleanup.yml`) | Project-scoped key | `NEON_PROJECT_API_KEY` | Single project | Can create/delete branches; cannot delete the project |
 | **Claude Code / MCP** (development) | Project-scoped key | local `.env` | Single project | Interactive operations; least privilege for exploratory work |
 
-**Key lifecycle:** Organization key created once during bootstrap (manual, store in password manager + GitHub secret). Project-scoped keys created after `terraform apply` provisions the Neon project — either via Neon Console or `neonctl api-keys create --project-id`. Secret token displayed only once; store immediately. Revocation is immediate and permanent.
+**Key lifecycle:** Organization key created once during bootstrap (manual, store in password manager + GitHub secret). Project-scoped keys created after Platform MCP provisions the Neon project — either via Neon Console or `neonctl api-keys create --project-id`. Secret token displayed only once; store immediately. Revocation is immediate and permanent.
 
 **Limitation:** Neon does not offer granular RBAC within a key scope. A project-scoped key can perform all operations on that project except deletion. No finer-grained permissions are available (e.g., "branches only" or "read-only"). This is acceptable for the portal's single-project architecture.
 
-#### Terraform Provider Governance
+#### Platform MCP Governance
 
-The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** — not officially supported by Neon. This has operational implications:
+Neon infrastructure is managed via Platform MCP (ADR-016), which uses the Neon REST API directly. This avoids the dependency on community-maintained Terraform providers and provides the AI operator with direct programmatic access (PRI-12).
 
-- **Pin the provider version** in `versions.tf` with a pessimistic constraint (e.g., `~> 0.6.0`). Never use unconstrained versions.
-- **Review `terraform plan` on provider upgrades.** Provider schema changes can cause unintended resource replacements (destroy + recreate). Never auto-upgrade the Neon provider in CI.
-- **`dependabot.yml` covers provider updates.** Dependabot creates PRs for provider version bumps. These PRs trigger `terraform.yml`, producing a plan diff. Always review before merge.
-- **Monitor for breaking changes.** Track the provider's GitHub releases for deprecation notices.
-- **Fallback:** If the community provider becomes unmaintained, the Neon REST API can be called directly from CI scripts (`neonctl` or `curl`). Terraform manages persistent state (project, protected branches); ephemeral operations already use the API layer (see DES-039 § Three-Layer Neon Management Model).
+- **API version tracking.** Monitor Neon API changelog for breaking changes. Platform MCP abstracts API calls, so version changes are isolated to the platform layer.
+- **Fallback:** `neonctl` CLI or direct `curl` to the Neon REST API. All Neon operations are API-accessible (see DES-039 § Three-Layer Neon Management Model).
 
 ### Consequences
 
-- Neon project created as PostgreSQL 18, Scale tier from Milestone 1a (`postgres_version = "18"` in Terraform)
+- Neon project created as PostgreSQL 18, Scale tier from Milestone 1a (`postgres_version = "18"` in platform config)
 - All table primary keys use `uuidv7()` — schema convention for time-ordered UUIDs
 - Production branch protected; compute configuration applied per environment
 - 5 extensions verified on PG18 in first migration (vector, pg_search, pg_trgm, unaccent, pg_stat_statements)
@@ -2229,8 +2226,8 @@ The Terraform provider for Neon (`kislerdm/neon`) is **community-maintained** �
 - `pg_stat_statements` data informs search query optimization from Milestone 1a
 - OpenTelemetry export configured during Milestone 2a observability setup
 - Snapshot schedule configured during Milestone M1a-2 via Neon API (ADR-019)
-- API keys scoped per context: org key for Terraform, project-scoped keys for CI and development
-- Terraform provider version pinned; upgrades reviewed via `terraform plan` in PR
+- API keys scoped per context: org key for Platform MCP, project-scoped keys for CI and development
+- Platform MCP uses Neon REST API directly; no community provider dependency
 - **Extends ADR-009** (pgvector), **ADR-019** (backup), **ADR-094** (testing), **ADR-095** (observability)
 - `design/search/DES-004-data-model.md` schema updated to include all 5 extensions and `uuidv7()` convention
 - `design/search/DES-039-infrastructure-and-deployment.md` updated with Three-Layer Neon Management Model (Infrastructure / Operations / Data)
@@ -2281,7 +2278,7 @@ Every managed service integral to **routine operations** requires MCP integratio
 | `aws` CLI | AWS | S3, Secrets Manager, IAM, OIDC — via Bash |
 | `vercel` CLI | Vercel | Deployment, environment variables, project linking |
 | `gh` CLI | GitHub | Issues, PRs, Actions, secrets |
-| Terraform | All IaC-managed | Infrastructure provisioning, state management |
+| Platform MCP | All infrastructure | Infrastructure provisioning, environment management |
 
 #### 2. Machine-Readable Operations Standards
 
@@ -2333,7 +2330,7 @@ When evaluating a new service for the portal infrastructure:
 
 - [ ] Does it have MCP integration, CLI, or API for routine operations?
 - [ ] Can the AI operator manage it without GUI interaction for day-to-day work?
-- [ ] Can it be Terraform-managed for infrastructure state?
+- [ ] Can it be platform-managed for infrastructure state?
 - [ ] Does it emit structured (JSON) logs or metrics?
 - [ ] Does it support webhook or event-driven integration?
 
