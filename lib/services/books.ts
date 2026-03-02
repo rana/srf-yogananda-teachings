@@ -1,0 +1,142 @@
+/**
+ * Book and chapter services.
+ *
+ * Framework-agnostic (PRI-10). Receives a pg.Pool as dependency.
+ */
+
+import type pg from "pg";
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  language: string;
+  publicationYear: number | null;
+  coverImageUrl: string | null;
+  bookstoreUrl: string | null;
+}
+
+export interface Chapter {
+  id: string;
+  bookId: string;
+  chapterNumber: number;
+  title: string;
+  sortOrder: number;
+}
+
+export interface ChapterContent {
+  chapter: Chapter;
+  book: Book;
+  paragraphs: {
+    id: string;
+    content: string;
+    pageNumber: number | null;
+    paragraphIndex: number | null;
+  }[];
+  prevChapter: { id: string; chapterNumber: number; title: string } | null;
+  nextChapter: { id: string; chapterNumber: number; title: string } | null;
+}
+
+export async function getBooks(pool: pg.Pool, language = "en"): Promise<Book[]> {
+  const { rows } = await pool.query(
+    `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
+     FROM books WHERE language = $1 ORDER BY title`,
+    [language],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    author: r.author,
+    language: r.language,
+    publicationYear: r.publication_year,
+    coverImageUrl: r.cover_image_url,
+    bookstoreUrl: r.bookstore_url,
+  }));
+}
+
+export async function getChapters(pool: pg.Pool, bookId: string): Promise<Chapter[]> {
+  const { rows } = await pool.query(
+    `SELECT id, book_id, chapter_number, title, sort_order
+     FROM chapters WHERE book_id = $1 ORDER BY sort_order`,
+    [bookId],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    bookId: r.book_id,
+    chapterNumber: r.chapter_number,
+    title: r.title,
+    sortOrder: r.sort_order,
+  }));
+}
+
+export async function getChapterContent(
+  pool: pg.Pool,
+  bookId: string,
+  chapterNumber: number,
+): Promise<ChapterContent | null> {
+  // Get chapter
+  const chResult = await pool.query(
+    `SELECT c.id, c.book_id, c.chapter_number, c.title, c.sort_order,
+            b.title as book_title, b.author as book_author, b.language,
+            b.publication_year, b.cover_image_url, b.bookstore_url
+     FROM chapters c
+     JOIN books b ON b.id = c.book_id
+     WHERE c.book_id = $1 AND c.chapter_number = $2`,
+    [bookId, chapterNumber],
+  );
+
+  if (chResult.rows.length === 0) return null;
+  const ch = chResult.rows[0];
+
+  // Get paragraphs (chunks ordered by paragraph_index)
+  const paraResult = await pool.query(
+    `SELECT id, content, page_number, paragraph_index
+     FROM book_chunks
+     WHERE chapter_id = $1
+     ORDER BY paragraph_index, created_at`,
+    [ch.id],
+  );
+
+  // Get prev/next chapters
+  const navResult = await pool.query(
+    `SELECT id, chapter_number, title, sort_order
+     FROM chapters WHERE book_id = $1
+     AND sort_order IN ($2, $3)
+     ORDER BY sort_order`,
+    [bookId, ch.sort_order - 1, ch.sort_order + 1],
+  );
+
+  const prev = navResult.rows.find((r) => r.sort_order < ch.sort_order) || null;
+  const next = navResult.rows.find((r) => r.sort_order > ch.sort_order) || null;
+
+  return {
+    chapter: {
+      id: ch.id,
+      bookId: ch.book_id,
+      chapterNumber: ch.chapter_number,
+      title: ch.title,
+      sortOrder: ch.sort_order,
+    },
+    book: {
+      id: ch.book_id,
+      title: ch.book_title,
+      author: ch.book_author,
+      language: ch.language,
+      publicationYear: ch.publication_year,
+      coverImageUrl: ch.cover_image_url,
+      bookstoreUrl: ch.bookstore_url,
+    },
+    paragraphs: paraResult.rows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      pageNumber: r.page_number,
+      paragraphIndex: r.paragraph_index,
+    })),
+    prevChapter: prev
+      ? { id: prev.id, chapterNumber: prev.chapter_number, title: prev.title }
+      : null,
+    nextChapter: next
+      ? { id: next.id, chapterNumber: next.chapter_number, title: next.title }
+      : null,
+  };
+}
