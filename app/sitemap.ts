@@ -14,27 +14,29 @@ const BASE_URL = "https://teachings.yogananda.org";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
+  const now = new Date().toISOString();
 
   // Static pages per locale
   const staticPages = [
-    "",
-    "/search",
-    "/books",
-    "/about",
-    "/quiet",
-    "/browse",
-    "/privacy",
-    "/legal",
-    "/integrity",
+    { path: "", freq: "daily" as const, priority: 1.0 },
+    { path: "/search", freq: "weekly" as const, priority: 0.9 },
+    { path: "/books", freq: "weekly" as const, priority: 0.8 },
+    { path: "/about", freq: "monthly" as const, priority: 0.7 },
+    { path: "/quiet", freq: "daily" as const, priority: 0.7 },
+    { path: "/browse", freq: "weekly" as const, priority: 0.6 },
+    { path: "/privacy", freq: "monthly" as const, priority: 0.3 },
+    { path: "/legal", freq: "monthly" as const, priority: 0.3 },
+    { path: "/integrity", freq: "monthly" as const, priority: 0.4 },
   ];
 
   for (const locale of locales) {
     const prefix = locale === "en" ? "" : `/${locale}`;
     for (const page of staticPages) {
       entries.push({
-        url: `${BASE_URL}${prefix}${page}`,
-        changeFrequency: page === "" ? "daily" : "weekly",
-        priority: page === "" ? 1.0 : page === "/search" ? 0.9 : 0.7,
+        url: `${BASE_URL}${prefix}${page.path}`,
+        lastModified: now,
+        changeFrequency: page.freq,
+        priority: page.priority,
       });
     }
   }
@@ -45,17 +47,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const chapters = await getChapters(pool, book.id);
     const locale = book.language === "en" ? "" : `/${book.language}`;
 
-    // Book landing page
     entries.push({
       url: `${BASE_URL}${locale}/books/${book.id}`,
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     });
 
-    // Chapter pages
     for (const ch of chapters) {
       entries.push({
         url: `${BASE_URL}${locale}/books/${book.id}/${ch.chapterNumber}`,
+        lastModified: now,
         changeFrequency: "monthly",
         priority: 0.6,
       });

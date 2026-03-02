@@ -91,25 +91,45 @@ export default async function HomePage({
           </div>
         </section>
 
-        {/* Start Here — M2a-13 */}
+        {/* Start Here — M2a-13: Three newcomer entry paths */}
         <section className="mt-16" aria-label={t("startHere.heading")}>
           <h2 className="mb-6 text-center text-xs font-sans font-semibold uppercase tracking-widest text-srf-navy/40">
             {t("startHere.heading")}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {(["curious", "need", "seeker"] as const).map((path) => (
-              <div
-                key={path}
-                className="rounded-lg bg-white p-5 text-center"
-              >
-                <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy">
-                  {t(`startHere.${path}.title`)}
-                </h3>
-                <p className="text-xs leading-relaxed text-srf-navy/60">
-                  {t(`startHere.${path}.description`)}
-                </p>
-              </div>
-            ))}
+            <Link
+              href="/books"
+              className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
+            >
+              <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
+                {t("startHere.curious.title")}
+              </h3>
+              <p className="text-xs leading-relaxed text-srf-navy/60">
+                {t("startHere.curious.description")}
+              </p>
+            </Link>
+            <Link
+              href={`/search?q=${encodeURIComponent("comfort hope healing")}`}
+              className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
+            >
+              <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
+                {t("startHere.need.title")}
+              </h3>
+              <p className="text-xs leading-relaxed text-srf-navy/60">
+                {t("startHere.need.description")}
+              </p>
+            </Link>
+            <Link
+              href={`/search?q=${encodeURIComponent("meditation technique practice")}`}
+              className="group rounded-lg border border-srf-navy/5 bg-white p-5 text-center transition-all hover:border-srf-gold/30 hover:shadow-sm"
+            >
+              <h3 className="mb-2 font-display text-sm font-semibold text-srf-navy group-hover:text-srf-gold transition-colors">
+                {t("startHere.seeker.title")}
+              </h3>
+              <p className="text-xs leading-relaxed text-srf-navy/60">
+                {t("startHere.seeker.description")}
+              </p>
+            </Link>
           </div>
         </section>
 
