@@ -67,10 +67,10 @@ export function TodaysWisdom({ passage: initial }: Props) {
           <cite className="not-italic">
             — {passage.bookAuthor},{" "}
             <Link
-              href={`/books/${passage.bookId}/${passage.chapterNumber}`}
+              href={`/books/${passage.bookId}`}
               className="underline decoration-srf-gold/40 underline-offset-2 hover:text-srf-navy"
             >
-              {passage.chapterTitle}
+              <em>{passage.bookTitle}</em>
             </Link>
             {passage.pageNumber && `, p. ${passage.pageNumber}`}
           </cite>

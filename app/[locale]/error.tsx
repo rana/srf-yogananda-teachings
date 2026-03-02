@@ -9,6 +9,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { SrfLotus } from "@/app/components/SrfLotus";
 
 export default function Error({
   reset,
@@ -20,7 +21,7 @@ export default function Error({
 
   return (
     <main id="main-content" className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <p className="mb-2 text-5xl text-srf-gold" aria-hidden="true">✦</p>
+      <SrfLotus size="xl" className="mb-2 w-12 h-12 text-srf-gold" />
       <h1 className="mb-3 font-display text-xl text-srf-navy">
         {t("serverError")}
       </h1>

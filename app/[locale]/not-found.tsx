@@ -7,6 +7,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { SrfLotus } from "@/app/components/SrfLotus";
 
 export default async function NotFound() {
   const t = await getTranslations("errors");
@@ -14,7 +15,7 @@ export default async function NotFound() {
 
   return (
     <main id="main-content" className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <p className="mb-2 text-5xl text-srf-gold" aria-hidden="true">✦</p>
+      <SrfLotus size="xl" className="mb-2 w-12 h-12 text-srf-gold" />
       <h1 className="mb-3 font-display text-xl text-srf-navy">
         {t("notFound")}
       </h1>

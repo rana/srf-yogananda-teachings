@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SrfLotus } from "./SrfLotus";
 
 export function Header() {
   const t = useTranslations("nav");
@@ -37,7 +38,7 @@ export function Header() {
           aria-label={t("home")}
         >
           {/* Lotus mark — minimal wordmark */}
-          <span className="text-srf-gold" aria-hidden="true">✦</span>
+          <SrfLotus className="inline-block w-5 h-5 text-srf-gold" />
           <span className="ml-1.5 hidden text-sm font-normal sm:inline">
             Teachings
           </span>

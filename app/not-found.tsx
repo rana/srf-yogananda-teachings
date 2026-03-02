@@ -6,11 +6,12 @@
  */
 
 import Link from "next/link";
+import { SrfLotus } from "@/app/components/SrfLotus";
 
 export default function GlobalNotFound() {
   return (
     <main id="main-content" className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <p className="mb-2 text-5xl text-srf-gold" aria-hidden="true">✦</p>
+      <SrfLotus size="xl" className="mb-2 w-12 h-12 text-srf-gold" />
       <h1 className="mb-3 font-display text-xl text-srf-navy">
         This page could not be found
       </h1>

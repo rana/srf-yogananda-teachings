@@ -121,10 +121,11 @@ export function QuietCornerClient({ passage: initial }: Props) {
           &ldquo;{passage.content.trim()}&rdquo;
         </blockquote>
 
-        {/* Attribution */}
+        {/* Attribution (PRI-02) */}
         <footer className="mt-4 text-sm text-srf-navy/50">
           <cite className="not-italic">
-            — {passage.bookAuthor}, {passage.chapterTitle}
+            — {passage.bookAuthor}, <em>{passage.bookTitle}</em>
+            {passage.pageNumber && `, p. ${passage.pageNumber}`}
           </cite>
         </footer>
 

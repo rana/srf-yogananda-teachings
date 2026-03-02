@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             gap: "8px",
           }}
         >
-          <span style={{ color: "#dcbd23", fontSize: "16px" }}>✦</span>
+          <span style={{ color: "#dcbd23", fontSize: "16px" }}>❁</span>
           <span
             style={{
               fontSize: "12px",
