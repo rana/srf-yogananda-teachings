@@ -26,24 +26,64 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "SRF Teachings Portal",
-              url: "https://teachings.yogananda.org",
-              description:
-                "Paramahansa Yogananda's published teachings — freely accessible worldwide",
-              copyrightHolder: {
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "SRF Teachings Portal",
+                url: "https://teachings.yogananda.org",
+                description:
+                  "Paramahansa Yogananda's published teachings — freely accessible worldwide",
+                copyrightHolder: {
+                  "@type": "Organization",
+                  name: "Self-Realization Fellowship",
+                  url: "https://yogananda.org",
+                },
+                publisher: {
+                  "@type": "Organization",
+                  name: "Self-Realization Fellowship",
+                  url: "https://yogananda.org",
+                },
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate:
+                      "https://teachings.yogananda.org/en/search?q={search_term_string}",
+                  },
+                  "query-input": "required name=search_term_string",
+                },
+              },
+              {
+                "@context": "https://schema.org",
                 "@type": "Organization",
                 name: "Self-Realization Fellowship",
                 url: "https://yogananda.org",
+                sameAs: [
+                  "https://www.wikidata.org/wiki/Q1075365",
+                  "https://en.wikipedia.org/wiki/Self-Realization_Fellowship",
+                  "https://www.youtube.com/@YoganandaSRF",
+                ],
               },
-              publisher: {
-                "@type": "Organization",
-                name: "Self-Realization Fellowship",
-                url: "https://yogananda.org",
+              {
+                "@context": "https://schema.org",
+                "@type": "Person",
+                name: "Paramahansa Yogananda",
+                url: "https://yogananda.org/paramahansa-yogananda",
+                sameAs: [
+                  "https://www.wikidata.org/wiki/Q131814",
+                  "https://en.wikipedia.org/wiki/Paramahansa_Yogananda",
+                ],
+                birthDate: "1893-01-05",
+                deathDate: "1952-03-07",
+                birthPlace: {
+                  "@type": "Place",
+                  name: "Gorakhpur, India",
+                },
+                description:
+                  "Indian Hindu monk, yogi, and guru who introduced millions of westerners to the teachings of meditation and Kriya Yoga through his organization Self-Realization Fellowship.",
               },
-            }),
+            ]),
           }}
         />
       </head>

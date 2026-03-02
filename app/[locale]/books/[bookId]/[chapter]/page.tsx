@@ -10,6 +10,27 @@ import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import pool from "@/lib/db";
 import { getChapterContent } from "@/lib/services/books";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; bookId: string; chapter: string }>;
+}): Promise<Metadata> {
+  const { locale, bookId, chapter } = await params;
+  const chapterNumber = parseInt(chapter, 10);
+  if (isNaN(chapterNumber) || chapterNumber < 1) return {};
+  const content = await getChapterContent(pool, bookId, chapterNumber);
+  if (!content) return {};
+  const prefix = locale === "en" ? "" : `/${locale}`;
+  return {
+    title: `${content.chapter.title} — ${content.book.title}`,
+    description: `Chapter ${content.chapter.chapterNumber} of ${content.book.title} by ${content.book.author}`,
+    alternates: {
+      canonical: `${prefix}/books/${bookId}/${chapter}`,
+    },
+  };
+}
 
 export default async function ChapterPage({
   params,
@@ -26,8 +47,58 @@ export default async function ChapterPage({
   const content = await getChapterContent(pool, bookId, chapterNumber);
   if (!content) notFound();
 
+  const bookUrl = `https://teachings.yogananda.org/${locale}/books/${bookId}`;
+  const chapterUrl = `${bookUrl}/${chapterNumber}`;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Chapter",
+      name: content.chapter.title,
+      position: content.chapter.chapterNumber,
+      url: chapterUrl,
+      isPartOf: {
+        "@type": "Book",
+        name: content.book.title,
+        author: { "@type": "Person", name: content.book.author },
+        url: bookUrl,
+      },
+      copyrightHolder: {
+        "@type": "Organization",
+        name: "Self-Realization Fellowship",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Books",
+          item: `https://teachings.yogananda.org/${locale}/books`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: content.book.title,
+          item: bookUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: content.chapter.title,
+          item: chapterUrl,
+        },
+      ],
+    },
+  ];
+
   return (
     <main id="main-content" className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Reader header */}
       <header className="border-b border-srf-gold/20 bg-white">
         <div className="mx-auto max-w-[38rem] px-4 py-4">

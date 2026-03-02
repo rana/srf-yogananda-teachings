@@ -10,6 +10,26 @@ import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import pool from "@/lib/db";
 import { getBooks, getChapters } from "@/lib/services/books";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; bookId: string }>;
+}): Promise<Metadata> {
+  const { locale, bookId } = await params;
+  const books = await getBooks(pool);
+  const book = books.find((b) => b.id === bookId);
+  if (!book) return {};
+  const prefix = locale === "en" ? "" : `/${locale}`;
+  return {
+    title: book.title,
+    description: `${book.title} by ${book.author} — read chapters online`,
+    alternates: {
+      canonical: `${prefix}/books/${bookId}`,
+    },
+  };
+}
 
 export default async function BookLandingPage({
   params,
@@ -29,8 +49,57 @@ export default async function BookLandingPage({
   const book = books.find((b) => b.id === bookId);
   if (!book) notFound();
 
+  const bookUrl = `https://teachings.yogananda.org/${locale}/books/${bookId}`;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Book",
+      name: book.title,
+      author: { "@type": "Person", name: book.author },
+      inLanguage: book.language,
+      ...(book.publicationYear && { datePublished: String(book.publicationYear) }),
+      url: bookUrl,
+      copyrightHolder: {
+        "@type": "Organization",
+        name: "Self-Realization Fellowship",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Self-Realization Fellowship",
+      },
+      hasPart: chapters.map((ch) => ({
+        "@type": "Chapter",
+        name: ch.title,
+        position: ch.chapterNumber,
+        url: `${bookUrl}/${ch.chapterNumber}`,
+      })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Books",
+          item: `https://teachings.yogananda.org/${locale}/books`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: book.title,
+          item: bookUrl,
+        },
+      ],
+    },
+  ];
+
   return (
     <main id="main-content" className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto max-w-3xl px-4 py-8 md:py-12">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-srf-navy/50" aria-label="Breadcrumb">

@@ -12,6 +12,24 @@ import pool from "@/lib/db";
 import { getBooks, getChapters } from "@/lib/services/books";
 import { localeNames } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations("books");
+  const prefix = locale === "en" ? "" : `/${locale}`;
+  return {
+    title: t("heading"),
+    alternates: {
+      canonical: `${prefix}/books`,
+      languages: { en: "/books", es: "/es/books" },
+    },
+  };
+}
 
 export default async function BooksPage({
   params,
@@ -31,8 +49,32 @@ export default async function BooksPage({
     }),
   );
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: t("heading"),
+    url: `https://teachings.yogananda.org/${locale}/books`,
+    hasPart: booksWithChapters.map((book) => ({
+      "@type": "Book",
+      name: book.title,
+      author: { "@type": "Person", name: book.author },
+      inLanguage: book.language,
+      ...(book.publicationYear && { datePublished: String(book.publicationYear) }),
+      url: `https://teachings.yogananda.org/${locale}/books/${book.id}`,
+      numberOfPages: book.chapterCount,
+      copyrightHolder: {
+        "@type": "Organization",
+        name: "Self-Realization Fellowship",
+      },
+    })),
+  };
+
   return (
     <main id="main-content" className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto max-w-3xl px-4 py-8 md:py-12">
         <h1 className="mb-2 font-display text-2xl text-srf-navy md:text-3xl">
           {t("heading")}
