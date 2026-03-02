@@ -39,6 +39,8 @@ export interface SearchResponse {
   mode: "hybrid" | "fts_only" | "vector_only";
   totalResults: number;
   durationMs: number;
+  /** When results come from a different language than requested */
+  fallbackLanguage?: string;
 }
 
 // ── Embedding ────────────────────────────────────────────────────
@@ -117,6 +119,25 @@ export async function search(
     results = await ftsOnlySearch(pool, query, language, limit);
   }
 
+  // Cross-language fallback: if non-English search returns no results,
+  // fall back to English results (M1b-3, ADR-077)
+  let fallbackLanguage: string | undefined;
+  if (results.length === 0 && language !== "en") {
+    fallbackLanguage = "en";
+    if (hasVectorSearch) {
+      results = await hybridSearch(
+        pool,
+        query,
+        queryEmbedding,
+        "en",
+        fetchCount,
+        limit,
+      );
+    } else {
+      results = await ftsOnlySearch(pool, query, "en", limit);
+    }
+  }
+
   const durationMs = Date.now() - start;
 
   // Log query (anonymized, ADR-053)
@@ -130,6 +151,7 @@ export async function search(
     mode,
     totalResults: results.length,
     durationMs,
+    fallbackLanguage,
   };
 }
 

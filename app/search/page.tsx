@@ -15,6 +15,7 @@ interface SearchResult {
   id: string;
   content: string;
   citation: Citation;
+  language: string;
   score: number;
   sources: string[];
 }
@@ -25,10 +26,17 @@ interface SearchMeta {
   language: string;
   totalResults: number;
   durationMs: number;
+  fallbackLanguage?: string;
 }
+
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+];
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const [language, setLanguage] = useState("en");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [meta, setMeta] = useState<SearchMeta | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +51,7 @@ export default function SearchPage() {
       setSearched(true);
       try {
         const res = await fetch(
-          `/api/v1/search?q=${encodeURIComponent(query.trim())}`,
+          `/api/v1/search?q=${encodeURIComponent(query.trim())}&language=${language}`,
         );
         const data = await res.json();
         setResults(data.data || []);
@@ -55,7 +63,7 @@ export default function SearchPage() {
         setLoading(false);
       }
     },
-    [query],
+    [query, language],
   );
 
   return (
@@ -76,10 +84,26 @@ export default function SearchPage() {
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="What did Yogananda say about..."
+                placeholder={
+                  language === "es"
+                    ? "¿Qué dijo Yogananda sobre...?"
+                    : "What did Yogananda say about..."
+                }
                 className="flex-1 rounded-lg border border-[#1a2744]/20 bg-white px-4 py-3 text-[#1a2744] placeholder:text-[#1a2744]/40 focus:border-[#dcbd23] focus:outline-none focus:ring-1 focus:ring-[#dcbd23]"
                 aria-label="Search query"
               />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="rounded-lg border border-[#1a2744]/20 bg-white px-3 py-3 text-sm text-[#1a2744] focus:border-[#dcbd23] focus:outline-none focus:ring-1 focus:ring-[#dcbd23] min-w-11 min-h-11"
+                aria-label="Language"
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
                 disabled={loading || !query.trim()}
@@ -95,10 +119,18 @@ export default function SearchPage() {
       {/* Results */}
       <div className="mx-auto max-w-3xl px-4 py-6">
         {meta && (
-          <p className="mb-4 text-sm text-[#1a2744]/50">
-            {meta.totalResults} result{meta.totalResults !== 1 ? "s" : ""} in{" "}
-            {meta.durationMs}ms ({meta.mode})
-          </p>
+          <div className="mb-4">
+            <p className="text-sm text-[#1a2744]/50">
+              {meta.totalResults} result{meta.totalResults !== 1 ? "s" : ""} in{" "}
+              {meta.durationMs}ms ({meta.mode})
+            </p>
+            {meta.fallbackLanguage && (
+              <p className="mt-1 text-sm text-[#dcbd23]">
+                No results in {language === "es" ? "Spanish" : language}.
+                Showing English results.
+              </p>
+            )}
+          </div>
         )}
 
         {searched && !loading && results.length === 0 && (
@@ -108,38 +140,50 @@ export default function SearchPage() {
         )}
 
         <div className="space-y-4">
-          {results.map((result) => (
-            <article
-              key={result.id}
-              className="rounded-lg border border-[#1a2744]/10 bg-white p-4 md:p-6"
-            >
-              <blockquote className="mb-3 font-serif text-base leading-relaxed text-[#1a2744] md:text-lg md:leading-relaxed">
-                &ldquo;{result.content}&rdquo;
-              </blockquote>
-              <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#1a2744]/60">
-                <span className="font-medium text-[#1a2744]/80">
-                  {result.citation.author}
-                </span>
-                <span aria-hidden="true">&middot;</span>
-                <span>{result.citation.book}</span>
-                <span aria-hidden="true">&middot;</span>
-                <span>Ch. {result.citation.chapterNumber}: {result.citation.chapter}</span>
-                {result.citation.page && (
-                  <>
-                    <span aria-hidden="true">&middot;</span>
-                    <span>p. {result.citation.page}</span>
-                  </>
-                )}
-                <span aria-hidden="true">&middot;</span>
-                <a
-                  href={`/read/${result.citation.bookId}/${result.citation.chapterNumber}`}
-                  className="text-[#dcbd23] hover:text-[#1a2744] transition-colors min-h-11 inline-flex items-center"
-                >
-                  Read in context
-                </a>
-              </footer>
-            </article>
-          ))}
+          {results.map((result) => {
+            const isFallback =
+              meta?.fallbackLanguage && result.language !== language;
+            return (
+              <article
+                key={result.id}
+                className="rounded-lg border border-[#1a2744]/10 bg-white p-4 md:p-6"
+              >
+                <blockquote className="mb-3 font-serif text-base leading-relaxed text-[#1a2744] md:text-lg md:leading-relaxed">
+                  &ldquo;{result.content}&rdquo;
+                </blockquote>
+                <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#1a2744]/60">
+                  {isFallback && (
+                    <span className="rounded bg-[#1a2744]/10 px-1.5 py-0.5 text-xs font-medium text-[#1a2744]/70">
+                      [EN]
+                    </span>
+                  )}
+                  <span className="font-medium text-[#1a2744]/80">
+                    {result.citation.author}
+                  </span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>{result.citation.book}</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>
+                    Ch. {result.citation.chapterNumber}:{" "}
+                    {result.citation.chapter}
+                  </span>
+                  {result.citation.page && (
+                    <>
+                      <span aria-hidden="true">&middot;</span>
+                      <span>p. {result.citation.page}</span>
+                    </>
+                  )}
+                  <span aria-hidden="true">&middot;</span>
+                  <a
+                    href={`/read/${result.citation.bookId}/${result.citation.chapterNumber}`}
+                    className="text-[#dcbd23] hover:text-[#1a2744] transition-colors min-h-11 inline-flex items-center"
+                  >
+                    Read in context
+                  </a>
+                </footer>
+              </article>
+            );
+          })}
         </div>
       </div>
     </main>

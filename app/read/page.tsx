@@ -2,6 +2,12 @@ import Link from "next/link";
 import pool from "@/lib/db";
 import { getBooks } from "@/lib/services/books";
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  es: "Español",
+  hi: "हिन्दी",
+};
+
 export default async function ReadPage() {
   const books = await getBooks(pool);
 
@@ -29,13 +35,20 @@ export default async function ReadPage() {
               href={`/read/${book.id}`}
               className="block rounded-lg border border-[#1a2744]/10 bg-white p-6 transition-colors hover:border-[#dcbd23]/40"
             >
-              <h2 className="mb-1 font-serif text-lg text-[#1a2744] md:text-xl">
-                {book.title}
-              </h2>
-              <p className="text-sm text-[#1a2744]/60">
-                {book.author}
-                {book.publicationYear && ` (${book.publicationYear})`}
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="mb-1 font-serif text-lg text-[#1a2744] md:text-xl">
+                    {book.title}
+                  </h2>
+                  <p className="text-sm text-[#1a2744]/60">
+                    {book.author}
+                    {book.publicationYear && ` (${book.publicationYear})`}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded bg-[#1a2744]/5 px-2 py-0.5 text-xs text-[#1a2744]/60">
+                  {LANGUAGE_LABELS[book.language] || book.language}
+                </span>
+              </div>
               {book.bookstoreUrl && (
                 <p className="mt-2 text-xs text-[#dcbd23]">
                   Available at SRF Bookstore

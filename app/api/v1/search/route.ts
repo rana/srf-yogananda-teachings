@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
           chapterNumber: r.chapterNumber,
           page: r.pageNumber,
         },
+        language: r.language,
         score: r.score,
         sources: r.sources,
       })),
@@ -68,6 +69,9 @@ export async function GET(request: NextRequest) {
         language,
         totalResults: response.totalResults,
         durationMs: response.durationMs,
+        ...(response.fallbackLanguage && {
+          fallbackLanguage: response.fallbackLanguage,
+        }),
       },
     });
   } catch (err) {

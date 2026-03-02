@@ -37,12 +37,21 @@ export interface ChapterContent {
   nextChapter: { id: string; chapterNumber: number; title: string } | null;
 }
 
-export async function getBooks(pool: pg.Pool, language = "en"): Promise<Book[]> {
-  const { rows } = await pool.query(
-    `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
-     FROM books WHERE language = $1 ORDER BY title`,
-    [language],
-  );
+/**
+ * Get books, optionally filtered by language.
+ * Pass language=undefined to get all books.
+ */
+export async function getBooks(pool: pg.Pool, language?: string): Promise<Book[]> {
+  const { rows } = language
+    ? await pool.query(
+        `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
+         FROM books WHERE language = $1 ORDER BY language, title`,
+        [language],
+      )
+    : await pool.query(
+        `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
+         FROM books ORDER BY language, title`,
+      );
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
