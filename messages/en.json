@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "title": "SRF Teachings Portal",
+    "description": "Paramahansa Yogananda's published teachings — freely accessible worldwide"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "books": "Books",
+    "quiet": "Quiet Corner",
+    "about": "About",
+    "browse": "Browse",
+    "privacy": "Privacy",
+    "legal": "Legal"
+  },
+  "footer": {
+    "copyright": "© Self-Realization Fellowship",
+    "yoganandaOrg": "yogananda.org",
+    "bookstore": "SRF Bookstore",
+    "lessons": "SRF Lessons",
+    "textOnly": "Text-only",
+    "textOnlyOff": "Full view",
+    "browseAll": "Browse all teachings"
+  },
+  "home": {
+    "todaysWisdom": "Today's Wisdom",
+    "showAnother": "Show me another",
+    "readInContext": "Read in context",
+    "searchPrompt": "What did Yogananda say about...",
+    "searchButton": "Search",
+    "practiceBridge": "Interested in learning meditation?",
+    "srfLessons": "SRF Lessons",
+    "thematicDoors": {
+      "heading": "Doors of Entry",
+      "peace": "Peace",
+      "courage": "Courage",
+      "healing": "Healing",
+      "joy": "Joy",
+      "purpose": "Purpose",
+      "love": "Love"
+    },
+    "seeking": {
+      "heading": "What are you seeking?",
+      "comfort": "I need comfort right now",
+      "meaning": "I'm searching for meaning",
+      "practice": "I want to learn to meditate",
+      "curiosity": "I'm curious about Yogananda"
+    },
+    "startHere": {
+      "heading": "Start Here",
+      "curious": {
+        "title": "The Curious Reader",
+        "description": "New to Yogananda? Begin with the most beloved spiritual classic of the 20th century."
+      },
+      "need": {
+        "title": "A Person in Need",
+        "description": "Seeking comfort, healing, or hope? These passages speak directly to the heart."
+      },
+      "seeker": {
+        "title": "The Meditation Seeker",
+        "description": "Ready to explore the science of meditation? Start with Yogananda's practical guidance."
+      }
+    }
+  },
+  "search": {
+    "heading": "Search the Teachings",
+    "subtitle": "Verbatim passages from Paramahansa Yogananda's published works",
+    "placeholder": "What did Yogananda say about...",
+    "placeholderEs": "¿Qué dijo Yogananda sobre...?",
+    "button": "Search",
+    "loading": "...",
+    "noResults": "No passages found. Try different words.",
+    "resultCount": "{count, plural, one {# result} other {# results}} in {duration}ms ({mode})",
+    "fallbackLanguage": "No results in {language}. Showing English results.",
+    "readInContext": "Read in context",
+    "language": "Language"
+  },
+  "books": {
+    "heading": "Books",
+    "subtitle": "Paramahansa Yogananda's published works — freely accessible worldwide",
+    "noBooks": "No books available yet.",
+    "moreComingSoon": "More books are being added to the library.",
+    "bookstoreLink": "Also available at the SRF Bookstore",
+    "chapters": "{count, plural, one {# chapter} other {# chapters}}",
+    "readBook": "Read this book",
+    "bookstoreSignpost": "Own the print edition"
+  },
+  "reader": {
+    "breadcrumbBooks": "Books",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "quiet": {
+    "heading": "The Quiet Corner",
+    "subtitle": "A moment of stillness with the Master's words",
+    "timer1": "1 min",
+    "timer5": "5 min",
+    "timer15": "15 min",
+    "startTimer": "Begin",
+    "timerComplete": "Time of stillness complete",
+    "showAnother": "Another reflection",
+    "backToPortal": "Return to the portal"
+  },
+  "about": {
+    "heading": "About",
+    "yoganandaTitle": "Paramahansa Yogananda",
+    "yoganandaBio": "Paramahansa Yogananda (1893–1952) is widely regarded as one of the preeminent spiritual figures of our time. Born in Gorakhpur, India, he came to America in 1920 and spent the next three decades introducing millions of seekers to the ancient science of Kriya Yoga meditation and the art of balanced spiritual living.",
+    "srfTitle": "Self-Realization Fellowship",
+    "srfDescription": "Founded in 1920 by Paramahansa Yogananda, Self-Realization Fellowship is dedicated to carrying on his spiritual and humanitarian work — fostering a spirit of greater understanding and goodwill among the diverse peoples and nations of our global family, and helping those of all cultures and nationalities to realize and express more fully in their lives the beauty, nobility, and divinity of the human spirit.",
+    "lineOfGurus": "The Line of Gurus",
+    "goDeeper": "Go Deeper",
+    "lessons": "SRF Lessons — The home-study meditation techniques taught by Paramahansa Yogananda",
+    "centers": "Find a Center — Meditation groups and temples worldwide",
+    "meditation": "Online Meditation Center — Guided meditations and inspiration",
+    "app": "SRF App — Daily inspiration on your mobile device",
+    "bookstore": "SRF Bookstore — Yogananda's complete published works",
+    "youtube": "YouTube — Talks, music, and guided meditations"
+  },
+  "browse": {
+    "heading": "Browse All Teachings",
+    "subtitle": "A complete index of the portal's contents",
+    "booksSection": "Books"
+  },
+  "privacy": {
+    "heading": "Privacy",
+    "subtitle": "How this portal handles your information"
+  },
+  "legal": {
+    "heading": "Legal",
+    "subtitle": "Copyright, terms, and content licensing"
+  },
+  "integrity": {
+    "heading": "Content Integrity",
+    "subtitle": "Verifiable hashes for every chapter in the portal",
+    "description": "Every chapter carries a SHA-256 hash computed at ingestion time. You can verify that the text you're reading matches the original source."
+  },
+  "share": {
+    "copyLink": "Copy link",
+    "copied": "Copied!",
+    "emailPassage": "Email passage",
+    "sharePassage": "Share this passage",
+    "saveAsImage": "Save as image",
+    "saveAsPdf": "Save as PDF"
+  },
+  "crisis": {
+    "heading": "You are not alone",
+    "callText": "If you or someone you know is in crisis, please reach out:"
+  },
+  "lowBandwidth": {
+    "message": "Slow connection detected.",
+    "enableTextOnly": "Enable text-only mode"
+  },
+  "errors": {
+    "notFound": "This page could not be found.",
+    "serverError": "Something went wrong. Please try again.",
+    "backHome": "Return home"
+  },
+  "a11y": {
+    "skipToContent": "Skip to main content",
+    "mainNavigation": "Main navigation",
+    "chapterNavigation": "Chapter navigation",
+    "searchResults": "Search results",
+    "todaysWisdom": "Today's wisdom passage",
+    "openInNewTab": "(opens in a new tab)"
+  }
+}

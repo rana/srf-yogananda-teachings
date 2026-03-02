@@ -1,0 +1,26 @@
+/**
+ * The Quiet Corner — M2a-3 (ADR-072).
+ *
+ * Single-page micro-sanctuary: random affirmation,
+ * optional gentle timer (1/5/15 min), chime at completion.
+ * No tracking, no accounts.
+ * Header collapses to lotus mark only, footer suppressed.
+ */
+
+import { setRequestLocale } from "next-intl/server";
+import { QuietCornerClient } from "@/app/components/QuietCornerClient";
+import pool from "@/lib/db";
+import { getRandomPassage } from "@/lib/services/passages";
+
+export default async function QuietCornerPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const passage = await getRandomPassage(pool, locale === "es" ? "es" : "en");
+
+  return <QuietCornerClient passage={passage} />;
+}

@@ -106,8 +106,9 @@ Twelve principles define the project's identity and directly constrain code gene
 **Design tokens:** Merriweather + Lora + Open Sans (Latin); Noto Serif Devanagari (Hindi reading) + Noto Sans Devanagari (Hindi UI/verses). Hindi body text at 20px / 1.9 line height (ADR-080). SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
 **MCP servers (PRI-12: every managed service integral to routine operations requires MCP or equivalent API access):**
-- **Neon Management** (now) — Claude's operations interface for Neon. Branch creation, SQL execution, schema diffs, connection strings, migration safety (`prepare_database_migration`/`complete_database_migration`). Used throughout development. See DES-039 § Three-Layer Neon Management Model.
-- **Sentry** (Arc 1) — Error tracking and monitoring.
+- **Neon Management** (now) — Claude's operations interface for Neon. Branch creation, SQL execution, schema diffs, connection strings, migration safety (`prepare_database_migration`/`complete_database_migration`). Used throughout development. See DES-039 § Three-Layer Neon Management Model. Config: VS Code `mcp.json` (HTTP type, Bearer auth).
+- **New Relic** (Arc 2+) — Observability MCP via `newrelic-mcp` npm package. NRQL queries, APM, alerts, deployments, synthetics. Config: VS Code `mcp.json` (stdio via npx). Env: `NEW_RELIC_API_KEY`, `NEW_RELIC_REGION`.
+- **Sentry** (Arc 1) — Error tracking and monitoring. Via Claude Code plugin.
 - **Contentful** (Milestone 1a+) — CMS content management.
 - **SRF Corpus** (unscheduled) — AI consumer access to search, themes, graph. Three-tier architecture for external AI systems. See DES-031, ROADMAP.md § Unscheduled Features; ADR-101. Fundamentally different from Neon Management MCP — this serves AI consumers, not the AI operator.
 

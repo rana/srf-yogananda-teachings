@@ -1,8 +1,17 @@
 "use client";
 
+/**
+ * Search page — M2a-1 (ADR-130, ADR-122).
+ *
+ * Hybrid search with crisis detection, language toggle,
+ * and cross-language fallback. All UI strings from next-intl.
+ */
+
 import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
+import { locales, localeNames } from "@/i18n/config";
 import type { CrisisInfo } from "@/lib/services/crisis";
 
 interface Citation {
@@ -32,11 +41,6 @@ interface SearchMeta {
   fallbackLanguage?: string;
 }
 
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Español" },
-];
-
 export default function SearchPage() {
   return (
     <Suspense fallback={<SearchSkeleton />}>
@@ -47,12 +51,10 @@ export default function SearchPage() {
 
 function SearchSkeleton() {
   return (
-    <main className="min-h-screen bg-[#FAF8F5]">
-      <div className="border-b border-[#dcbd23]/20 bg-white">
+    <main id="main-content" className="min-h-screen">
+      <div className="border-b border-srf-gold/20 bg-white">
         <div className="mx-auto max-w-3xl px-4 py-8 md:py-12">
-          <h1 className="mb-2 font-serif text-2xl text-[#1a2744] md:text-3xl">
-            Search the Teachings
-          </h1>
+          <div className="h-8 w-48 animate-pulse rounded bg-srf-navy/10" />
         </div>
       </div>
     </main>
@@ -60,6 +62,7 @@ function SearchSkeleton() {
 }
 
 function SearchPageInner() {
+  const t = useTranslations("search");
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [language, setLanguage] = useState("en");
@@ -76,7 +79,7 @@ function SearchPageInner() {
       setLoading(true);
       setSearched(true);
 
-      // Crisis detection (M1c-9) — client-side check
+      // Crisis detection (M1c-9)
       try {
         const crisisRes = await fetch(
           `/api/v1/search/crisis?q=${encodeURIComponent(q.trim())}&language=${lang}`,
@@ -107,14 +110,14 @@ function SearchPageInner() {
   );
 
   const handleSearch = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       doSearch(query, language);
     },
     [query, language, doSearch],
   );
 
-  // Auto-search from URL params (e.g., from homepage search bar)
+  // Auto-search from URL params
   useEffect(() => {
     const q = searchParams.get("q");
     if (q && !searched) {
@@ -124,49 +127,43 @@ function SearchPageInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5]">
+    <main id="main-content" className="min-h-screen">
       {/* Search header */}
-      <div className="border-b border-[#dcbd23]/20 bg-white">
+      <div className="border-b border-srf-gold/20 bg-white">
         <div className="mx-auto max-w-3xl px-4 py-8 md:py-12">
-          <h1 className="mb-2 font-serif text-2xl text-[#1a2744] md:text-3xl">
-            Search the Teachings
+          <h1 className="mb-2 font-display text-2xl text-srf-navy md:text-3xl">
+            {t("heading")}
           </h1>
-          <p className="mb-6 text-sm text-[#1a2744]/60">
-            Verbatim passages from Paramahansa Yogananda&apos;s published works
-          </p>
+          <p className="mb-6 text-sm text-srf-navy/60">{t("subtitle")}</p>
 
-          <form onSubmit={handleSearch}>
+          <form onSubmit={handleSearch} role="search">
             <div className="flex gap-2">
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={
-                  language === "es"
-                    ? "¿Qué dijo Yogananda sobre...?"
-                    : "What did Yogananda say about..."
-                }
-                className="flex-1 rounded-lg border border-[#1a2744]/20 bg-white px-4 py-3 text-[#1a2744] placeholder:text-[#1a2744]/40 focus:border-[#dcbd23] focus:outline-none focus:ring-1 focus:ring-[#dcbd23]"
-                aria-label="Search query"
+                placeholder={t("placeholder")}
+                className="min-h-11 flex-1 rounded-lg border border-srf-navy/15 bg-white px-4 py-2.5 text-srf-navy placeholder:text-srf-navy/35 focus:border-srf-gold/60 focus:outline-none focus:ring-1 focus:ring-srf-gold/30"
+                aria-label={t("heading")}
               />
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="rounded-lg border border-[#1a2744]/20 bg-white px-3 py-3 text-sm text-[#1a2744] focus:border-[#dcbd23] focus:outline-none focus:ring-1 focus:ring-[#dcbd23] min-w-11 min-h-11"
-                aria-label="Language"
+                className="min-h-11 min-w-11 rounded-lg border border-srf-navy/15 bg-white px-2 py-2.5 text-sm text-srf-navy focus:border-srf-gold/60 focus:outline-none focus:ring-1 focus:ring-srf-gold/30"
+                aria-label={t("language")}
               >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
+                {locales.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {localeNames[loc]}
                   </option>
                 ))}
               </select>
               <button
                 type="submit"
                 disabled={loading || !query.trim()}
-                className="rounded-lg bg-[#1a2744] px-6 py-3 text-white transition-colors hover:bg-[#1a2744]/90 disabled:opacity-50 min-w-[44px] min-h-[44px]"
+                className="min-h-11 min-w-11 rounded-lg bg-srf-navy px-5 py-2.5 text-sm font-sans font-semibold text-white transition-colors hover:bg-srf-navy/90 disabled:opacity-50"
               >
-                {loading ? "..." : "Search"}
+                {loading ? t("loading") : t("button")}
               </button>
             </div>
           </form>
@@ -174,19 +171,17 @@ function SearchPageInner() {
       </div>
 
       {/* Results */}
-      <div className="mx-auto max-w-3xl px-4 py-6">
-        {/* Crisis interstitial — above results, never suppresses them */}
+      <div className="mx-auto max-w-3xl px-4 py-6" aria-live="polite">
         <CrisisInterstitial crisis={crisis} />
 
         {meta && (
           <div className="mb-4">
-            <p className="text-sm text-[#1a2744]/50">
+            <p className="text-sm text-srf-navy/50">
               {meta.totalResults} result{meta.totalResults !== 1 ? "s" : ""} in{" "}
               {meta.durationMs}ms ({meta.mode})
             </p>
             {meta.fallbackLanguage && (
-              <p className="mt-1 text-sm text-[#dcbd23]">
-                No results in {language === "es" ? "Spanish" : language}.
+              <p className="mt-1 text-sm text-srf-gold">
                 Showing English results.
               </p>
             )}
@@ -194,30 +189,31 @@ function SearchPageInner() {
         )}
 
         {searched && !loading && results.length === 0 && (
-          <p className="py-12 text-center text-[#1a2744]/50">
-            No passages found. Try different words.
+          <p className="py-12 text-center text-srf-navy/50">
+            {t("noResults")}
           </p>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-4" role="list" aria-label={t("heading")}>
           {results.map((result) => {
             const isFallback =
               meta?.fallbackLanguage && result.language !== language;
             return (
               <article
                 key={result.id}
-                className="rounded-lg border border-[#1a2744]/10 bg-white p-4 md:p-6"
+                className="rounded-lg border border-srf-navy/10 bg-white p-4 md:p-6"
+                role="listitem"
               >
-                <blockquote className="mb-3 font-serif text-base leading-relaxed text-[#1a2744] md:text-lg md:leading-relaxed">
+                <blockquote className="mb-3 text-base leading-relaxed text-srf-navy md:text-lg md:leading-relaxed">
                   &ldquo;{result.content}&rdquo;
                 </blockquote>
-                <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#1a2744]/60">
+                <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-srf-navy/60">
                   {isFallback && (
-                    <span className="rounded bg-[#1a2744]/10 px-1.5 py-0.5 text-xs font-medium text-[#1a2744]/70">
+                    <span className="rounded bg-srf-navy/10 px-1.5 py-0.5 text-xs font-medium text-srf-navy/70">
                       [EN]
                     </span>
                   )}
-                  <span className="font-medium text-[#1a2744]/80">
+                  <span className="font-medium text-srf-navy/80">
                     {result.citation.author}
                   </span>
                   <span aria-hidden="true">&middot;</span>
@@ -235,10 +231,10 @@ function SearchPageInner() {
                   )}
                   <span aria-hidden="true">&middot;</span>
                   <a
-                    href={`/read/${result.citation.bookId}/${result.citation.chapterNumber}`}
-                    className="text-[#dcbd23] hover:text-[#1a2744] transition-colors min-h-11 inline-flex items-center"
+                    href={`/books/${result.citation.bookId}/${result.citation.chapterNumber}`}
+                    className="text-srf-gold hover:text-srf-navy transition-colors min-h-11 inline-flex items-center"
                   >
-                    Read in context
+                    {t("readInContext")}
                   </a>
                 </footer>
               </article>

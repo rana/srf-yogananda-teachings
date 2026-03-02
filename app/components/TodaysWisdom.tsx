@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * Today's Wisdom — hero passage display with "Show me another" (M1c-4).
+ * Today's Wisdom — hero passage display with "Show me another" (M2a-1).
  *
  * Server-renders the initial passage, then client-side fetches for refreshes.
- * No page reload on "Show me another" — just fetches a new random passage.
+ * No page reload on "Show me another" — fetches a new random passage.
  */
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { DailyPassage } from "@/lib/services/passages";
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function TodaysWisdom({ passage: initial }: Props) {
+  const t = useTranslations("home");
   const [passage, setPassage] = useState(initial);
   const [loading, setLoading] = useState(false);
 
@@ -46,27 +48,27 @@ export function TodaysWisdom({ passage: initial }: Props) {
 
   if (!passage) {
     return (
-      <div className="py-16 text-center text-[#1a2744]/40">
-        <p className="font-serif text-lg italic">No passages available yet.</p>
+      <div className="py-16 text-center text-srf-navy/40">
+        <p className="text-lg italic">No passages available yet.</p>
       </div>
     );
   }
 
   return (
-    <section aria-label="Today's Wisdom">
+    <section aria-label={t("todaysWisdom")}>
       <div className="py-8 md:py-12">
         {/* Passage */}
-        <blockquote className="font-serif text-lg leading-relaxed text-[#1a2744] md:text-xl md:leading-relaxed">
+        <blockquote className="text-lg leading-relaxed text-srf-navy md:text-xl md:leading-relaxed">
           &ldquo;{passage.content.trim()}&rdquo;
         </blockquote>
 
         {/* Attribution (PRI-02) */}
-        <footer className="mt-4 text-sm text-[#1a2744]/60">
+        <footer className="mt-4 text-sm text-srf-navy/60">
           <cite className="not-italic">
             — {passage.bookAuthor},{" "}
             <Link
-              href={`/read/${passage.bookId}/${passage.chapterNumber}`}
-              className="underline decoration-[#dcbd23]/40 underline-offset-2 hover:text-[#1a2744]"
+              href={`/books/${passage.bookId}/${passage.chapterNumber}`}
+              className="underline decoration-srf-gold/40 underline-offset-2 hover:text-srf-navy"
             >
               {passage.chapterTitle}
             </Link>
@@ -79,10 +81,10 @@ export function TodaysWisdom({ passage: initial }: Props) {
           <button
             onClick={fetchAnother}
             disabled={loading}
-            className="min-h-11 min-w-11 rounded px-3 py-1.5 text-sm text-[#1a2744]/50 transition-colors hover:text-[#1a2744] disabled:opacity-50"
-            aria-label="Show another passage"
+            className="min-h-11 min-w-11 rounded px-3 py-1.5 text-sm text-srf-navy/50 transition-colors hover:text-srf-navy disabled:opacity-50"
+            aria-label={t("showAnother")}
           >
-            {loading ? "..." : "Show me another"}
+            {loading ? "..." : t("showAnother")}
           </button>
         </div>
       </div>

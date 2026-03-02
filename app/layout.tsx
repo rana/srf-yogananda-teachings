@@ -1,22 +1,27 @@
-import type { Metadata, Viewport } from "next";
+/**
+ * Root layout — M2a-9, M2a-19 (ADR-075, ADR-099).
+ *
+ * Locale-agnostic shell. Sets up fonts, global CSS, JSON-LD,
+ * and utilities that work across all locales.
+ * Header and Footer are in the [locale] layout (locale-aware).
+ */
+
+import type { Viewport } from "next";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
-import { Footer } from "@/app/components/Footer";
 import { ServiceWorkerRegistration } from "@/app/components/ServiceWorkerRegistration";
 import { LowBandwidthBanner } from "@/app/components/LowBandwidthBanner";
-
-export const metadata: Metadata = {
-  title: "SRF Teachings Portal",
-  description: "Paramahansa Yogananda's published teachings — freely accessible worldwide",
-};
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="en">
+    <html lang={locale} dir="ltr">
       <head>
         <script
           type="application/ld+json"
@@ -42,10 +47,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-screen flex-col font-serif text-[#1a2744] bg-[#FAF8F5]">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-[#1a2744] focus:px-4 focus:py-2 focus:text-white"
+        >
+          Skip to main content
+        </a>
         <LowBandwidthBanner />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        {children}
         <ServiceWorkerRegistration />
       </body>
     </html>

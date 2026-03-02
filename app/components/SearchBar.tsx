@@ -1,16 +1,18 @@
 "use client";
 
 /**
- * Search bar component — M1c-4 (ADR-130).
+ * Search bar component — M2a-1 (ADR-130).
  *
  * "What did Yogananda say about...?" — recognition-first prompt.
  * Navigates to /search?q=... on submit.
  */
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 
 export function SearchBar() {
+  const t = useTranslations("home");
   const [query, setQuery] = useState("");
   const router = useRouter();
 
@@ -26,9 +28,9 @@ export function SearchBar() {
   );
 
   return (
-    <form onSubmit={handleSubmit} role="search" aria-label="Search the teachings">
+    <form onSubmit={handleSubmit} role="search" aria-label={t("searchPrompt")}>
       <label htmlFor="search-input" className="sr-only">
-        Search the teachings
+        {t("searchPrompt")}
       </label>
       <div className="flex gap-2">
         <input
@@ -36,16 +38,16 @@ export function SearchBar() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="What did Yogananda say about...?"
-          className="min-h-11 flex-1 rounded-lg border border-[#1a2744]/15 bg-white px-4 py-2.5 text-[#1a2744] placeholder:text-[#1a2744]/35 focus:border-[#dcbd23]/60 focus:outline-none focus:ring-1 focus:ring-[#dcbd23]/30"
+          placeholder={t("searchPrompt")}
+          className="min-h-11 flex-1 rounded-lg border border-srf-navy/15 bg-white px-4 py-2.5 text-srf-navy placeholder:text-srf-navy/35 focus:border-srf-gold/60 focus:outline-none focus:ring-1 focus:ring-srf-gold/30"
           maxLength={500}
         />
         <button
           type="submit"
-          className="min-h-11 min-w-11 rounded-lg bg-[#1a2744] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a2744]/90"
-          aria-label="Search"
+          className="min-h-11 min-w-11 rounded-lg bg-srf-navy px-4 py-2.5 text-sm font-sans font-semibold text-white transition-colors hover:bg-srf-navy/90"
+          aria-label={t("searchButton")}
         >
-          Search
+          {t("searchButton")}
         </button>
       </div>
     </form>

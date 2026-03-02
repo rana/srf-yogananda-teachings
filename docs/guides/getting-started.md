@@ -1,6 +1,6 @@
 # Getting Started
 
-You need 6 accounts and about 15 minutes. After that, Claude builds everything autonomously.
+You need 7 accounts and about 15 minutes. After that, Claude builds everything autonomously.
 
 ---
 
@@ -57,7 +57,13 @@ Create these 6 accounts. Keep the tokens somewhere — you'll paste them to Clau
 - Note your **API token**
 - Don't link the repository yet — Claude handles project setup in Milestone 1c
 
-### 6. AWS (infrastructure)
+### 6. New Relic (observability)
+- Go to [one.newrelic.com](https://one.newrelic.com) and sign up (free tier)
+- Create a **User API key**: API Keys → Create Key (key type: User)
+- Note your **API key** (starts with `NRAK-`)
+- Claude configures the MCP server for NRQL queries, alerts, and monitoring
+
+### 7. AWS (infrastructure)
 - If you don't have an account: [aws.amazon.com](https://aws.amazon.com)
 - Configure the CLI: `aws configure` with region `us-west-2`
 - Only needed for Milestone 1c deployment — not blocking for Milestone 1a
@@ -79,6 +85,7 @@ Voyage API key: [paste]
 Sentry DSN: [paste]
 Sentry auth token: [paste]
 Vercel API token: [paste]
+New Relic API key: [paste]
 ```
 
 **What Claude does with these:**

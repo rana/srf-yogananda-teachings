@@ -37,21 +37,43 @@ export interface ChapterContent {
   nextChapter: { id: string; chapterNumber: number; title: string } | null;
 }
 
+/** Timestamp filters for incremental sync (M2a-24). */
+export interface TimestampFilter {
+  updatedSince?: string | null;
+  createdSince?: string | null;
+}
+
 /**
- * Get books, optionally filtered by language.
- * Pass language=undefined to get all books.
+ * Get books, optionally filtered by language and/or timestamps.
  */
-export async function getBooks(pool: pg.Pool, language?: string): Promise<Book[]> {
-  const { rows } = language
-    ? await pool.query(
-        `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
-         FROM books WHERE language = $1 ORDER BY language, title`,
-        [language],
-      )
-    : await pool.query(
-        `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
-         FROM books ORDER BY language, title`,
-      );
+export async function getBooks(
+  pool: pg.Pool,
+  language?: string,
+  filters?: TimestampFilter,
+): Promise<Book[]> {
+  const conditions: string[] = [];
+  const params: string[] = [];
+  let idx = 1;
+
+  if (language) {
+    conditions.push(`language = $${idx++}`);
+    params.push(language);
+  }
+  if (filters?.updatedSince) {
+    conditions.push(`updated_at > $${idx++}`);
+    params.push(filters.updatedSince);
+  }
+  if (filters?.createdSince) {
+    conditions.push(`created_at > $${idx++}`);
+    params.push(filters.createdSince);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const { rows } = await pool.query(
+    `SELECT id, title, author, language, publication_year, cover_image_url, bookstore_url
+     FROM books ${where} ORDER BY language, title`,
+    params,
+  );
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
@@ -63,11 +85,28 @@ export async function getBooks(pool: pg.Pool, language?: string): Promise<Book[]
   }));
 }
 
-export async function getChapters(pool: pg.Pool, bookId: string): Promise<Chapter[]> {
+export async function getChapters(
+  pool: pg.Pool,
+  bookId: string,
+  filters?: TimestampFilter,
+): Promise<Chapter[]> {
+  const conditions: string[] = [`book_id = $1`];
+  const params: string[] = [bookId];
+  let idx = 2;
+
+  if (filters?.updatedSince) {
+    conditions.push(`updated_at > $${idx++}`);
+    params.push(filters.updatedSince);
+  }
+  if (filters?.createdSince) {
+    conditions.push(`created_at > $${idx++}`);
+    params.push(filters.createdSince);
+  }
+
   const { rows } = await pool.query(
     `SELECT id, book_id, chapter_number, title, sort_order
-     FROM chapters WHERE book_id = $1 ORDER BY sort_order`,
-    [bookId],
+     FROM chapters WHERE ${conditions.join(" AND ")} ORDER BY sort_order`,
+    params,
   );
   return rows.map((r) => ({
     id: r.id,

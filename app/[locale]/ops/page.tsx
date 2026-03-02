@@ -5,12 +5,19 @@
  * Not public-facing but not auth-gated in Arc 1.
  */
 
+import { setRequestLocale } from "next-intl/server";
 import pool from "@/lib/db";
 import { getHealthStatus } from "@/lib/services/health";
 
 export const dynamic = "force-dynamic";
 
-export default async function OpsPage() {
+export default async function OpsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const health = await getHealthStatus(pool);
 
   // Search query stats
