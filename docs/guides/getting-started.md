@@ -63,7 +63,7 @@ Create these 8 accounts. Keep the tokens somewhere — you'll paste them to Clau
 - Note your **API key** (starts with `NRAK-`)
 - Claude configures the MCP server for NRQL queries, alerts, and monitoring
 
-### 7. Auth0 (authentication — provisioned early)
+### 7. Auth0 (authentication)
 - Go to [manage.auth0.com](https://manage.auth0.com) and sign up (free tier)
 - Create a tenant (e.g., `yogananda-tech`)
 - Go to Applications → Create Application → Machine to Machine
