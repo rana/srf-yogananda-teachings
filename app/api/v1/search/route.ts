@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
         id: r.id,
         content: r.content,
         citation: {
+          bookId: r.bookId,
           book: r.bookTitle,
           author: r.bookAuthor,
           chapter: r.chapterTitle,

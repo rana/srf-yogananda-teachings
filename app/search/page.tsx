@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 
 interface Citation {
+  bookId: string;
   book: string;
   author: string;
   chapter: string;
@@ -129,6 +130,13 @@ export default function SearchPage() {
                     <span>p. {result.citation.page}</span>
                   </>
                 )}
+                <span aria-hidden="true">&middot;</span>
+                <a
+                  href={`/read/${result.citation.bookId}/${result.citation.chapterNumber}`}
+                  className="text-[#dcbd23] hover:text-[#1a2744] transition-colors min-h-11 inline-flex items-center"
+                >
+                  Read in context
+                </a>
               </footer>
             </article>
           ))}

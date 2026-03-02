@@ -13,6 +13,7 @@ import { RRF_K, SEARCH_RESULTS_LIMIT } from "@/lib/config";
 export interface SearchResult {
   id: string;
   content: string;
+  bookId: string;
   bookTitle: string;
   bookAuthor: string;
   chapterTitle: string;
@@ -184,6 +185,7 @@ async function hybridSearch(
       bc.page_number,
       bc.section_heading,
       bc.language,
+      b.id AS book_id,
       b.title AS book_title,
       b.author AS book_author,
       c.title AS chapter_title,
@@ -201,6 +203,7 @@ async function hybridSearch(
   return rows.map((row) => ({
     id: row.id,
     content: row.content,
+    bookId: row.book_id,
     bookTitle: row.book_title,
     bookAuthor: row.book_author,
     chapterTitle: row.chapter_title,
@@ -230,6 +233,7 @@ async function ftsOnlySearch(
       bc.page_number,
       bc.section_heading,
       bc.language,
+      b.id AS book_id,
       b.title AS book_title,
       b.author AS book_author,
       c.title AS chapter_title,
@@ -249,6 +253,7 @@ async function ftsOnlySearch(
   return rows.map((row) => ({
     id: row.id,
     content: row.content,
+    bookId: row.book_id,
     bookTitle: row.book_title,
     bookAuthor: row.book_author,
     chapterTitle: row.chapter_title,

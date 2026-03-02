@@ -1,6 +1,6 @@
 # Getting Started
 
-You need 5 accounts and about 15 minutes. After that, Claude builds everything autonomously.
+You need 6 accounts and about 15 minutes. After that, Claude builds everything autonomously.
 
 ---
 
@@ -24,7 +24,7 @@ terraform -v      # 1.7+ (https://developer.hashicorp.com/terraform/install)
 
 ## Step 2: Create accounts (~15 min)
 
-Create these 5 accounts. Keep the tokens somewhere — you'll paste them to Claude in Step 3.
+Create these 6 accounts. Keep the tokens somewhere — you'll paste them to Claude in Step 3.
 
 ### 1. Neon (database)
 - Go to [console.neon.tech](https://console.neon.tech) and sign up
@@ -38,7 +38,7 @@ Create these 5 accounts. Keep the tokens somewhere — you'll paste them to Clau
 - Note three values:
   - **Space ID** (Settings → General Settings)
   - **Content Delivery API access token**
-  - **Content Management API personal access token** (Settings → CMA tokens → Generate)
+  - **Content Management API personal access token** (Settings → CMA tokens → Generate, then **Authorize** access to your space)
 
 ### 3. Voyage AI (embeddings)
 - Go to [dash.voyageai.com](https://dash.voyageai.com) and sign up
@@ -46,12 +46,18 @@ Create these 5 accounts. Keep the tokens somewhere — you'll paste them to Clau
 
 ### 4. Sentry (error tracking)
 - Go to [sentry.io](https://sentry.io) and sign up (free Developer tier)
-- Create a project → choose Next.js
+- Create a project (choose Next.js if available, otherwise vanilla JavaScript — both work)
 - Note two values:
   - **DSN** (shown after project creation, also in Settings → Client Keys)
   - **Auth token**: Settings → Auth Tokens → Create (scopes: project:read, project:write, org:read)
 
-### 5. AWS (infrastructure)
+### 5. Vercel (hosting)
+- Go to [vercel.com](https://vercel.com) and sign up (free Hobby tier)
+- Create an API token: Settings → Tokens → Create
+- Note your **API token**
+- Don't link the repository yet — Claude handles project setup in Milestone 1c
+
+### 6. AWS (infrastructure)
 - If you don't have an account: [aws.amazon.com](https://aws.amazon.com)
 - Configure the CLI: `aws configure` with region `us-west-2`
 - Only needed for Milestone 1c deployment — not blocking for Milestone 1a
@@ -72,12 +78,14 @@ Contentful management token: [paste]
 Voyage API key: [paste]
 Sentry DSN: [paste]
 Sentry auth token: [paste]
+Vercel API token: [paste]
 ```
 
 **What Claude does with these:**
-1. Creates a Neon project via MCP (PostgreSQL 18, pgvector, pg_search)
-2. Fills in `.env.local` with all connection strings and tokens
-3. Runs the verification script to confirm everything works
+1. Creates a Neon project via MCP (PostgreSQL 18, pgvector)
+2. Creates Contentful content model (Book, Chapter, Section, TextBlock)
+3. Fills in `.env.local` with all connection strings and tokens
+4. Runs the verification script to confirm everything works
 
 You don't fill `.env.local` yourself. Claude handles it.
 
@@ -105,13 +113,14 @@ For write-access testing (creates and immediately deletes test data):
 Claude builds Milestone 1a autonomously — no human gates:
 
 1. **Repository setup** — Next.js + TypeScript + Tailwind
-2. **Database schema** — 19 tables covering search, content, themes
+2. **Database schema** — 23 tables covering search, content, themes, vocabulary
 3. **Contentful content model** — Book → Chapter → Section → TextBlock
-4. **English Autobiography import** — already extracted, imports to Contentful + Neon
+4. **English Autobiography ingestion** — 1,568 chunks with Voyage embeddings
 5. **Search API** — hybrid vector + full-text with RRF fusion
-6. **Search UI** — "What did Yogananda say about..." with verbatim results
-7. **Book reader** — chapter navigation with deep-link anchors
-8. **Search quality evaluation** — 58-query golden set across 7 difficulty categories
+6. **Search UI** — "What did Yogananda say about..." with verbatim results + "Read in context" links
+7. **Book reader** — chapter navigation with prev/next
+8. **Search quality evaluation** — 12-query evaluation suite
+9. **Operational scripts** — doc-validate, status, release-tag
 
 When you're ready for Milestone 1c (deployment), run:
 ```bash
