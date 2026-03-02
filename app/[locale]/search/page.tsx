@@ -11,10 +11,15 @@ import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
+import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
-import { ShareButton } from "@/app/components/ShareButton";
 import { locales, localeNames } from "@/i18n/config";
+
+const ShareButton = dynamic(
+  () => import("@/app/components/ShareButton").then((mod) => mod.ShareButton),
+  { ssr: false },
+);
 import type { CrisisInfo } from "@/lib/services/crisis";
 
 interface Citation {

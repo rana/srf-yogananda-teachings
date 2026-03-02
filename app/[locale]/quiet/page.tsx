@@ -8,7 +8,7 @@
  */
 
 import { setRequestLocale } from "next-intl/server";
-import { QuietCornerClient } from "@/app/components/QuietCornerClient";
+import { LazyQuietCorner } from "@/app/components/LazyQuietCorner";
 import pool from "@/lib/db";
 import { getReflectionPassage } from "@/lib/services/passages";
 
@@ -22,5 +22,5 @@ export default async function QuietCornerPage({
 
   const passage = await getReflectionPassage(pool, locale === "es" ? "es" : "en");
 
-  return <QuietCornerClient passage={passage} />;
+  return <LazyQuietCorner passage={passage} />;
 }

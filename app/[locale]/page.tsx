@@ -12,7 +12,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import pool from "@/lib/db";
 import { getRandomPassage } from "@/lib/services/passages";
-import { SearchBar } from "@/app/components/SearchBar";
+import { LazySearchBar } from "@/app/components/LazySearchBar";
 import { TodaysWisdom } from "@/app/components/TodaysWisdom";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +52,7 @@ export default async function HomePage({
 
         {/* Search */}
         <section className="mt-12">
-          <SearchBar />
+          <LazySearchBar />
         </section>
 
         {/* Thematic doors — M2a-1 */}
