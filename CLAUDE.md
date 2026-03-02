@@ -4,11 +4,11 @@
 
 A free, world-class online teachings portal for Self-Realization Fellowship (SRF) to make Paramahansa Yogananda's published books freely accessible worldwide, with an AI-powered intelligent search tool. Funded by a philanthropist. Launching late 2026.
 
-**AI-human collaboration.** This project is architected, implemented, and maintained by AI (Claude) under human direction. The human principal directs strategy, stakeholder decisions, and editorial judgment; the AI serves as architect, implementer, and maintainer. The documentation volume is intentional — it serves as institutional memory across AI context windows. See CONTEXT.md § Project Methodology for the full collaboration model.
+**AI-human collaboration.** The AI is architect, designer, implementer, and operator; the human principal directs strategy, stakeholder decisions, and editorial judgment (PRI-12). The documentation volume is intentional — it serves as institutional memory across AI context windows. MCP servers are the primary operational interface. See CONTEXT.md § Project Methodology for the full collaboration model.
 
 ## Read These Files
 
-1. **PRINCIPLES.md** — The 11 immutable commitments that define the project, with rationale. Always load this.
+1. **PRINCIPLES.md** — The 12 immutable commitments that define the project, with rationale. Always load this.
 2. **CONTEXT.md** — Project background, mission, stakeholders, theological constraints, current state, open questions
 3. **DESIGN.md** — Navigation index + cross-cutting sections (architecture, API, security, observability, testing, personas, content pipeline). The index maps every DES/ADR section to its individual file in `design/`.
 4. **design/search/** — Search architecture, data model, ingestion pipeline, chunking, MCP, infrastructure (10 files)
@@ -17,7 +17,7 @@ A free, world-class online teachings portal for Self-Realization Fellowship (SRF
 7. **DECISIONS.md** — Index and navigational summaries for ADRs across 11 topical groups. ADR bodies split into three files:
    - **DECISIONS-core.md** — Foundational, Infrastructure, Application Architecture, Content, Search (ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130). Arc 1+.
    - **DECISIONS-experience.md** — Cross-Media, Seeker Experience, Internationalization (ADR-054–081, 104, 122). Arc 2+.
-   - **DECISIONS-operations.md** — Staff, Brand, Operations & Governance (ADR-082–101, 105–113, 123–124). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
+   - **DECISIONS-operations.md** — Staff, Brand, Operations & Governance (ADR-082–101, 105–113, 123–124, 131). Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations).
 8. **ROADMAP.md** — 3 planned arcs (Foundation, Presence, Wisdom) with detailed milestones, plus Future Directions. Deliverables, success criteria, arc gates.
 9. **PROPOSALS.md** — Proposal registry with PRO-NNN identifiers, graduation protocol, and scheduling lifecycle. Curated proposals awaiting validation, scheduling, or adoption. Also handles ADR/DES suspension lifecycle.
 
@@ -48,7 +48,7 @@ Located in `docs/reference/`:
 
 ## Principles (Code-Affecting)
 
-Eleven principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. When principles tension, Content Identity takes precedence over Seeker Experience, which takes precedence over Engineering Foundation. Within each tier, principles are ordered by topic adjacency, not by weight — do not assume lower-numbered principles are less relevant. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
+Twelve principles define the project's identity and directly constrain code generation. Changing any of these changes what the project is — they require full deliberation to modify. When principles tension, Content Identity takes precedence over Seeker Experience, which takes precedence over Engineering Foundation. Within each tier, principles are ordered by topic adjacency, not by weight — do not assume lower-numbered principles are less relevant. PRINCIPLES.md has the expanded rationale for each. Additional theological and ethical context (Content Honesty, Lessons Scope, Human Review Gate) is in CONTEXT.md § Theological and Ethical Constraints.
 
 **Content Identity** — what this project is:
 - **PRI-01: Verbatim Fidelity.** The AI is a librarian, not an oracle. It finds and ranks the verbatim published words of Yogananda and all SRF-published authors — it NEVER generates, paraphrases, or synthesizes content in any medium: text, voice, image, or video. AI generation, synthesis, or cloning of any media representing Yogananda or the lineage gurus is prohibited. The corpus spans three author tiers by role: guru (Yogananda, Sri Yukteswar), president (Daya Mata, Mrinalini Mata, Rajarsi), monastic (monastic speakers). All tiers receive verbatim fidelity. (ADR-001, ADR-005, ADR-015, PRO-014)
@@ -66,12 +66,14 @@ Eleven principles define the project's identity and directly constrain code gene
 **Engineering Foundation** — how we build:
 - **PRI-10: 10-year design horizon.** `/lib/services/` has zero framework imports — business logic survives a UI rewrite. Raw SQL migrations outlive every ORM. Standard protocols (REST, OAuth, SQL, HTTP) at every boundary. Tier 2 components (Next.js, Vercel, Contentful) are replaceable without touching Tier 1 (PostgreSQL, SQL, HTML). (ADR-004)
 - **PRI-11: API-first architecture.** All business logic in `/lib/services/`. API routes use `/api/v1/` prefix. All routes public (no auth until Milestone 7a+). Cursor-based pagination. (ADR-011)
+- **PRI-12: AI-Native Development and Operations.** The AI is architect, designer, implementer, and operator. The human principal directs strategy, stakeholder decisions, and editorial judgment. MCP servers are the primary operational interface — every managed service integral to routine operations requires MCP or equivalent API access. Operational surfaces are machine-parseable: structured JSON health, script-driven deployment, machine-readable manifests. Documentation is institutional memory across context windows — load-bearing infrastructure, not overhead. (ADR-131)
 
 **Principle dependencies.** Several principles enable or enforce others — when implementing, the enabling principle constrains code even when the enabled principle is not directly relevant:
 - PRI-06 enables PRI-05: multilingual schema is global-first's structural mechanism
 - PRI-07 enables PRI-05: accessibility is global-first's inclusion mechanism
 - PRI-02 enables PRI-01: attribution prevents orphaned quotes
 - PRI-09 enforces PRI-08: DELTA analytics is calm technology's privacy layer
+- PRI-12 enables PRI-10: AI-native ops is the 10-year horizon's operational mechanism
 
 ## Quick Reference
 
@@ -103,7 +105,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 **Design tokens:** Merriweather + Lora + Open Sans (Latin); Noto Serif Devanagari (Hindi reading) + Noto Sans Devanagari (Hindi UI/verses). Hindi body text at 20px / 1.9 line height (ADR-080). SRF Gold `#dcbd23`, SRF Navy `#1a2744`, Warm Cream `#FAF8F5`. Full palette in DESIGN.md § Visual Identity.
 
-**MCP servers:**
+**MCP servers (PRI-12: every managed service integral to routine operations requires MCP or equivalent API access):**
 - **Neon Management** (now) — Claude's operations interface for Neon. Branch creation, SQL execution, schema diffs, connection strings, migration safety (`prepare_database_migration`/`complete_database_migration`). Used throughout development. See DES-039 § Three-Layer Neon Management Model.
 - **Sentry** (Arc 1) — Error tracking and monitoring.
 - **Contentful** (Milestone 1a+) — CMS content management.
@@ -111,7 +113,7 @@ Eleven principles define the project's identity and directly constrain code gene
 
 ## Identifier Conventions
 
-**PRI-NN** (Principles) — The 11 immutable commitments in PRINCIPLES.md. Two-digit zero-padded (PRI-01 through PRI-11). PRI numbers are stable and append-only — new principles append after the current max. Tier grouping (Content Identity PRI-01–04, Seeker Experience PRI-05–09, Engineering Foundation PRI-10–11) communicates precedence, not the number. Header format in PRINCIPLES.md: `### PRI-NN: Title`.
+**PRI-NN** (Principles) — The 12 immutable commitments in PRINCIPLES.md. Two-digit zero-padded (PRI-01 through PRI-12). PRI numbers are stable and append-only — new principles append after the current max. Tier grouping (Content Identity PRI-01–04, Seeker Experience PRI-05–09, Engineering Foundation PRI-10–12) communicates precedence, not the number. Header format in PRINCIPLES.md: `### PRI-NN: Title`.
 
 **ADR-NNN** (Architecture Decision Records) — ADRs are current architectural directives, not historical records — git preserves the evolution. ADR numbers are stable identifiers, not sequence counters — gaps (028, 045, 051, 102–103) exist from restructuring; do not renumber to fill them. DECISIONS.md is the navigational index with group summaries; ADR bodies are in DECISIONS-core.md, DECISIONS-experience.md, and DECISIONS-operations.md. New ADRs append after the current highest in the appropriate body file (or reuse a gap if thematically adjacent to its group). Header format: `## ADR-NNN: Title`.
 

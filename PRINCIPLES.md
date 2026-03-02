@@ -1,8 +1,8 @@
 # SRF Online Teachings Portal — Principles
 
-Eleven principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify. When principles tension against each other, Content Identity principles take precedence over Seeker Experience, which takes precedence over Engineering Foundation.
+Twelve principles define the project's identity. They are immutable commitments — changing any of these changes what the project is. Each requires full deliberation to modify. When principles tension against each other, Content Identity principles take precedence over Seeker Experience, which takes precedence over Engineering Foundation.
 
-**Reading guidance.** PRI-NN numbers are stable identifiers, not importance rankings — a principle's tier communicates its precedence, not its number. Within each tier, principles are ordered by topic adjacency, not by weight. Several principles have structural dependencies: PRI-06 is PRI-05's structural mechanism (multilingual schema is how global-first becomes real); PRI-07 is PRI-05's inclusion mechanism (accessibility is how global-first serves disabled seekers); PRI-02 enables PRI-01 (attribution prevents orphaned quotes); PRI-09 enforces PRI-08 (DELTA analytics is calm technology's privacy layer). When implementing, check all principles against the current task — do not assume lower-numbered principles are more relevant.
+**Reading guidance.** PRI-NN numbers are stable identifiers, not importance rankings — a principle's tier communicates its precedence, not its number. Within each tier, principles are ordered by topic adjacency, not by weight. Several principles have structural dependencies: PRI-06 is PRI-05's structural mechanism (multilingual schema is how global-first becomes real); PRI-07 is PRI-05's inclusion mechanism (accessibility is how global-first serves disabled seekers); PRI-02 enables PRI-01 (attribution prevents orphaned quotes); PRI-09 enforces PRI-08 (DELTA analytics is calm technology's privacy layer); PRI-12 enables PRI-10 (AI-native operations is the 10-year horizon's operational mechanism). When implementing, check all principles against the current task — do not assume lower-numbered principles are more relevant.
 
 CLAUDE.md carries the compressed, code-affecting form of each principle. This document adds the *why*: enough rationale to prevent well-intentioned erosion across sessions. For the full alternatives-considered analysis, see the referenced ADRs in DECISIONS.md.
 
@@ -155,3 +155,25 @@ The search quality test suite (bilingual golden set — DES-058) serves as the a
 Next.js encourages embedding business logic in React Server Components. This is convenient but creates platform lock: Server Components are callable only by the Next.js rendering pipeline, not by mobile apps, third-party integrations, or PWA Service Workers. If business logic migrates into Server Components during Arcs 1–6, extracting it later is a significant refactoring effort. The cost of API-first discipline from day one is near zero; the cost of retrofitting is high.
 
 The shared service layer (`/lib/services/`) is pure TypeScript with zero framework imports. A framework migration rewrites the UI layer (~40% of code), not the business logic (~60%). This is the single most important structural rule for the project's longevity (ADR-004). Every user-facing feature has both a callable service function and a REST API endpoint. Server Components call service functions directly; external consumers call REST endpoints. Both hit the same logic.
+
+---
+
+### PRI-12: AI-Native Development and Operations
+
+**The AI is architect, designer, implementer, and operator. The human principal directs strategy, stakeholder decisions, and editorial judgment.** MCP servers are the primary operational interface. Every operational surface is designed for AI operation: structured data over visual dashboards, scripts over GUIs, documentation as institutional memory across context windows. (ADR-131)
+
+This is not a description of current staffing — it is an architectural commitment that shapes the system's infrastructure. The AI owns the system end-to-end: it authors the architecture (ADRs, DES sections), designs the specifications (data models, algorithms, pipelines), implements the code (all deliverables), and operates the running portal (deployment, monitoring, incident response). The human principal provides strategic direction, makes stakeholder decisions requiring organizational relationships, and exercises editorial judgment on sacred text — roles that require human presence and spiritual sensitivity that architecture cannot substitute.
+
+The 120+ ADRs, the documentation architecture (ADR-098), the gated-loading protocol, the operational surface (DES-060), and the skill system exist because the architect and operator has no persistent memory across sessions. Documentation is load-bearing infrastructure — it carries the project's full architectural state so the AI can resume with continuity. Remove this commitment and the project's entire knowledge management infrastructure becomes inexplicable overhead. The documentation volume is not a byproduct of thoroughness; it is the architectural consequence of an AI-native development model.
+
+**The MCP requirement** follows directly: the AI operator interacts with infrastructure through programmatic interfaces. Every managed service integral to routine operations — database, CMS, monitoring, error tracking — requires MCP integration or equivalent API access. One-time configuration through service dashboards is acceptable; routine operation through dashboards is not. When evaluating a new service, "can the AI operator manage it programmatically?" is an architectural requirement, not a preference. Current MCP integrations: Neon (database management), Sentry (error monitoring), Contentful (content management). Future: SRF Corpus MCP (external AI access, ADR-101).
+
+Architectural consequences of AI-native operations:
+- Health endpoints return structured JSON, not HTML status pages (ADR-095, DES-060)
+- Deployment is script-driven with machine-readable manifests (DES-060)
+- Monitoring surfaces are machine-parseable (structured logging, Sentry MCP integration)
+- Error diagnostics include structured context sufficient for AI triage
+- Documentation carries the full architectural state — the operator reads it at every session start
+- Operational scripts (`status.sh`, `doc-validate.sh`, `release-tag.sh`, `deploy.sh`) are first-class deliverables, not developer convenience
+
+The dependency: PRI-12 enables PRI-10. AI-native operations is the 10-year horizon's operational mechanism — a system designed for AI operation is intrinsically more maintainable because its operational knowledge is externalized in documentation and scripts, never locked in human expertise that can depart. The same infrastructure that serves the AI operator also serves any future human team — machine-readable operations are a strict superset of human-readable operations.

@@ -81,11 +81,11 @@ Business logic lives in `/lib/services/` (framework-agnostic TypeScript). A thre
 
 ## How This Project Works
 
-This portal is designed and implemented through AI-human collaboration using [Claude Code](https://claude.ai/code). The human principal directs strategy, stakeholder decisions, and editorial judgment; the AI serves as architect, implementer, and maintainer. The documentation volume is intentional — it serves as institutional memory across AI context windows. See [CONTEXT.md](CONTEXT.md) for the full methodology.
+This portal is designed and implemented through AI-human collaboration using [Claude Code](https://claude.ai/code). The AI is architect, designer, implementer, and operator; the human principal directs strategy, stakeholder decisions, and editorial judgment (PRI-12). MCP servers are the primary operational interface. The documentation volume is intentional — it serves as institutional memory across AI context windows. See [CONTEXT.md](CONTEXT.md) for the full methodology.
 
 ## Documentation
 
-- [PRINCIPLES.md](PRINCIPLES.md) — 11 immutable commitments that define the project
+- [PRINCIPLES.md](PRINCIPLES.md) — 12 immutable commitments that define the project
 - [CONTEXT.md](CONTEXT.md) — Project background, mission, stakeholders, theological constraints
 - [DESIGN.md](DESIGN.md) — Technical architecture across three files by arc scope
 - [DECISIONS.md](DECISIONS.md) — Architecture Decision Records across three files by concern

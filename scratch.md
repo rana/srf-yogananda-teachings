@@ -5,6 +5,11 @@ description: Idea backlog and exploration workspace. Processed by `/scratch` ski
 # Scratch Pad
 
 ---
+How would you design for a world-class amazing experience?
+
+You have complete design autonomy. What are your preferences?
+
+---
 Think slowly, carefully, and deeply.
 Think generatively and imaginatively.
 Be proactive.

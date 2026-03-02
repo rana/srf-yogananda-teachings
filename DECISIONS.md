@@ -14,7 +14,7 @@ Each record captures architectural reasoning with full context — not just the 
 
 **Foundational Constraints**
 
-Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, global equity ensures underserved seekers are never second-class users, an experience quality standard demands that execution match the spiritual depth of the content, and scope is prioritized by reachable population so the most people are served soonest.
+Establishes the project's theological and ethical identity. The portal displays only Yogananda's verbatim words — Claude acts as librarian, never oracle — with personalization boundaries governed by the DELTA privacy framework. Verbatim media fidelity extends this commitment to all modalities: AI generation of voice, image, or video representing the gurus or reading sacred text is prohibited. Accessibility is a Milestone 2a requirement (not a retrofit), the architecture targets a 10-year horizon, global equity ensures underserved seekers are never second-class users, an experience quality standard demands that execution match the spiritual depth of the content, scope is prioritized by reachable population so the most people are served soonest, and the AI-native development model (PRI-12, ADR-131) shapes the entire operational architecture.
 
 - ADR-001: Direct Quotes Only — No AI Synthesis
 - ADR-002: Personalization with Restraint — DELTA-Aligned Feature Boundaries
@@ -170,7 +170,7 @@ Governs the portal's public identity and outreach channels. SRF imagery follows 
 
 **Operations, Engineering & Governance**
 
-How the portal is built, tested, monitored, and governed. Engineering standards, testing strategy (unit through e2e with Neon branch-per-PR isolation), observability (Sentry + structured logging + Amplitude DELTA analytics). Documentation architecture with domain-based design files and gated loading, ADR maturity classification, global privacy compliance (DELTA as primary framework), Arc 1 prove-then-build split. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123). Neon platform governance (ADR-124) covers PG18, tier selection, compute, branching, extensions, UUIDv7, and database observability. Secrets management (ADR-125) and Vercel OIDC (ADR-126) are in the Infrastructure group (DECISIONS-core.md). MCP development tooling, AI editorial workflow maturity, outbound webhooks, timestamp filtering, cross-API route rationalization. Three suspended: Figma (PRO-027), MCP corpus (PRO-001), magazine API (PRO-034).
+How the portal is built, tested, monitored, and governed. Engineering standards, testing strategy (unit through e2e with Neon branch-per-PR isolation), observability (Sentry + structured logging + Amplitude DELTA analytics). Documentation architecture with domain-based design files and gated loading, ADR maturity classification, global privacy compliance (DELTA as primary framework), Arc 1 prove-then-build split. API response conventions, search result presentation, content versioning, and the principle-vs-parameter classification (ADR-123). Neon platform governance (ADR-124) covers PG18, tier selection, compute, branching, extensions, UUIDv7, and database observability. Secrets management (ADR-125) and Vercel OIDC (ADR-126) are in the Infrastructure group (DECISIONS-core.md). AI-native operations architecture (ADR-131) governs MCP requirements, machine-readable surfaces, and documentation-as-infrastructure — the governing ADR for PRI-12. MCP development tooling, AI editorial workflow maturity, outbound webhooks, timestamp filtering, cross-API route rationalization. Three suspended: Figma (PRO-027), MCP corpus (PRO-001), magazine API (PRO-034).
 
 - ADR-093: Engineering Standards for SRF Projects
 - ADR-094: Testing Strategy
@@ -191,6 +191,7 @@ How the portal is built, tested, monitored, and governed. Engineering standards,
 - ADR-113: Prove Before Foundation (Arc 1 Milestone Split)
 - ADR-123: Principle vs. Parameter — Decision Classification and Governance Flexibility ◆
 - ADR-124: Neon Platform Governance — PostgreSQL Version, Tier, Compute, Branching, Extensions, and Observability ◆
+- ADR-131: AI-Native Operations Architecture — MCP Requirements, Machine-Readable Surfaces, and Documentation-as-Infrastructure
 
 ---
 
@@ -202,5 +203,5 @@ ADR bodies are split across three files by concern group:
 |------|--------|------|---------------|
 | [DECISIONS-core.md](DECISIONS-core.md) | Foundational, Infrastructure, Application Architecture, Content, Search | ADR-001–027, 029–044, 046–050, 052–053, 114–121, 125–130 | Arc 1+ (implementation-critical) |
 | [DECISIONS-experience.md](DECISIONS-experience.md) | Cross-Media, Seeker Experience, Internationalization | ADR-054–081, 104, 122 | Arc 2+ (experience design) |
-| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations & Governance | ADR-082–101, 105–113, 123–124 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
+| [DECISIONS-operations.md](DECISIONS-operations.md) | Staff, Brand, Operations & Governance | ADR-082–101, 105–113, 123–124, 131 | Arc 1+ (governance, engineering standards); Arc 3+ (staff, brand, operations) |
 

@@ -64,7 +64,7 @@ Key reordering moves: English search proof (1a) before bilingual validation (1b)
 
 **Focus book:** Autobiography of a Yogi — **English** only (Spanish in Milestone 1b)
 
-**Build methodology:** Claude executes all deliverables autonomously. No human-in-the-loop gates. The human principal reviews at their discretion, not as a blocking step. This applies to the development methodology — PRINCIPLES.md § "Human Review as Mandatory Gate" governs the production portal's content governance, not the build process.
+**Build methodology (PRI-12):** Claude executes all deliverables autonomously — as architect, designer, implementer, and operator. No human-in-the-loop gates. The human principal reviews at their discretion, not as a blocking step. MCP servers are the primary operational interface. This applies to the development methodology — PRINCIPLES.md § "Human Review as Mandatory Gate" governs the production portal's content governance, not the build process.
 
 ### Prerequisites
 
