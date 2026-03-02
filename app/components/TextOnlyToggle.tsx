@@ -1,22 +1,21 @@
 "use client";
 
 /**
- * Text-only mode toggle — M1c-13 (ADR-006 §1).
+ * Text-only mode toggle — M1c-13, M2a-11 (ADR-006 §1).
  *
  * Footer toggle. No images, no decorative elements, no web fonts.
- * Stored in localStorage. Milestone 2a-11 extends with reader integration.
+ * Uses the unified reader preferences service (PRI-10).
  */
 
 import { useState, useEffect, useCallback } from "react";
-
-const STORAGE_KEY = "srf-text-only";
+import { getPreference, setPreference } from "@/lib/services/preferences";
 
 export function TextOnlyToggle() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "true") {
+    const stored = getPreference("text-only-mode");
+    if (stored) {
       setEnabled(true);
       document.documentElement.classList.add("text-only");
     }
@@ -25,7 +24,7 @@ export function TextOnlyToggle() {
   const toggle = useCallback(() => {
     const next = !enabled;
     setEnabled(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
+    setPreference("text-only-mode", next);
     if (next) {
       document.documentElement.classList.add("text-only");
     } else {

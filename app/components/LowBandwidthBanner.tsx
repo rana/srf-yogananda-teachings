@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Low-bandwidth detection banner — M1c-15 (ADR-006 §1, DES-049).
+ * Low-bandwidth detection banner — M1c-15, M2a-11 (ADR-006 §1, DES-049).
  *
  * When navigator.connection.effectiveType reports 2g/slow-2g,
  * display gentle banner suggesting text-only mode.
  * Progressive enhancement — no-op on browsers without the API.
+ * Uses the unified reader preferences service (PRI-10).
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { getPreference, setPreference } from "@/lib/services/preferences";
 
-const STORAGE_KEY = "srf-text-only";
 const DISMISSED_KEY = "srf-lowbw-dismissed";
 
 export function LowBandwidthBanner() {
@@ -20,7 +21,7 @@ export function LowBandwidthBanner() {
     // Don't show if already dismissed this session
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
     // Don't show if text-only already enabled
-    if (localStorage.getItem(STORAGE_KEY) === "true") return;
+    if (getPreference("text-only-mode")) return;
 
     // Check connection API (progressive enhancement)
     const conn = (navigator as Navigator & {
@@ -33,7 +34,7 @@ export function LowBandwidthBanner() {
   }, []);
 
   const enableTextOnly = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, "true");
+    setPreference("text-only-mode", true);
     document.documentElement.classList.add("text-only");
     setShow(false);
   }, []);
