@@ -97,6 +97,7 @@
     "timer5": "5 min",
     "timer15": "15 min",
     "startTimer": "Begin",
+    "timerRunning": "Meditation timer running",
     "timerComplete": "Time of stillness complete",
     "showAnother": "Another reflection",
     "backToPortal": "Return to the portal"

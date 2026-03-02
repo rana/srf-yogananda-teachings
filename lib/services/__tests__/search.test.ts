@@ -132,7 +132,7 @@ describe("search", () => {
   it("respects the limit parameter", async () => {
     const pool = mockPool([{ ...sampleRow, score: "0.5" }]);
 
-    const result = await search(pool, { query: "test", limit: 5 });
+    await search(pool, { query: "test", limit: 5 });
 
     // Verify limit was passed to the query
     expect(pool.query).toHaveBeenCalledWith(

@@ -30,6 +30,13 @@ export async function generateMetadata({
 
   const citation = `${passage.bookAuthor}, ${passage.bookTitle}, Ch. ${passage.chapterNumber}`;
 
+  const ogImageUrl = `/api/og?${new URLSearchParams({
+    text: passage.content.slice(0, 280),
+    author: passage.bookAuthor,
+    book: passage.bookTitle,
+    chapter: `Ch. ${passage.chapterNumber}: ${passage.chapterTitle}`,
+  })}`;
+
   return {
     title: `"${truncated}" — ${passage.bookAuthor}`,
     description: `${truncated} — ${citation}`,
@@ -38,11 +45,21 @@ export async function generateMetadata({
       title: `"${truncated}"`,
       description: citation,
       siteName: "SRF Teachings Portal",
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: truncated }],
     },
     twitter: {
       card: "summary_large_image",
       title: `"${truncated}"`,
       description: citation,
+      images: [ogImageUrl],
+    },
+    other: {
+      // Google Scholar meta tags — M2a-7 (ADR-081)
+      "citation_title": passage.bookTitle,
+      "citation_author": passage.bookAuthor,
+      "citation_publication_date": "1946",
+      "citation_publisher": "Self-Realization Fellowship",
+      "citation_language": passage.language,
     },
   };
 }

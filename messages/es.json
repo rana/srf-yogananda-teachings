@@ -97,6 +97,7 @@
     "timer5": "5 min",
     "timer15": "15 min",
     "startTimer": "Comenzar",
+    "timerRunning": "Temporizador de meditación en marcha",
     "timerComplete": "Tiempo de quietud completado",
     "showAnother": "Otra reflexión",
     "backToPortal": "Volver al portal"

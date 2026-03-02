@@ -130,13 +130,13 @@ export function QuietCornerClient({ passage: initial }: Props) {
 
         {/* Timer */}
         {timerActive ? (
-          <div className="mt-12">
-            <p className="font-sans text-3xl tabular-nums text-srf-navy/30">
+          <div className="mt-12" role="timer" aria-live="off" aria-label={t("timerRunning")}>
+            <p className="font-sans text-3xl tabular-nums text-srf-navy/30" aria-label={`${Math.floor(secondsRemaining / 60)} minutes ${secondsRemaining % 60} seconds remaining`}>
               {formatTime(secondsRemaining)}
             </p>
           </div>
         ) : timerComplete ? (
-          <div className="mt-12 space-y-4">
+          <div className="mt-12 space-y-4" role="status" aria-live="polite">
             <p className="text-sm text-srf-gold">{t("timerComplete")}</p>
             <div className="flex justify-center gap-4">
               <button
@@ -183,30 +183,44 @@ export function QuietCornerClient({ passage: initial }: Props) {
 }
 
 /**
- * Play a simple tone via Web Audio API.
- * Used for singing bowl (start) and chime (end).
- * Fixed 15% volume per M2a-14.
+ * Play a singing bowl or chime sound via Web Audio API.
+ * Uses layered harmonics for a richer, more meditative tone.
+ * Fixed 15% max volume per M2a-14.
  */
 function playTone(frequency: number, volume: number, duration: number) {
   try {
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = volume;
+    masterGain.connect(ctx.destination);
 
-    osc.type = "sine";
-    osc.frequency.value = frequency;
-    gain.gain.value = volume;
+    // Singing bowl harmonics: fundamental + partial overtones
+    const harmonics = [
+      { ratio: 1, gain: 1.0 },     // Fundamental
+      { ratio: 2.76, gain: 0.4 },   // Singing bowl partial
+      { ratio: 4.72, gain: 0.2 },   // Upper partial
+    ];
 
-    // Fade out for natural decay
-    gain.gain.setTargetAtTime(0, ctx.currentTime + duration * 0.3, duration * 0.3);
+    harmonics.forEach(({ ratio, gain: hGain }) => {
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
+      osc.type = "sine";
+      osc.frequency.value = frequency * ratio;
+      oscGain.gain.value = hGain;
 
-    // Clean up
-    osc.onended = () => ctx.close();
+      // Natural decay — fast attack, slow release
+      oscGain.gain.setTargetAtTime(0, ctx.currentTime + duration * 0.1, duration * 0.4);
+
+      osc.connect(oscGain);
+      oscGain.connect(masterGain);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+
+      osc.onended = () => {
+        if (ratio === 1) ctx.close();
+      };
+    });
   } catch {
     // Web Audio not available — degrade silently
   }
