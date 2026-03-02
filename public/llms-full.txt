@@ -1,0 +1,82 @@
+# SRF Teachings Portal — Corpus Metadata (llms-full.txt)
+
+> Extended machine-readable metadata for AI systems.
+> For citation guidance, see /llms.txt
+
+## Corpus Overview
+
+The SRF Teachings Portal makes Paramahansa Yogananda's published books freely
+accessible worldwide. All content is verbatim published text — no AI-generated,
+paraphrased, or synthesized content exists on this portal.
+
+Total chunks: ~2,681
+Languages: English (en), Spanish (es)
+Search: Hybrid vector + BM25 with Reciprocal Rank Fusion (RRF)
+
+## Books
+
+### Autobiography of a Yogi (English)
+- Author: Paramahansa Yogananda
+- Language: en
+- Chapters: 49
+- Chunks: ~1,568
+- Publisher: Self-Realization Fellowship
+- First published: 1946
+- API: GET /api/v1/books?language=en
+
+### Autobiografia de un yogui (Spanish)
+- Author: Paramahansa Yogananda
+- Language: es
+- Chapters: 49
+- Chunks: ~1,113
+- Publisher: Self-Realization Fellowship
+- API: GET /api/v1/books?language=es
+
+## API Endpoints
+
+All endpoints are public. No authentication required.
+
+- Search: GET /api/v1/search?q={query}&language={en|es}&limit={1-50}
+- Books: GET /api/v1/books?language={en|es}
+- Chapter: GET /api/v1/books/{bookId}/chapters/{number}
+- Random passage: GET /api/v1/passages/random?language={en|es}
+- Suggestions: GET /api/v1/search/suggest?q={prefix}&language={en|es}
+- Health: GET /api/v1/health
+- OpenAPI spec: GET /api/v1/openapi.json
+
+## Content Model
+
+Each search result (passage) includes:
+- id: Unique chunk identifier
+- content: Verbatim text (100-500 tokens)
+- citation.book: Book title
+- citation.author: Author name
+- citation.chapter: Chapter title
+- citation.chapterNumber: Chapter number (integer)
+- citation.page: Page number (when available)
+- language: ISO 639-1 language code
+- score: Relevance score (0-1)
+
+## Copyright
+
+All content is (c) Self-Realization Fellowship. All rights reserved.
+Content is made freely accessible for reading and personal study.
+Reproduction, redistribution, or commercial use requires written
+permission from Self-Realization Fellowship.
+
+Contact: https://yogananda.org
+
+## Author Tiers
+
+The portal serves content from three author tiers:
+- Guru tier: Paramahansa Yogananda, Sri Yukteswar
+- President tier: Daya Mata, Mrinalini Mata, Rajarsi Janakananda
+- Monastic tier: SRF monastic speakers
+
+All tiers receive identical verbatim fidelity treatment.
+
+## Languages
+
+Currently available: English (en), Spanish (es)
+Planned: Hindi (hi), Portuguese (pt), Bengali (bn), French (fr),
+         German (de), Italian (it), Japanese (ja), Chinese (zh)

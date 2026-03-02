@@ -27,6 +27,8 @@ Contact: Self-Realization Fellowship, https://yogananda.org
 
 Structured access: GET /api/v1/search?q=your+query
 Health check: GET /api/v1/health
+OpenAPI spec: GET /api/v1/openapi.json
+Full corpus metadata: /llms-full.txt
 
 ## Languages
 
