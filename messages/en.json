@@ -135,6 +135,7 @@
     "description": "Every chapter carries a SHA-256 hash computed at ingestion time. You can verify that the text you're reading matches the original source."
   },
   "share": {
+    "button": "Share",
     "copyLink": "Copy link",
     "copied": "Copied!",
     "emailPassage": "Email passage",

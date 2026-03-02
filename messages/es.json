@@ -135,6 +135,7 @@
     "description": "Cada capítulo lleva un hash SHA-256 calculado en el momento de la incorporación. Puede verificar que el texto que está leyendo corresponde a la fuente original."
   },
   "share": {
+    "button": "Compartir",
     "copyLink": "Copiar enlace",
     "copied": "¡Copiado!",
     "emailPassage": "Enviar pasaje por correo",
