@@ -14,12 +14,13 @@ import { TextOnlyToggle } from "./TextOnlyToggle";
 export function Footer() {
   const t = useTranslations("footer");
   const nav = useTranslations("nav");
+  const a11y = useTranslations("a11y");
 
   return (
     <footer className="border-t border-srf-navy/10 bg-warm-cream">
       <div className="mx-auto max-w-5xl px-4 py-6">
         {/* Navigation links */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-srf-navy/50">
+        <nav aria-label={a11y("footerNavigation")} className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-srf-navy/50">
           <Link href="/" className="hover:text-srf-navy transition-colors">
             {nav("home")}
           </Link>
@@ -44,7 +45,7 @@ export function Footer() {
         </nav>
 
         {/* External SRF links */}
-        <nav className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-srf-navy/40">
+        <nav aria-label={a11y("srfEcosystem")} className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-srf-navy/40">
           <a
             href="https://yogananda.org"
             target="_blank"

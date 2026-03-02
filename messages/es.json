@@ -166,6 +166,8 @@
     "chapterNavigation": "Navegación de capítulos",
     "searchResults": "Resultados de búsqueda",
     "todaysWisdom": "Pasaje de sabiduría de hoy",
-    "openInNewTab": "(abre en una nueva pestaña)"
+    "openInNewTab": "(abre en una nueva pestaña)",
+    "footerNavigation": "Navegación del pie de página",
+    "srfEcosystem": "Ecosistema de SRF"
   }
 }

@@ -15,6 +15,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Header() {
   const t = useTranslations("nav");
+  const a11y = useTranslations("a11y");
   const pathname = usePathname();
 
   const navItems = [
@@ -28,7 +29,7 @@ export function Header() {
     <header className="border-b border-srf-navy/5 bg-warm-cream">
       <nav
         className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"
-        aria-label="Main navigation"
+        aria-label={a11y("mainNavigation")}
       >
         <Link
           href="/"
