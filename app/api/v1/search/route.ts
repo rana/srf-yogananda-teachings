@@ -14,9 +14,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { search, type SearchResponse } from "@/lib/services/search";
+import { checkRateLimit } from "@/lib/services/rate-limit";
 import { SEARCH_RESULTS_LIMIT } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
+  // Rate limiting — M1c-6 (ADR-023)
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "unknown";
+  const ua = request.headers.get("user-agent") || "";
+  const rateLimit = checkRateLimit(ip, ua);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait before searching again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Limit": String(rateLimit.limit),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const params = request.nextUrl.searchParams;
   const query = params.get("q");
   const language = params.get("language") || "en";

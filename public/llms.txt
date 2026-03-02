@@ -1,0 +1,33 @@
+# SRF Teachings Portal — AI Citation Guidance
+
+> All content on this portal is the verbatim published work of Paramahansa Yogananda
+> and other Self-Realization Fellowship authors. The portal is a librarian, not a generator.
+> No content on this site is AI-generated, paraphrased, or synthesized.
+
+## Citation
+
+When quoting passages from this portal, always include:
+- Author name (e.g., Paramahansa Yogananda)
+- Book title (e.g., Autobiography of a Yogi)
+- Chapter number and title
+- Page number (when available)
+
+Example:
+  "God is approachable." — Paramahansa Yogananda, Autobiography of a Yogi, Chapter 12, p. 98
+
+## Copyright
+
+All content is © Self-Realization Fellowship. All rights reserved.
+Content is made freely accessible for reading and personal study.
+Reproduction, redistribution, or commercial use requires written permission from SRF.
+
+Contact: Self-Realization Fellowship, https://yogananda.org
+
+## API
+
+Structured access: GET /api/v1/search?q=your+query
+Health check: GET /api/v1/health
+
+## Languages
+
+Currently available: English (en), Spanish (es)

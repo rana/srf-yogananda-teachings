@@ -1,0 +1,9 @@
+# SRF Teachings Portal — robots.txt (M1c-6)
+# Permissive: allow all, block /admin/ (future)
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /ops
+
+Sitemap: https://teachings.yogananda.org/sitemap.xml

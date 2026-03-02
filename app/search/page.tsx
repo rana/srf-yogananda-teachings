@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
+import type { CrisisInfo } from "@/lib/services/crisis";
 
 interface Citation {
   bookId: string;
@@ -35,23 +38,60 @@ const LANGUAGES = [
 ];
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("");
+  return (
+    <Suspense fallback={<SearchSkeleton />}>
+      <SearchPageInner />
+    </Suspense>
+  );
+}
+
+function SearchSkeleton() {
+  return (
+    <main className="min-h-screen bg-[#FAF8F5]">
+      <div className="border-b border-[#dcbd23]/20 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-8 md:py-12">
+          <h1 className="mb-2 font-serif text-2xl text-[#1a2744] md:text-3xl">
+            Search the Teachings
+          </h1>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function SearchPageInner() {
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [language, setLanguage] = useState("en");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [meta, setMeta] = useState<SearchMeta | null>(null);
+  const [crisis, setCrisis] = useState<CrisisInfo>({ detected: false });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const handleSearch = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!query.trim()) return;
+  const doSearch = useCallback(
+    async (q: string, lang: string) => {
+      if (!q.trim()) return;
 
       setLoading(true);
       setSearched(true);
+
+      // Crisis detection (M1c-9) — client-side check
+      try {
+        const crisisRes = await fetch(
+          `/api/v1/search/crisis?q=${encodeURIComponent(q.trim())}&language=${lang}`,
+        );
+        if (crisisRes.ok) {
+          const crisisData = await crisisRes.json();
+          setCrisis(crisisData);
+        }
+      } catch {
+        setCrisis({ detected: false });
+      }
+
       try {
         const res = await fetch(
-          `/api/v1/search?q=${encodeURIComponent(query.trim())}&language=${language}`,
+          `/api/v1/search?q=${encodeURIComponent(q.trim())}&language=${lang}`,
         );
         const data = await res.json();
         setResults(data.data || []);
@@ -63,8 +103,25 @@ export default function SearchPage() {
         setLoading(false);
       }
     },
-    [query, language],
+    [],
   );
+
+  const handleSearch = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      doSearch(query, language);
+    },
+    [query, language, doSearch],
+  );
+
+  // Auto-search from URL params (e.g., from homepage search bar)
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && !searched) {
+      setQuery(q);
+      doSearch(q, language);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <main className="min-h-screen bg-[#FAF8F5]">
@@ -118,6 +175,9 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="mx-auto max-w-3xl px-4 py-6">
+        {/* Crisis interstitial — above results, never suppresses them */}
+        <CrisisInterstitial crisis={crisis} />
+
         {meta && (
           <div className="mb-4">
             <p className="text-sm text-[#1a2744]/50">

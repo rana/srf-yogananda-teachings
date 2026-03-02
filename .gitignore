@@ -29,8 +29,8 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Ingestion data (large binaries)
-data/
+# Ingestion data (large binaries — top-level only)
+/data/
 
 # Playwright MCP artifacts
 .playwright-mcp/
