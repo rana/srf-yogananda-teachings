@@ -66,7 +66,7 @@ export function QuietCornerClient({ passage: initial }: Props) {
     setLoading(true);
     setTimerComplete(false);
     try {
-      const res = await fetch("/api/v1/passages/random");
+      const res = await fetch("/api/v1/passages/reflection");
       if (res.ok) {
         const json = await res.json();
         setPassage({
