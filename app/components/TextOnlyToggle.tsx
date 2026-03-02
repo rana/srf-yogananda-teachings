@@ -36,7 +36,7 @@ export function TextOnlyToggle() {
   return (
     <button
       onClick={toggle}
-      className="min-h-11 min-w-11 rounded px-2 py-1 text-xs text-[#1a2744]/40 transition-colors hover:text-[#1a2744]/70"
+      className="min-h-11 min-w-11 rounded px-2 py-1 text-xs text-srf-navy/40 transition-colors hover:text-srf-navy/70"
       aria-pressed={enabled}
       aria-label={enabled ? "Disable text-only mode" : "Enable text-only mode"}
     >

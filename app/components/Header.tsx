@@ -25,18 +25,18 @@ export function Header() {
   ];
 
   return (
-    <header className="border-b border-[#1a2744]/5 bg-[#FAF8F5]">
+    <header className="border-b border-srf-navy/5 bg-warm-cream">
       <nav
         className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"
         aria-label="Main navigation"
       >
         <Link
           href="/"
-          className="font-serif text-lg text-[#1a2744] transition-colors hover:text-[#dcbd23]"
+          className="font-serif text-lg text-srf-navy transition-colors hover:text-srf-gold"
           aria-label={t("home")}
         >
           {/* Lotus mark — minimal wordmark */}
-          <span className="text-[#dcbd23]" aria-hidden="true">✦</span>
+          <span className="text-srf-gold" aria-hidden="true">✦</span>
           <span className="ml-1.5 hidden text-sm font-normal sm:inline">
             Teachings
           </span>
@@ -51,8 +51,8 @@ export function Header() {
                 href={item.href}
                 className={`rounded-md px-2 py-1.5 text-xs sm:text-sm transition-colors min-h-[44px] inline-flex items-center ${
                   isActive
-                    ? "text-[#1a2744] font-medium"
-                    : "text-[#1a2744]/60 hover:text-[#1a2744]"
+                    ? "text-srf-navy font-medium"
+                    : "text-srf-navy/60 hover:text-srf-navy"
                 }`}
               >
                 {item.label}

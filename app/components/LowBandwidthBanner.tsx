@@ -48,20 +48,21 @@ export function LowBandwidthBanner() {
   return (
     <div
       role="status"
-      className="border-b border-[#dcbd23]/20 bg-[#dcbd23]/5 px-4 py-3 text-center text-sm text-[#1a2744]/70"
+      data-no-print
+      className="low-bandwidth-banner border-b border-srf-gold/20 bg-srf-gold/5 px-4 py-3 text-center text-sm text-srf-navy/70"
     >
       <p>
         Slow connection detected.{" "}
         <button
           onClick={enableTextOnly}
-          className="min-h-11 min-w-11 rounded px-1.5 font-medium text-[#1a2744] underline decoration-[#dcbd23]/40 underline-offset-2"
+          className="min-h-11 min-w-11 rounded px-1.5 font-medium text-srf-navy underline decoration-srf-gold/40 underline-offset-2"
         >
           Enable text-only mode
         </button>{" "}
         for a faster experience.{" "}
         <button
           onClick={dismiss}
-          className="min-h-11 min-w-11 rounded px-1.5 text-[#1a2744]/40 hover:text-[#1a2744]/70"
+          className="min-h-11 min-w-11 rounded px-1.5 text-srf-navy/40 hover:text-srf-navy/70"
           aria-label="Dismiss"
         >
           Dismiss
