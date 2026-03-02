@@ -11,22 +11,32 @@ import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 
 interface ShareButtonProps {
-  passage: string;
-  citation: {
+  /** Passage text for citation-based sharing (search results) */
+  passage?: string;
+  citation?: {
     author: string;
     book: string;
     chapter: string;
     chapterNumber: number;
     page?: number | null;
   };
+  /** Simplified props for passage page sharing */
   url?: string;
+  text?: string;
+  title?: string;
 }
 
-export function ShareButton({ passage, citation, url }: ShareButtonProps) {
+export function ShareButton({ passage, citation, url, text, title }: ShareButtonProps) {
   const t = useTranslations("share");
   const [copied, setCopied] = useState(false);
 
-  const shareText = `"${passage}"\n\n— ${citation.author}, ${citation.book}, Ch. ${citation.chapterNumber}: ${citation.chapter}${citation.page ? `, p. ${citation.page}` : ""}`;
+  const shareText = passage && citation
+    ? `"${passage}"\n\n— ${citation.author}, ${citation.book}, Ch. ${citation.chapterNumber}: ${citation.chapter}${citation.page ? `, p. ${citation.page}` : ""}`
+    : text || "";
+
+  const shareTitle = citation
+    ? `${citation.book} — ${citation.chapter}`
+    : title || "";
 
   const handleShare = useCallback(async () => {
     const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
@@ -35,7 +45,7 @@ export function ShareButton({ passage, citation, url }: ShareButtonProps) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `${citation.book} — ${citation.chapter}`,
+          title: shareTitle,
           text: shareText,
           url: shareUrl,
         });
@@ -53,7 +63,7 @@ export function ShareButton({ passage, citation, url }: ShareButtonProps) {
     } catch {
       // Clipboard API unavailable
     }
-  }, [shareText, citation.book, citation.chapter, url]);
+  }, [shareText, shareTitle, url]);
 
   return (
     <button

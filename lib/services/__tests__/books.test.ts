@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { getBooks, getChapters } from "../books";
+import { getBooks, getChapters, getPassage } from "../books";
 
 function mockPool(rows: Record<string, unknown>[]) {
   return { query: vi.fn().mockResolvedValue({ rows }) } as unknown as import("pg").Pool;
@@ -91,5 +91,36 @@ describe("getChapters", () => {
       expect.stringContaining("updated_at > $2"),
       ["book-1", "2026-03-01T00:00:00Z"],
     );
+  });
+});
+
+describe("getPassage", () => {
+  it("returns a passage with full citation", async () => {
+    const pool = mockPool([
+      {
+        id: "chunk-1",
+        content: "God is approachable.",
+        language: "en",
+        page_number: 98,
+        book_id: "book-1",
+        book_title: "Autobiography of a Yogi",
+        book_author: "Paramahansa Yogananda",
+        chapter_title: "Years in My Master's Hermitage",
+        chapter_number: 12,
+      },
+    ]);
+
+    const passage = await getPassage(pool, "chunk-1");
+    expect(passage).not.toBeNull();
+    expect(passage!.content).toBe("God is approachable.");
+    expect(passage!.bookTitle).toBe("Autobiography of a Yogi");
+    expect(passage!.chapterNumber).toBe(12);
+    expect(passage!.pageNumber).toBe(98);
+  });
+
+  it("returns null for non-existent passage", async () => {
+    const pool = mockPool([]);
+    const passage = await getPassage(pool, "non-existent");
+    expect(passage).toBeNull();
   });
 });

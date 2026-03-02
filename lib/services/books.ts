@@ -117,6 +117,48 @@ export async function getChapters(
   }));
 }
 
+export interface Passage {
+  id: string;
+  content: string;
+  language: string;
+  pageNumber: number | null;
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  chapterTitle: string;
+  chapterNumber: number;
+}
+
+/** Get a single passage (book chunk) by ID with full citation. */
+export async function getPassage(
+  pool: pg.Pool,
+  passageId: string,
+): Promise<Passage | null> {
+  const { rows } = await pool.query(
+    `SELECT bc.id, bc.content, bc.language, bc.page_number,
+            b.id AS book_id, b.title AS book_title, b.author AS book_author,
+            c.title AS chapter_title, c.chapter_number
+     FROM book_chunks bc
+     JOIN books b ON b.id = bc.book_id
+     JOIN chapters c ON c.id = bc.chapter_id
+     WHERE bc.id = $1`,
+    [passageId],
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    content: r.content,
+    language: r.language,
+    pageNumber: r.page_number,
+    bookId: r.book_id,
+    bookTitle: r.book_title,
+    bookAuthor: r.book_author,
+    chapterTitle: r.chapter_title,
+    chapterNumber: r.chapter_number,
+  };
+}
+
 export async function getChapterContent(
   pool: pg.Pool,
   bookId: string,

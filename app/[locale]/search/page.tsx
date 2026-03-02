@@ -11,6 +11,7 @@ import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CrisisInterstitial } from "@/app/components/CrisisInterstitial";
+import { ShareButton } from "@/app/components/ShareButton";
 import { locales, localeNames } from "@/i18n/config";
 import type { CrisisInfo } from "@/lib/services/crisis";
 
@@ -236,6 +237,11 @@ function SearchPageInner() {
                   >
                     {t("readInContext")}
                   </a>
+                  <ShareButton
+                    passage={result.content}
+                    citation={result.citation}
+                    url={`/passage/${result.id}`}
+                  />
                 </footer>
               </article>
             );
