@@ -1,0 +1,5 @@
+# dbmate configuration
+# Connection URL loaded from DATABASE_URL in .env.local
+# Run: DATABASE_URL=$NEON_DATABASE_URL_DIRECT dbmate up
+--migrations-dir ./migrations
+--no-dump-schema
