@@ -32,8 +32,11 @@ Thumbs.db
 # Ingestion data (large binaries — top-level only)
 /data/
 
-# Playwright MCP artifacts
+# Playwright
 .playwright-mcp/
+/test-results/
+/playwright-report/
+/blob-report/
 
 # Ad-hoc screenshots
 *.png

@@ -23,12 +23,24 @@ export async function generateMetadata({
   const content = await getChapterContent(pool, bookId, chapterNumber);
   if (!content) return {};
   const prefix = locale === "en" ? "" : `/${locale}`;
+  const base = `https://teachings.yogananda.org${prefix}/books/${bookId}`;
+
+  // rel="prev"/"next" for sequential chapter navigation (M2a-7)
+  const other: Record<string, string> = {};
+  if (content.prevChapter) {
+    other["prev"] = `${base}/${content.prevChapter.chapterNumber}`;
+  }
+  if (content.nextChapter) {
+    other["next"] = `${base}/${content.nextChapter.chapterNumber}`;
+  }
+
   return {
     title: `${content.chapter.title} — ${content.book.title}`,
     description: `Chapter ${content.chapter.chapterNumber} of ${content.book.title} by ${content.book.author}`,
     alternates: {
       canonical: `${prefix}/books/${bookId}/${chapter}`,
     },
+    other,
   };
 }
 
@@ -154,6 +166,7 @@ export default async function ChapterPage({
           {content.prevChapter ? (
             <Link
               href={`/books/${bookId}/${content.prevChapter.chapterNumber}`}
+              rel="prev"
               className="flex flex-1 flex-col px-4 py-4 text-start transition-colors hover:bg-warm-cream min-h-[44px]"
             >
               <span className="text-xs text-srf-navy/40">{t("previous")}</span>
@@ -170,6 +183,7 @@ export default async function ChapterPage({
           {content.nextChapter ? (
             <Link
               href={`/books/${bookId}/${content.nextChapter.chapterNumber}`}
+              rel="next"
               className="flex flex-1 flex-col px-4 py-4 text-end transition-colors hover:bg-warm-cream min-h-[44px]"
             >
               <span className="text-xs text-srf-navy/40">{t("next")}</span>
